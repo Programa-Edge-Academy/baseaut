@@ -25,6 +25,94 @@ Este documento existe para manter o projeto consistente desde o início e evitar
 - Não adicione abstrações antecipadas sem necessidade real.
 - Preserve o estilo existente do projeto ao tocar em arquivos já consolidados.
 
+### 3.1. Padrões de nomenclatura
+
+O projeto segue um padrão simples e consistente de nomes para facilitar leitura, busca e manutenção.
+
+Arquivos e pastas:
+
+- Use `kebab-case` para a maioria dos arquivos fora das rotas.
+- Use nomes de rota do Expo Router em minúsculas e com grupos entre parênteses quando necessário.
+- Mantenha nomes curtos e descritivos.
+
+Exemplos:
+
+- `themed-text.tsx`
+- `use-color-scheme.ts`
+- `use-theme-color.ts`
+- `parallax-scroll-view.tsx`
+- `app/(tabs)/index.tsx`
+- `app/(tabs)/_layout.tsx`
+- `app/modal.tsx`
+
+Componentes:
+
+- Nomeie componentes com `PascalCase`.
+- O nome do arquivo deve refletir o nome do componente principal.
+- Prefira um componente principal por arquivo quando possível.
+
+Exemplos:
+
+- `ThemedText`
+- `ThemedView`
+- `ParallaxScrollView`
+- `HapticTab`
+
+Hooks:
+
+- Hooks devem começar com `use`.
+- O nome do arquivo normalmente acompanha o hook em `kebab-case`.
+- Hooks devem expressar o que fazem, não como fazem.
+
+Exemplos:
+
+- `useColorScheme`
+- `useThemeColor`
+- `useColorScheme.web`
+
+Funções, variáveis e parâmetros:
+
+- Use `camelCase` para funções, variáveis e parâmetros.
+- Booleans devem ter nomes que expressem estado ou condição.
+- Evite abreviações confusas; prefira clareza.
+
+Exemplos:
+
+- `handlePress`
+- `currentTheme`
+- `isLoading`
+- `hasError`
+- `selectedTab`
+
+Constantes e temas:
+
+- Use `PascalCase` para objetos exportados que representam temas, mapas ou coleções de configuração.
+- Use nomes claros para tokens visuais e valores compartilhados.
+
+Exemplos:
+
+- `Colors`
+- `Fonts`
+- `tintColorLight`
+- `tintColorDark`
+
+Tipos e interfaces:
+
+- Use `PascalCase` para tipos e interfaces.
+- Quando fizer sentido, use o sufixo `Props` para propriedades de componente.
+
+Exemplos:
+
+- `ThemedTextProps`
+- `UserProfile`
+- `NavigationState`
+
+Regras práticas:
+
+- Se o nome do arquivo, função ou componente não deixa claro o propósito, ele está fraco.
+- Evite nomes genéricos como `utils.ts`, `helper.ts`, `data.ts` ou `component.tsx` sem necessidade.
+- Se um arquivo crescer demais, prefira dividir em arquivos com responsabilidade mais específica.
+
 ## 4. React Native, Expo Router e NativeWind
 
 - Mantenha as rotas enxutas e deixe a lógica de interface em componentes dedicados quando a tela começar a crescer.
