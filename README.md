@@ -1,6 +1,12 @@
-# Welcome to your Expo app 👋
+# Baseaut
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Este projeto usa [Expo Router](https://docs.expo.dev/router/introduction) com [NativeWind](https://www.nativewind.dev/).
+
+Antes de começar a implementar novas telas, componentes ou fluxos, leia o guia de boas práticas do projeto:
+
+- [Guia de boas práticas](docs/guia-boas-praticas.md)
+
+Este repositório ainda segue a estrutura inicial gerada pelo `create-expo-app`, então o guia acima serve como base para manter o código consistente desde o início.
 
 ## Get started
 
