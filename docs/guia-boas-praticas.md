@@ -48,31 +48,32 @@ Exemplos:
 Componentes:
 
 - Nomeie componentes com `PascalCase`.
-- O nome do arquivo deve refletir o nome do componente principal.
+- O nome do arquivo deve refletir o nome do componente principal, porém utilizando `kebab-case`, como mencionado anteriormente.
 - Prefira um componente principal por arquivo quando possível.
 
 Exemplos:
 
-- `ThemedText`
+- `ThemedText` -> Nesse caso, o nome do arquivo seria `themed-text.tsx`.
 - `ThemedView`
 - `ParallaxScrollView`
 - `HapticTab`
 
 Hooks:
 
+- Nomeie hooks com `lowerCamelCase`.
 - Hooks devem começar com `use`.
-- O nome do arquivo normalmente acompanha o hook em `kebab-case`.
+- O nome do arquivo normalmente reflete o nome do hook, porém utilizando `kebab-case`.
 - Hooks devem expressar o que fazem, não como fazem.
 
 Exemplos:
 
-- `useColorScheme`
+- `useColorScheme` -> Nesse caso, o nome do arquivo seria `use-color-scheme.ts`.
 - `useThemeColor`
 - `useColorScheme.web`
 
 Funções, variáveis e parâmetros:
 
-- Use `camelCase` para funções, variáveis e parâmetros.
+- Use `lowerCamelCase` para funções, variáveis e parâmetros.
 - Booleans devem ter nomes que expressem estado ou condição.
 - Evite abreviações confusas; prefira clareza.
 
@@ -93,8 +94,6 @@ Exemplos:
 
 - `Colors`
 - `Fonts`
-- `tintColorLight`
-- `tintColorDark`
 
 Tipos e interfaces:
 
@@ -109,9 +108,9 @@ Exemplos:
 
 Regras práticas:
 
-- Se o nome do arquivo, função ou componente não deixa claro o propósito, ele está fraco.
+- Se o nome do arquivo, função ou componente não deixa claro o propósito, ele é ruim.
 - Evite nomes genéricos como `utils.ts`, `helper.ts`, `data.ts` ou `component.tsx` sem necessidade.
-- Se um arquivo crescer demais, prefira dividir em arquivos com responsabilidade mais específica.
+- Se um arquivo crescer demais, prefira dividir em arquivos com responsabilidades mais específicas.
 
 ## 4. React Native, Expo Router e NativeWind
 
