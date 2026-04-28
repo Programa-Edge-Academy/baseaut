@@ -206,6 +206,18 @@ Exemplo de sequência saudável:
 - Se a mudança afeta navegação, descreva os caminhos de tela testados.
 - Se houver dívida técnica assumida, registre isso explicitamente.
 
+### 6.1. Qualidade do Código (Quality Assurance)
+
+A qualidade do aplicativo é de responsabilidade de toda a equipe. Para que o fluxo de testes seja mais eficiente, o alinhamento entre Desenvolvimento e QA deve seguir as seguintes diretrizes:
+
+- Desk Check: Antes de mover qualquer task para a etapa de testes (in QA) é de responsabiildade do desenvolvedor rodar o aplicativo e garantir que o fluxo principaçl esteja funcionando e sem quebras óbvias.
+- Validação dos Critérios de Aceite: O teste deve ser sempre baseado nos critérios de aceite definidos no backlog. Nenhuma tarefa deve ser aprovada se os critérios básicos não foram totalmente atendidos.
+- Report de Bugs: Todo bug reportado precisa ser fácil de entender e reproduzir. Ao registrar uma falha, inclua sempre:
+  - Ambiente
+  - Passos para reproduzir o erro
+  - Comportamento esperado vs Comportamento atual
+  - Pelo menos uma evidência visual
+
 ## 7. Documentação
 
 - Atualize este guia quando surgir uma decisão de processo importante.
