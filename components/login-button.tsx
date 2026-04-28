@@ -21,7 +21,7 @@ export function LoginButton({
   return (
     <Pressable
       onPress={onPress}
-      className={`h-11 w-80 items-center justify-center rounded-2xl bg-[#0E89E5] shadow-[0px_0px_10px_0px_rgba(14,137,229,0.25)] ${className ?? ""}`}
+      className={`h-11 w-80 items-center justify-center rounded-2xl bg-primary shadow-[0px_0px_10px_0px_rgba(14,137,229,0.25)] ${className ?? ""}`}
       style={style}
     >
       <Text
