@@ -1,0 +1,18 @@
+# This file is used to define individuals and teams responsible for specific files or directories within our repository
+
+# Front-end
+
+/app/ @Programa-Edge-Academy/baseaut-frontend @Programa-Edge-Academy/baseaut-leads
+/components/ @Programa-Edge-Academy/baseaut-frontend @Programa-Edge-Academy/baseaut-design @Programa-Edge-Academy/baseaut-leads
+
+# Back-end
+
+/supabase/ @Programa-Edge-Academy/baseaut-backend @Programa-Edge-Academy/baseaut-leads
+
+# Quality Assurance
+
+/**tests**/ @Programa-Edge-Academy/baseaut-qa @Programa-Edge-Academy/baseaut-leads
+
+# Configuration
+
+/.github/ @Programa-Edge-Academy/baseaut-leads
