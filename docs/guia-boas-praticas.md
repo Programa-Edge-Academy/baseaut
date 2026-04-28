@@ -199,6 +199,31 @@ Exemplo de sequência saudável:
 - Commit 2: `fix(profile): validate required fields`
 - Commit 3: `docs: update profile flow notes`
 
+### 5.3 Exemplo de como fazer commit e PR
+
+Exemplo de commit:
+
+```# ANTES de iniciar sua task, utilize os seguintes comandos para garantir que está sincronizado com a main.
+git checkout main
+git pull origin main
+
+# Após fazer as alterações no código, rode o seguinte comando para criar a sua branch.
+# Lembre-se de utilizar o padrão conventional branch.
+# Obs.: esse nome específico é apenas um EXEMPLO.
+git switch -c fix/login-error-example
+
+# Rode os seguintes comandos para adicionar as mudanças feitas à área de staging e realizar o commit.
+# O ponto final significa que todos os arquivos alterados irão para o staging.
+git add .
+git commit -m "fix: fix login error example"
+
+# Utilize push para subir o(s) commit(s) para a sua branch.
+# Acesse a branch no seu navegador para realizar o Pull Request.
+git push -u origin fix/login-error-example
+```
+
+Prefira realizar os Pull Requests pelo site. A descrição do PR deve conter "Summary" e "Validation" obrigatoriamente.
+
 ## 6. Revisão de código
 
 - Todo PR deve responder claramente: o que mudou, por quê e como validar.
@@ -245,24 +270,29 @@ A qualidade do aplicativo é de responsabilidade de toda a equipe. Para que o fl
 Se uma decisão aumentar a chance de conflito, duplicação ou manutenção difícil, prefira a opção mais simples e explícita.
 
 ## 11. Infraestrutura como Código (IaC) e CLI
-- **Proibido usar o Painel Web (Dashboard) para Schema:** Nunca crie tabelas, colunas, visões ou políticas de segurança clicando na interface do Supabase em produção. 
+
+- **Proibido usar o Painel Web (Dashboard) para Schema:** Nunca crie tabelas, colunas, visões ou políticas de segurança clicando na interface do Supabase em produção.
 - **Migrations Sempre:** Toda alteração no banco de dados deve ser gerada via terminal (`supabase migration new <nome_da_alteracao>`). O banco de dados evolui junto com o versionamento do Git.
 - **Sincronia de Ambiente:** Antes de iniciar o trabalho do dia, faça o `git pull` e execute `supabase db reset` para garantir que seu banco local está com os mesmos dados e estrutura do resto da equipe.
 
 ## 12. Segurança e Row Level Security (RLS)
-- **RLS Ativo por Padrão:** Assim que uma tabela for criada na *migration*, o comando `ALTER TABLE nome ENABLE ROW LEVEL SECURITY;` deve ser executado obrigatoriamente. Um banco sem RLS é um banco aberto para a internet.
+
+- **RLS Ativo por Padrão:** Assim que uma tabela for criada na _migration_, o comando `ALTER TABLE nome ENABLE ROW LEVEL SECURITY;` deve ser executado obrigatoriamente. Um banco sem RLS é um banco aberto para a internet.
 - **Isolamento da Service Role Key:** A chave `SERVICE_ROLE_KEY` tem poder absoluto e ignora todas as regras de segurança (RLS). Ela deve existir **apenas** dentro de Edge Functions ou servidores isolados. Jamais a exponha nas variáveis do cliente/front-end.
 - **Filtro no Banco, não no Código:** A segurança e o isolamento de locatários (multi-tenancy) devem ser resolvidos puramente no PostgreSQL via RLS. Não delegue a filtragem de dados sensíveis para camadas superiores do código.
 
 ## 13. Performance e Otimização
+
 - **Indexação é Obrigatória:** Crie índices (B-Tree) explicitamente para toda coluna que for uma Chave Estrangeira (Foreign Key) ou que for muito utilizada em filtros nas cláusulas `WHERE`.
 - **Uso Estratégico do JSONB:** O Supabase não é um banco NoSQL. Use `JSONB` apenas para dados genuinamente dinâmicos (como respostas de formulários flexíveis). Se for usar `JSONB` para buscas, crie obrigatoriamente um índice `GIN` nessa coluna.
 - **Cuidado com JOINs no RLS:** Evite cruzar muitas tabelas (JOINs) dentro das regras de RLS, pois essa regra será executada para cada linha retornada e pode destruir o tempo de resposta da query.
 
 ## 14. Gestão de Segredos e Credenciais
+
 - **Ignorar o .env:** Todas as URLs locais e Chaves Anônimas (`ANON_KEY`) devem ficar no arquivo `.env.local`. Verifique sempre se este arquivo está no `.gitignore`. Jamais faça o commit de credenciais no repositório.
-- **Dados Sensíveis do Banco:** Senhas, tokens de APIs externas e chaves criptográficas não devem ser salvas como texto puro em tabelas comuns. Utilize a extensão `pgsodium` ou a ferramenta *Supabase Vault* nativa para encriptar esses dados no nível do banco.
+- **Dados Sensíveis do Banco:** Senhas, tokens de APIs externas e chaves criptográficas não devem ser salvas como texto puro em tabelas comuns. Utilize a extensão `pgsodium` ou a ferramenta _Supabase Vault_ nativa para encriptar esses dados no nível do banco.
 
 ## 15. Integridade dos Dados
+
 - **Uso de UUIDs:** Utilize sempre `UUID` (padrão `gen_random_uuid()`) como Chave Primária (PK) das tabelas ao invés de inteiros auto-incrementais. Isso evita que usuários deduzam o volume de dados da plataforma e previne conflitos de merge de dados no futuro.
 - **Restrições Fortes (Constraints):** O banco não deve confiar no usuário. Use `CHECK` constraints rigorosos direto no SQL (ex: garantir que a idade seja maior que zero, ou que o status seja apenas 'concluido' ou 'pendente').
