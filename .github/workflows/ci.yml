@@ -1,0 +1,24 @@
+name: CI - Testar Migrations
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  test-migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Instalar Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Ligar Banco Local e Validar
+        run: |
+          supabase db start
+          supabase db lint
