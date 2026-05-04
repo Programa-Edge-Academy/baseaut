@@ -1,3 +1,12 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@layer components {
+  .shadow-base {
+    @apply shadow-lg shadow-[0px_0px_15px_-0px];
+  }
+  .shadow-primaryShadow { @apply shadow-base shadow-primary/50; }
+  .shadow-secondaryShadow { @apply shadow-base shadow-secondary/50; }
+  .shadow-errorShadow { @apply shadow-base shadow-error/50; }
+  .shadow-panelShadow { @apply shadow-base shadow-black/50; }
+}
