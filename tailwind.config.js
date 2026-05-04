@@ -20,6 +20,8 @@ module.exports = {
         verbal: "#09CDDB",
         example: "#DBBF09",
         physical: "#DC0886",
+        muted: "#66758A",
+        placeholder: "#465460",
       },
     },
   },
