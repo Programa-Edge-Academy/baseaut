@@ -1,0 +1,27 @@
+name: CD - Deploy para Staging
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_ID: ${{ secrets.STAGING_PROJECT_ID }}
+      DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Instalar Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Aplicar Migrations em Homologação
+        run: |
+          supabase link --project-ref $PROJECT_ID --password $DB_PASSWORD
+          supabase db push
