@@ -28,8 +28,7 @@
     @apply text-xs font-medium leading-3;
     font-family: 'Inter-Medium';
   }
-
-@layer components {
+  
   .shadow-base {
     @apply shadow-lg shadow-[0px_0px_15px_-0px];
   }
