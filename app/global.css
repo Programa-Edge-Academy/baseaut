@@ -1,3 +1,31 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .text-header-1 {
+    @apply text-2xl font-bold leading-6;
+    font-family: 'Inter-Bold';
+  }
+  .text-header-2 {
+    @apply text-xl font-bold leading-5;
+    font-family: 'Inter-Bold';
+  }
+  .text-header-3 {
+    @apply text-base font-bold leading-4;
+    font-family: 'Inter-Bold';
+  }
+
+  .text-default-1 {
+    @apply text-base font-medium leading-4;
+    font-family: 'Inter-Medium';
+  }
+  .text-default-2 {
+    @apply text-sm font-medium leading-4;
+    font-family: 'Inter-Medium';
+  }
+  .text-default-3 {
+    @apply text-xs font-medium leading-3;
+    font-family: 'Inter-Medium';
+  }
+}
