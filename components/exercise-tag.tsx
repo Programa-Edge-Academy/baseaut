@@ -1,21 +1,24 @@
 import React from "react";
-import { Text, TouchableOpacity } from "react-native";
+import { Pressable, Text } from "react-native";
 
-interface TagProps {
+export type TagProps = {
   label: string;
   height?: number;
   borderRadius?: number;
   isActive?: boolean;
-}
+  onPress?: () => void;
+};
 
-const ExerciseTag = ({
+export function ExerciseTag({
   label,
   height = 30,
   borderRadius = 15,
   isActive = false,
-}: TagProps) => {
+  onPress,
+}: TagProps) {
   return (
-    <TouchableOpacity
+    <Pressable
+      onPress={onPress}
       className="justify-center border items-center"
       style={{
         height,
@@ -26,16 +29,13 @@ const ExerciseTag = ({
       }}
     >
       <Text
-        className="text-center text-sm leading-5"
+        className="text-center text-default-2 leading-5"
         style={{
           color: isActive ? "#FFFFFF" : "#66758A",
-          fontFamily: "Inter_500Medium",
         }}
       >
         {label}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
-};
-
-export default ExerciseTag;
+}
