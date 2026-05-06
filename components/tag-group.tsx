@@ -8,7 +8,7 @@ interface TagGroupProps {
 
 export function TagGroup({ tags, onAddTag }: TagGroupProps) {
   return (
-    <View className="flex-row flex-wrap gap-10">
+    <View className="flex-row flex-wrap gap-2.5">
       {tags.map((tag) => (
         <ExerciseTag
           key={tag.label}
