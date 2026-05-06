@@ -28,7 +28,7 @@ export function Header({
             resizeMode="contain"
           />
 
-          {/* VARIANT: DEFAULT (ícones) */}
+          {/* VARIANT: DEFAULT (icons) */}
           {variant === "default" && (
             <View className="flex-row items-center">
               <View className="ml-2 text-muted">
@@ -59,8 +59,7 @@ export function Header({
 
           {/* VARIANT: FINISH */}
           {variant === "finish" && (
-            <>
-              {/* Espaçador invisível pra manter alinhamento */}
+            <>   
               <View />
 
               <Pressable
