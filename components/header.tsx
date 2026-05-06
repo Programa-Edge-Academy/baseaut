@@ -15,6 +15,11 @@ export function Header({
   onPressFinish,
   logoSource,
 }: HeaderProps) {
+
+  // Colors mapped manually (since currentColor doesn't work in RN)
+  const mutedColor = "#66758A";
+  const primaryError = "#BE2223";
+
   return (
     <View className="w-full items-center bg-level1">
       <View className="w-full items-center justify-center bg-level2 p-4">
@@ -22,68 +27,58 @@ export function Header({
         <View className="w-full flex-row items-center justify-between mx-4">
 
           {/* LOGO */}
+          {/* FIX: SVG won't work in Image → use PNG or SVG component */}
           <Image
-            source={logoSource ?? require("../assets/images/baseaut-logo.svg")}
+            source={logoSource ?? require("../assets/images/baseaut-logo.png")}
             className="h-10 w-32"
             resizeMode="contain"
           />
 
-          {/* VARIANT: DEFAULT (icons) */}
+          {/* DEFAULT */}
           {variant === "default" && (
             <View className="flex-row items-center">
-              <View className="ml-2 text-muted">
-                <Settings size={24} color="currentColor" />
-              </View>
-
-              <View className="ml-2 text-muted">
-                <User size={24} color="currentColor" />
-              </View>
+              <Settings size={24} color={mutedColor} style={{ marginLeft: 8 }} />
+              <User size={24} color={mutedColor} style={{ marginLeft: 8 }} />
             </View>
           )}
 
-          {/* VARIANT: BACK */}
+          {/* BACK */}
           {variant === "back" && (
             <Pressable
               onPress={onPressBack}
-              className="flex-row items-center gap-2 px-4 py-2 rounded-xl border-2 border-outline bg-level2"
+              className="flex-row items-center px-4 py-2 rounded-xl border-2 border-outline bg-level2"
             >
-              <View className="text-muted">
-                <ArrowLeft size={24} color="currentColor" />
-              </View>
+              <ArrowLeft size={24} color={mutedColor} />
 
-              <Text className="text-muted font-inter">
+              <Text className="text-muted font-inter ml-2">
                 Voltar
               </Text>
             </Pressable>
           )}
 
-          {/* VARIANT: FINISH */}
+          {/* FINISH */}
           {variant === "finish" && (
-            <>   
+            <>
               <View />
 
               <Pressable
                 onPress={onPressFinish}
-                className="flex-row items-center gap-2 px-4 py-2 rounded-xl border-2 border-error bg-error/10"
+                className="flex-row items-center px-4 py-2 rounded-xl border-2 border-error bg-error/10"
               >
-                <View className="text-error">
-                  <X size={24} color="currentColor" />
-                </View>
+                <X size={24} color={primaryError} />
 
-                <Text className="text-error font-inter">
+                <Text className="text-error font-inter ml-2">
                   Finalizar
                 </Text>
               </Pressable>
 
               <Pressable
                 onPress={onPressBack}
-                className="flex-row items-center gap-2 px-4 py-2 rounded-xl border-2 border-outline bg-level2"
+                className="flex-row items-center px-4 py-2 rounded-xl border-2 border-outline bg-level2"
               >
-                <View className="text-muted">
-                  <ArrowLeft size={24} color="currentColor" />
-                </View>
+                <ArrowLeft size={24} color={mutedColor} />
 
-                <Text className="text-muted font-inter">
+                <Text className="text-muted font-inter ml-2">
                   Voltar
                 </Text>
               </Pressable>
