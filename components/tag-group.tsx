@@ -1,10 +1,10 @@
 import { View } from "react-native";
 import { ExerciseTag, TagProps } from "./exercise-tag";
 
-interface TagGroupProps {
+export type TagGroupProps = {
   tags: TagProps[];
   onAddTag: () => void;
-}
+};
 
 export function TagGroup({ tags, onAddTag }: TagGroupProps) {
   return (
