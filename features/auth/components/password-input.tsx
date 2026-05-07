@@ -31,18 +31,22 @@ export function PasswordInput({
 
   return (
     <View
-      className={`h-[44px] w-[342px] flex-row items-center rounded-[15px] border border-[#2B303B] bg-[#14181F] px-4 ${className ?? ""}`}
+      className={`relative h-11 w-full flex-row items-center rounded-[15px] border border-outline bg-level1 px-4 ${className ?? ""}`}
       style={containerStyle}
     >
       <TextInput
-        className={`flex-1 text-[14px] font-medium text-white ${inputStyle ? "" : ""}`}
+        className={`flex-1 pr-10 text-default-2 leading-5 text-white ${inputStyle ? "" : ""}`}
         placeholderTextColor="#465460"
         secureTextEntry={!isPasswordVisible}
         style={inputStyle}
         {...rest}
       />
 
-      <Pressable onPress={togglePasswordVisibility} className="ml-2">
+      <Pressable
+        onPress={togglePasswordVisibility}
+        className="absolute right-3"
+        style={{ padding: 6 }}
+      >
         {isPasswordVisible ? (
           <EyeOff size={20} color="#465460" />
         ) : (
