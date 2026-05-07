@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
-import { DropdownQuestion } from './form-types';
-import { DropdownModal } from '../dropdown-modal';
-import { DefaultTextInput } from '../default-text-input';
+import { DropdownQuestion } from '../types';
+import { DropdownModal } from '../../../components/dropdown-modal';
+import { DefaultTextInput } from '../../../components/default-text-input';
 
 interface Props {
   question: DropdownQuestion;

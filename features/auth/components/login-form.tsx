@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, Text, View } from "react-native";
-import { DefaultButton } from "./default-button";
-import { DefaultTextInput } from "./default-text-input";
+import { DefaultButton } from "../../../components/default-button";
+import { DefaultTextInput } from "../../../components/default-text-input";
 import { PasswordInput } from "./password-input";
 
 export function LoginForm() {

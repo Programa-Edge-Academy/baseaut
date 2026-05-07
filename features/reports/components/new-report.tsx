@@ -6,7 +6,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import { DefaultTextInput } from "./default-text-input";
+import { DefaultTextInput } from "../../../components/default-text-input";
 
 type CheckboxItemProps = {
   label: string;

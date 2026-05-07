@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { Check } from 'lucide-react-native';
-import { ChoiceListQuestion } from './form-types';
-import { DefaultTextInput } from '../default-text-input';
+import { Check } from "lucide-react-native";
+import { useState } from "react";
+import { Pressable, Text, View } from "react-native";
+import { DefaultTextInput } from "../../../components/default-text-input";
+import { ChoiceListQuestion } from "../types";
 
 interface Props {
   question: ChoiceListQuestion;
@@ -10,7 +10,7 @@ interface Props {
 
 export function ChoiceListQuestionUI({ question }: Props) {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [otherText, setOtherText] = useState('');
+  const [otherText, setOtherText] = useState("");
 
   const toggleOption = (option: string) => {
     setSelectedOptions((prev) => {
@@ -21,7 +21,9 @@ export function ChoiceListQuestionUI({ question }: Props) {
     });
   };
 
-  const options = question.allowOther ? [...question.options, 'Outro'] : question.options;
+  const options = question.allowOther
+    ? [...question.options, "Outro"]
+    : question.options;
 
   return (
     <View className="self-stretch flex flex-col gap-2.5 mt-2">
@@ -29,11 +31,13 @@ export function ChoiceListQuestionUI({ question }: Props) {
         const isSelected = selectedOptions.includes(opt);
         return (
           <View key={opt} className="flex flex-col gap-2">
-            <Pressable 
+            <Pressable
               onPress={() => toggleOption(opt)}
               className="flex flex-row items-center gap-3"
             >
-              <View className={`w-8 h-8 rounded-full outline outline-1 outline-offset-[-1px] justify-center items-center ${isSelected ? 'bg-primary outline-transparent' : 'bg-level1 outline-outline'}`}>
+              <View
+                className={`w-8 h-8 rounded-full outline outline-1 outline-offset-[-1px] justify-center items-center ${isSelected ? "bg-primary outline-transparent" : "bg-level1 outline-outline"}`}
+              >
                 {isSelected && <Check color="#fff" size={18} />}
               </View>
               <View className="flex-1 min-h-[44px] px-3.5 py-2.5 bg-level1 rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline justify-center">
@@ -41,7 +45,7 @@ export function ChoiceListQuestionUI({ question }: Props) {
               </View>
             </Pressable>
 
-            {opt === 'Outro' && isSelected && (
+            {opt === "Outro" && isSelected && (
               <DefaultTextInput
                 value={otherText}
                 onChangeText={setOtherText}

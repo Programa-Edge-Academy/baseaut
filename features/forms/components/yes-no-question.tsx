@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { View } from 'react-native';
-import { YesNoQuestion } from './form-types';
+import { YesNoQuestion } from '../types';
 import { FormQuestion } from './form-question';
-import { DefaultButton } from '../default-button';
+import { DefaultButton } from '../../../components/default-button';
 
 interface Props {
   question: YesNoQuestion;

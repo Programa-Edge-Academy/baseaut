@@ -7,7 +7,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { DefaultTextInput } from "./default-text-input";
+import { DefaultTextInput } from "../../../components/default-text-input";
 import { TagProps } from "./exercise-tag";
 import { TagGroup } from "./tag-group";
 
