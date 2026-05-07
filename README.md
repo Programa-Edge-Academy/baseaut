@@ -22,6 +22,14 @@ Este repositório ainda segue a estrutura inicial gerada pelo `create-expo-app`,
    npx expo start
    ```
 
+3. Configure environment variables
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   The app reads the Supabase connection through `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)
