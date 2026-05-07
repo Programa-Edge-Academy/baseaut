@@ -10,33 +10,36 @@ export function LoginForm() {
   };
 
   return (
-    <View className="w-full max-w-[380px] items-center rounded-[20px] bg-[#1B1F27] p-6 shadow-lg">
-      {/* Título */}
-      <Text className="mb-6 text-xl font-bold text-[#66758A]">
-        Entre na sua conta
-      </Text>
+    <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-6 shadow-panelShadow outline outline-1 outline-offset-[-1px] outline-outline">
+      <Text className="mb-5 text-default-1 text-muted">Entre na sua conta</Text>
 
-      {/* Campos de Input */}
-      <View className="w-full gap-4">
-        <DefaultTextInput placeholder="Email ou telefone" />
-        <PasswordInput placeholder="Senha" />
+      <View className="w-full max-w-[342px] gap-7">
+        <DefaultTextInput
+          placeholder="Email"
+          className="h-11 w-full rounded-[15px]"
+        />
+        <PasswordInput
+          placeholder="Senha"
+          className="h-11 w-full rounded-[15px]"
+        />
       </View>
 
-      {/* Botão de Ação */}
-      <View className="mt-6 w-full items-center">
-        <DefaultButton label="Entrar" onPress={handleLogin} />
+      <View className="mt-7 w-full max-w-[342px] items-center">
+        <DefaultButton
+          label="Entrar"
+          onPress={handleLogin}
+          sizeClass="w-full h-11"
+          className="rounded-[15px]"
+        />
       </View>
 
-      {/* Links de Rodapé */}
-      <View className="mt-6 items-center gap-3">
-        <Text className="text-sm text-gray-400">
-          Não tem conta?{" "}
-          <Text className="font-bold text-[#25C125]">Cadastre-se</Text>
+      <View className="mt-7 items-center gap-3">
+        <Text className="text-default-2">
+          <Text className="text-muted">Não tem conta? </Text>
+          <Text className="text-secondary">Cadastre-se</Text>
         </Text>
         <Pressable>
-          <Text className="text-sm font-medium text-[#0E89E5]">
-            Esqueci a senha
-          </Text>
+          <Text className="text-default-2 text-primary">Esqueci a senha</Text>
         </Pressable>
       </View>
     </View>
