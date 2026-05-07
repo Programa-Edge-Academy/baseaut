@@ -1,39 +1,28 @@
-import React, { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import React from "react";
+import { Pressable, Text, View } from "react-native";
 import { DefaultButton } from "../../../components/default-button";
 import { DefaultTextInput } from "../../../components/default-text-input";
-import { supabase } from "../../../lib/supabase";
 import { PasswordInput } from "./password-input";
 
-export function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+type LoginFormProps = {
+  email: string;
+  password: string;
+  loading?: boolean;
+  error?: string | null;
+  onEmailChange: (email: string) => void;
+  onPasswordChange: (password: string) => void;
+  onSubmit: () => void;
+};
 
-  const handleLogin = async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      const resp = await supabase.auth.signInWithPassword({ email, password });
-
-      if (resp.error) {
-        setError(resp.error.message);
-        Alert.alert("Erro ao entrar", resp.error.message);
-        return;
-      }
-
-      // Successful sign-in
-      Alert.alert("Sucesso", "Autenticado com sucesso");
-      // TODO: navigate to the app main screen
-    } catch (err: any) {
-      setError(err?.message ?? "Erro desconhecido");
-      Alert.alert("Erro", err?.message ?? "Erro desconhecido");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+export function LoginForm({
+  email,
+  password,
+  loading = false,
+  error,
+  onEmailChange,
+  onPasswordChange,
+  onSubmit,
+}: LoginFormProps) {
   return (
     <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-6 shadow-panelShadow outline outline-1 outline-offset-[-1px] outline-outline">
       <Text className="mb-5 text-default-1 text-muted">Entre na sua conta</Text>
@@ -43,7 +32,7 @@ export function LoginForm() {
           placeholder="Email"
           className="h-11 w-full rounded-[15px]"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={onEmailChange}
           keyboardType="email-address"
           autoCapitalize="none"
         />
@@ -51,7 +40,7 @@ export function LoginForm() {
           placeholder="Senha"
           className="h-11 w-full rounded-[15px]"
           value={password}
-          onChangeText={setPassword}
+          onChangeText={onPasswordChange}
         />
       </View>
 
@@ -60,12 +49,11 @@ export function LoginForm() {
       <View className="mt-7 w-full max-w-[342px] items-center">
         <DefaultButton
           label={loading ? "Entrando..." : "Entrar"}
-          onPress={handleLogin}
+          onPress={onSubmit}
           sizeClass="w-full h-11"
           className="rounded-[15px]"
           disabled={loading}
         />
-        {loading ? <ActivityIndicator className="mt-3" /> : null}
       </View>
 
       <View className="mt-7 items-center gap-3">
