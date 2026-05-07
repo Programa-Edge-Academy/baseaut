@@ -1,5 +1,5 @@
+import { LoginScreen } from "@/features/auth/screens/login-screen";
 import React from "react";
-import { LoginScreen } from "../features/auth/screens/login-screen";
 
 export default function Index() {
   return <LoginScreen />;
