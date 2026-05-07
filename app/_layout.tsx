@@ -1,16 +1,21 @@
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_700Bold,
+  useFonts,
+} from "@expo-google-fonts/inter";
 import { Stack } from "expo-router";
-import { useEffect } from "react";
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_700Bold } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
 import "./global.css";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    'Inter': Inter_400Regular,
-    'Inter-Medium': Inter_500Medium,
-    'Inter-Bold': Inter_700Bold,
+    Inter: Inter_400Regular,
+    "Inter-Medium": Inter_500Medium,
+    "Inter-Bold": Inter_700Bold,
   });
 
   useEffect(() => {
@@ -23,5 +28,5 @@ export default function RootLayout() {
     return null;
   }
 
-  return <Stack />;
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
