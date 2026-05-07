@@ -1,40 +1,42 @@
 import React from "react";
-import { Pressable, Text, PressableProps } from "react-native";
+import { Text, PressableProps } from "react-native";
+import { RipplePressable } from "./ripple-pressable";
 
-type DefaultButtonProps = PressableProps & {
+type DefaultButtonProps = Omit<PressableProps, 'children'> & {
   label: string;
-  bgColorClass?: string;       // Define background color. Ex: 'bg-primary' or 'bg-red-500'
-  shadowClass?: string;        // Define shadow color. Ex: 'shadow-lg shadow-black/30'
-  isOutline?: boolean;         // Switch to outline mode.
-  sizeClass?: string;          // Define height and weidth. Ex: 'w-full h-11' or 'px-6 py-3'
-  textClassName?: string;      // Extra class to text (color, size, font)
-  outlineBorderClass?: string; // Color border if isOutline is true
+  bgColorClass?: string;       
+  shadowClass?: string;        
+  isOutline?: boolean;         
+  sizeClass?: string;          
+  textClassName?: string;      
+  outlineBorderClass?: string; 
+  rippleColor?: string;
 };
 
 export function DefaultButton({
   label,
-  onPress,
   bgColorClass = "bg-primary",
-  shadowClass = "shadow-lg shadow-primary/75",
+  shadowClass = "shadow-primaryShadow",
   isOutline = false,
   sizeClass = "w-40 h-11", 
   textClassName,
-  outlineBorderClass = "border-primary", // Editable!
+  outlineBorderClass = "border-primary",
+  rippleColor,
   className,
-  ...rest // Allow calling other functions like disabled, onLongPress, etc.
+  ...rest 
 }: DefaultButtonProps) { 
   
-// Logic to build the style based on props
   const baseClasses = "items-center justify-center rounded-2xl flex-row";
   const outlineClasses = isOutline ? `border-2 bg-transparent ${outlineBorderClass}` : bgColorClass;
   const appliedShadow = !isOutline && shadowClass ? shadowClass : "";
 
-// Defines the base text color, but allows textClassName to override it
   const defaultTextColor = isOutline ? "text-primary" : "text-white";
+  
+  const finalRippleColor = rippleColor || (isOutline ? "rgba(14, 137, 229, 0.2)" : "rgba(255, 255, 255, 0.3)");
 
   return (
-    <Pressable
-      onPress={onPress}
+    <RipplePressable
+      rippleColor={finalRippleColor}
       className={`${baseClasses} ${sizeClass} ${outlineClasses} ${appliedShadow} ${className ?? ""}`}
       {...rest}
     >
@@ -43,6 +45,6 @@ export function DefaultButton({
       >
         {label}
       </Text>
-    </Pressable>
+    </RipplePressable>
   );
 }
