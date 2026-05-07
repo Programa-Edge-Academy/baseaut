@@ -14,9 +14,26 @@ export function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string>("");
+  const [passwordError, setPasswordError] = useState<string>("");
 
   const handleLogin = async () => {
     setError(null);
+    setEmailError("");
+    setPasswordError("");
+
+    // Validate fields
+    if (!email.trim()) {
+      setEmailError("Email é obrigatório");
+    }
+    if (!password.trim()) {
+      setPasswordError("Senha é obrigatória");
+    }
+
+    if (!email.trim() || !password.trim()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -53,6 +70,8 @@ export function LoginScreen() {
           password={password}
           loading={loading}
           error={error}
+          emailError={emailError}
+          passwordError={passwordError}
           onEmailChange={setEmail}
           onPasswordChange={setPassword}
           onSubmit={handleLogin}
