@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { DefaultButton } from "../../../components/default-button";
@@ -27,6 +28,7 @@ export function LoginForm({
   onPasswordChange,
   onSubmit,
 }: LoginFormProps) {
+  const router = useRouter();
   return (
     <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-6 shadow-panelShadow outline outline-1 outline-offset-[-1px] outline-outline">
       <Text className="mb-5 text-default-1 text-muted">Entre na sua conta</Text>
@@ -71,10 +73,12 @@ export function LoginForm({
       </View>
 
       <View className="mt-7 items-center gap-3">
-        <Text className="text-default-2">
+        <View className="flex-row items-center">
           <Text className="text-muted">Não tem conta? </Text>
-          <Text className="text-secondary">Cadastre-se</Text>
-        </Text>
+          <Pressable onPress={() => router.push("/register" as never)}>
+            <Text className="text-secondary">Cadastre-se</Text>
+          </Pressable>
+        </View>
         <Pressable>
           <Text className="text-default-2 text-primary">Esqueci a senha</Text>
         </Pressable>

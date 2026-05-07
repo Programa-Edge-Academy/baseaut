@@ -1,11 +1,11 @@
+import { router } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { router } from "expo-router";
 import { DefaultButton } from "../../../components/default-button";
 import { DefaultTextInput } from "../../../components/default-text-input";
-import { PasswordInput } from "./password-input";
 import { passwordChecker } from "../hooks/password-checker";
 import { useRegister } from "../hooks/use-register";
+import { PasswordInput } from "./password-input";
 
 export function RegisterForm() {
   const [name, setName] = useState("");
@@ -47,7 +47,7 @@ export function RegisterForm() {
 
     const success = await register({ name, email, password });
     if (success) {
-      router.replace("/login");
+      router.replace("/");
     }
   };
 
@@ -118,13 +118,11 @@ export function RegisterForm() {
           className="rounded-[15px]"
           disabled={loading}
         />
-        {apiError && (
-          <Text className="text-xs text-red-400">{apiError}</Text>
-        )}
+        {apiError && <Text className="text-xs text-red-400">{apiError}</Text>}
       </View>
 
       <View className="mt-6 items-center">
-        <Pressable onPress={() => router.replace("/login")}>
+        <Pressable onPress={() => router.replace("/")}>
           <Text className="text-default-2">
             <Text className="text-muted">Já tem conta? </Text>
             <Text className="text-secondary">Entre</Text>
