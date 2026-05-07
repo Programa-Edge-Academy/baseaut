@@ -1,6 +1,6 @@
-import { RegisterScreen } from "@/features/auth/screens/register-screen";
 import React from "react";
+import { LoginScreen } from "../features/auth/screens/login-screen";
 
 export default function Index() {
-  return <RegisterScreen />;
+  return <LoginScreen />;
 }
