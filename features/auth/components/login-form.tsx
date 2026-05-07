@@ -9,6 +9,8 @@ type LoginFormProps = {
   password: string;
   loading?: boolean;
   error?: string | null;
+  emailError?: string;
+  passwordError?: string;
   onEmailChange: (email: string) => void;
   onPasswordChange: (password: string) => void;
   onSubmit: () => void;
@@ -19,6 +21,8 @@ export function LoginForm({
   password,
   loading = false,
   error,
+  emailError,
+  passwordError,
   onEmailChange,
   onPasswordChange,
   onSubmit,
@@ -28,20 +32,30 @@ export function LoginForm({
       <Text className="mb-5 text-default-1 text-muted">Entre na sua conta</Text>
 
       <View className="w-full max-w-[342px] gap-7">
-        <DefaultTextInput
-          placeholder="Email"
-          className="h-11 w-full rounded-[15px]"
-          value={email}
-          onChangeText={onEmailChange}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        <PasswordInput
-          placeholder="Senha"
-          className="h-11 w-full rounded-[15px]"
-          value={password}
-          onChangeText={onPasswordChange}
-        />
+        <View className="w-full">
+          <DefaultTextInput
+            placeholder="Email"
+            className="h-11 w-full rounded-[15px]"
+            value={email}
+            onChangeText={onEmailChange}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          {emailError ? (
+            <Text className="mt-1 text-sm text-red-400">{emailError}</Text>
+          ) : null}
+        </View>
+        <View className="w-full">
+          <PasswordInput
+            placeholder="Senha"
+            className="h-11 w-full rounded-[15px]"
+            value={password}
+            onChangeText={onPasswordChange}
+          />
+          {passwordError ? (
+            <Text className="mt-1 text-sm text-red-400">{passwordError}</Text>
+          ) : null}
+        </View>
       </View>
 
       {error ? <Text className="mt-3 text-red-400">{error}</Text> : null}
