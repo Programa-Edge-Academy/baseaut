@@ -37,3 +37,21 @@
   .shadow-errorShadow { @apply shadow-base shadow-error/50; }
   .shadow-panelShadow { @apply shadow-base shadow-black/50; }
 }
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #2B303B;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #465460;
+}
