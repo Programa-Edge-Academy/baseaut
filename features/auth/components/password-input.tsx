@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { TextInput, View, TextInputProps, ViewStyle, TextStyle, Pressable } from "react-native";
+import {
+  Pressable,
+  TextInput,
+  TextInputProps,
+  TextStyle,
+  View,
+  ViewStyle,
+} from "react-native";
 // Importando o ícone (Exemplo com Lucide, substitua pelo seu SVG se preferir)
 import { Eye, EyeOff } from "lucide-react-native";
 
@@ -34,7 +41,7 @@ export function PasswordInput({
         style={inputStyle}
         {...rest}
       />
-      
+
       <Pressable onPress={togglePasswordVisibility} className="ml-2">
         {isPasswordVisible ? (
           <EyeOff size={20} color="#465460" />

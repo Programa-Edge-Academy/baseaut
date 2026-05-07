@@ -1,9 +1,9 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
 import { Phone } from "lucide-react-native"; // Usando Lucide para o ícone de telefone
-import { DefaultTextInput } from "./default-text-input";
+import { DefaultTextInput } from "../../../components/default-text-input";
+import { DefaultButton } from "../../../components/default-button";
 import { PasswordInput } from "./password-input";
-import { DefaultButton } from "./default-button";
 
 export function RegisterForm() {
   const handleRegister = () => {
