@@ -1,11 +1,11 @@
+import { DefaultButton } from "@/components/default-button";
+import { DefaultTextInput } from "@/components/default-text-input";
+import { PasswordInput } from "@/features/auth/components/password-input";
+import { passwordChecker } from "@/features/auth/hooks/password-checker";
+import { useRegister } from "@/features/auth/hooks/use-register";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { DefaultButton } from "../../../components/default-button";
-import { DefaultTextInput } from "../../../components/default-text-input";
-import { passwordChecker } from "../hooks/password-checker";
-import { useRegister } from "../hooks/use-register";
-import { PasswordInput } from "./password-input";
 
 export function RegisterForm() {
   const [name, setName] = useState("");
@@ -49,7 +49,7 @@ export function RegisterForm() {
     if (success) {
       router.replace({
         pathname: "/auth-feedback",
-        params: { mode: "accountCreated" }
+        params: { mode: "accountCreated" },
       });
     }
   };

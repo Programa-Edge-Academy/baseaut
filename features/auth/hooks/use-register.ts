@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { supabase } from '../../../lib/supabase';
+import { supabase } from "@/lib/supabase";
+import { useState } from "react";
 
 type RegisterData = {
   name: string;
@@ -11,7 +11,11 @@ export function useRegister() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const register = async ({ name, email, password }: RegisterData): Promise<boolean> => {
+  const register = async ({
+    name,
+    email,
+    password,
+  }: RegisterData): Promise<boolean> => {
     setLoading(true);
     setError(null);
 
@@ -21,7 +25,7 @@ export function useRegister() {
       options: {
         data: {
           nome_completo: name,
-          role: 'monitor',
+          role: "monitor",
         },
       },
     });

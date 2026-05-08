@@ -5,8 +5,8 @@ import React, { useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
-import { baseautLogoXml } from "../../../assets/baseaut-logo";
-import { supabase } from "../../../lib/supabase";
+import { baseautLogoXml } from "@/assets/baseaut-logo";
+import { supabase } from "@/lib/supabase";
 
 export function ResetPasswordCodeScreen() {
   const router = useRouter();

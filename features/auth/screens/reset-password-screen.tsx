@@ -5,8 +5,8 @@ import React, { useState } from "react";
 import { Alert, Text, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
-import { baseautLogoXml } from "../../../assets/baseaut-logo";
-import { PasswordInput } from "../components/password-input";
+import { baseautLogoXml } from "@/assets/baseaut-logo";
+import { PasswordInput } from "@/features/auth/components/password-input";
 
 const weakPasswordMessage =
   "Senha fraca. Use de 8 a 20 caracteres,\n" +
