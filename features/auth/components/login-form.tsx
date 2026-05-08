@@ -1,9 +1,9 @@
+import { DefaultButton } from "@/components/default-button";
+import { DefaultTextInput } from "@/components/default-text-input";
+import { PasswordInput } from "@/features/auth/components/password-input";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
-import { DefaultButton } from "../../../components/default-button";
-import { DefaultTextInput } from "../../../components/default-text-input";
-import { PasswordInput } from "./password-input";
 
 type LoginFormProps = {
   email: string;

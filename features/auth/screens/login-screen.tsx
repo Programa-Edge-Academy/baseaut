@@ -3,10 +3,10 @@ import React, { useState } from "react";
 import { Alert, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
-import { baseautLogoXml } from "../../../assets/baseaut-logo";
-import { supabase } from "../../../lib/supabase";
+import { baseautLogoXml } from "@/assets/baseaut-logo";
+import { supabase } from "@/lib/supabase";
 
-import { LoginForm } from "../components/login-form";
+import { LoginForm } from "@/features/auth/components/login-form";
 
 export function LoginScreen() {
   const router = useRouter();

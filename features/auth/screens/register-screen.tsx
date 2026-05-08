@@ -1,7 +1,7 @@
+import { RegisterForm } from "@/features/auth/components/register-form";
 import React from "react";
 import { View } from "react-native";
 import { SvgXml } from "react-native-svg";
-import { RegisterForm } from "../components/register-form";
 
 const baseautLogoXml = `<svg width="76" height="34" viewBox="0 0 76 34" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M11.1396 12.4215V16.7599L7.06348 14.5492V10.2705L11.1396 12.4215Z" fill="#0E89E5"/>
