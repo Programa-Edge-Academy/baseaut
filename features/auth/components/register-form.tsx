@@ -47,7 +47,10 @@ export function RegisterForm() {
 
     const success = await register({ name, email, password });
     if (success) {
-      router.replace("/");
+      router.replace({
+        pathname: "/auth-feedback",
+        params: { mode: "accountCreated" }
+      });
     }
   };
 
