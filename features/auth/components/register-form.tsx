@@ -1,11 +1,11 @@
-import { DefaultButton } from "@/components/default-button";
-import { DefaultTextInput } from "@/components/default-text-input";
-import { PasswordInput } from "@/features/auth/components/password-input";
-import { passwordChecker } from "@/features/auth/hooks/password-checker";
-import { useRegister } from "@/features/auth/hooks/use-register";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import { DefaultButton } from "../../../components/default-button";
+import { DefaultTextInput } from "../../../components/default-text-input";
+import { passwordChecker } from "../hooks/password-checker";
+import { useRegister } from "../hooks/use-register";
+import { PasswordInput } from "./password-input";
 
 export function RegisterForm() {
   const [name, setName] = useState("");
@@ -43,14 +43,26 @@ export function RegisterForm() {
   };
 
   const handleRegister = async () => {
-    if (!validate()) return;
+    console.log("[register] click", {
+      name,
+      email,
+      hasPassword: !!password,
+      hasConfirm: !!confirmPassword,
+      supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
+      hasAnonKey: !!process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+    });
 
+    if (!validate()) {
+      console.log("[register] validation failed");
+      return;
+    }
+
+    console.log("[register] calling supabase signUp...");
     const success = await register({ name, email, password });
+    console.log("[register] result:", success);
+
     if (success) {
-      router.replace({
-        pathname: "/auth-feedback",
-        params: { mode: "accountCreated" },
-      });
+      router.replace("/login");
     }
   };
 
@@ -79,7 +91,7 @@ export function RegisterForm() {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
-            className="h-11 w-full rounded-[15px]"
+            className="h-11 w-full rounded-[15px] border border-outline"
           />
           {errors.email && (
             <Text className="text-xs text-red-400">{errors.email}</Text>
@@ -119,13 +131,19 @@ export function RegisterForm() {
           onPress={handleRegister}
           sizeClass="w-full h-11"
           className="rounded-[15px]"
-          disabled={loading}
+          disabled={
+            loading ||
+            !name.trim() ||
+            !email.trim() ||
+            !password ||
+            !confirmPassword
+          }
         />
         {apiError && <Text className="text-xs text-red-400">{apiError}</Text>}
       </View>
 
       <View className="mt-6 items-center">
-        <Pressable onPress={() => router.replace("/")}>
+        <Pressable onPress={() => router.replace("/login")}>
           <Text className="text-default-2">
             <Text className="text-muted">Já tem conta? </Text>
             <Text className="text-secondary">Entre</Text>
