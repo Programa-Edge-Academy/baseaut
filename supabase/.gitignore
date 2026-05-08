@@ -7,3 +7,6 @@ snippets/
 .env.keys
 .env.local
 .env.*.local
+
+# Edge Functions secrets
+functions/.env
