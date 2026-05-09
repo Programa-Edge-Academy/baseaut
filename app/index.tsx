@@ -1,13 +1,6 @@
-import { Footer } from "@/components/footer";
-import { Header } from "@/components/header";
-import React from "react";
+import { LoginScreen } from "@/features/auth/screens/login-screen";
 
 
 export default function Index() {
-  return (
-    <>
-      <Header variant="default" />
-      <Footer />
-    </>
-  );
+  return LoginScreen;
 }
