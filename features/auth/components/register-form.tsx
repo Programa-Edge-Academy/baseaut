@@ -144,7 +144,13 @@ export function RegisterForm() {
           onPress={handleRegister}
           sizeClass="w-full h-11"
           className="rounded-[15px]"
-          disabled={loading}
+          disabled={
+            loading ||
+            !name.trim() ||
+            !email.trim() ||
+            !password ||
+            !confirmPassword
+          }
         />
         {apiError && <Text className="text-xs text-red-400">{apiError}</Text>}
       </View>
