@@ -1,6 +1,8 @@
+import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { ArrowLeft, Settings, User, X } from "lucide-react-native";
 import React from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { SvgXml } from "react-native-svg";
 
 type HeaderProps = {
   variant?: "default" | "back" | "finish";
@@ -16,6 +18,9 @@ export function Header({
   logoSource,
 }: HeaderProps) {
 
+  const mutedColor = "#66758A";
+  const primaryError = "#BE2223";
+
   return (
     <View className="w-full items-center bg-level1">
       <View className="w-full items-center justify-center bg-level2 p-4">
@@ -24,17 +29,15 @@ export function Header({
 
           {/* LOGO */}
           {/* FIX: SVG won't work in Image → use PNG or SVG component */}
-          <Image
-            source={logoSource ?? require("../assets/images/baseaut-logo.png")}
-            className="h-10 w-32"
-            resizeMode="contain"
-          />
+          <View className="w-auto mt-12 pt-12 bottom-12">
+            <SvgXml xml={baseautLogoXml} width={100}/>
+          </View>
 
           {/* DEFAULT */}
           {variant === "default" && (
             <View className="flex-row items-center">
-              <Settings className="color-muted" size={24} style={{ marginLeft: 8 }} />
-              <User className="color-muted" size={24} style={{ marginLeft: 8 }} />
+              <Settings size={24} color={mutedColor} style={{ marginLeft: 8 }} />
+              <User size={24} color={mutedColor} style={{ marginLeft: 8 }} />
             </View>
           )}
 

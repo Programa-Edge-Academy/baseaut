@@ -7,94 +7,81 @@ type FooterTab = "activity" | "start" | "analysis";
 export function Footer() {
   const [selectedTab, setSelectedTab] = useState<FooterTab>("activity");
 
+  const primary = "#0E89E5";
+  const muted = "#66758A";
+
   return (
     <View className="w-full items-center">
       <View className="w-full items-center justify-center bg-level1 p-4">
 
         <View className="w-full flex-row justify-between mx-4">
 
-          {/* Activity Tab */}
+          {/* Activity */}
           <Pressable
             onPress={() => setSelectedTab("activity")}
-            className="items-center justify-center gap-1"
+            className="items-center"
           >
-            <View
-              className={
-                selectedTab === "activity" ? "text-primary" : "text-muted"
-              }
-            >
-              <Dumbbell size={28} color="currentColor" />
-            </View>
+            <Dumbbell
+              size={28}
+              color={selectedTab === "activity" ? primary : muted}
+            />
 
             <Text
-              className={`font-inter text-xs ${
-                selectedTab === "activity"
-                  ? "text-primary"
-                  : "text-muted"
+              className={`font-inter text-xs mt-1 ${
+                selectedTab === "activity" ? "text-primary" : "text-muted"
               }`}
             >
               Atividades
             </Text>
 
-            {/* Active indicator line */}
             {selectedTab === "activity" && (
-              <View className="w-full h-[2px] bg-primary" />
+              <View className="w-full h-[2px] bg-primary mt-1" />
             )}
           </Pressable>
 
-          {/* Start Tab */}
+          {/* Start */}
           <Pressable
             onPress={() => setSelectedTab("start")}
-            className="items-center justify-center gap-1"
+            className="items-center"
           >
-            <View
-              className={
-                selectedTab === "start" ? "text-primary" : "text-muted"
-              }
-            >
-              <Users size={28} color="currentColor" />
-            </View>
+            <Users
+              size={28}
+              color={selectedTab === "start" ? primary : muted}
+            />
 
             <Text
-              className={`font-inter text-xs ${
-                selectedTab === "start"
-                  ? "text-primary"
-                  : "text-muted"
+              className={`font-inter text-xs mt-1 ${
+                selectedTab === "start" ? "text-primary" : "text-muted"
               }`}
             >
               Início
             </Text>
 
             {selectedTab === "start" && (
-              <View className="w-full h-[2px] bg-primary" />
+              <View className="w-full h-[2px] bg-primary mt-1" />
             )}
           </Pressable>
 
-          {/* Analysis Tab */}
+          {/* Analysis */}
           <Pressable
             onPress={() => setSelectedTab("analysis")}
-            className="items-center justify-center gap-1"
+            className="items-center"
           >
-            <View
-              className={
-                selectedTab === "analysis" ? "text-primary" : "text-muted"
-              }
-            >
-              <BarChart3 size={28} color="currentColor" />
-            </View>
+            <BarChart3
+              size={28}
+              color={selectedTab === "analysis" ? primary : muted}
+            />
 
             <Text
-              className={`font-inter text-xs ${
-                selectedTab === "analysis"
-                  ? "text-primary"
-                  : "text-muted"
+              className={`font-inter text-xs mt-1 ${
+                selectedTab === "analysis" ? "text-primary" : "text-muted"
               }`}
             >
               Análise
             </Text>
 
             {selectedTab === "analysis" && (
-              <View className="w-full h-[2px] bg-primary" />
+              <View className="w-full h-[2px] bg-primary mt-1" />
             )}
           </Pressable>
 
