@@ -1,6 +1,7 @@
 import { Mic } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
+import { colors } from "@/assets/colors";
 
 export function OpenQuestionUI() {
   const handleRecordAudio = () => {};
@@ -17,7 +18,7 @@ export function OpenQuestionUI() {
         onPress={handleRecordAudio}
         className="w-[44px] h-[44px] bg-level1 rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline justify-center items-center"
       >
-        <Mic color="#66758A" size={20} />
+        <Mic color={colors.muted} size={20} />
       </Pressable>
     </View>
   );

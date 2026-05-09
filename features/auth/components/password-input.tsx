@@ -9,6 +9,7 @@ import {
 } from "react-native";
 // Importando o ícone (Exemplo com Lucide, substitua pelo seu SVG se preferir)
 import { Eye, EyeOff } from "lucide-react-native";
+import { colors } from "@/assets/colors";
 
 type PasswordInputProps = TextInputProps & {
   className?: string;
@@ -36,7 +37,7 @@ export function PasswordInput({
     >
       <TextInput
         className={`flex-1 pr-10 text-default-2 leading-5 text-white ${inputStyle ? "" : ""}`}
-        placeholderTextColor="#465460"
+        placeholderTextColor={colors.placeholder}
         secureTextEntry={!isPasswordVisible}
         style={inputStyle}
         {...rest}
@@ -48,9 +49,9 @@ export function PasswordInput({
         style={{ padding: 6 }}
       >
         {isPasswordVisible ? (
-          <EyeOff size={20} color="#465460" />
+          <EyeOff size={20} color={colors.placeholder} />
         ) : (
-          <Eye size={20} color="#465460" />
+          <Eye size={20} color={colors.placeholder} />
         )}
       </Pressable>
     </View>
