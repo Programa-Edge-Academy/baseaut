@@ -1,11 +1,11 @@
+import { DefaultButton } from "@/components/default-button";
+import { DefaultTextInput } from "@/components/default-text-input";
+import { PasswordInput } from "@/features/auth/components/password-input";
+import { passwordChecker } from "@/features/auth/hooks/password-checker";
+import { useRegister } from "@/features/auth/hooks/use-register";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { DefaultButton } from "../../../components/default-button";
-import { DefaultTextInput } from "../../../components/default-text-input";
-import { passwordChecker } from "../hooks/password-checker";
-import { useRegister } from "../hooks/use-register";
-import { PasswordInput } from "./password-input";
 
 export function RegisterForm() {
   const [name, setName] = useState("");
@@ -15,6 +15,27 @@ export function RegisterForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { register, loading, error: apiError } = useRegister();
+
+  const handlePasswordChange = (text: string) => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!passwordChecker(text)) {
+      newErrors.password =
+      "A senha deve ter entre 8 e 20 caracteres, maiúscula, minúscula, número ou especial";
+    }
+    setPassword(text);
+    setErrors(newErrors);
+  }
+
+  const handleConfirmPasswordChange = (text: string) => {
+    const newErrors: Record<string, string> = {};
+
+    if (password !== text) {
+      newErrors.confirmPassword = "As senhas não coincidem";
+    }
+    setConfirmPassword(text);
+    setErrors(newErrors);
+  }
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -29,12 +50,16 @@ export function RegisterForm() {
       newErrors.email = "Email inválido";
     }
 
-    if (!passwordChecker(password)) {
+    if (!password.trim()) {
+      newErrors.password = "Senha é obrigatória";
+    } else if (!passwordChecker(password)) {
       newErrors.password =
-        "A senha deve ter 8+ caracteres, maiúscula, minúscula e número";
+        "A senha deve ter entre 8 e 20 caracteres, maiúscula, minúscula, número ou especial";
     }
 
-    if (password !== confirmPassword) {
+    if (!confirmPassword.trim()) {
+      newErrors.confirmPassword = "Confirmação de senha é obrigatória";
+    } else if (password !== confirmPassword) {
       newErrors.confirmPassword = "As senhas não coincidem";
     }
 
@@ -49,7 +74,7 @@ export function RegisterForm() {
     if (success) {
       router.replace({
         pathname: "/auth-feedback",
-        params: { mode: "accountCreated" }
+        params: { mode: "accountCreated" },
       });
     }
   };
@@ -90,7 +115,7 @@ export function RegisterForm() {
           <PasswordInput
             placeholder="Sua senha"
             value={password}
-            onChangeText={setPassword}
+            onChangeText={handlePasswordChange}
             className="h-11 w-full rounded-[15px]"
           />
           {errors.password && (
@@ -102,7 +127,7 @@ export function RegisterForm() {
           <PasswordInput
             placeholder="Confirme sua senha"
             value={confirmPassword}
-            onChangeText={setConfirmPassword}
+            onChangeText={handleConfirmPasswordChange}
             className="h-11 w-full rounded-[15px]"
           />
           {errors.confirmPassword && (
@@ -119,7 +144,13 @@ export function RegisterForm() {
           onPress={handleRegister}
           sizeClass="w-full h-11"
           className="rounded-[15px]"
-          disabled={loading}
+          disabled={
+            loading ||
+            !name.trim() ||
+            !email.trim() ||
+            !password ||
+            !confirmPassword
+          }
         />
         {apiError && <Text className="text-xs text-red-400">{apiError}</Text>}
       </View>
