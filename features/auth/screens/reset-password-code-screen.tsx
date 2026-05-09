@@ -46,7 +46,6 @@ export function ResetPasswordCodeScreen() {
         "Sucesso",
         "Se esse email estiver cadastrado, você receberá um link para redefinir sua senha.",
       );
-      router.back();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro desconhecido";
       setError(message);
