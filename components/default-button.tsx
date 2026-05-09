@@ -41,7 +41,7 @@ export function DefaultButton({
       {...rest}
     >
       <Text
-        className={`text-base font-bold leading-5 ${defaultTextColor} ${textClassName ?? ""}`}
+        className={`text-header-3 ${defaultTextColor} ${textClassName ?? ""}`}
       >
         {label}
       </Text>
