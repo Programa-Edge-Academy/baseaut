@@ -1,3 +1,5 @@
+import { colors } from "@/assets/colors";
+import { withOpacity } from "@/components/color-opacity";
 import React from "react";
 import { Pressable, Text } from "react-native";
 
@@ -24,14 +26,14 @@ export function ExerciseTag({
         height,
         borderRadius,
         paddingHorizontal: 15,
-        backgroundColor: isActive ? "#1A2836" : "#1B1F27",
-        borderColor: isActive ? "#0E89E5" : "#2B303B",
+        backgroundColor: isActive ? withOpacity(colors.primary, 0.1) : colors.level2,
+        borderColor: isActive ? colors.primary : colors.outline,
       }}
     >
       <Text
         className="text-center text-default-2 leading-5"
         style={{
-          color: isActive ? "#FFFFFF" : "#66758A",
+          color: isActive ? "#FFFFFF" : colors.muted,
         }}
       >
         {label}
