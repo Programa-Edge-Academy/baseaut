@@ -1,3 +1,4 @@
+import { colors } from "@/assets/colors";
 import React from "react";
 import { TextInput, TextInputProps } from "react-native";
 
@@ -19,7 +20,7 @@ export function DefaultTextInput({
     <TextInput
       multiline={multiline}
       {...rest}
-      placeholderTextColor="#465460"
+      placeholderTextColor={colors.placeholder}
       textAlignVertical={multiline ? "top" : "center"}
       className={`bg-level1 px-3.5 py-3 rounded-[10px] text-white text-default-2 text-left ${outLineClasses} ${className ?? ""}`}
     />

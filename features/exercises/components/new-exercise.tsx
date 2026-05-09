@@ -10,6 +10,7 @@ import {
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { TagProps } from "./exercise-tag";
 import { TagGroup } from "./tag-group";
+import { colors } from "@/assets/colors";
 
 export type NewExerciseProps = {
   visible?: boolean;
@@ -38,7 +39,7 @@ export function NewExercise({
     >
       <View className="flex-1 bg-black/50">
         <ScrollView
-          className="border bg-[#1B1F27] border-[#2B303B]"
+          className="border bg-level2 border-outline"
           style={{
             borderRadius,
             marginHorizontal: width * 0.02,
@@ -49,7 +50,7 @@ export function NewExercise({
             <View className="flex-row items-center justify-between">
               <Text className="text-header-2 text-white">Novo Exercício</Text>
               <Pressable onPress={onClose}>
-                <X color="#66758A" size={30} />
+                <X color={colors.muted} size={30} />
               </Pressable>
             </View>
             <View
@@ -57,27 +58,27 @@ export function NewExercise({
               style={{ gap: width * (65.95 / 412) }}
             >
               <View className="items-start gap-2">
-                <Text className="text-[#66758A] text-default-1">Foto</Text>
+                <Text className="text-muted text-default-1">Foto</Text>
                 <Pressable
                   onPress={handlePhotoPress}
-                  className="w-[100px] h-[100px] bg-[#272C35] items-center justify-center rounded-[15px]"
+                  className="w-[100px] h-[100px] bg-outline items-center justify-center rounded-[15px]"
                 >
-                  <ImageUp color="#66758A" size={50} />
+                  <ImageUp color={colors.muted} size={50} />
                 </Pressable>
               </View>
               <View className="items-start gap-2">
-                <Text className="text-[#66758A] text-default-1">Vídeos</Text>
+                <Text className="text-muted text-default-1">Vídeos</Text>
                 <Pressable
-                  onPress={handlePhotoPress}
-                  className="w-[100px] h-[100px] bg-[#272C35] items-center justify-center rounded-[15px]"
+                  onPress={handleVideoPress}
+                  className="w-[100px] h-[100px] bg-outline items-center justify-center rounded-[15px]"
                 >
-                  <FileVideo2Icon color="#66758A" size={50} />
+                  <FileVideo2Icon color={colors.muted} size={50} />
                 </Pressable>
               </View>
             </View>
             <View className="gap-[10px]">
               <View className="gap-[2px]">
-                <Text className="text-[#66758A] text-default-1">
+                <Text className="text-muted text-default-1">
                   Novo Exercício*
                 </Text>
                 <DefaultTextInput
@@ -86,14 +87,14 @@ export function NewExercise({
                 />
               </View>
               <View className="gap-[2px]">
-                <Text className="text-[#66758A] text-default-1">Descrição</Text>
+                <Text className="text-muted text-default-1">Descrição</Text>
                 <DefaultTextInput
                   placeholder="Descrição do exercício (opcional)"
                   className="h-[80px]"
                 />
               </View>
               <View className="gap-[2px]">
-                <Text className="text-[#66758A] text-default-1">
+                <Text className="text-muted text-default-1">
                   Duração máxima
                 </Text>
                 <DefaultTextInput
@@ -102,7 +103,7 @@ export function NewExercise({
                 />
               </View>
               <View className="gap-[2px]">
-                <Text className="text-[#66758A] text-default-1">Tags</Text>
+                <Text className="text-muted text-default-1">Tags</Text>
                 <TagGroup tags={tags} onAddTag={() => {}} />
               </View>
             </View>

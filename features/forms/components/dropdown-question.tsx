@@ -4,6 +4,7 @@ import { ChevronDown } from 'lucide-react-native';
 import { DropdownQuestion } from '../types';
 import { DropdownModal } from '../../../components/dropdown-modal';
 import { DefaultTextInput } from '../../../components/default-text-input';
+import { colors } from '@/assets/colors';
 
 interface Props {
   question: DropdownQuestion;
@@ -45,7 +46,7 @@ export function DropdownQuestionUI({ question }: Props) {
           <Text className={selected ? "text-white text-default-2" : "text-muted text-default-2"}>
             {selected || 'Selecione aqui'}
           </Text>
-          <ChevronDown color="#66758A" size={20} />
+          <ChevronDown color={colors.muted} size={20} />
         </Pressable>
       </View>
 

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Text, View } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { LinearScaleQuestion } from "../types";
+import { colors } from "@/assets/colors";
 
 interface Props {
   question: LinearScaleQuestion;
@@ -56,9 +57,9 @@ export function LinearScaleQuestionUI({ question }: Props) {
         step={1}
         value={selectedValue}
         onValueChange={handleSliderChange}
-        minimumTrackTintColor="#0E89E5"
-        maximumTrackTintColor="#2B303B"
-        thumbTintColor="#FFFFFF"
+        minimumTrackTintColor={colors.primary}
+        maximumTrackTintColor={colors.level2}
+        thumbTintColor={colors.primary}
       />
     </View>
   );

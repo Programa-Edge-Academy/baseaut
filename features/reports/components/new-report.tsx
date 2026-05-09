@@ -7,6 +7,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
+import { colors } from "@/assets/colors";
 
 type CheckboxItemProps = {
   label: string;
@@ -22,7 +23,7 @@ function CheckboxItem({ label, checked = false, onChange }: CheckboxItemProps) {
     >
       <View
         className={`w-5 h-5 rounded items-center justify-center ${
-          checked ? "bg-[#0E89E5]" : "bg-transparent border border-[#66758A]"
+          checked ? "bg-primary" : "bg-transparent border border-outline"
         }`}
       >
         {checked && <Check color="white" size={14} />}
@@ -56,7 +57,7 @@ export function NewReport({
     <Modal visible onRequestClose={onClose} transparent animationType="fade">
       <View className="flex-1 bg-black/50">
         <View
-          className="border bg-[#1B1F27] border-[#2B303B]"
+          className="border bg-level2 border-outline"
           style={{
             borderRadius,
             marginHorizontal: width * 0.02,
@@ -67,7 +68,7 @@ export function NewReport({
             <View className="flex-row items-center justify-between">
               <Text className="text-header-2 text-white">Novo Relatório</Text>
               <Pressable onPress={onClose}>
-                <X color="#66758A" size={30} />
+                <X color={colors.muted} size={30} />
               </Pressable>
             </View>
             <View className="flex-row items-center gap-[22px]">
@@ -75,17 +76,18 @@ export function NewReport({
                 placeholder="Nome do relatório"
                 className="flex-1"
               />
-              <Calendar color="#66758A" />
+              <Calendar color={colors.muted} />
             </View>
             <View className="gap-[2px]">
-              <Text className="text-[#66758A] text-default-1">Observação</Text>
+              <Text className="text-muted text-default-1">Observação</Text>
               <DefaultTextInput
+                multiline
                 placeholder="Observações e insights"
                 className="h-[80px]"
               />
             </View>
             <View className="gap-[2px]">
-              <Text className="text-[#66758A] text-default-1">
+              <Text className="text-muted text-default-1">
                 Campos exibidos no relatório
               </Text>
               <View className="gap-1">
