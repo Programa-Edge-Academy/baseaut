@@ -1,51 +1,81 @@
 import { DefaultButton } from "@/components/default-button";
 import { useRouter } from "expo-router";
-import { AlertCircle } from "lucide-react-native";
 import React, { useState } from "react";
 import { Alert, Text, View } from "react-native";
 import { SvgXml } from "react-native-svg";
+import { passwordChecker } from "@/features/auth/hooks/password-checker";
 
 import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { PasswordInput } from "@/features/auth/components/password-input";
 
-const weakPasswordMessage =
-  "Senha fraca. Use de 8 a 20 caracteres,\n" +
-  "incluindo letras, numeros e 1 caractere especial.";
-
-const isStrongPassword = (value: string) => {
-  if (value.length < 8 || value.length > 20) return false;
-  if (!/[A-Z]/.test(value)) return false;
-  if (!/[a-z]/.test(value)) return false;
-  if (!/[0-9]/.test(value)) return false;
-  if (!/[^A-Za-z0-9]/.test(value)) return false;
-  return true;
-};
+const invalidPasswordMessage = "A senha deve ter entre 8 e 20 caracteres, maiúscula, minúscula, número ou especial";
 
 export function ResetPasswordScreen() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [weakPassword, setWeakPassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleConfirmPassword = () => {
-    const isWeak = !isStrongPassword(password);
-    setWeakPassword(isWeak);
-
-    if (isWeak) {
-      setError(weakPasswordMessage);
-      return;
+  const handlePasswordChange = (text: string) => {
+    const newErrors: Record<string, string> = { ...errors };
+    
+    if (!passwordChecker(text)) {
+      newErrors.password = invalidPasswordMessage;
+    } else {
+      delete newErrors.password; 
     }
 
-    if (password !== confirmPassword) {
-      setError("As senhas nao coincidem.");
-      return;
+    if (confirmPassword && text !== confirmPassword) {
+      newErrors.confirmPassword = "As senhas não coincidem";
+    } else if (confirmPassword && text === confirmPassword) {
+      delete newErrors.confirmPassword;
     }
 
-    setError(null);
+    setPassword(text);
+    setErrors(newErrors);
+  };
+
+  const handleConfirmPasswordChange = (text: string) => {
+    const newErrors: Record<string, string> = { ...errors };
+
+    if (password !== text) {
+      newErrors.confirmPassword = "As senhas não coincidem";
+    } else {
+      delete newErrors.confirmPassword;
+    }
+
+    setConfirmPassword(text);
+    setErrors(newErrors);
+  };
+
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!password.trim()) {
+      newErrors.password = "Senha é obrigatória";
+    } else if (!passwordChecker(password)) {
+      newErrors.password = invalidPasswordMessage;
+    }
+
+    if (!confirmPassword.trim()) {
+      newErrors.confirmPassword = "Confirmação de senha é obrigatória";
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = "As senhas não coincidem";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleResetPassword = () => {
+    if (!validate()) return;
+
     Alert.alert("Sucesso", "Senha redefinida com sucesso.");
     router.replace("/" as never);
   };
+
+  // Variável que checa se o botão deve estar desabilitado
+  const isButtonDisabled = !password || !confirmPassword;
 
   return (
     <View className="flex-1 items-center bg-level1 px-4 pt-10">
@@ -59,38 +89,46 @@ export function ResetPasswordScreen() {
             Redefina sua senha
           </Text>
 
-          <View className="w-full max-w-[342px] gap-7">
-            <PasswordInput
-              placeholder="Digite sua nova senha"
-              value={password}
-              onChangeText={setPassword}
-              className={weakPassword ? "border-error" : ""}
-            />
-
-            <PasswordInput
-              placeholder="Confirme sua nova senha"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-            />
-          </View>
-
-          {error ? (
-            <View className="mt-4 w-full max-w-[342px] flex-row items-center gap-3 rounded-[11px] bg-error/20 px-3 py-3">
-              <View className="h-8 w-8 items-center justify-center rounded-full bg-error/20">
-                <AlertCircle size={18} color="#FF383C" />
-              </View>
-              <Text className="flex-1 text-[11px] leading-5 text-error">
-                {error}
-              </Text>
+          <View className="w-full max-w-[342px] gap-4">
+            
+            <View className="gap-1">
+              <PasswordInput
+                placeholder="Digite sua nova senha"
+                value={password}
+                onChangeText={handlePasswordChange}
+                className={`h-11 w-full rounded-[15px] ${errors.password ? "border-error" : ""}`}
+              />
+              {errors.password && (
+                <Text className="text-xs text-red-400">{errors.password}</Text>
+              )}
             </View>
-          ) : null}
+
+            <View className="gap-1">
+              <PasswordInput
+                placeholder="Confirme sua nova senha"
+                value={confirmPassword}
+                onChangeText={handleConfirmPasswordChange}
+                className={`h-11 w-full rounded-[15px] ${errors.confirmPassword ? "border-error" : ""}`}
+              />
+              {errors.confirmPassword && (
+                <Text className="text-xs text-red-400">
+                  {errors.confirmPassword}
+                </Text>
+              )}
+            </View>
+
+          </View>
 
           <View className="mt-7 w-full max-w-[342px] items-center">
             <DefaultButton
               label="Confirmar senha"
-              onPress={handleConfirmPassword}
+              onPress={handleResetPassword}
               sizeClass="w-full h-11"
-              className="rounded-[15px]"
+              disabled={isButtonDisabled}
+              // Aqui injetamos as cores dinamicamente dependendo do estado isButtonDisabled
+              bgColorClass={isButtonDisabled ? "bg-muted" : "bg-primary"}
+              shadowClass={isButtonDisabled ? "shadow-none" : "shadow-primaryShadow"}
+              className={`rounded-[15px] ${isButtonDisabled ? "border border-outline" : ""}`}
             />
           </View>
         </View>
