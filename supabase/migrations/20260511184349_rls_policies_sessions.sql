@@ -330,14 +330,6 @@ CREATE POLICY "respostas: insert session owner"
         AND s.monitor_id = auth.uid()
         AND public.can_access_team(a.equipe_id)
         AND f.equipe_id = a.equipe_id
-        AND s.circuito_id IS NOT NULL
-        AND EXISTS (
-          SELECT 1
-          FROM public.circuitos c
-          WHERE c.id = s.circuito_id
-            AND c.formulario_id = f.id
-            AND c.equipe_id = a.equipe_id
-        )
     )
   );
 
@@ -365,20 +357,13 @@ CREATE POLICY "respostas: update session owner"
         AND s.monitor_id = auth.uid()
         AND public.can_access_team(a.equipe_id)
         AND f.equipe_id = a.equipe_id
-        AND s.circuito_id IS NOT NULL
-        AND EXISTS (
-          SELECT 1
-          FROM public.circuitos c
-          WHERE c.id = s.circuito_id
-            AND c.formulario_id = f.id
-            AND c.equipe_id = a.equipe_id
-        )
     )
   );
 
--- Justificativa: respostas pertencem à sessão. O formulário/pergunta precisa
--- pertencer ao formulário acoplado ao circuito da sessão e à mesma equipe do
--- aluno, evitando respostas para formulários de outra equipe ou outro circuito.
+-- Justificativa: respostas pertencem à sessão. A pergunta precisa pertencer
+-- a um formulário da mesma equipe do aluno da sessão, evitando respostas para
+-- formulários de outra equipe.
 --
--- A escrita fica restrita ao responsável operacional da sessão, permitindo
--- Monitor ou Coordenador quando estiverem conduzindo a sessão.
+-- Observação: no schema atual, circuitos não possui formulario_id. Por isso,
+-- a RLS não valida vínculo direto entre circuito e formulário; valida apenas
+-- sessão → aluno/equipe e pergunta → formulário/equipe.

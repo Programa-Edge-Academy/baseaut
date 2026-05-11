@@ -69,9 +69,15 @@ CREATE POLICY "exercicios: write team"
 -- outro membro da equipe edite conteúdo operacional compartilhado.
 
 -- ================================================================
--- 13. CIRCUITOS
--- Regra: membros ativos/coordenador da equipe podem ver e gerenciar.
--- Permissão do Roadmap: circuito:gerenciar concedida ao Monitor.
+-- CIRCUITOS
+-- Regra:
+--   SELECT → membros/coordenador da equipe do circuito.
+--   INSERT/UPDATE → membros/coordenador da equipe do circuito.
+--   DELETE → permitido apenas se passar pela policy e não houver bloqueio por FK.
+--
+-- Observação:
+--   No schema atual, public.circuitos não possui formulario_id.
+--   Portanto, a RLS valida apenas o isolamento por equipe.
 -- ================================================================
 
 CREATE POLICY "circuitos: select team"
@@ -85,21 +91,11 @@ CREATE POLICY "circuitos: write team"
   USING (public.can_access_team(equipe_id))
   WITH CHECK (
     public.can_access_team(equipe_id)
-    AND (
-      formulario_id IS NULL
-      OR formulario_id IN (
-        SELECT f.id
-        FROM public.formularios f
-        WHERE f.equipe_id = circuitos.equipe_id
-          AND public.can_access_team(f.equipe_id)
-      )
-    )
   );
 
--- Alteração: além de validar a equipe do circuito, valida que o formulario_id
--- opcional pertence à mesma equipe. Isso evita circuito de uma equipe apontar
--- para formulário de outra.
-
+-- Justificativa: circuitos pertencem a uma equipe. Como o schema atual
+-- não possui formulario_id em public.circuitos, a policy não valida vínculo
+-- direto entre circuito e formulário.
 
 -- ================================================================
 -- 14. ITENS_CIRCUITO

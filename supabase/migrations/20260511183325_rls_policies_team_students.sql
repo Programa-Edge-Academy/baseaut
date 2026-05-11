@@ -85,7 +85,6 @@ CREATE POLICY "alunos: insert coordinator"
   WITH CHECK (
     public.is_coordinator()
     AND public.is_team_coordinator(equipe_id)
-    AND created_by = auth.uid()
   );
 
 CREATE POLICY "alunos: update coordinator"
@@ -111,6 +110,22 @@ CREATE POLICY "alunos: update coordinator"
 --   UPDATE → membros ativos/coordenador da equipe do aluno.
 --   DELETE → sem policy; histórico clínico deve ser preservado.
 --
+-- Justificativa:
+--   Avaliações MABC são dados clínicos vinculados ao aluno, porém,
+--   pela regra de negócio atual, monitores também participam das
+--   avaliações e precisam registrar/editar esses dados.
+--
+--   Como a tabela avaliacoes do schema atual não possui coluna created_by,
+--   a autoria não é validada por RLS nesta policy.
+--
+--   A restrição de segurança fica baseada no aluno avaliado:
+--   o usuário só pode registrar/editar avaliação se tiver acesso ativo
+--   à equipe do aluno.
+--
+--   O UPDATE valida:
+--     1. a linha atual, via USING;
+--     2. o novo estado da linha, via WITH CHECK.
+--
 --   Não há policy de DELETE para preservar o histórico clínico.
 -- ================================================================
 
@@ -129,8 +144,7 @@ CREATE POLICY "avaliacoes: insert team member"
   ON public.avaliacoes
   FOR INSERT
   WITH CHECK (
-    created_by = auth.uid()
-    AND aluno_id IN (
+    aluno_id IN (
       SELECT a.id
       FROM public.alunos a
       WHERE public.can_access_team(a.equipe_id)
@@ -154,15 +168,3 @@ CREATE POLICY "avaliacoes: update team member"
       WHERE public.can_access_team(a.equipe_id)
     )
   );
-
--- Justificativa:
---   Avaliações MABC são dados clínicos vinculados ao aluno, porém,
---   pela regra de negócio atual, monitores também participam das
---   avaliações e precisam registrar/editar esses dados.
---
---   O INSERT exige created_by = auth.uid() para impedir que um usuário
---   registre avaliação em nome de outro usuário.
---
---   O UPDATE valida:
---     1. a linha atual, via USING;
---     2. o novo estado da linha, via WITH CHECK.
