@@ -11,6 +11,7 @@ import { DefaultTextInput } from "../../../components/default-text-input";
 import { TagProps } from "./exercise-tag";
 import { TagGroup } from "./tag-group";
 import { colors } from "@/assets/colors";
+import { ActionButtons } from "@/components/action-buttons";
 
 export type NewExerciseProps = {
   visible?: boolean;
@@ -48,7 +49,7 @@ export function NewExercise({
         >
           <View className="p-[25px] gap-[25px]">
             <View className="flex-row items-center justify-between">
-              <Text className="text-header-2 text-white">Novo Exercício</Text>
+              <Text className="text-header-2 text-white">Novo exercício</Text>
               <Pressable onPress={onClose}>
                 <X color={colors.muted} size={30} />
               </Pressable>
@@ -58,7 +59,6 @@ export function NewExercise({
               style={{ gap: width * (65.95 / 412) }}
             >
               <View className="items-start gap-2">
-                <Text className="text-muted text-default-1">Foto</Text>
                 <Pressable
                   onPress={handlePhotoPress}
                   className="w-[100px] h-[100px] bg-outline items-center justify-center rounded-[15px]"
@@ -67,7 +67,6 @@ export function NewExercise({
                 </Pressable>
               </View>
               <View className="items-start gap-2">
-                <Text className="text-muted text-default-1">Vídeos</Text>
                 <Pressable
                   onPress={handleVideoPress}
                   className="w-[100px] h-[100px] bg-outline items-center justify-center rounded-[15px]"
@@ -79,7 +78,7 @@ export function NewExercise({
             <View className="gap-[10px]">
               <View className="gap-[2px]">
                 <Text className="text-muted text-default-1">
-                  Novo Exercício*
+                  Nome do exercício*
                 </Text>
                 <DefaultTextInput
                   placeholder="Nome do exercício"
@@ -89,6 +88,7 @@ export function NewExercise({
               <View className="gap-[2px]">
                 <Text className="text-muted text-default-1">Descrição</Text>
                 <DefaultTextInput
+                  multiline
                   placeholder="Descrição do exercício (opcional)"
                   className="h-[80px]"
                 />
@@ -105,6 +105,12 @@ export function NewExercise({
               <View className="gap-[2px]">
                 <Text className="text-muted text-default-1">Tags</Text>
                 <TagGroup tags={tags} onAddTag={() => {}} />
+              </View>
+              <View className="gap-[2px]">
+                <ActionButtons
+                  onCancel={onClose}
+                  onSave={() => {}}
+                />
               </View>
             </View>
           </View>
