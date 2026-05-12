@@ -1,7 +1,7 @@
 import { Trash2, X } from "lucide-react-native";
 import React from "react";
 import { Modal, Pressable, Text, View } from "react-native";
-
+import { withOpacity } from "@/components/color-opacity";
 import { colors } from "../assets/colors";
 import { DefaultButton } from "./default-button";
 
@@ -32,10 +32,7 @@ export function ConfirmationModal({
       onRequestClose={onClose}
     >
       <Pressable
-        className="flex-1 items-center justify-center"
-        style={{
-          backgroundColor: `${colors.level1}90`,
-        }}
+        className="flex-1 items-center justify-center bg-black/50"
         onPress={onClose}
       >
         <Pressable
@@ -72,7 +69,7 @@ export function ConfirmationModal({
 
           {/* Message */}
           <Text className="text-muted text-base font-medium leading-5">
-            {message}
+            {message ? message : "Esta ação não pode ser desfeita."}
           </Text>
 
           {/* Actions */}
@@ -80,7 +77,8 @@ export function ConfirmationModal({
 
             <DefaultButton
               label={cancelLabel}
-              bgColorClass="bg-transparent"
+              bgColorClass="bg-level2"
+              hasShadow={false}
               isOutline
               outlineBorderClass="border-outline"
               textClassName="text-muted"
@@ -90,8 +88,9 @@ export function ConfirmationModal({
 
             <DefaultButton
               label={confirmLabel}
+              textClassName="text-white"
               bgColorClass="bg-error"
-              shadowClass=""
+              shadowClass="shadow-errorShadow"
               sizeClass="w-40 h-11"
               onPress={onConfirm}
             />
