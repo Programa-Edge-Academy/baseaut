@@ -5,6 +5,7 @@ import { RipplePressable } from "./ripple-pressable";
 type DefaultButtonProps = Omit<PressableProps, 'children'> & {
   label: string;
   bgColorClass?: string;       
+  hasShadow?: boolean;
   shadowClass?: string;        
   isOutline?: boolean;         
   sizeClass?: string;          
@@ -16,6 +17,7 @@ type DefaultButtonProps = Omit<PressableProps, 'children'> & {
 export function DefaultButton({
   label,
   bgColorClass = "bg-primary",
+  hasShadow = true,
   shadowClass = "shadow-primaryShadow",
   isOutline = false,
   sizeClass = "w-40 h-11", 
@@ -27,12 +29,10 @@ export function DefaultButton({
 }: DefaultButtonProps) { 
   
   const baseClasses = "items-center justify-center rounded-2xl flex-row";
-  const outlineClasses = isOutline ? `border-2 bg-transparent ${outlineBorderClass}` : bgColorClass;
-  const appliedShadow = !isOutline && shadowClass ? shadowClass : "";
-
+  const outlineClasses = isOutline ? `border-2 ${outlineBorderClass} ${bgColorClass}` : bgColorClass;
+  const appliedShadow = hasShadow && shadowClass ? shadowClass : "";
   const defaultTextColor = isOutline ? "text-primary" : "text-white";
-  
-  const finalRippleColor = rippleColor || (isOutline ? "rgba(14, 137, 229, 0.2)" : "rgba(255, 255, 255, 0.3)");
+  const finalRippleColor = rippleColor ? rippleColor : "rgba(255, 255, 255, 0.2)";
 
   return (
     <RipplePressable
@@ -41,7 +41,7 @@ export function DefaultButton({
       {...rest}
     >
       <Text
-        className={`text-header-3 ${defaultTextColor} ${textClassName ?? ""}`}
+        className={`text-header-3 ${textClassName ? textClassName : defaultTextColor}`}
       >
         {label}
       </Text>
