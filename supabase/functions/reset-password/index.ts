@@ -1,16 +1,16 @@
 /**
- * Edge Function: verify-recovery-code
+ * Edge Function: reset-password
  *
  * Responsabilidade:
- * - Validar o código de recuperação.
- * - Marcar a solicitação como validada.
- *
- * Não redefine senha aqui.
+ * - Receber email, code e new_password.
+ * - Confirmar que existe uma solicitação validada.
+ * - Revalidar o código.
+ * - Atualizar a senha do usuário.
+ * - Deletar a solicitação usada para impedir reutilização.
  *
  * Opção A:
- * - validada=false significa código ainda não validado.
- * - validada=true significa código validado com sucesso.
- * - Código expirado é deletado.
+ * - Não usa campo usada_em.
+ * - Depois do reset bem-sucedido, deleta a solicitação.
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -54,6 +54,16 @@ function timingSafeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+function isStrongPassword(password: string): boolean {
+  if (password.length < 8 || password.length > 20) return false;
+  if (!/[A-Z]/.test(password)) return false;
+  if (!/[a-z]/.test(password)) return false;
+  if (!/[0-9]/.test(password)) return false;
+  if (!/[^A-Za-z0-9]/.test(password)) return false;
+
+  return true;
+}
+
 Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -68,6 +78,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   let email = "";
   let code = "";
+  let newPassword = "";
 
   try {
     const body = await req.json();
@@ -77,27 +88,37 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .toLowerCase();
 
     code = String(body.code ?? "").trim();
+    newPassword = String(body.new_password ?? "");
   } catch {
     return json({ error: "Body JSON inválido." }, 400);
   }
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return json({ error: "E-mail inválido." }, 400);
-  }
-
-  if (!code) {
-    return json({ error: "Campo obrigatório." }, 400);
+    return json(
+      { error: "Sessão de recuperação expirada. Solicite um novo código." },
+      400,
+    );
   }
 
   if (!/^\d{6}$/.test(code)) {
-    return json({ error: "O código deve conter 6 dígitos." }, 400);
+    return json(
+      { error: "Sessão de recuperação expirada. Solicite um novo código." },
+      400,
+    );
+  }
+
+  if (!isStrongPassword(newPassword)) {
+    return json(
+      { error: "A senha não atende aos requisitos de segurança." },
+      400,
+    );
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !serviceRoleKey) {
-    console.error("[verify-recovery-code] Variáveis de ambiente ausentes.");
+    console.error("[reset-password] Variáveis de ambiente ausentes.");
     return json({ error: "Erro interno do servidor." }, 500);
   }
 
@@ -114,12 +135,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
     .maybeSingle();
 
   if (profileError) {
-    console.error("[verify-recovery-code] Erro ao buscar profile:", profileError);
+    console.error("[reset-password] Erro ao buscar profile:", profileError);
     return json({ error: "Erro interno do servidor." }, 500);
   }
 
   if (!profile) {
-    return json({ error: "Código inválido." }, 400);
+    return json(
+      { error: "Sessão de recuperação expirada. Solicite um novo código." },
+      400,
+    );
   }
 
   if (profile.status_conta === "bloqueada") {
@@ -131,21 +155,24 @@ Deno.serve(async (req: Request): Promise<Response> => {
     .select("id, codigo_hash, expira_em")
     .eq("usuario_id", profile.id)
     .eq("canal", "email")
-    .eq("validada", false)
+    .eq("validada", true)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
   if (solicitacaoError) {
     console.error(
-      "[verify-recovery-code] Erro ao buscar solicitação:",
+      "[reset-password] Erro ao buscar solicitação validada:",
       solicitacaoError,
     );
     return json({ error: "Erro interno do servidor." }, 500);
   }
 
   if (!solicitacao) {
-    return json({ error: "Código inválido." }, 400);
+    return json(
+      { error: "Sessão de recuperação expirada. Solicite um novo código." },
+      400,
+    );
   }
 
   const now = new Date();
@@ -158,32 +185,58 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .eq("id", solicitacao.id);
 
     return json(
-      { error: "Código expirado. Solicite um novo código." },
+      { error: "Sessão de recuperação expirada. Solicite um novo código." },
       400,
     );
   }
 
   const receivedHash = await hashCode(code);
-  const isValid = timingSafeEqual(receivedHash, solicitacao.codigo_hash);
+  const isValidCode = timingSafeEqual(receivedHash, solicitacao.codigo_hash);
 
-  if (!isValid) {
-    return json({ error: "Código inválido." }, 400);
+  if (!isValidCode) {
+    return json(
+      { error: "Sessão de recuperação expirada. Solicite um novo código." },
+      400,
+    );
   }
 
-  const { error: updateError } = await supabase
+  const { error: updatePasswordError } =
+    await supabase.auth.admin.updateUserById(profile.id, {
+      password: newPassword,
+    });
+
+  if (updatePasswordError) {
+    console.error(
+      "[reset-password] Erro ao atualizar senha:",
+      updatePasswordError,
+    );
+    return json({ error: "Erro ao atualizar senha. Tente novamente." }, 500);
+  }
+
+  /**
+   * Opção A:
+   * Depois de usar o código para redefinir senha, deletamos a solicitação.
+   * Isso impede reutilização do mesmo código.
+   */
+  const { error: deleteUsedError } = await supabase
     .from("solicitacoes_recuperacao")
-    .update({ validada: true })
+    .delete()
     .eq("id", solicitacao.id);
 
-  if (updateError) {
+  if (deleteUsedError) {
     console.error(
-      "[verify-recovery-code] Erro ao marcar solicitação como validada:",
-      updateError,
+      "[reset-password] Senha alterada, mas falhou ao deletar solicitação:",
+      deleteUsedError,
     );
-    return json({ error: "Erro interno do servidor." }, 500);
+
+    /**
+     * A senha já foi alterada.
+     * Ainda assim retornamos sucesso para não confundir o usuário.
+     * O log acima deve ser monitorado.
+     */
   }
 
   return json({
-    message: "Código validado com sucesso.",
+    message: "Senha redefinida com sucesso.",
   });
 });

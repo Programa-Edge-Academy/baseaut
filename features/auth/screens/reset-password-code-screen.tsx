@@ -1,62 +1,193 @@
+import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { DefaultButton } from "@/components/default-button";
 import { DefaultTextInput } from "@/components/default-text-input";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
-import { baseautLogoXml } from "@/assets/baseaut-logo";
-import { supabase } from "@/lib/supabase";
+const SUPABASE_URL = (process.env.EXPO_PUBLIC_SUPABASE_URL ?? "").replace(
+  /\/$/,
+  "",
+);
+
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "";
+
+async function readJsonSafely(response: Response) {
+  try {
+    return await response.json();
+  } catch {
+    return {};
+  }
+}
+
+function sanitizeCode(value: string) {
+  return value.replace(/\D/g, "").slice(0, 6);
+}
 
 export function ResetPasswordCodeScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [emailError, setEmailError] = useState<string>("");
+  const params = useLocalSearchParams<{ email?: string }>();
 
-  const handleResetPasswordCode = async () => {
+  const initialEmail = String(params.email ?? "")
+    .trim()
+    .toLowerCase();
+
+  const [email, setEmail] = useState(initialEmail);
+  const [code, setCode] = useState("");
+
+  const [sendingCode, setSendingCode] = useState(false);
+  const [validatingCode, setValidatingCode] = useState(false);
+  const [codeSent, setCodeSent] = useState(Boolean(initialEmail));
+
+  const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState("");
+  const [codeError, setCodeError] = useState("");
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const canValidateCode =
+    code.length === 6 && !sendingCode && !validatingCode;
+
+  const handleCodeChange = (value: string) => {
+    setCode(sanitizeCode(value));
+    setCodeError("");
+    setError(null);
+  };
+
+  const handleSendCode = async () => {
     setError(null);
     setEmailError("");
+    setCodeError("");
 
-    if (!email.trim()) {
+    if (!normalizedEmail) {
       setEmailError("Email é obrigatório");
       return;
     }
 
-    setLoading(true);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setEmailError("E-mail inválido.");
+      return;
+    }
+
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      setError("Configuração do Supabase ausente.");
+      return;
+    }
+
+    setSendingCode(true);
 
     try {
-      const { error: recoverError } = await supabase.auth.resetPasswordForEmail(
-        email,
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/send-recovery-code`,
         {
-          // Supabase JS expects redirectTo at top-level for this method
-          redirectTo: "baseaut://reset-password",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email: normalizedEmail,
+          }),
         },
       );
 
-      if (recoverError) {
-        setError(recoverError.message);
-        Alert.alert("Erro ao recuperar senha", recoverError.message);
+      const data = await readJsonSafely(response);
+
+      if (!response.ok) {
+        setError(data.error ?? "Erro ao enviar código.");
         return;
       }
 
-      Alert.alert(
-        "Sucesso",
-        "Se esse email estiver cadastrado, você receberá um link para redefinir sua senha.",
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro desconhecido";
-      setError(message);
-      Alert.alert("Erro", message);
+      setCode("");
+      setCodeSent(true);
+
+      Alert.alert("Sucesso", "Novo código enviado.");
+    } catch {
+      setError("Erro de conexão. Verifique sua internet.");
     } finally {
-      setLoading(false);
+      setSendingCode(false);
     }
   };
 
-  const handleConfirmCode = () => {
-    router.push("/reset-password" as never);
+  const handleConfirmCode = async () => {
+    setError(null);
+    setEmailError("");
+    setCodeError("");
+
+    if (!normalizedEmail) {
+      setEmailError("Email é obrigatório");
+      return;
+    }
+
+    if (!code.trim()) {
+      setCodeError("Campo obrigatório.");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(code)) {
+      setCodeError("O código deve conter 6 dígitos.");
+      return;
+    }
+
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      setError("Configuração do Supabase ausente.");
+      return;
+    }
+
+    setValidatingCode(true);
+
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/verify-recovery-code`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email: normalizedEmail,
+            code,
+          }),
+        },
+      );
+
+      const data = await readJsonSafely(response);
+
+      if (!response.ok) {
+        const message = data.error ?? "Código inválido.";
+
+        if (message === "Campo obrigatório.") {
+          setCodeError("Campo obrigatório.");
+          return;
+        }
+
+        if (message === "O código deve conter 6 dígitos.") {
+          setCodeError("O código deve conter 6 dígitos.");
+          return;
+        }
+
+        setError(message);
+        return;
+      }
+
+      Alert.alert("Sucesso", "Código validado com sucesso.");
+
+      router.push({
+        pathname: "/reset-password",
+        params: {
+          email: normalizedEmail,
+          code,
+        },
+      } as never);
+    } catch {
+      setError("Erro de conexão. Verifique sua internet.");
+    } finally {
+      setValidatingCode(false);
+    }
   };
 
   return (
@@ -67,53 +198,82 @@ export function ResetPasswordCodeScreen() {
 
       <View className="mt-10 w-full items-center">
         <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-6 shadow-panelShadow outline outline-1 outline-offset-[-1px] outline-outline">
-          <Text className="mb-5 text-default-1 text-muted">
-            Redefina sua senha
+          <Text className="mb-2 text-default-1 text-muted">
+            Valide seu código
           </Text>
 
-          <View className="w-full max-w-[342px] gap-7">
+          <Text className="mb-5 text-center text-default-2 text-muted">
+            O código foi enviado para o e-mail cadastrado.
+          </Text>
+
+          <View className="w-full max-w-[342px] gap-5">
             <View className="w-full">
               <DefaultTextInput
                 placeholder="Email"
                 className="h-11 w-full rounded-[15px]"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(value) => {
+                  setEmail(value);
+                  setEmailError("");
+                  setError(null);
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
               />
+
               {emailError ? (
-                <Text className="mt-1 text-sm text-red-400">{emailError}</Text>
+                <Text className="mt-1 text-sm text-red-400">
+                  {emailError}
+                </Text>
               ) : null}
             </View>
 
-            <View className="w-full flex-row items-center gap-3">
+            <View className="w-full">
               <DefaultTextInput
                 placeholder="Código de 6 dígitos"
-                className="h-11 flex-1 rounded-[15px] w-[140px]"
+                className="h-11 w-full rounded-[15px]"
                 value={code}
-                onChangeText={setCode}
+                onChangeText={handleCodeChange}
                 keyboardType="number-pad"
+                maxLength={6}
               />
-              <DefaultButton
-                label={loading ? "Enviando..." : "Enviar código"}
-                onPress={handleResetPasswordCode}
-                bgColorClass="bg-secondary"
-                shadowClass="shadow-secondaryShadow"
-                sizeClass="h-11 w-[140px]"
-                className="rounded-[15px]"
-                disabled={loading}
-              />
+
+              {codeError ? (
+                <Text className="mt-1 text-sm text-red-400">
+                  {codeError}
+                </Text>
+              ) : null}
             </View>
           </View>
 
-          {error ? <Text className="mt-3 text-red-400">{error}</Text> : null}
+          {error ? (
+            <Text className="mt-3 text-center text-red-400">{error}</Text>
+          ) : null}
 
-          <View className="mt-7 w-full max-w-[342px] items-center">
+          <View className="mt-7 w-full max-w-[342px] items-center gap-3">
             <DefaultButton
-              label="Confirmar código"
+              label={validatingCode ? "Validando..." : "Validar código"}
               onPress={handleConfirmCode}
               sizeClass="w-full h-11"
               className="rounded-[15px]"
+              disabled={!canValidateCode}
+            />
+
+            <DefaultButton
+              label={
+                sendingCode
+                  ? "Enviando..."
+                  : codeSent
+                    ? "Reenviar código"
+                    : "Enviar código"
+              }
+              onPress={handleSendCode}
+              bgColorClass="bg-secondary"
+              shadowClass="shadow-secondaryShadow"
+              sizeClass="w-full h-11"
+              className="rounded-[15px]"
+              disabled={sendingCode || validatingCode}
             />
           </View>
 
