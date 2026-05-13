@@ -7,6 +7,7 @@ import { passwordChecker } from "@/features/auth/hooks/password-checker";
 
 import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { PasswordInput } from "@/features/auth/components/password-input";
+import { supabase } from "@/lib/supabase";
 
 const invalidPasswordMessage = "A senha deve ter entre 8 e 20 caracteres, maiúscula, minúscula, número ou especial";
 
@@ -15,6 +16,7 @@ export function ResetPasswordScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
 
   const handlePasswordChange = (text: string) => {
     const newErrors: Record<string, string> = { ...errors };
@@ -67,14 +69,30 @@ export function ResetPasswordScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     if (!validate()) return;
 
-    Alert.alert("Sucesso", "Senha redefinida com sucesso.");
-    router.replace("/" as never);
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: password,
+      });
+
+      if (error) throw error;
+
+      Alert.alert("Sucesso", "Senha redefinida com sucesso.");
+      
+      router.replace("/" as never); 
+      
+    } catch (error: any) {
+      Alert.alert("Erro", error.message || "Ocorreu um erro ao redefinir a senha.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const isButtonDisabled = !password || !confirmPassword;
+  const isButtonDisabled = !password || !confirmPassword || loading;
 
   return (
     <View className="flex-1 items-center bg-level1 px-4 pt-10">
@@ -120,7 +138,7 @@ export function ResetPasswordScreen() {
 
           <View className="mt-7 w-full max-w-[342px] items-center">
             <DefaultButton
-              label="Confirmar senha"
+              label={loading ? "Salvando..." : "Confirmar senha"}
               onPress={handleResetPassword}
               sizeClass="w-full h-11"
               disabled={isButtonDisabled}
