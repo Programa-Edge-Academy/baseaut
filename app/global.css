@@ -1,3 +1,57 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .text-header-1 {
+    @apply text-2xl font-bold leading-6;
+    font-family: 'Inter-Bold';
+  }
+  .text-header-2 {
+    @apply text-xl font-bold leading-5;
+    font-family: 'Inter-Bold';
+  }
+  .text-header-3 {
+    @apply text-base font-bold leading-4;
+    font-family: 'Inter-Bold';
+  }
+
+  .text-default-1 {
+    @apply text-base font-medium leading-4;
+    font-family: 'Inter-Medium';
+  }
+  .text-default-2 {
+    @apply text-sm font-medium leading-4;
+    font-family: 'Inter-Medium';
+  }
+  .text-default-3 {
+    @apply text-xs font-medium leading-3;
+    font-family: 'Inter-Medium';
+  }
+  
+  .shadow-base {
+    @apply shadow-lg shadow-[0px_0px_15px_-0px];
+  }
+  .shadow-primaryShadow { @apply shadow-base shadow-primary/50; }
+  .shadow-secondaryShadow { @apply shadow-base shadow-secondary/50; }
+  .shadow-errorShadow { @apply shadow-base shadow-error/50; }
+  .shadow-panelShadow { @apply shadow-base shadow-black/50; }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #2B303B;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #465460;
+}

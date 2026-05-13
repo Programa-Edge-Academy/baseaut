@@ -1,0 +1,125 @@
+import { FileVideo2Icon, ImageUp, X } from "lucide-react-native";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { DefaultTextInput } from "../../../components/default-text-input";
+import { TagProps } from "./exercise-tag";
+import { TagGroup } from "./tag-group";
+import { colors } from "@/assets/colors";
+import { ActionButtons } from "@/components/action-buttons";
+
+export type NewExerciseProps = {
+  visible?: boolean;
+  borderRadius?: number;
+  onClose: () => void;
+  tags?: TagProps[];
+  handlePhotoPress: () => void;
+  handleVideoPress: () => void;
+};
+
+export function NewExercise({
+  visible = true,
+  onClose,
+  borderRadius = 15,
+  tags = [
+    { label: "Coordenação" },
+    { label: "Força" },
+    { label: "Equilíbrio" },
+  ],
+  handlePhotoPress,
+  handleVideoPress,
+}: NewExerciseProps) {
+  const { width, height } = useWindowDimensions();
+  return (
+    <Modal
+      visible={visible}
+      onRequestClose={onClose}
+      transparent
+      animationType="fade"
+    >
+      <View className="flex-1 bg-black/50">
+        <ScrollView
+          className="border bg-level2 border-outline"
+          style={{
+            borderRadius,
+            marginHorizontal: width * 0.02,
+            marginVertical: height * 0.11,
+          }}
+        >
+          <View className="p-[25px] gap-[25px]">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-header-2 text-white">Novo exercício</Text>
+              <Pressable onPress={onClose}>
+                <X color={colors.muted} size={30} />
+              </Pressable>
+            </View>
+            <View
+              className="flex-row justify-center"
+              style={{ gap: width * (65.95 / 412) }}
+            >
+              <View className="items-start gap-2">
+                <Pressable
+                  onPress={handlePhotoPress}
+                  className="w-[100px] h-[100px] bg-outline items-center justify-center rounded-[15px]"
+                >
+                  <ImageUp color={colors.muted} size={50} />
+                </Pressable>
+              </View>
+              <View className="items-start gap-2">
+                <Pressable
+                  onPress={handleVideoPress}
+                  className="w-[100px] h-[100px] bg-outline items-center justify-center rounded-[15px]"
+                >
+                  <FileVideo2Icon color={colors.muted} size={50} />
+                </Pressable>
+              </View>
+            </View>
+            <View className="gap-[10px]">
+              <View className="gap-[2px]">
+                <Text className="text-muted text-default-1">
+                  Nome do exercício*
+                </Text>
+                <DefaultTextInput
+                  placeholder="Nome do exercício"
+                  className="h-[44px]"
+                />
+              </View>
+              <View className="gap-[2px]">
+                <Text className="text-muted text-default-1">Descrição</Text>
+                <DefaultTextInput
+                  multiline
+                  placeholder="Descrição do exercício (opcional)"
+                  className="h-[80px]"
+                />
+              </View>
+              <View className="gap-[2px]">
+                <Text className="text-muted text-default-1">
+                  Duração máxima
+                </Text>
+                <DefaultTextInput
+                  placeholder="Duração máxima do exercício (segundos)"
+                  className="h-[44px]"
+                />
+              </View>
+              <View className="gap-[2px]">
+                <Text className="text-muted text-default-1">Tags</Text>
+                <TagGroup tags={tags} onAddTag={() => {}} />
+              </View>
+              <View className="gap-[2px]">
+                <ActionButtons
+                  onCancel={onClose}
+                  onSave={() => {}}
+                />
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
