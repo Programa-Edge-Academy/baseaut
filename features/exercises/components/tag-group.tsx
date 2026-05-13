@@ -19,7 +19,6 @@ export function TagGroup({ tags, onAddTag }: TagGroupProps) {
           borderRadius={tag.borderRadius}
         />
       ))}
-      <ExerciseTag label="+" isActive onPress={onAddTag} />
     </View>
   );
 }
