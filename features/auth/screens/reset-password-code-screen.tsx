@@ -1,4 +1,112 @@
+import { baseautLogoXml } from "@/assets/baseaut-logo";
+import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
+import { DefaultTextInput } from "@/components/default-text-input";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import { Alert, Pressable, Text, View } from "react-native";
+import { SvgXml } from "react-native-svg";
+
+export function ResetPasswordCodeScreen() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [isSent, setIsSent] = useState(false);
+
+  const handleSendInstructions = async () => {
+    if (!email.trim()) {
+      Alert.alert("Erro", "Por favor, digite seu e-mail.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: "baseaut://reset-password",
+      });
+
+      if (error) throw error;
+
+      setIsSent(true);
+    } catch (error: any) {
+      Alert.alert("Erro", error.message || "Não foi possível enviar o e-mail.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View className="flex-1 items-center bg-level1 px-4 pt-10">
+      <View className="w-full mt-12 pt-12 items-center">
+        <SvgXml xml={baseautLogoXml} width={196} height={70} />
+      </View>
+
+      <View className="mt-10 w-full items-center">
+        <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-8 shadow-panelShadow border border-outline">
+          
+          {!isSent ? (
+            <>
+              <Text className="text-header-2 text-white mb-2">
+                Redefinir senha
+              </Text>
+              <Text className="text-default-2 text-muted mb-8 text-center">
+                Digite seu e-mail para receber as instruções de recuperação.
+              </Text>
+
+              <View className="w-full gap-7">
+                <DefaultTextInput
+                  placeholder="E-mail"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+
+                <DefaultButton
+                  className="w-full"
+                  label={loading ? "Enviando..." : "Enviar instruções"}
+                  onPress={handleSendInstructions}
+                  disabled={loading}
+                />
+              </View>
+
+              <Pressable 
+                onPress={() => router.replace("/")} 
+                className="mt-6"
+              >
+                <Text className="text-default-2 text-primary font-bold">
+                  Voltar ao login
+                </Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Text className="text-header-2 text-white mb-5">
+                E-mail enviado!
+              </Text>
+              
+              <Text className="text-default-2 text-muted mb-8 text-center leading-5">
+                Se o e-mail estiver cadastrado, você receberá as instruções em breve. Verifique sua caixa de entrada.
+              </Text>
+
+              <DefaultButton
+                label="Voltar ao login"
+                onPress={() => router.replace("/")}
+                bgColorClass="bg-level1"
+                className="border border-outline"
+                shadowClass="shadow-none"
+              />
+            </>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/* import { DefaultButton } from "@/components/default-button";
 import { DefaultTextInput } from "@/components/default-text-input";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -129,3 +237,4 @@ export function ResetPasswordCodeScreen() {
     </View>
   );
 }
+ */
