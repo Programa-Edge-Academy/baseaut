@@ -36,7 +36,7 @@ export function DropdownModal({
             left: layout.left,
             width: layout.width,
           }}
-          className="max-h-[250px] bg-level2 rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline shadow-panelShadow overflow-hidden z-50"
+          className="max-h-[250px] bg-level2 rounded-[10px] border border-outline shadow-panelShadow overflow-hidden z-50"
           onPress={(e) => e.stopPropagation()}
         >
           <ScrollView showsVerticalScrollIndicator={false} className="w-full">
