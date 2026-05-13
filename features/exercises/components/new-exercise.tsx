@@ -15,16 +15,20 @@ export type NewExerciseProps = {
   visible?: boolean;
   borderRadius?: number;
   onClose: () => void;
-  tags: TagProps[];
+  tags?: TagProps[];
   handlePhotoPress: () => void;
   handleVideoPress: () => void;
 };
 
 export function NewExercise({
-  visible,
+  visible = true,
   onClose,
   borderRadius = 15,
-  tags,
+  tags = [
+    { label: "Coordenação" },
+    { label: "Força" },
+    { label: "Equilíbrio" },
+  ],
   handlePhotoPress,
   handleVideoPress,
 }: NewExerciseProps) {
