@@ -7,7 +7,7 @@ import { Pressable, Text, StyleSheet, View } from "react-native";
 type FooterTab = "activity" | "start" | "analysis";
 
 export function Footer() {
-  const [selectedTab, setSelectedTab] = useState<FooterTab>("activity");
+  const [selectedTab, setSelectedTab] = useState<FooterTab>("start");
 
   return (
     <SafeAreaView edges={['bottom']} className="w-full bg-level2">
