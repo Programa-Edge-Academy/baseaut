@@ -2,13 +2,15 @@ import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, ScrollView } from "react-native";
 import { StudentItem } from "../components/student-item";
 import { useStudents } from "../hooks/use-students";
+import { NewStudent } from "../components/new-student";
 
 export function StudentsScreen() {
   const { students, isLoading } = useStudents();
+  const [isNewStudentModalVisible, setIsNewStudentModalVisible] = useState(false);
 
   return (
     <View className="flex-1 bg-level1">
@@ -19,7 +21,7 @@ export function StudentsScreen() {
             mode="inicio"
             title="Início"
             subtitle="Selecione um aluno para iniciar uma sessão"
-            onNewPress={() => { }}
+            onNewPress={() => setIsNewStudentModalVisible(true)}
           />
         </View>
         <SearchInput containerClassName="mx-8 mt-5" />
@@ -46,6 +48,15 @@ export function StudentsScreen() {
         </ScrollView>
       </View>
       <Footer />
+      <NewStudent
+        visible={isNewStudentModalVisible}
+        onClose={() => setIsNewStudentModalVisible(false)}
+        handlePhotoPress={() => console.log('Photo press')}
+        onSave={() => {
+          setIsNewStudentModalVisible(false);
+          console.log('Save student');
+        }}
+      />
     </View>
   );
 }
