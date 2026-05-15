@@ -17,7 +17,7 @@ export type HeaderMode =
   | "execucao";
 
 export type PageHeaderProps = {
-  containerClassName?: string;  
+  containerClassName?: string;
   mode: HeaderMode;
   title: string;
   subtitle: string;
@@ -49,7 +49,7 @@ export function PageHeader({
   completedExercises = 0,
   isExecuting = false,
 }: PageHeaderProps) {
-  
+
   const renderNovoBtn = () => (
     <Pressable
       onPress={onNewPress}
@@ -164,7 +164,7 @@ export function PageHeader({
         if (totalExercises >= 3) {
           start = Math.max(1, Math.min(current - 1, totalExercises - 2));
         }
-        
+
         const nodeCount = Math.min(3, totalExercises);
         const nodes = Array.from({ length: nodeCount }, (_, i) => start + i);
 
@@ -189,7 +189,7 @@ export function PageHeader({
                       {node}
                     </Text>
                   </View>
-                  
+
                   {hasNextInWindow && (
                     <View
                       className="h-[2px] w-3"
@@ -198,7 +198,7 @@ export function PageHeader({
                   )}
                 </React.Fragment>
               );
-            })}            
+            })}
             {nodes[nodes.length - 1] < totalExercises && (
               <View
                 className="h-[2px] w-3"
@@ -216,7 +216,7 @@ export function PageHeader({
 
   return (
     <View className={`w-full min-h-[44px] flex-row items-center justify-between ${containerClassName ?? ""}`}>
-      <View className="flex-col justify-center gap-1">
+      <View className="flex-1 flex-col justify-center gap-1 mr-4">
         <Text className="text-header-1 text-white">{title}</Text>
         <Text className="text-default-1 text-muted">{subtitle}</Text>
       </View>
