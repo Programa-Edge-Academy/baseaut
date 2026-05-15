@@ -11,6 +11,11 @@ import { NewStudent } from "../components/new-student";
 export function StudentsScreen() {
   const { students, isLoading } = useStudents();
   const [isNewStudentModalVisible, setIsNewStudentModalVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredStudents = students.filter(student =>
+    student.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <View className="flex-1 bg-level1">
@@ -24,15 +29,21 @@ export function StudentsScreen() {
             onNewPress={() => setIsNewStudentModalVisible(true)}
           />
         </View>
-        <SearchInput containerClassName="mx-8 mt-5" />
+        <SearchInput 
+          containerClassName="mx-8 mt-5" 
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
 
         <ScrollView className="mt-5 px-8" showsVerticalScrollIndicator={false}>
           {isLoading ? (
             <Text className="text-center text-placeholder mt-10">Carregando alunos...</Text>
           ) : students.length === 0 ? (
             <Text className="text-center text-placeholder mt-10 text-lg">Ainda não há alunos registrados</Text>
+          ) : filteredStudents.length === 0 ? (
+            <Text className="text-center text-placeholder mt-10 text-lg">Nenhum aluno encontrado</Text>
           ) : (
-            students.map((student) => (
+            filteredStudents.map((student) => (
               <StudentItem
                 key={student.id}
                 name={student.name}
