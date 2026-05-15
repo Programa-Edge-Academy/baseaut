@@ -12,6 +12,7 @@ import { ConfirmationModal } from "@/components/confirmation-modal";
 export function StudentsScreen() {
   const { students, isLoading } = useStudents();
   const [isNewStudentModalVisible, setIsNewStudentModalVisible] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [studentToDelete, setStudentToDelete] = useState<any | null>(null);
 
@@ -28,7 +29,10 @@ export function StudentsScreen() {
             mode="inicio"
             title="Início"
             subtitle="Selecione um aluno para iniciar uma sessão"
-            onNewPress={() => setIsNewStudentModalVisible(true)}
+            onNewPress={() => {
+              setEditingStudent(null);
+              setIsNewStudentModalVisible(true);
+            }}
           />
         </View>
         <SearchInput 
@@ -53,7 +57,10 @@ export function StudentsScreen() {
                 weight={student.weight}
                 height={student.height}
                 supportLevel={student.supportLevel}
-                onEdit={() => setIsNewStudentModalVisible(true)}
+                onEdit={() => {
+                  setEditingStudent(student);
+                  setIsNewStudentModalVisible(true);
+                }}
                 onRemove={() => setStudentToDelete(student)}
               />
             ))
@@ -65,10 +72,15 @@ export function StudentsScreen() {
       <Footer />
       <NewStudent
         visible={isNewStudentModalVisible}
-        onClose={() => setIsNewStudentModalVisible(false)}
+        mode={editingStudent ? "edit" : "create"}
+        onClose={() => {
+          setIsNewStudentModalVisible(false);
+          setEditingStudent(null);
+        }}
         handlePhotoPress={() => console.log('Photo press')}
         onSave={() => {
           setIsNewStudentModalVisible(false);
+          setEditingStudent(null);
           console.log('Save student');
         }}
       />
