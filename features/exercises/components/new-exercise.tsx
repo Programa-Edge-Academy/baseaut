@@ -1,4 +1,5 @@
 import { FileVideo2Icon, ImageUp, X } from "lucide-react-native";
+import { useState } from "react";
 import {
   Modal,
   Pressable,
@@ -13,32 +14,79 @@ import { TagGroup } from "./tag-group";
 import { colors } from "@/assets/colors";
 import { ActionButtons } from "@/components/action-buttons";
 
+export type NewExerciseData = {
+  name: string;
+  description: string;
+  durationSeconds: number;
+  tags: string[];
+};
+
 export type NewExerciseProps = {
   visible?: boolean;
   borderRadius?: number;
   onClose: () => void;
-  tags?: TagProps[];
+  availableTags?: string[];
   handlePhotoPress: () => void;
   handleVideoPress: () => void;
+  onSave: (exercise: NewExerciseData) => void;
 };
 
 export function NewExercise({
   visible = true,
   onClose,
   borderRadius = 15,
-  tags = [
-    { label: "Coordenação" },
-    { label: "Força" },
-    { label: "Equilíbrio" },
-  ],
+  availableTags = ["Coordenação", "Força", "Equilíbrio"],
   handlePhotoPress,
   handleVideoPress,
+  onSave,
 }: NewExerciseProps) {
   const { width, height } = useWindowDimensions();
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [durationInput, setDurationInput] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  const resetForm = () => {
+    setName("");
+    setDescription("");
+    setDurationInput("");
+    setSelectedTags([]);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const handleSave = () => {
+    if (!name.trim()) return;
+    const seconds = parseInt(durationInput, 10) || 0;
+    onSave({
+      name: name.trim(),
+      description: description.trim(),
+      durationSeconds: seconds,
+      tags: selectedTags,
+    });
+    resetForm();
+  };
+
+  const toggleTag = (label: string) => {
+    setSelectedTags((current) =>
+      current.includes(label)
+        ? current.filter((tag) => tag !== label)
+        : [...current, label]
+    );
+  };
+
+  const tags: TagProps[] = availableTags.map((label) => ({
+    label,
+    isActive: selectedTags.includes(label),
+    onPress: () => toggleTag(label),
+  }));
   return (
     <Modal
       visible={visible}
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
       transparent
       animationType="fade"
     >
@@ -54,7 +102,7 @@ export function NewExercise({
           <View className="p-[25px] gap-[25px]">
             <View className="flex-row items-center justify-between">
               <Text className="text-header-2 text-white">Novo exercício</Text>
-              <Pressable onPress={onClose}>
+              <Pressable onPress={handleClose}>
                 <X color={colors.muted} size={30} />
               </Pressable>
             </View>
@@ -85,6 +133,8 @@ export function NewExercise({
                   Nome do exercício*
                 </Text>
                 <DefaultTextInput
+                  value={name}
+                  onChangeText={setName}
                   placeholder="Nome do exercício"
                   className="h-[44px]"
                 />
@@ -93,6 +143,8 @@ export function NewExercise({
                 <Text className="text-muted text-default-1">Descrição</Text>
                 <DefaultTextInput
                   multiline
+                  value={description}
+                  onChangeText={setDescription}
                   placeholder="Descrição do exercício (opcional)"
                   className="h-[80px]"
                 />
@@ -102,6 +154,9 @@ export function NewExercise({
                   Duração máxima
                 </Text>
                 <DefaultTextInput
+                  value={durationInput}
+                  onChangeText={setDurationInput}
+                  keyboardType="numeric"
                   placeholder="Duração máxima do exercício (segundos)"
                   className="h-[44px]"
                 />
@@ -112,8 +167,8 @@ export function NewExercise({
               </View>
               <View className="gap-[2px]">
                 <ActionButtons
-                  onCancel={onClose}
-                  onSave={() => {}}
+                  onCancel={handleClose}
+                  onSave={handleSave}
                 />
               </View>
             </View>
