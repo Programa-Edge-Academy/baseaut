@@ -1,5 +1,7 @@
 import React from 'react';
 import { Modal, Text, Pressable, ScrollView } from 'react-native';
+import { Check } from 'lucide-react-native';
+import { colors } from '@/assets/colors';
 
 interface DropdownModalProps {
   visible: boolean;
@@ -49,13 +51,22 @@ export function DropdownModal({
                     onSelect(opt);
                     onClose();
                   }}
-                  className={`px-4 min-h-[44px] justify-center border-b border-outline/50 ${
-                    isSelected ? 'bg-level1' : ''
+                  className={`px-[12px] min-h-[44px] flex-row items-center justify-between border-b border-outline/50 ${
+                    isSelected ? 'bg-[#0E89E5]/15' : ''
                   }`}
                 >
-                  <Text className={isSelected ? 'text-white text-default-2' : 'text-muted text-default-2'}>
+                  <Text
+                    className="text-default-2 flex-1"
+                    style={{
+                      color: isSelected ? colors.primary : 'white',
+                      fontWeight: isSelected ? '500' : '400'
+                    }}
+                  >
                     {opt}
                   </Text>
+                  {isSelected && (
+                    <Check color={colors.primary} size={20} />
+                  )}
                 </Pressable>
               );
             })}
