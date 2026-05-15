@@ -28,7 +28,7 @@ export function StudentItem({ name, age, weight, height, waist, supportLevel, on
   };
 
   return (
-    <View className="mb-4 w-full flex-row items-center justify-between rounded-2xl bg-level2 p-4 shadow-lg" style={{ zIndex: menuVisible ? 10 : 1 }}>
+    <View className="mb-4 w-full flex-row items-center justify-between rounded-2xl bg-level2 p-4 shadow-panelShadow" style={{ zIndex: menuVisible ? 10 : 1 }}>
       <View className="flex-1 flex-row items-center gap-4">
         {/* Avatar */}
         <View className="h-14 w-14 items-center justify-center rounded-2xl bg-extra/10">
