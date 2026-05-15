@@ -1,0 +1,5 @@
+ALTER TABLE public.alunos
+
+ADD COLUMN altura NUMERIC(5,2),
+ADD COLUMN peso NUMERIC(5,2),
+ADD COLUMN cintura NUMERIC(5,2);
