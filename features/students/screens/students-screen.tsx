@@ -7,11 +7,13 @@ import { View, Text, ScrollView } from "react-native";
 import { StudentItem } from "../components/student-item";
 import { useStudents } from "../hooks/use-students";
 import { NewStudent } from "../components/new-student";
+import { ConfirmationModal } from "@/components/confirmation-modal";
 
 export function StudentsScreen() {
   const { students, isLoading } = useStudents();
   const [isNewStudentModalVisible, setIsNewStudentModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [studentToDelete, setStudentToDelete] = useState<any | null>(null);
 
   const filteredStudents = students.filter(student =>
     student.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -51,6 +53,8 @@ export function StudentsScreen() {
                 weight={student.weight}
                 height={student.height}
                 supportLevel={student.supportLevel}
+                onEdit={() => setIsNewStudentModalVisible(true)}
+                onRemove={() => setStudentToDelete(student)}
               />
             ))
           )}
@@ -66,6 +70,14 @@ export function StudentsScreen() {
         onSave={() => {
           setIsNewStudentModalVisible(false);
           console.log('Save student');
+        }}
+      />
+      <ConfirmationModal
+        visible={!!studentToDelete}
+        onClose={() => setStudentToDelete(null)}
+        onConfirm={() => {
+          console.log('Excluir aluno', studentToDelete);
+          setStudentToDelete(null);
         }}
       />
     </View>
