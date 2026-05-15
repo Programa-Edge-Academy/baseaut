@@ -1,11 +1,12 @@
 import { colors } from "@/assets/colors";
 import { Calendar, ChevronDown, ImageUp, X } from "lucide-react-native";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { ActionButtons } from "../../../components/action-buttons";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { DropdownModal } from "../../../components/dropdown-modal";
+import { Student } from "../hooks/use-students";
 
 /**
  * Props for the NewStudent modal component.
@@ -13,16 +14,17 @@ import { DropdownModal } from "../../../components/dropdown-modal";
 export type NewStudentProps = {
   visible?: boolean;
   mode?: "create" | "edit";
+  initialData?: Student | null;
   borderRadius?: number;
   onClose: () => void;
   handlePhotoPress: () => void;
-  // TODO: Update this signature to pass the validated data payload back to the parent (e.g., onSave: (data: StudentData) => void)
-  onSave: () => void; 
+  onSave: (data: Omit<Student, 'id'>) => void;  
 };
 
 export function NewStudent({
   visible,
   mode = "create",
+  initialData,
   onClose,
   borderRadius = 15,
   handlePhotoPress,
@@ -41,6 +43,32 @@ export function NewStudent({
   // --- Validation State ---
   // Stores error messages mapped by the respective field name
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (visible) {
+      if (mode === "edit" && initialData) {
+        setFullName(initialData.name);
+        setWeight(initialData.weight.toString());
+        setHeight(initialData.height.toString());
+        setWaist(initialData.waist.toString());
+        setSupportLevel(initialData.supportLevel);
+        
+        // Approx birthdate since DB currently only holds age
+        const year = new Date().getFullYear() - initialData.age;
+        setBirthDate(`01/01/${year}`);
+      } else {
+        setFullName("");
+        setBirthDate("");
+        setWeight("");
+        setHeight("");
+        setWaist("");
+        setSupportLevel(null);
+        setHealthConditions("");
+        setObservations("");
+      }
+      setErrors({});
+    }
+  }, [visible, mode, initialData]);
 
   // --- UI & Layout State ---
   const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -239,7 +267,23 @@ export function NewStudent({
    */
   const handleSaveWrapper = () => {
     if (validateForm()) {
-      onSave();
+      const [day, month, year] = birthDate.split("/").map(Number);
+      const birth = new Date(year, month - 1, day);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+          age--;
+      }
+
+      onSave({
+        name: fullName.trim(),
+        age,
+        weight: Number(weight.replace(/[^\d.]/g, "")),
+        height: Number(height.replace(/[^\d.]/g, "")),
+        waist: Number(waist.replace(/[^\d.]/g, "")),
+        supportLevel: supportLevel!
+      });
     }
   };
 

@@ -10,7 +10,7 @@ import { NewStudent } from "../components/new-student";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 
 export function StudentsScreen() {
-  const { students, isLoading } = useStudents();
+  const { students, isLoading, addStudent, updateStudent, deleteStudent } = useStudents();
   const [isNewStudentModalVisible, setIsNewStudentModalVisible] = useState(false);
   const [editingStudent, setEditingStudent] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -74,22 +74,29 @@ export function StudentsScreen() {
       <NewStudent
         visible={isNewStudentModalVisible}
         mode={editingStudent ? "edit" : "create"}
+        initialData={editingStudent}
         onClose={() => {
           setIsNewStudentModalVisible(false);
           setEditingStudent(null);
         }}
         handlePhotoPress={() => console.log('Photo press')}
-        onSave={() => {
+        onSave={(data) => {
+          if (editingStudent) {
+            updateStudent(editingStudent.id, data);
+          } else {
+            addStudent(data);
+          }
           setIsNewStudentModalVisible(false);
           setEditingStudent(null);
-          console.log('Save student');
         }}
       />
       <ConfirmationModal
         visible={!!studentToDelete}
         onClose={() => setStudentToDelete(null)}
         onConfirm={() => {
-          console.log('Excluir aluno', studentToDelete);
+          if (studentToDelete) {
+            deleteStudent(studentToDelete.id);
+          }
           setStudentToDelete(null);
         }}
       />
