@@ -33,6 +33,7 @@ export function NewStudent({
   const [birthDate, setBirthDate] = useState("");
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
+  const [waist, setWaist] = useState("");
   const [supportLevel, setSupportLevel] = useState<string | null>(null);
   const [healthConditions, setHealthConditions] = useState("");
   const [observations, setObservations] = useState("");
@@ -126,11 +127,20 @@ export function NewStudent({
 
   const handleHeightBlur = () => {
     const numericHeight = height.replace(/[^\d.,]/g, "").trim();
-    if (numericHeight) setHeight(`${numericHeight} Cm`);
+    if (numericHeight) setHeight(`${numericHeight} cm`);
   };
 
   const handleHeightFocus = () => {
-    setHeight(height.replace(/ Cm/g, "").trim());
+    setHeight(height.replace(/ cm/g, "").trim());
+  };
+
+  const handleWaistBlur = () => {
+    const numericWaist = waist.replace(/[^\d.,]/g, "").trim();
+    if (numericWaist) setWaist(`${numericWaist} cm`);
+  };
+
+  const handleWaistFocus = () => {
+    setWaist(waist.replace(/ cm/g, "").trim());
   };
 
   // --- Form Validation ---
@@ -191,7 +201,7 @@ export function NewStudent({
       }
     }
 
-    // 4. Height Validation
+    // 4. Estatura Validation
     if (!height.trim()) {
       newErrors.height = "Campo obrigatório.";
     } else {
@@ -202,7 +212,18 @@ export function NewStudent({
       }
     }
 
-    // 5. Support Level Validation
+    // 5. Cintura Validation
+    if (!waist.trim()) {
+      newErrors.waist = "Campo obrigatório.";
+    } else {
+      const numericWaist = waist.replace(/[^\d.]/g, ""); // Keep only digits and decimal dot
+      const parsedWaist = Number(numericWaist);
+      if (isNaN(parsedWaist) || parsedWaist <= 0) {
+        newErrors.waist = "Formato inválido.";
+      }
+    }
+
+    // 6. Support Level Validation
     if (!supportLevel) {
       newErrors.supportLevel = "Campo obrigatório.";
     }
@@ -313,7 +334,7 @@ export function NewStudent({
               />
             </View>
 
-            {/* Weight and Height Inputs */}
+            {/* Weight and Estatura Inputs */}
             <View className="flex-row gap-[10px]">
               {/* Weight */}
               <View className="flex-1 gap-2">
@@ -335,11 +356,11 @@ export function NewStudent({
                 {errors.weight && <Text className="text-red-500 text-xs">{errors.weight}</Text>}
               </View>
               
-              {/* Height */}
+              {/* Estatura */}
               <View className="flex-1 gap-2">
-                <Text className="text-muted text-default-1">Altura*</Text>
+                <Text className="text-muted text-default-1">Estatura*</Text>
                 <DefaultTextInput
-                  placeholder="Altura (Cm)"
+                  placeholder="Estatura (cm)"
                   className={`h-[44px] ${errors.height ? "border-red-500" : ""}`}
                   value={height}
                   onChangeText={(text) => {
@@ -354,6 +375,29 @@ export function NewStudent({
                 />
                 {errors.height && <Text className="text-red-500 text-xs">{errors.height}</Text>}
               </View>
+            </View>
+
+            {/* Cintura Input */}
+            <View className="flex-row gap-[10px]">
+              <View className="flex-1 gap-2">
+                <Text className="text-muted text-default-1">Cintura*</Text>
+                <DefaultTextInput
+                  placeholder="Cintura (cm)"
+                  className={`h-[44px] ${errors.waist ? "border-red-500" : ""}`}
+                  value={waist}
+                  onChangeText={(text) => {
+                    // Silently replace commas with dots to ensure numeric consistency
+                    const formattedText = text.replace(/,/g, ".");
+                    setWaist(formattedText);
+                    if (errors.waist) setErrors({ ...errors, waist: "" });
+                  }}
+                  onBlur={handleWaistBlur}
+                  onFocus={handleWaistFocus}
+                  keyboardType="decimal-pad"
+                />
+                {errors.waist && <Text className="text-red-500 text-xs">{errors.waist}</Text>}
+              </View>
+              <View className="flex-1" />
             </View>
 
             {/* Support Level Dropdown */}
