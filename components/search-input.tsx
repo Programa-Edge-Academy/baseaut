@@ -56,7 +56,7 @@ export function SearchInput({
   }
 
   return (
-    <View className={`flex-row items-center gap-3 ${containerClassName ?? ""}`}>
+    <View className={`w-full flex-row items-center gap-3 ${containerClassName ?? ""}`}>
       {searchBox}
       
       <Pressable
