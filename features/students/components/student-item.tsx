@@ -40,7 +40,9 @@ export function StudentItem({ name, age, weight, height, waist, supportLevel, on
             {age} anos • {weight}kg • Estatura: {height}cm • Cintura: {waist}cm
           </Text>
           <View className="mt-1 self-start rounded-full bg-primary/10 px-2 py-0.5">
-            <Text className="text-xs font-bold text-primary">{supportLevel}</Text>
+            <Text className="text-xs font-bold text-primary">
+              {supportLevel.replace("Transtorno do Espectro Autista ", "")}
+            </Text>
           </View>
         </View>
       </View>
