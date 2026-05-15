@@ -12,6 +12,7 @@ import { DropdownModal } from "../../../components/dropdown-modal";
  */
 export type NewStudentProps = {
   visible?: boolean;
+  mode?: "create" | "edit";
   borderRadius?: number;
   onClose: () => void;
   handlePhotoPress: () => void;
@@ -21,6 +22,7 @@ export type NewStudentProps = {
 
 export function NewStudent({
   visible,
+  mode = "create",
   onClose,
   borderRadius = 15,
   handlePhotoPress,
@@ -238,7 +240,9 @@ export function NewStudent({
             
             {/* --- Header --- */}
             <View className="flex-row items-center justify-between">
-              <Text className="text-header-2 text-white">Novo aluno</Text>
+              <Text className="text-header-2 text-white">
+                {mode === "edit" ? "Editar aluno" : "Novo aluno"}
+              </Text>
               <Pressable onPress={onClose}>
                 <X color={colors.muted} size={30} />
               </Pressable>
