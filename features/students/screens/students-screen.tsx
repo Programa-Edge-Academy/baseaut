@@ -56,6 +56,7 @@ export function StudentsScreen() {
                 age={student.age}
                 weight={student.weight}
                 height={student.height}
+                waist={student.waist}
                 supportLevel={student.supportLevel}
                 onEdit={() => {
                   setEditingStudent(student);

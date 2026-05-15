@@ -7,6 +7,7 @@ export interface Student {
     age: number;
     weight: number;
     height: number;
+    waist: number;
     supportLevel: string;
 }
 
@@ -20,10 +21,10 @@ export function useStudents() {
         async function fetchStudents() {
           try {
             setIsLoading(true);
-            // Considerando que as colunas 'idade', 'peso', 'altura' e 'nivel_suporte' serão adicionadas/ajustadas no banco
+            // Considerando que as colunas 'idade', 'peso', 'altura', 'cintura' e 'nivel_suporte' serão adicionadas/ajustadas no banco
             const { data, error } = await supabase
               .from("alunos")
-              .select("id, nome_completo, idade, peso, altura, nivel_suporte")
+              .select("id, nome_completo, idade, peso, altura, cintura, nivel_suporte")
               .eq("ativo", true);
     
             if (error) {
@@ -38,6 +39,7 @@ export function useStudents() {
                 age: aluno.idade || 0,
                 weight: aluno.peso || 0,
                 height: aluno.altura || 0,
+                waist: aluno.cintura || 0,
                 supportLevel: aluno.nivel_suporte || "Nível não definido",
               }));
               setStudents(formattedData);
@@ -59,6 +61,7 @@ export function useStudents() {
                 age: 8,
                 weight: 30,
                 height: 125,
+                waist: 60,
                 supportLevel: "Nível 1",
             },
             {
@@ -67,6 +70,7 @@ export function useStudents() {
                 age: 10,
                 weight: 35,
                 height: 140,
+                waist: 65,
                 supportLevel: "Nível 2",
             },
             {
@@ -75,6 +79,7 @@ export function useStudents() {
                 age: 7,
                 weight: 25,
                 height: 115,
+                waist: 55,
                 supportLevel: "Nível 3",
             },
         ];

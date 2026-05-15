@@ -9,12 +9,13 @@ interface StudentItemProps {
   age: number;
   weight: number;
   height: number;
+  waist: number;
   supportLevel: string;
   onEdit?: () => void;
   onRemove?: () => void;
 }
 
-export function StudentItem({ name, age, weight, height, supportLevel, onEdit, onRemove }: StudentItemProps) {
+export function StudentItem({ name, age, weight, height, waist, supportLevel, onEdit, onRemove }: StudentItemProps) {
   const [menuVisible, setMenuVisible] = useState(false);
   const buttonRef = useRef<View>(null);
   const [menuLayout, setMenuLayout] = useState({ top: 0, left: 0, width: 0 });
@@ -36,7 +37,7 @@ export function StudentItem({ name, age, weight, height, supportLevel, onEdit, o
         <View className="flex-1">
           <Text className="text-lg font-bold text-white" numberOfLines={1}>{name}</Text>
           <Text className="mt-1 text-sm font-medium text-placeholder">
-            {age} anos • {weight}kg • {height}cm
+            {age} anos • {weight}kg • Estatura: {height}cm • Cintura: {waist}cm
           </Text>
           <View className="mt-1 self-start rounded-full bg-primary/10 px-2 py-0.5">
             <Text className="text-xs font-bold text-primary">{supportLevel}</Text>
