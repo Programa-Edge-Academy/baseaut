@@ -52,7 +52,7 @@ export function DropdownModal({
                     onClose();
                   }}
                   className={`px-[12px] min-h-[44px] flex-row items-center justify-between border-b border-outline/50 ${
-                    isSelected ? 'bg-[#0E89E5]/15' : ''
+                    isSelected ? 'bg-primary/15' : ''
                   }`}
                 >
                   <Text
