@@ -1,6 +1,7 @@
 import { colors } from "@/assets/colors";
-import { Trash2, User } from "lucide-react-native";
-import React from "react";
+import { CardMenu } from "@/components/card-menu";
+import { MoreVertical, User } from "lucide-react-native";
+import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 interface StudentItemProps {
@@ -9,12 +10,15 @@ interface StudentItemProps {
   weight: number;
   height: number;
   supportLevel: string;
+  onEdit?: () => void;
   onRemove?: () => void;
 }
 
-export function StudentItem({ name, age, weight, height, supportLevel, onRemove }: StudentItemProps) {
+export function StudentItem({ name, age, weight, height, supportLevel, onEdit, onRemove }: StudentItemProps) {
+  const [menuVisible, setMenuVisible] = useState(false);
+
   return (
-    <View className="mb-4 w-full flex-row items-center justify-between rounded-2xl bg-level2 p-4 shadow-lg">
+    <View className="mb-4 w-full flex-row items-center justify-between rounded-2xl bg-level2 p-4 shadow-lg" style={{ zIndex: menuVisible ? 10 : 1 }}>
       <View className="flex-1 flex-row items-center gap-4">
         {/* Avatar */}
         <View className="h-14 w-14 items-center justify-center rounded-2xl bg-extra/10">
@@ -31,12 +35,27 @@ export function StudentItem({ name, age, weight, height, supportLevel, onRemove 
         </View>
       </View>
 
-      <Pressable
-        onPress={onRemove}
-        className="ml-2 h-10 w-10 items-center justify-center active:opacity-60"
-      >
-        <Trash2 size={24} color={colors.placeholder} />
-      </Pressable>
+      <View className="relative z-50">
+        <Pressable
+          onPress={() => setMenuVisible(!menuVisible)}
+          className="ml-2 h-10 w-10 items-center justify-center active:opacity-60"
+        >
+          <MoreVertical size={24} color={colors.placeholder} />
+        </Pressable>
+
+        {menuVisible && (
+          <CardMenu
+            onEdit={() => {
+              setMenuVisible(false);
+              if (onEdit) onEdit();
+            }}
+            onDelete={() => {
+              setMenuVisible(false);
+              if (onRemove) onRemove();
+            }}
+          />
+        )}
+      </View>
     </View>
   );
 }
