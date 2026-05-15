@@ -1,5 +1,5 @@
 import { FileVideo2Icon, ImageUp, X } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -18,7 +18,7 @@ export type NewExerciseData = {
   name: string;
   description: string;
   durationSeconds: number;
-  tags: string[];
+  tag: string | null;
 };
 
 export type NewExerciseProps = {
@@ -29,32 +29,38 @@ export type NewExerciseProps = {
   handlePhotoPress: () => void;
   handleVideoPress: () => void;
   onSave: (exercise: NewExerciseData) => void;
+  title?: string;
+  initialData?: NewExerciseData;
 };
 
 export function NewExercise({
   visible = true,
   onClose,
   borderRadius = 15,
-  availableTags = ["Coordenação", "Força", "Equilíbrio"],
+  availableTags = ["Locomotor", "Manipulativo", "Estabilizador"],
   handlePhotoPress,
   handleVideoPress,
   onSave,
+  title = "Novo exercício",
+  initialData,
 }: NewExerciseProps) {
   const { width, height } = useWindowDimensions();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [durationInput, setDurationInput] = useState("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-  const resetForm = () => {
-    setName("");
-    setDescription("");
-    setDurationInput("");
-    setSelectedTags([]);
-  };
+  useEffect(() => {
+    if (!visible) return;
+    setName(initialData?.name ?? "");
+    setDescription(initialData?.description ?? "");
+    setDurationInput(
+      initialData?.durationSeconds ? String(initialData.durationSeconds) : ""
+    );
+    setSelectedTag(initialData?.tag ?? null);
+  }, [visible, initialData]);
 
   const handleClose = () => {
-    resetForm();
     onClose();
   };
 
@@ -65,23 +71,18 @@ export function NewExercise({
       name: name.trim(),
       description: description.trim(),
       durationSeconds: seconds,
-      tags: selectedTags,
+      tag: selectedTag,
     });
-    resetForm();
   };
 
-  const toggleTag = (label: string) => {
-    setSelectedTags((current) =>
-      current.includes(label)
-        ? current.filter((tag) => tag !== label)
-        : [...current, label]
-    );
+  const selectTag = (label: string) => {
+    setSelectedTag((current) => (current === label ? null : label));
   };
 
   const tags: TagProps[] = availableTags.map((label) => ({
     label,
-    isActive: selectedTags.includes(label),
-    onPress: () => toggleTag(label),
+    isActive: selectedTag === label,
+    onPress: () => selectTag(label),
   }));
   return (
     <Modal
@@ -101,7 +102,7 @@ export function NewExercise({
         >
           <View className="p-[25px] gap-[25px]">
             <View className="flex-row items-center justify-between">
-              <Text className="text-header-2 text-white">Novo exercício</Text>
+              <Text className="text-header-2 text-white">{title}</Text>
               <Pressable onPress={handleClose}>
                 <X color={colors.muted} size={30} />
               </Pressable>
