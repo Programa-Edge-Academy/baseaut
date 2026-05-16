@@ -38,6 +38,12 @@ test.describe('Cadastro - Validações de E-mail', () => {
         await page.getByPlaceholder(/seu email/i).fill(longEmail);
 
         // Verifica se há erro visual ou se o campo truncou
-        // await expect(page.getByText(/máximo de 254 caracteres/i)).toBeVisible();
+        // Se o botão habilitar mesmo com erro, clicamos para ver a mensagem
+        const submitBtn = page.getByText(/cadastrar-se/i);
+        if (!(await submitBtn.isDisabled())) {
+            await submitBtn.click();
+        }
+
+        await expect(page.getByText(/email inválido/i)).toBeVisible();
     });
 });

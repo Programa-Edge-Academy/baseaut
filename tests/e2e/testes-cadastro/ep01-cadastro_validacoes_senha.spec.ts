@@ -52,8 +52,10 @@ test.describe('Cadastro - Validações de Senha', () => {
     });
 
     test('Deve validar o limite máximo de 20 caracteres para a senha', async ({ page }) => {
+        const securityErrorMessage = /A senha deve ter entre 8 e 20 caracteres, maiúscula, minúscula, número ou especial/i;
         const longPassword = 'Senha@123' + 'a'.repeat(15); // > 20
         await page.getByPlaceholder('Sua senha', { exact: true }).fill(longPassword);
         // Verifica se houve restrição ou erro
+        await expect(page.getByText(securityErrorMessage)).toBeVisible();
     });
 });
