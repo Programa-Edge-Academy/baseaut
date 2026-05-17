@@ -8,7 +8,7 @@ export type Companion = {
   id: string;
   name: string;
   email: string;
-  status?: "active" | "pending"; // Adicionado na tipagem
+  status_conta?: "ativo" | "pendente" | "removido";
 };
 
 interface CompanionCardProps {
@@ -27,7 +27,7 @@ export function CompanionCard({
   onRejectCompanion 
 }: CompanionCardProps) {
   return (
-    <View className={`w-full max-w-[380px] rounded-[20px] bg-level2 p-5 shadow-lg border border-outline ${className ?? ""}`}>
+    <View className={`w-full max-w-[380px] rounded-[20px] bg-level2 p-5 border border-outline ${className ?? ""}`}>
       <View className="mb-4 flex-row items-center gap-3">
         <GraduationCap size={24} color={colors.secondary} />
         <Text className="text-lg font-bold text-white">
@@ -35,7 +35,6 @@ export function CompanionCard({
         </Text>
       </View>
 
-      {/* Renderização do Estado Vazio vs Lista */}
       {companions.length === 0 ? (
         <Text className="text-sm font-medium text-muted leading-5">
           Nenhum monitor na equipe. Convide usando email/telefone ou compartilhe o código da equipe.
@@ -47,7 +46,7 @@ export function CompanionCard({
               <CompanionItem 
                 name={companion.name}
                 email={companion.email}
-                status={companion.status}
+                status_conta={companion.status_conta}
                 onRemove={() => onRemoveCompanion?.(companion.id)} 
                 onAccept={() => onAcceptCompanion?.(companion.id)}
                 onReject={() => onRejectCompanion?.(companion.id)}
