@@ -1,16 +1,19 @@
-import { CardMenu } from "@/components/card-menu";
+import { colors } from "@/assets/colors";
+import { withOpacity } from "@/components/color-opacity";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { DataList } from "@/components/data-list";
 import { FilterMenu, FilterOption } from "@/components/filter-menu";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { ListCard } from "@/components/list-card";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
-import { useMemo, useState } from "react";
+import { Dumbbell } from "lucide-react-native";
+import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
-import { ExerciseCard, OptionsLayout } from "../components/exercise-card";
 import { NewExercise, NewExerciseData } from "../components/new-exercise";
 import { Exercise, useExercises } from "../hooks/use-exercises";
+import { SectionField } from "@/components/section-field";
 
 const TAG_FILTER_OPTIONS: FilterOption[] = [
   { id: "all", label: "Todas" },
@@ -23,7 +26,7 @@ const AVAILABLE_TAGS = TAG_FILTER_OPTIONS
   .filter((option) => option.id !== "all")
   .map((option) => option.label);
 
-function formatDuration(seconds: number): string {
+function formatDuration(seconds?: number | null): string {
   if (!seconds) return "";
   const minutes = Math.floor(seconds / 60);
   const remainder = seconds % 60;
@@ -36,7 +39,7 @@ function exerciseToFormData(exercise: Exercise): NewExerciseData {
   return {
     name: exercise.name,
     description: exercise.description,
-    durationSeconds: exercise.durationSeconds,
+    durationSeconds: exercise.durationSeconds || 0,
     tag: exercise.tag,
   };
 }
@@ -56,9 +59,6 @@ export function ExercisesScreen() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [exerciseToEdit, setExerciseToEdit] = useState<Exercise | null>(null);
   const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null);
-  const [openMenuFor, setOpenMenuFor] = useState<
-    { exercise: Exercise; layout: OptionsLayout } | null
-  >(null);
   const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(["all"]);
 
@@ -68,17 +68,12 @@ export function ExercisesScreen() {
     const normalizedQuery = query.trim().toLowerCase();
     const allSelected = selectedTagIds.includes("all");
     const selectedLabels = TAG_FILTER_OPTIONS
-      .filter(
-        (option) => option.id !== "all" && selectedTagIds.includes(option.id)
-      )
+      .filter((option) => option.id !== "all" && selectedTagIds.includes(option.id))
       .map((option) => option.label);
 
     return exercises.filter((exercise) => {
-      const matchesQuery =
-        !normalizedQuery || exercise.name.toLowerCase().includes(normalizedQuery);
-      const matchesTags =
-        allSelected ||
-        (exercise.tag !== null && selectedLabels.includes(exercise.tag));
+      const matchesQuery = !normalizedQuery || exercise.name.toLowerCase().includes(normalizedQuery);
+      const matchesTags = allSelected || (exercise.tag !== null && selectedLabels.includes(exercise.tag));
       return matchesQuery && matchesTags;
     });
   }, [query, exercises, selectedTagIds]);
@@ -125,7 +120,7 @@ export function ExercisesScreen() {
     if (isLoading) {
       return (
         <View className="mt-16 items-center justify-center">
-          <ActivityIndicator />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       );
     }
@@ -146,18 +141,26 @@ export function ExercisesScreen() {
         data={filteredExercises}
         emptyMessage="Nenhum exercício encontrado."
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <ExerciseCard
-            className="mb-2.5"
-            name={item.name}
-            description={item.description}
-            duration={formatDuration(item.durationSeconds)}
-            tags={item.tag ? item.tag.toLowerCase() : ""}
-            onPressOptions={(layout) =>
-              setOpenMenuFor({ exercise: item, layout })
-            }
-          />
-        )}
+        renderItem={({ item }) => {
+          const subtitleParts = [
+            item.description,
+            formatDuration(item.durationSeconds),
+            item.tag
+          ].filter(Boolean).join(" · ");
+
+          return (
+            <ListCard
+              title={item.name}
+              subtitle={subtitleParts}
+              icon={<Dumbbell size={20} color={colors.secondary} />}
+              iconBgColor={withOpacity(colors.secondary, 0.15)}
+              showDuplicate
+              onEdit={() => setExerciseToEdit(item)}
+              onDuplicate={() => handleDuplicate(item)}
+              onDelete={() => setExerciseToDelete(item)}
+            />
+          );
+        }}
       />
     );
   };
@@ -167,7 +170,9 @@ export function ExercisesScreen() {
       <Header />
 
       <View className="flex-1">
-        {/* TODO: segmented tabs (Exercícios / Circuitos) — no existing component yet */}
+        <View className="mx-8 mt-5">
+          <SectionField mode="exercises"></SectionField>
+        </View>
 
         <View className="mx-8 mt-5">
           <PageHeader
@@ -180,7 +185,7 @@ export function ExercisesScreen() {
 
         <View className="relative z-10 mx-8 mt-5">
           <SearchInput
-            placeholder="Buscar exercício por nome..."
+            placeholder="Buscar por nome..."
             value={query}
             onChangeText={setQuery}
             showTags
@@ -203,40 +208,17 @@ export function ExercisesScreen() {
       <NewExercise
         visible={isModalOpen}
         title={exerciseToEdit ? "Editar exercício" : "Novo exercício"}
-        initialData={
-          exerciseToEdit ? exerciseToFormData(exerciseToEdit) : undefined
-        }
+        initialData={exerciseToEdit ? exerciseToFormData(exerciseToEdit) : undefined}
         availableTags={AVAILABLE_TAGS}
         onClose={handleCloseModal}
         onSave={handleSaveExercise}
-        handlePhotoPress={() => {
-          /* TODO: open photo picker and upload to midia_url */
-        }}
-        handleVideoPress={() => {
-          /* TODO: open video picker and upload to midia_url */
-        }}
-      />
-
-      <CardMenu
-        visible={openMenuFor !== null}
-        layout={openMenuFor?.layout ?? { top: 0, left: 0, width: 0 }}
-        onClose={() => setOpenMenuFor(null)}
-        showDuplicate
-        onEdit={() => {
-          if (openMenuFor) setExerciseToEdit(openMenuFor.exercise);
-        }}
-        onDuplicate={() => {
-          if (openMenuFor) handleDuplicate(openMenuFor.exercise);
-        }}
-        onDelete={() => {
-          if (openMenuFor) setExerciseToDelete(openMenuFor.exercise);
-        }}
+        handlePhotoPress={() => {}}
+        handleVideoPress={() => {}}
       />
 
       <ConfirmationModal
         visible={exerciseToDelete !== null}
         title="Excluir exercício?"
-        message="Esta ação não pode ser desfeita."
         onClose={() => setExerciseToDelete(null)}
         onConfirm={handleConfirmDelete}
       />
