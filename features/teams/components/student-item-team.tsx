@@ -6,23 +6,30 @@ import { Pressable, Text, View } from "react-native";
 export interface StudentItemProps {
   name: string;
   onRemove?: () => void;
+  onEdit?: () => void;
 }
 
-export function StudentItem({ name, onRemove }: StudentItemProps) {
+export function StudentItemTeam({ name, onRemove, onEdit }: StudentItemProps) {
   return (
     <View className="mb-4 flex-row items-center justify-between last:mb-0">
-      <View className="flex-row items-center gap-4">
-        <View className="h-14 w-14 items-center justify-center rounded-2xl bg-extra/10">
-          <User size={28} color={colors.extra} />
+      
+      <Pressable 
+        onPress={onEdit} 
+        className="flex-1 flex-row items-center gap-4 active:opacity-70"
+      >
+        <View className="h-11 w-11 items-center justify-center rounded-2xl bg-extra/10">
+          <User size={20} color={colors.extra} />
         </View>
-        <View>
-          <Text className="text-lg font-bold text-white">{name}</Text>
+        <View className="flex-1 pr-2">
+          <Text className="text-header-3 text-white" numberOfLines={1}>
+            {name}
+          </Text>
         </View>
-      </View>
+      </Pressable>
 
       <Pressable
         onPress={onRemove}
-        className="h-10 w-10 items-center justify-center active:opacity-60"
+        className="ml-2 h-10 w-10 items-center justify-center active:opacity-60"
       >
         <Trash2 size={24} color={colors.muted} />
       </Pressable>
