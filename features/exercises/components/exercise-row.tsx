@@ -2,6 +2,7 @@ import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { ChevronRight } from "lucide-react-native";
 import { colors } from "@/assets/colors";
+import { RipplePressable } from "@/components/ripple-pressable";
 
 
 interface ExerciseRowProps {
@@ -18,7 +19,7 @@ export function ExerciseRow({
     className = "",
 }: ExerciseRowProps) {
     return (
-    <Pressable
+    <RipplePressable
       onPress={onPress}
       className={`w-full flex-row items-center justify-between rounded-[20px] bg-level1 p-4 border border-outline active:opacity-70 ${className}`}
     >
@@ -44,6 +45,6 @@ export function ExerciseRow({
       <View className="items-center justify-center">
         <ChevronRight size={30} color={colors.muted} />
       </View>
-      </Pressable>
+      </RipplePressable>
     );
 }
