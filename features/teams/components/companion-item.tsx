@@ -6,16 +6,16 @@ import { Pressable, Text, View } from "react-native";
 interface CompanionItemProps {
   name: string;
   email: string;
-  status?: "active" | "pending"; // Novo estado
+  status_conta?: "ativo" | "pendente" | "removido";
   onRemove?: () => void;
-  onAccept?: () => void; // Ação de aceitar
-  onReject?: () => void; // Ação de recusar
+  onAccept?: () => void;
+  onReject?: () => void;
 }
 
 export function CompanionItem({ 
   name, 
   email, 
-  status = "active", 
+  status_conta = "ativo", 
   onRemove, 
   onAccept, 
   onReject 
@@ -23,18 +23,16 @@ export function CompanionItem({
   return (
     <View className="mb-4 flex-row items-center justify-between last:mb-0">
       <View className="flex-row items-center gap-4">
-        {/* Usando size-11 (h-11 w-11) conforme o seu Figma */}
         <View className="h-11 w-11 items-center justify-center rounded-2xl bg-secondary/10">
           <User size={20} color={colors.secondary} />
         </View>
         <View>
-          <Text className="text-base font-bold text-white">{name}</Text>
-          <Text className="text-sm font-medium text-muted">{email}</Text>
+          <Text className="text-header-3 text-white mb-1">{name}</Text>
+          <Text className="text-default-2 text-muted">{email}</Text>
         </View>
       </View>
 
-      {/* Renderização Condicional Baseada no Status */}
-      {status === "pending" ? (
+      {status_conta === "pendente" ? (
         <View className="flex-row items-center gap-2.5">
           <Pressable
             onPress={onReject}
