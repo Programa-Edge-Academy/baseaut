@@ -1,14 +1,16 @@
 import { Dumbbell, MoreVertical } from "lucide-react-native";
-import React from "react";
+import React, { useRef } from "react";
 import { Pressable, Text, View } from "react-native";
 import { colors } from "@/assets/colors";
+
+export type OptionsLayout = { top: number; left: number; width: number };
 
 interface ExerciseCardProps {
   name: string;
   description?: string;
   duration: string;
   tags: string;
-  onPressOptions?: () => void;
+  onPressOptions?: (layout: OptionsLayout) => void;
   className?: string;
 }
 
@@ -20,6 +22,14 @@ export function ExerciseCard({
   onPressOptions,
   className,
 }: ExerciseCardProps) {
+  const optionsButtonRef = useRef<View>(null);
+
+  const handlePressOptions = () => {
+    if (!onPressOptions) return;
+    optionsButtonRef.current?.measureInWindow((x, y, width, height) => {
+      onPressOptions({ top: y + height, left: x, width });
+    });
+  };
   return (
     <View
       className={`w-full flex-row items-center gap-4 rounded-[20px] bg-level1 p-4 ${className ?? ""} border border-outline`}
@@ -55,12 +65,14 @@ export function ExerciseCard({
       </View>
 
       {/* Botão de Opções */}
-      <Pressable
-        onPress={onPressOptions}
-        className="h-10 w-6 items-center justify-center active:opacity-60"
-      >
-        <MoreVertical size={25} color={colors.muted} />
-      </Pressable>
+      <View ref={optionsButtonRef} collapsable={false}>
+        <Pressable
+          onPress={handlePressOptions}
+          className="h-10 w-6 items-center justify-center active:opacity-60"
+        >
+          <MoreVertical size={25} color={colors.muted} />
+        </Pressable>
+      </View>
     </View>
   );
 }

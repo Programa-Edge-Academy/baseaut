@@ -18,7 +18,7 @@ export type HeaderMode =
 
 export type PageHeaderProps = {
   containerClassName?: string;
-  mode: HeaderMode;
+  mode?: HeaderMode;
   title: string;
   subtitle: string;
   onNewPress?: () => void;

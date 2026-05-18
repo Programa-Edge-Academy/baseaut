@@ -1,4 +1,4 @@
-import { AlertCircle, Trash2, X } from "lucide-react-native";
+import { AlertCircle, LogOut, Trash2, X } from "lucide-react-native";
 import React from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import { colors } from "@/assets/colors";
@@ -12,8 +12,8 @@ interface ConfirmationModalProps {
   message?: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  iconType?: "trash" | "alert";
-  mode?: "delete" | "finishSession";
+  iconType?: "trash" | "alert" | "logout";
+  mode?: "delete" | "finishSession" | "logout";
 }
 
 export function ConfirmationModal({
@@ -29,15 +29,18 @@ export function ConfirmationModal({
 }: ConfirmationModalProps) {
   
   const isFinishMode = mode === "finishSession";
+  const isLogoutMode = mode === "logout";
 
   const config = {
-    title: title ?? (isFinishMode ? "Finalizar sessão?" : "Excluir"),
+    title: title ?? (isFinishMode ? "Finalizar sessão?" : isLogoutMode ? "Sair da conta?" : "Excluir"),
     message: message ?? (isFinishMode 
       ? "O progresso atual desta sessão será salvo de acordo com o tipo de circuito escolhido." 
+      : isLogoutMode
+      ? "Você será redirecionado para a tela de login."
       : "Esta ação não pode ser desfeita."),
     cancelLabel: cancelLabel ?? (isFinishMode ? "Voltar" : "Cancelar"),
-    confirmLabel: confirmLabel ?? (isFinishMode ? "Cancelar" : "Excluir"),
-    iconType: iconType ?? (isFinishMode ? "alert" : "trash"),
+    confirmLabel: confirmLabel ?? (isFinishMode ? "Cancelar" : isLogoutMode ? "Sair" : "Excluir"),
+    iconType: iconType ?? (isFinishMode ? "alert" : isLogoutMode ? "logout" : "trash"),
   };
 
   return (
@@ -47,18 +50,18 @@ export function ConfirmationModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Pressable
+      <View
         className="flex-1 items-center justify-center bg-black/50"
-        onPress={onClose}
       >
-        <Pressable
+        <View
           className="bg-level2 border border-outline rounded-xl p-6 shadow-panelShadow w-[400px] max-w-[90%] gap-5"
-          onPress={(e) => e.stopPropagation()}
         >
           <View className="flex-row justify-between items-center gap-4">
             <View className="p-2 bg-error/20 rounded-xl">
-              {config.iconType === "trash" ? (
+             {config.iconType === "trash" ? (
                 <Trash2 size={30} color={colors.error} />
+              ) : config.iconType === "logout" ? (
+                <LogOut size={30} color={colors.error} />
               ) : (
                 <AlertCircle size={30} color={colors.error} />
               )}
@@ -99,8 +102,8 @@ export function ConfirmationModal({
               onPress={onConfirm}
             />
           </View>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }

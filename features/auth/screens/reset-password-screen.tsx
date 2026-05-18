@@ -83,7 +83,10 @@ export function ResetPasswordScreen() {
 
       Alert.alert("Sucesso", "Senha redefinida com sucesso.");
       
-      router.replace("/" as never); 
+      router.replace({
+        pathname: "/auth-feedback",
+        params: { mode: "passwordUpdated" },
+      });
       
     } catch (error: any) {
       Alert.alert("Erro", error.message || "Ocorreu um erro ao redefinir a senha.");
@@ -102,33 +105,39 @@ export function ResetPasswordScreen() {
 
       <View className="mt-10 w-full items-center">
         <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-6 shadow-panelShadow outline outline-1 outline-offset-[-1px] outline-outline">
-          <Text className="mb-5 text-default-1 text-muted">
-            Redefina sua senha
+          <Text className="mb-5 text-header-3 text-white">
+            Redefinir senha
           </Text>
 
           <View className="w-full max-w-[342px] gap-4">
             
             <View className="gap-1">
+              <Text className="text-default-2 text-muted">Nova senha</Text>
               <PasswordInput
                 placeholder="Digite sua nova senha"
                 value={password}
+                maxLength={20}
                 onChangeText={handlePasswordChange}
-                className={`h-11 w-full rounded-[15px] ${errors.password ? "border-error" : ""}`}
+                className="h-11 w-full rounded-[15px]"
+                outLineBorderClass={errors.password ? "border-error" : "border-outline"}
               />
               {errors.password && (
-                <Text className="text-xs text-red-400">{errors.password}</Text>
+                <Text className="text-default-3 text-error">{errors.password}</Text>
               )}
             </View>
 
             <View className="gap-1">
+              <Text className="text-default-2 text-muted">Confirmar nova senha</Text>
               <PasswordInput
                 placeholder="Confirme sua nova senha"
                 value={confirmPassword}
+                maxLength={20}
                 onChangeText={handleConfirmPasswordChange}
-                className={`h-11 w-full rounded-[15px] ${errors.confirmPassword ? "border-error" : ""}`}
+                className="h-11 w-full rounded-[15px]"
+                outLineBorderClass={errors.confirmPassword ? "border-error" : "border-outline"}
               />
               {errors.confirmPassword && (
-                <Text className="text-xs text-red-400">
+                <Text className="text-default-3 text-error">
                   {errors.confirmPassword}
                 </Text>
               )}
