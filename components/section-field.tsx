@@ -1,75 +1,73 @@
-import React, { useState } from "react";
-import { Text, View } from "react-native";
-
+import { useRouter } from "expo-router";
+import React from "react";
+import { Pressable, Text, View } from "react-native";
 import { colors } from "../assets/colors";
-import { RipplePressable } from "./ripple-pressable";
+
+export type SectionFieldMode = "exercises" | "circuits" | "analysis" | "reports";
 
 interface SectionFieldProps {
-  firstLabel?: string;
-  secondLabel?: string;
+  mode: SectionFieldMode;
   className?: string;
-  defaultValue?: string;
 }
 
-export function SectionField({
-  firstLabel = "Exercícios",
-  secondLabel = "Circuitos",
-  className,
-  defaultValue,
-}: SectionFieldProps) {
-  const [selectedValue, setSelectedValue] = useState(
-    defaultValue ?? firstLabel
-  );
+export function SectionField({ mode, className }: SectionFieldProps) {
+  const router = useRouter();
 
-  const options = [
-    {
-      label: firstLabel,
-      value: firstLabel,
+  const config = {
+    exercises: {
+      left: { label: "Exercícios", route: "/exercises" },
+      right: { label: "Circuitos", route: "/circuits" },
+      isRightActive: false,
     },
-    {
-      label: secondLabel,
-      value: secondLabel,
+    circuits: {
+      left: { label: "Exercícios", route: "/exercises" },
+      right: { label: "Circuitos", route: "/circuits" },
+      isRightActive: true,
     },
-  ];
+    analysis: {
+      left: { label: "Análises", route: "/analysis" },
+      right: { label: "Relatórios", route: "/reports" },
+      isRightActive: false,
+    },
+    reports: {
+      left: { label: "Análises", route: "/analysis" },
+      right: { label: "Relatórios", route: "/reports" },
+      isRightActive: true,
+    },
+  }[mode];
+
+  const handleToggle = () => {
+    const nextRoute = config.isRightActive ? config.left.route : config.right.route;
+    router.replace(nextRoute as any);
+  };
 
   return (
-    <View
-      className={`flex-row items-center justify-around rounded-[15px] overflow-hidden py-1 px-2 ${
-        className ?? ""
-      }`}
-      style={{
-        backgroundColor: colors.outline,
-      }}
+    <Pressable
+      onPress={handleToggle}
+      className={`h-11 w-full flex-row rounded-2xl ${className ?? ""}`}
+      style={{ backgroundColor: colors.outline, padding: 5 }}
     >
-      {options.map((option) => {
-        const isSelected =
-          option.value === selectedValue;
+      <View
+        className="flex-1 items-center justify-center rounded-[10px]"
+        style={{ backgroundColor: !config.isRightActive ? colors.level2 : "transparent" }}
+      >
+        <Text
+          className={`text-base font-bold ${!config.isRightActive ? "text-white" : "text-muted"}`}
+        >
+          {config.left.label}
+        </Text>
+      </View>
 
-        return (
-          <RipplePressable
-            key={option.value}
-            className="flex-1 items-center justify-center py-2 px-6 rounded-[10px]"
-            style={{
-              backgroundColor: isSelected
-                ? colors.level2
-                : "transparent",
-            }}
-            onPress={() =>
-              setSelectedValue(option.value)
-            }
-          >
-            <Text
-              className={`text-center text-base font-bold ${
-                isSelected
-                  ? "text-white"
-                  : "text-muted"
-              }`}
-            >
-              {option.label}
-            </Text>
-          </RipplePressable>
-        );
-      })}
-    </View>
+      <View
+        className="flex-1 items-center justify-center rounded-[10px]"
+        style={{ backgroundColor: config.isRightActive ? colors.level2 : "transparent" }}
+      >
+        <Text
+          className={`text-base font-bold ${config.isRightActive ? "text-white" : "text-muted"}`}
+        >
+          {config.right.label}
+        </Text>
+      </View>
+    </Pressable>
   );
 }
