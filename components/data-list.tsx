@@ -9,6 +9,7 @@ export interface DataListProps<T> extends Omit<FlatListProps<T>, "data"> {
 export function DataList<T>({
   data,
   emptyMessage = "Nenhum item encontrado.",
+  contentContainerStyle,
   ...rest
 }: DataListProps<T>) {
   
@@ -24,7 +25,7 @@ export function DataList<T>({
     <FlatList
       data={data || []}
       ListEmptyComponent={renderEmptyComponent}
-      contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
+      contentContainerStyle={contentContainerStyle ?? { paddingBottom: 24, flexGrow: 1 }}
       showsVerticalScrollIndicator={false}
       {...rest}
     />
