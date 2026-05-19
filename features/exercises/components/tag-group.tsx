@@ -1,11 +1,17 @@
 import { View } from "react-native";
 import { ExerciseTag, TagProps } from "./exercise-tag";
 
+/**
+ * Props for rendering a group of tags.
+ */
 export type TagGroupProps = {
   tags: TagProps[];
   onAddTag: () => void;
 };
 
+/**
+ * Renders a group of tags.
+ */
 export function TagGroup({ tags, onAddTag }: TagGroupProps) {
   return (
     <View className="flex-row flex-wrap gap-2.5">

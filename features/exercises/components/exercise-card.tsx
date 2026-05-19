@@ -1,10 +1,16 @@
+import { colors } from "@/assets/colors";
 import { Dumbbell, MoreVertical } from "lucide-react-native";
 import React, { useRef } from "react";
 import { Pressable, Text, View } from "react-native";
-import { colors } from "@/assets/colors";
 
+/**
+ * Layout coordinates for placing an options menu.
+ */
 export type OptionsLayout = { top: number; left: number; width: number };
 
+/**
+ * Props for the exercise card component.
+ */
 interface ExerciseCardProps {
   name: string;
   description?: string;
@@ -14,6 +20,9 @@ interface ExerciseCardProps {
   className?: string;
 }
 
+/**
+ * Displays a summary card for an exercise.
+ */
 export function ExerciseCard({
   name,
   description,
@@ -24,6 +33,9 @@ export function ExerciseCard({
 }: ExerciseCardProps) {
   const optionsButtonRef = useRef<View>(null);
 
+  /**
+   * Measures the options button and emits its layout.
+   */
   const handlePressOptions = () => {
     if (!onPressOptions) return;
     optionsButtonRef.current?.measureInWindow((x, y, width, height) => {
@@ -35,9 +47,10 @@ export function ExerciseCard({
       className={`w-full flex-row items-center gap-4 rounded-[20px] bg-level1 p-4 ${className ?? ""} border border-outline`}
     >
       {/* Ícone de Exercício */}
-      <View 
-      style={{ backgroundColor: colors.secondary + "15" }}
-      className="h-16 w-16 items-center justify-center rounded-[20px]">
+      <View
+        style={{ backgroundColor: colors.secondary + "15" }}
+        className="h-16 w-16 items-center justify-center rounded-[20px]"
+      >
         <Dumbbell size={28} color={colors.secondary} />
       </View>
 

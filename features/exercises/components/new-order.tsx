@@ -1,19 +1,25 @@
+import { colors } from "@/assets/colors";
 import { ActionButtons } from "@/components/action-buttons";
 import { GripVertical, X } from "lucide-react-native";
 import {
-  Modal,
-  Pressable,
-  Text,
-  View,
-  useWindowDimensions,
+    Modal,
+    Pressable,
+    Text,
+    View,
+    useWindowDimensions,
 } from "react-native";
-import { colors } from "@/assets/colors";
 
+/**
+ * Item displayed in the reorder list.
+ */
 export type OrderItem = {
   id: string;
   name: string;
 };
 
+/**
+ * Props for the reorder modal.
+ */
 export type NewOrderProps = {
   borderRadius?: number;
   onClose: () => void;
@@ -21,6 +27,9 @@ export type NewOrderProps = {
   items: OrderItem[];
 };
 
+/**
+ * Modal for changing the order of exercises.
+ */
 export function NewOrder({
   borderRadius = 15,
   onClose,
@@ -63,10 +72,7 @@ export function NewOrder({
               ))}
             </View>
             <View className="flex-row gap-3">
-              <ActionButtons
-                onCancel={onClose}
-                onSave={onConfirm}
-              />
+              <ActionButtons onCancel={onClose} onSave={onConfirm} />
             </View>
           </View>
         </View>

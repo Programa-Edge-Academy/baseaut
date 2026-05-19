@@ -1,21 +1,27 @@
-import React from "react";
-import { View, Text } from "react-native";
-import { AlertCircle } from "lucide-react-native";
 import { colors } from "@/assets/colors";
+import { AlertCircle } from "lucide-react-native";
+import React from "react";
+import { Text, View } from "react-native";
 
+/**
+ * Props for the warning banner.
+ */
 interface WarningBannerProps {
   title?: string;
   subtitle?: string;
   className?: string;
 }
 
+/**
+ * Renders a warning banner with title and subtitle.
+ */
 export function WarningBanner({
   title = "Há atividades pendentes no histórico",
   subtitle = "Responda o formulário incompleto no histórico",
   className = "",
 }: WarningBannerProps) {
   return (
-    <View 
+    <View
       className={`w-full max-w-md items-center justify-center rounded-[20px] bg-level1 p-5 border border-outline ${className}`}
     >
       {/* Ícone de Alerta Amarelo/Amber */}
