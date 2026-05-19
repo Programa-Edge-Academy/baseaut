@@ -250,13 +250,8 @@ export function NewStudent({
   return (
     <>
       <Modal visible={visible} onRequestClose={onClose} transparent animationType="fade">
-        <View className="flex-1 bg-black/50 p-[25px] justify-center">
-          <ScrollView 
-            className="border bg-level2 border-outline"
-            style={{ borderRadius, maxHeight: '90%' }} 
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          >
+        <View className="flex-1 bg-black/50 p-7 justify-center">
+          <View className="border bg-level2 border-outline rounded-[15px]">
             <View className="p-[25px] gap-5">
               
               <View className="flex-row items-center justify-between">
@@ -444,7 +439,7 @@ export function NewStudent({
                 className="mt-2" 
               />
             </View>
-          </ScrollView>
+          </View>
         </View>
       </Modal>
 

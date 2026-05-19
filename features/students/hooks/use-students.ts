@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-// import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, Platform } from "react-native";
 
 export type Student = {
   id: string;
@@ -15,53 +16,39 @@ export type Student = {
   avatarUrl: string | null;
 };
 
-const MOCK_STUDENTS: Student[] = [
-  {
-    id: "4a89f665-266d-4cbc-a273-25045851ada9",
-    name: "Lucas Souza",
-    birthDate: "2018-03-10",
-    age: 6,
-    weight: 25,
-    height: 120,
-    waist: 50,
-    supportLevel: "nivel_2",
-    healthConditions: "",
-    observations: "",
-    avatarUrl: null,
-  },
-  {
-    id: "b8d8c9b1-9770-49c2-b90b-58019207c995",
-    name: "Pedro Oliveira",
-    birthDate: "2014-11-05",
-    age: 11,
-    weight: 42,
-    height: 145,
-    waist: 65,
-    supportLevel: "nivel_3",
-    healthConditions: "Alergia a amendoim",
-    observations: "Usa comunicação alternativa",
-    avatarUrl: null,
-  },
-  {
-    id: "e9c21bdc-48c0-4650-97df-7848e4ba1572",
-    name: "Ana Lima",
-    birthDate: "2016-07-22",
-    age: 9,
-    weight: 30,
-    height: 135,
-    waist: 58,
-    supportLevel: "nivel_1",
-    healthConditions: "",
-    observations: "",
-    avatarUrl: null,
-  }
-];
+async function resolveEquipeId(): Promise<string | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: membro } = await supabase
+    .from("membros_equipe")
+    .select("equipe_id")
+    .eq("usuario_id", user.id)
+    .eq("status", "ativo")
+    .limit(1)
+    .maybeSingle();
+
+  if (membro?.equipe_id) return membro.equipe_id;
+
+  const { data: equipe } = await supabase
+    .from("equipes")
+    .select("id")
+    .eq("coordenador_id", user.id)
+    .eq("ativa", true)
+    .limit(1)
+    .maybeSingle();
+
+  return equipe?.id ?? null;
+}
 
 export function useStudents() {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [equipeId, setEquipeId] = useState<string | null>(null);
 
   const calculateAge = (birthDateString: string) => {
+    if (!birthDateString) return 0;
     const birthDate = new Date(birthDateString);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
@@ -72,189 +59,209 @@ export function useStudents() {
     return age;
   };
 
-  /*
-  // --- FUNÇÃO AUXILIAR DE UPLOAD PARA O SUPABASE (COMENTADA POR ENQUANTO) ---
   const uploadImage = async (uri: string) => {
-    const FileSystem = require('expo-file-system');
-    const { decode } = require('base64-arraybuffer');
     try {
-      const base64 = await FileSystem.readAsStringAsync(uri, {
-        encoding: 'base64',
-      });
       const filePath = `${Date.now()}_avatar.jpg`;
-      const { data, error } = await supabase.storage.from('avatars').upload(
-        filePath, 
-        decode(base64), 
-        { contentType: 'image/jpeg' }
-      );
+      let fileData: any;
+
+      if (Platform.OS === 'web') {
+        const response = await fetch(uri);
+        fileData = await response.blob();
+      } else {
+        const FileSystem = require('expo-file-system/legacy');
+        const { decode } = require('base64-arraybuffer');
+
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: 'base64',
+        });
+        fileData = decode(base64);
+      }
+
+      const { data, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, fileData, { contentType: 'image/jpeg' });
+      
+      if (uploadError) throw uploadError;
+
       if (data) {
         const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
         return publicUrl;
       }
       return null;
     } catch (e) {
-      console.error(e);
+      console.error("Erro no upload do avatar:", e);
       return null;
     }
   };
-  */
 
-  useEffect(() => {
-    // --- CONEXÃO COM O SUPABASE (COMENTADA POR ENQUANTO) ---
-    /*
-    async function fetchStudents() {
-      try {
-        setIsLoading(true);
-        const { data, error } = await supabase
-          .from("alunos")
-          .select("id, nome_completo, data_nascimento, peso, altura, cintura, nivel_suporte, diagnostico_detalhado, observacoes_clinicas, avatar_url")
-          .eq("ativo", true);
-
-        if (error) {
-          console.error("Erro ao buscar alunos:", error);
-          return;
-        }
-
-        if (data) {
-          setStudents(
-            data.map((aluno) => ({
-              id: aluno.id,
-              name: aluno.nome_completo,
-              birthDate: aluno.data_nascimento,
-              age: calculateAge(aluno.data_nascimento),
-              weight: aluno.peso || 0,
-              height: aluno.altura || 0,
-              waist: aluno.cintura || 0,
-              supportLevel: aluno.nivel_suporte,
-              healthConditions: aluno.diagnostico_detalhado || "",
-              observations: aluno.observacoes_clinicas || "",
-              avatarUrl: aluno.avatar_url,
-            }))
-          );
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsLoading(false);
+  const loadStudents = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const teamId = await resolveEquipeId();
+      if (!teamId) {
+        throw new Error("Usuário não está associado a nenhuma equipe ativa.");
       }
-    }
-    fetchStudents();
-    */
+      setEquipeId(teamId);
 
-    // --- LISTA PROVISÓRIA (MOCK) ---
-    const timer = setTimeout(() => {
-      setStudents(MOCK_STUDENTS);
+      const { data, error: fetchError } = await supabase
+        .from("alunos")
+        .select("id, nome_completo, data_nascimento, peso, altura, cintura, nivel_suporte, diagnostico_detalhado, observacoes_clinicas, avatar_url")
+        .eq("equipe_id", teamId)
+        .eq("ativo", true)
+        .order("nome_completo", { ascending: true });
+
+      if (fetchError) throw fetchError;
+
+      if (data) {
+        setStudents(
+          data.map((aluno) => ({
+            id: aluno.id,
+            name: aluno.nome_completo,
+            birthDate: aluno.data_nascimento,
+            age: calculateAge(aluno.data_nascimento),
+            weight: Number(aluno.peso) || 0,
+            height: Number(aluno.altura) || 0,
+            waist: Number(aluno.cintura) || 0,
+            supportLevel: aluno.nivel_suporte === "nivel_1" ? "Nível 1" : aluno.nivel_suporte === "nivel_2" ? "Nível 2" : "Nível 3",
+            healthConditions: aluno.diagnostico_detalhado || "",
+            observations: aluno.observacoes_clinicas || "",
+            avatarUrl: aluno.avatar_url,
+          }))
+        );
+      }
+    } catch (caught: any) {
+      setError(caught);
+      console.error("Erro ao carregar alunos:", caught);
+    } finally {
       setIsLoading(false);
-    }, 600);
-    
-    return () => clearTimeout(timer);
+    }
   }, []);
 
+  useEffect(() => {
+    loadStudents();
+  }, [loadStudents]);
+
   const addStudent = async (data: Omit<Student, "id" | "age">, photoUri?: string | null) => {
-    // --- CONEXÃO COM O SUPABASE (COMENTADA POR ENQUANTO) ---
-    /*
+    setIsLoading(true);
     try {
-      setIsLoading(true);
+      if (!equipeId) throw new Error("ID da equipe não identificado.");
+
       let finalAvatarUrl = data.avatarUrl;
       if (photoUri && !photoUri.startsWith("http")) {
         const uploadedUrl = await uploadImage(photoUri);
         if (uploadedUrl) finalAvatarUrl = uploadedUrl;
       }
+
+      let nivelSuporteDb = "nivel_1";
+      const supportLower = data.supportLevel.toLowerCase();
+      if (supportLower.includes("2")) nivelSuporteDb = "nivel_2";
+      if (supportLower.includes("3")) nivelSuporteDb = "nivel_3";
+
+      let formattedDate = data.birthDate;
+      if (formattedDate.includes("/")) {
+        const [day, month, year] = formattedDate.split("/");
+        formattedDate = `${year}-${month}-${day}`;
+      }
+
       const payload = {
         nome_completo: data.name,
-        data_nascimento: data.birthDate,
-        peso: data.weight,
-        altura: data.height,
-        cintura: data.waist,
-        nivel_suporte: data.supportLevel,
-        diagnostico_detalhado: data.healthConditions,
-        observacoes_clinicas: data.observations,
+        data_nascimento: formattedDate,
+        peso: data.weight || null,
+        altura: data.height || null,
+        cintura: data.waist || null,
+        nivel_suporte: nivelSuporteDb,
+        diagnostico_detalhado: data.healthConditions || null,
+        observacoes_clinicas: data.observations || null,
         avatar_url: finalAvatarUrl,
-        equipe_id: "33af53f5-113c-42c4-aa46-6faa6cfdd5e7",
+        equipe_id: equipeId,
         ativo: true,
       };
-      const { error } = await supabase.from("alunos").insert([payload]);
-      if (error) throw error;
-    } catch (err) {
-      console.error(err);
-    }
-    */
 
-    // --- MOCK LOGIC ---
-    const newStudent: Student = {
-      id: Math.random().toString(36).substring(2, 11),
-      name: data.name,
-      birthDate: data.birthDate,
-      age: calculateAge(data.birthDate),
-      weight: data.weight,
-      height: data.height,
-      waist: data.waist,
-      supportLevel: data.supportLevel,
-      healthConditions: data.healthConditions,
-      observations: data.observations,
-      avatarUrl: photoUri || null,
-    };
-    
-    setStudents((prev) => [...prev, newStudent]);
+      const { error: insertError } = await supabase.from("alunos").insert([payload]);
+      if (insertError) throw insertError;
+
+      await loadStudents();
+    } catch (err: any) {
+      console.error("Erro ao adicionar aluno:", err);
+      Alert.alert("Erro ao Criar", `Não foi possível salvar o aluno: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const updateStudent = async (id: string, data: Partial<Omit<Student, "id" | "age">>, photoUri?: string | null) => {
-    // --- CONEXÃO COM O SUPABASE (COMENTADA POR ENQUANTO) ---
-    /*
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       let finalAvatarUrl = data.avatarUrl;
       if (photoUri && !photoUri.startsWith("http")) {
         const uploadedUrl = await uploadImage(photoUri);
         if (uploadedUrl) finalAvatarUrl = uploadedUrl;
       }
+
       const payload: any = {};
       if (data.name !== undefined) payload.nome_completo = data.name;
-      if (data.birthDate !== undefined) payload.data_nascimento = data.birthDate;
       if (data.weight !== undefined) payload.peso = data.weight;
       if (data.height !== undefined) payload.altura = data.height;
       if (data.waist !== undefined) payload.cintura = data.waist;
-      if (data.supportLevel !== undefined) payload.nivel_suporte = data.supportLevel;
       if (data.healthConditions !== undefined) payload.diagnostico_detalhado = data.healthConditions;
       if (data.observations !== undefined) payload.observacoes_clinicas = data.observations;
       if (finalAvatarUrl !== undefined) payload.avatar_url = finalAvatarUrl;
 
-      const { error } = await supabase.from("alunos").update(payload).eq("id", id);
-      if (error) throw error;
-    } catch (err) {
-      console.error(err);
-    }
-    */
-
-    // --- MOCK LOGIC ---
-    setStudents((prev) => prev.map((student) => {
-      if (student.id === id) {
-        return {
-          ...student,
-          ...data,
-          age: data.birthDate ? calculateAge(data.birthDate) : student.age,
-          avatarUrl: photoUri !== undefined ? photoUri : student.avatarUrl
-        };
+      if (data.supportLevel !== undefined) {
+        let nivelSuporteDb = "nivel_1";
+        const supportLower = data.supportLevel.toLowerCase();
+        if (supportLower.includes("2")) nivelSuporteDb = "nivel_2";
+        if (supportLower.includes("3")) nivelSuporteDb = "nivel_3";
+        payload.nivel_suporte = nivelSuporteDb;
       }
-      return student;
-    }));
+
+      if (data.birthDate !== undefined) {
+        let formattedDate = data.birthDate;
+        if (formattedDate.includes("/")) {
+          const [day, month, year] = formattedDate.split("/");
+          formattedDate = `${year}-${month}-${day}`;
+        }
+        payload.data_nascimento = formattedDate;
+      }
+
+      const { error: updateError } = await supabase.from("alunos").update(payload).eq("id", id);
+      if (updateError) throw updateError;
+
+      await loadStudents();
+    } catch (err: any) {
+      console.error("Erro ao atualizar aluno:", err);
+      Alert.alert("Erro ao Editar", `Não foi possível atualizar o aluno: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const deleteStudent = async (id: string) => {
-    // --- CONEXÃO COM O SUPABASE (COMENTADA POR ENQUANTO) ---
-    /*
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      const { error } = await supabase.from("alunos").update({ ativo: false }).eq("id", id);
-      if (error) throw error;
-    } catch (err) {
-      console.error(err);
-    }
-    */
+      const { error: deleteError } = await supabase
+        .from("alunos")
+        .update({ ativo: false })
+        .eq("id", id);
 
-    // --- MOCK LOGIC ---
-    setStudents((prev) => prev.filter((student) => student.id !== id));
+      if (deleteError) throw deleteError;
+      await loadStudents();
+    } catch (err: any) {
+      console.error("Erro ao inativar aluno:", err);
+      Alert.alert("Erro ao Remover", err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  return { students, isLoading, addStudent, updateStudent, deleteStudent };
+  return { 
+    students, 
+    isLoading, 
+    error, 
+    refresh: loadStudents, 
+    addStudent, 
+    updateStudent, 
+    deleteStudent 
+  };
 }
