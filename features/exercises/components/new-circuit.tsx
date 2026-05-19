@@ -118,10 +118,9 @@ export function NewCircuitModal({
               isActive ? "opacity-70 border-primary shadow-panelShadow" : "border-outline"
             }`}
           >
-            {/* CORREÇÃO DO CRASH: Usando o Pressable nativo, acionando o drag no toque longo com atraso seguro */}
             <Pressable
               onLongPress={drag}
-              delayLongPress={150} // 150ms é rápido o suficiente para parecer instantâneo, mas salva o app de crashar
+              delayLongPress={150} 
               disabled={isActive}
               hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
               className="mr-3"
