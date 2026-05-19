@@ -8,12 +8,12 @@ import { Header } from "@/components/header";
 import { ListCard } from "@/components/list-card";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
+import { SectionField } from "@/components/section-field";
 import { Dumbbell } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { NewExercise, NewExerciseData } from "../components/new-exercise";
 import { Exercise, useExercises } from "../hooks/use-exercises";
-import { SectionField } from "@/components/section-field";
 
 const TAG_FILTER_OPTIONS: FilterOption[] = [
   { id: "all", label: "Todas" },
@@ -22,10 +22,13 @@ const TAG_FILTER_OPTIONS: FilterOption[] = [
   { id: "estabilizador", label: "Estabilizador" },
 ];
 
-const AVAILABLE_TAGS = TAG_FILTER_OPTIONS
-  .filter((option) => option.id !== "all")
-  .map((option) => option.label);
+const AVAILABLE_TAGS = TAG_FILTER_OPTIONS.filter(
+  (option) => option.id !== "all",
+).map((option) => option.label);
 
+/**
+ * Formats a duration in seconds into a human-readable label.
+ */
 function formatDuration(seconds?: number | null): string {
   if (!seconds) return "";
   const minutes = Math.floor(seconds / 60);
@@ -35,6 +38,9 @@ function formatDuration(seconds?: number | null): string {
   return `${remainder}s`;
 }
 
+/**
+ * Maps an exercise model into the form payload shape.
+ */
 function exerciseToFormData(exercise: Exercise): NewExerciseData {
   return {
     name: exercise.name,
@@ -44,6 +50,9 @@ function exerciseToFormData(exercise: Exercise): NewExerciseData {
   };
 }
 
+/**
+ * Exercises list screen with search, filters, and CRUD modals.
+ */
 export function ExercisesScreen() {
   const {
     exercises,
@@ -58,7 +67,9 @@ export function ExercisesScreen() {
   const [query, setQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [exerciseToEdit, setExerciseToEdit] = useState<Exercise | null>(null);
-  const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null);
+  const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(
+    null,
+  );
   const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(["all"]);
 
@@ -67,18 +78,29 @@ export function ExercisesScreen() {
   const filteredExercises = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     const allSelected = selectedTagIds.includes("all");
-    const selectedLabels = TAG_FILTER_OPTIONS
-      .filter((option) => option.id !== "all" && selectedTagIds.includes(option.id))
-      .map((option) => option.label);
+    const selectedLabels = TAG_FILTER_OPTIONS.filter(
+      (option) => option.id !== "all" && selectedTagIds.includes(option.id),
+    ).map((option) => option.label);
 
     return exercises.filter((exercise) => {
-      const matchesQuery = !normalizedQuery || exercise.name.toLowerCase().includes(normalizedQuery);
-      const matchesTags = allSelected || (exercise.tag !== null && selectedLabels.includes(exercise.tag));
+      const matchesQuery =
+        !normalizedQuery ||
+        exercise.name.toLowerCase().includes(normalizedQuery);
+      const matchesTags =
+        allSelected ||
+        (exercise.tag !== null && selectedLabels.includes(exercise.tag));
       return matchesQuery && matchesTags;
     });
   }, [query, exercises, selectedTagIds]);
 
-  const handleSaveExercise = async (data: NewExerciseData, photoUri: string | null, videoUri: string | null) => {
+  /**
+   * Handles create or update of an exercise from the modal.
+   */
+  const handleSaveExercise = async (
+    data: NewExerciseData,
+    photoUri: string | null,
+    videoUri: string | null,
+  ) => {
     try {
       // Por enquanto, apenas repassamos o 'data' para o hook.
       // Futuramente, podemos atualizar o useExercises para enviar esses URIs para o Supabase Storage
@@ -94,11 +116,17 @@ export function ExercisesScreen() {
     }
   };
 
+  /**
+   * Closes the create/edit modal and clears selection.
+   */
   const handleCloseModal = () => {
     setIsCreateModalOpen(false);
     setExerciseToEdit(null);
   };
 
+  /**
+   * Duplicates an exercise entry.
+   */
   const handleDuplicate = async (exercise: Exercise) => {
     try {
       await duplicateExercise(exercise);
@@ -107,6 +135,9 @@ export function ExercisesScreen() {
     }
   };
 
+  /**
+   * Confirms and performs deletion of the selected exercise.
+   */
   const handleConfirmDelete = async () => {
     if (!exerciseToDelete) return;
     try {
@@ -118,6 +149,9 @@ export function ExercisesScreen() {
     }
   };
 
+  /**
+   * Renders the list content depending on loading or error state.
+   */
   const renderListBody = () => {
     if (isLoading) {
       return (
@@ -147,8 +181,10 @@ export function ExercisesScreen() {
           const subtitleParts = [
             item.description,
             formatDuration(item.durationSeconds),
-            item.tag
-          ].filter(Boolean).join(" · ");
+            item.tag,
+          ]
+            .filter(Boolean)
+            .join(" · ");
 
           return (
             <ListCard
@@ -210,7 +246,9 @@ export function ExercisesScreen() {
       <NewExercise
         visible={isModalOpen}
         title={exerciseToEdit ? "Editar exercício" : "Novo exercício"}
-        initialData={exerciseToEdit ? exerciseToFormData(exerciseToEdit) : undefined}
+        initialData={
+          exerciseToEdit ? exerciseToFormData(exerciseToEdit) : undefined
+        }
         availableTags={AVAILABLE_TAGS}
         onClose={handleCloseModal}
         onSave={handleSaveExercise}
