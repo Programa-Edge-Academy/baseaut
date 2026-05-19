@@ -4,14 +4,23 @@ import { Pressable, Text, View } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { ChoiceListQuestion } from "../types";
 
+/**
+ * Props for a choice list question UI.
+ */
 interface Props {
   question: ChoiceListQuestion;
 }
 
+/**
+ * Renders a choice list with optional "other" input.
+ */
 export function ChoiceListQuestionUI({ question }: Props) {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [otherText, setOtherText] = useState("");
 
+  /**
+   * Toggles a choice option and updates selection state.
+   */
   const toggleOption = (option: string) => {
     setSelectedOptions((prev) => {
       if (prev.includes(option)) {

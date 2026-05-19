@@ -1,23 +1,35 @@
+import { colors } from "@/assets/colors";
 import Slider from "@react-native-community/slider";
 import { useState } from "react";
 import { Text, View } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { LinearScaleQuestion } from "../types";
-import { colors } from "@/assets/colors";
 
+/**
+ * Props for a linear scale question UI.
+ */
 interface Props {
   question: LinearScaleQuestion;
 }
 
+/**
+ * Renders a linear scale slider with numeric input.
+ */
 export function LinearScaleQuestionUI({ question }: Props) {
   const [selectedValue, setSelectedValue] = useState<number>(question.min);
   const [textValue, setTextValue] = useState<string>(String(question.min));
 
+  /**
+   * Updates the numeric input while preserving valid characters.
+   */
   const handleTextChange = (text: string) => {
     const numericText = text.replace(/[^0-9-]/g, "");
     setTextValue(numericText);
   };
 
+  /**
+   * Normalizes the input value and clamps it to bounds.
+   */
   const handleBlur = () => {
     let val = Math.round(Number(textValue));
 
@@ -28,6 +40,9 @@ export function LinearScaleQuestionUI({ question }: Props) {
     setSelectedValue(val);
   };
 
+  /**
+   * Syncs slider changes to the numeric input.
+   */
   const handleSliderChange = (val: number) => {
     const rounded = Math.round(val);
     setSelectedValue(rounded);

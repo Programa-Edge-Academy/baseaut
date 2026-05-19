@@ -7,12 +7,21 @@ import { MatrixQuestionUI } from "./matrix-question";
 import { OpenQuestionUI } from "./open-question";
 import { YesNoQuestionUI } from "./yes-no-question";
 
+/**
+ * Props for rendering a single form question.
+ */
 interface Props {
   question: FormQuestionProps;
   isSubQuestion?: boolean;
 }
 
+/**
+ * Renders a question title and the corresponding question UI.
+ */
 export function FormQuestion({ question, isSubQuestion = false }: Props) {
+  /**
+   * Selects the appropriate question UI based on type.
+   */
   const renderQuestionUI = () => {
     switch (question.type) {
       case "open":
