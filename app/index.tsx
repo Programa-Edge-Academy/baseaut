@@ -10,13 +10,29 @@ export default function Index() {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
       if (session) {
-        router.replace("/students"); 
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("status_conta, role")
+          .eq("id", session.user.id)
+          .single();
+
+        if (profile && profile.role !== "coordenador" && profile.status_conta === "pendente") {
+          await supabase.auth.signOut();
+        } else {
+          router.replace("/students"); 
+          return; 
+        }
       }
+      
       setIsChecking(false);
-    });
-  }, []);
+    };
+
+    checkSession();
+  }, [router]);
 
   if (isChecking) {
     return (

@@ -17,7 +17,7 @@ export function useRegister() {
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = name.trim().replace(/\s+/g, ' '); 
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email: cleanEmail,
       password,
       options: {
@@ -28,12 +28,16 @@ export function useRegister() {
       },
     });
 
-    setLoading(false);
-
     if (signUpError) {
+      setLoading(false);
       setError(signUpError.message);
       return false;
     }
+
+    if (data?.session || data?.user) {
+      await supabase.auth.signOut();
+    }
+    setLoading(false);
 
     return true;
   };
