@@ -1,9 +1,9 @@
+import { colors } from "@/assets/colors";
 import { LoginScreen } from "@/features/auth/screens/login-screen";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator } from "react-native";
-import { colors } from "@/assets/colors";
+import { ActivityIndicator, View } from "react-native";
 
 export default function Index() {
   const router = useRouter();
