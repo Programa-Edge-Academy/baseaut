@@ -1,20 +1,26 @@
+import { colors } from "@/assets/colors";
 import { Calendar, Check, X } from "lucide-react-native";
 import {
-  Modal,
-  Pressable,
-  Text,
-  View,
-  useWindowDimensions,
+    Modal,
+    Pressable,
+    Text,
+    View,
+    useWindowDimensions,
 } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
-import { colors } from "@/assets/colors";
 
+/**
+ * Props for a checkbox item row.
+ */
 type CheckboxItemProps = {
   label: string;
   checked?: boolean;
   onChange?: (value: boolean) => void;
 };
 
+/**
+ * Renders a checkbox row for a report field.
+ */
 function CheckboxItem({ label, checked = false, onChange }: CheckboxItemProps) {
   return (
     <Pressable
@@ -33,12 +39,18 @@ function CheckboxItem({ label, checked = false, onChange }: CheckboxItemProps) {
   );
 }
 
+/**
+ * Report field configuration displayed in the modal.
+ */
 export type ReportField = {
   id: string;
   label: string;
   checked: boolean;
 };
 
+/**
+ * Props for the new report modal.
+ */
 export type NewReportProps = {
   borderRadius?: number;
   onClose: () => void;
@@ -46,6 +58,9 @@ export type NewReportProps = {
   onFieldChange: (id: string, value: boolean) => void;
 };
 
+/**
+ * Modal for creating a new report configuration.
+ */
 export function NewReport({
   borderRadius = 15,
   onClose,
