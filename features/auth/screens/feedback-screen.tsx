@@ -1,13 +1,16 @@
 import { baseautLogoXml } from "@/assets/baseaut-logo";
 import {
-  AuthFeedbackCard,
-  AuthFeedbackMode,
+    AuthFeedbackCard,
+    AuthFeedbackMode,
 } from "@/features/auth/components/auth-feedback-card";
 import { useLocalSearchParams } from "expo-router";
 import React from "react";
 import { View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
+/**
+ * Screen that renders auth feedback based on the route mode.
+ */
 export function FeedbackScreen() {
   const { mode } = useLocalSearchParams<{ mode: string }>();
   const currentMode = (mode as AuthFeedbackMode) || "account_created";
