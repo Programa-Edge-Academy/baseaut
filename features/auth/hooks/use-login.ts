@@ -1,6 +1,9 @@
 import { supabase } from "@/lib/supabase";
 import { useState } from "react";
 
+/**
+ * Provides a login handler backed by Supabase auth.
+ */
 export function useLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -12,10 +15,11 @@ export function useLogin() {
     setIsPendingApproval(false);
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
+      const { data, error: signInError } =
+        await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password,
+        });
 
       if (signInError) throw signInError;
 
@@ -28,7 +32,10 @@ export function useLogin() {
 
         if (profileError) throw profileError;
 
-        if (profile.role !== "coordenador" && profile.status_conta === "pendente") {
+        if (
+          profile.role !== "coordenador" &&
+          profile.status_conta === "pendente"
+        ) {
           await supabase.auth.signOut();
           setIsPendingApproval(true);
           return false;
