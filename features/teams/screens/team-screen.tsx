@@ -1,43 +1,59 @@
+import { colors } from "@/assets/colors";
+import { ConfirmationModal } from "@/components/confirmation-modal";
 import { Header } from "@/components/header";
-import React, { useState } from "react";
-import { View, ScrollView, ActivityIndicator } from "react-native";
 import { PageHeader } from "@/components/page-header";
+import { NewStudent } from "@/features/students/components/new-student";
 import { CompanionCard } from "@/features/teams/components/companion-card";
 import { StudentCardTeam } from "@/features/teams/components/student-card-team";
-import { useTeamData, StudentData } from "../hooks/use-team-data";
-import { NewStudent } from "@/features/students/components/new-student";
-import { ConfirmationModal } from "@/components/confirmation-modal";
 import { useRouter } from "expo-router";
-import { colors } from "@/assets/colors";
+import React, { useState } from "react";
+import { ActivityIndicator, ScrollView, View } from "react-native";
+import { StudentData, useTeamData } from "../hooks/use-team-data";
 
+/**
+ * Team management screen for companions and students.
+ */
 export function TeamScreen() {
   const router = useRouter();
-  const { 
-    students, 
-    companions, 
-    isLoading, 
-    acceptCompanion, 
-    rejectCompanion, 
+  const {
+    students,
+    companions,
+    isLoading,
+    acceptCompanion,
+    rejectCompanion,
     removeCompanion,
     saveStudent,
-    deleteStudent
+    deleteStudent,
   } = useTeamData();
 
   const [modalStudentVisible, setModalStudentVisible] = useState(false);
-  const [editingStudent, setEditingStudent] = useState<StudentData | null>(null);
-  
-  const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
-  const [companionToDelete, setCompanionToDelete] = useState<string | null>(null);
+  const [editingStudent, setEditingStudent] = useState<StudentData | null>(
+    null,
+  );
 
+  const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
+  const [companionToDelete, setCompanionToDelete] = useState<string | null>(
+    null,
+  );
+
+  /**
+   * Selects a student for editing and opens the modal.
+   */
   const handleEditStudent = (id: string) => {
-    const student = students.find(s => s.id === id);
+    const student = students.find((s) => s.id === id);
     if (student) {
       setEditingStudent(student);
       setModalStudentVisible(true);
     }
   };
 
-  const handleSaveStudent = async (data: Partial<StudentData>, photoUri: string | null) => {
+  /**
+   * Persists student changes and closes the modal.
+   */
+  const handleSaveStudent = async (
+    data: Partial<StudentData>,
+    photoUri: string | null,
+  ) => {
     await saveStudent(data, photoUri);
     setModalStudentVisible(false);
     setEditingStudent(null);
@@ -46,20 +62,21 @@ export function TeamScreen() {
   return (
     <View className="flex-1 bg-level1">
       <Header variant="back" onPressBack={() => router.back()} />
-      
+
       {isLoading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
-        <ScrollView className="flex-1 px-8" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>        
+        <ScrollView
+          className="flex-1 px-8"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 40 }}
+        >
           <View className="mt-5 w-full">
-            <PageHeader
-              title="PEFaut"
-              subtitle="Gerenciar equipe"
-            />
-          </View>        
-          
+            <PageHeader title="PEFaut" subtitle="Gerenciar equipe" />
+          </View>
+
           <View className="mt-5 w-full">
             <CompanionCard
               className="max-w-none"
@@ -69,7 +86,7 @@ export function TeamScreen() {
               onRemoveCompanion={(id) => setCompanionToDelete(id)}
             />
           </View>
-          
+
           <View className="mt-5 w-full">
             <StudentCardTeam
               className="max-w-none"
@@ -78,7 +95,7 @@ export function TeamScreen() {
                 setEditingStudent(null);
                 setModalStudentVisible(true);
               }}
-              onEditStudent={handleEditStudent} 
+              onEditStudent={handleEditStudent}
               onRemoveStudent={(id) => setStudentToDelete(id)}
             />
           </View>
