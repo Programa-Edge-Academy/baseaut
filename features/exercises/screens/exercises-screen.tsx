@@ -78,8 +78,10 @@ export function ExercisesScreen() {
     });
   }, [query, exercises, selectedTagIds]);
 
-  const handleSaveExercise = async (data: NewExerciseData) => {
+  const handleSaveExercise = async (data: NewExerciseData, photoUri: string | null, videoUri: string | null) => {
     try {
+      // Por enquanto, apenas repassamos o 'data' para o hook.
+      // Futuramente, podemos atualizar o useExercises para enviar esses URIs para o Supabase Storage
       if (exerciseToEdit) {
         await updateExercise(exerciseToEdit.id, data);
         setExerciseToEdit(null);
@@ -212,8 +214,6 @@ export function ExercisesScreen() {
         availableTags={AVAILABLE_TAGS}
         onClose={handleCloseModal}
         onSave={handleSaveExercise}
-        handlePhotoPress={() => {}}
-        handleVideoPress={() => {}}
       />
 
       <ConfirmationModal
