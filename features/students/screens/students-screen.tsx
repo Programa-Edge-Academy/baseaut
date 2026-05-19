@@ -1,28 +1,36 @@
+import { colors } from "@/assets/colors";
+import { ConfirmationModal } from "@/components/confirmation-modal";
+import { DataList } from "@/components/data-list";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { ListCard } from "@/components/list-card";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
-import { DataList } from "@/components/data-list";
-import { ListCard } from "@/components/list-card";
-import React, { useState } from "react";
-import { View, ActivityIndicator } from "react-native";
-import { useStudents } from "../hooks/use-students";
-import { NewStudent } from "../components/new-student";
-import { ConfirmationModal } from "@/components/confirmation-modal";
-import { colors } from "@/assets/colors";
 import { User } from "lucide-react-native";
+import React, { useState } from "react";
+import { ActivityIndicator, View } from "react-native";
+import { NewStudent } from "../components/new-student";
+import { useStudents } from "../hooks/use-students";
 
+/**
+ * Students list screen with search and CRUD modals.
+ */
 export function StudentsScreen() {
-  const { students, isLoading, addStudent, updateStudent, deleteStudent } = useStudents();
-  const [isNewStudentModalVisible, setIsNewStudentModalVisible] = useState(false);
+  const { students, isLoading, addStudent, updateStudent, deleteStudent } =
+    useStudents();
+  const [isNewStudentModalVisible, setIsNewStudentModalVisible] =
+    useState(false);
   const [editingStudent, setEditingStudent] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [studentToDelete, setStudentToDelete] = useState<any | null>(null);
 
-  const filteredStudents = students.filter(student =>
-    student.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredStudents = students.filter((student) =>
+    student.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
+  /**
+   * Normalizes support level values to display labels.
+   */
   const formatSupportLevel = (level: string) => {
     if (level === "nivel_1" || level.includes("Nível 1")) return "TEA nível 1";
     if (level === "nivel_2" || level.includes("Nível 2")) return "TEA nível 2";
