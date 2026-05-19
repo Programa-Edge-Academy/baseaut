@@ -3,6 +3,9 @@ import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { NewExerciseData } from "../components/new-exercise";
 
+/**
+ * Exercise domain model used by the UI.
+ */
 export type Exercise = {
   id: string;
   name: string;
@@ -11,8 +14,13 @@ export type Exercise = {
   tag: string;
 };
 
+/**
+ * Resolves the active team id for the current user.
+ */
 async function resolveEquipeId(): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { data: membro } = await supabase
@@ -36,12 +44,18 @@ async function resolveEquipeId(): Promise<string | null> {
   return equipe?.id ?? null;
 }
 
+/**
+ * Provides CRUD operations and state for exercises.
+ */
 export function useExercises() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
 
+  /**
+   * Loads exercises for the active team.
+   */
   const loadExercises = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -55,7 +69,7 @@ export function useExercises() {
       // TODO: Quando as colunas forem criadas, adicionar "duracao_segundos, tag" no select
       const { data, error: fetchError } = await supabase
         .from("exercicios")
-        .select("id, titulo, descricao") 
+        .select("id, titulo, descricao")
         .eq("equipe_id", teamId)
         .eq("ativo", true)
         .order("created_at", { ascending: false });
@@ -68,15 +82,15 @@ export function useExercises() {
             id: row.id,
             name: row.titulo,
             description: row.descricao || "",
-            
+
             // TODO: Descomentar abaixo quando os atributos existirem na tabela 'exercicios'
             // durationSeconds: row.duracao_segundos,
             // tag: row.tag || "Locomotor",
 
             // --- Valores provisórios mockados para a UI não ficar vazia até lá ---
-            durationSeconds: 120, 
+            durationSeconds: 120,
             tag: "Locomotor",
-          }))
+          })),
         );
       }
     } catch (caught: any) {
@@ -91,6 +105,9 @@ export function useExercises() {
     loadExercises();
   }, [loadExercises]);
 
+  /**
+   * Creates a new exercise.
+   */
   const addExercise = async (data: NewExerciseData) => {
     setIsLoading(true);
     try {
@@ -106,18 +123,26 @@ export function useExercises() {
         // tag: data.tag || null,
       };
 
-      const { error: insertError } = await supabase.from("exercicios").insert([payload]);
+      const { error: insertError } = await supabase
+        .from("exercicios")
+        .insert([payload]);
       if (insertError) throw insertError;
 
       await loadExercises();
     } catch (err: any) {
       console.error("Erro ao adicionar exercício:", err);
-      Alert.alert("Erro ao Criar", `Não foi possível salvar o exercício: ${err.message}`);
+      Alert.alert(
+        "Erro ao Criar",
+        `Não foi possível salvar o exercício: ${err.message}`,
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
+  /**
+   * Updates an existing exercise.
+   */
   const updateExercise = async (id: string, data: NewExerciseData) => {
     setIsLoading(true);
     try {
@@ -129,18 +154,27 @@ export function useExercises() {
         // tag: data.tag || null,
       };
 
-      const { error: updateError } = await supabase.from("exercicios").update(payload).eq("id", id);
+      const { error: updateError } = await supabase
+        .from("exercicios")
+        .update(payload)
+        .eq("id", id);
       if (updateError) throw updateError;
 
       await loadExercises();
     } catch (err: any) {
       console.error("Erro ao atualizar exercício:", err);
-      Alert.alert("Erro ao Editar", `Não foi possível atualizar o exercício: ${err.message}`);
+      Alert.alert(
+        "Erro ao Editar",
+        `Não foi possível atualizar o exercício: ${err.message}`,
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
+  /**
+   * Soft-deletes an exercise.
+   */
   const deleteExercise = async (id: string) => {
     setIsLoading(true);
     try {
@@ -159,6 +193,9 @@ export function useExercises() {
     }
   };
 
+  /**
+   * Duplicates an exercise with a copy suffix.
+   */
   const duplicateExercise = async (exercise: Exercise) => {
     setIsLoading(true);
     try {
@@ -174,13 +211,18 @@ export function useExercises() {
         // tag: exercise.tag || null,
       };
 
-      const { error: insertError } = await supabase.from("exercicios").insert([payload]);
+      const { error: insertError } = await supabase
+        .from("exercicios")
+        .insert([payload]);
       if (insertError) throw insertError;
 
       await loadExercises();
     } catch (err: any) {
       console.error("Erro ao duplicar exercício:", err);
-      Alert.alert("Erro ao Duplicar", `Não foi possível duplicar o exercício: ${err.message}`);
+      Alert.alert(
+        "Erro ao Duplicar",
+        `Não foi possível duplicar o exercício: ${err.message}`,
+      );
     } finally {
       setIsLoading(false);
     }
