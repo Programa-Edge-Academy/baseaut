@@ -7,14 +7,22 @@ import { router } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
+/**
+ * Maps Supabase sign-up errors to localized UI-friendly messages.
+ */
 const translateAuthError = (msg: string | null | undefined) => {
   if (!msg) return null;
   const lowerMsg = msg.toLowerCase();
-  if (lowerMsg.includes("user already registered")) return "Este e-mail já está cadastrado.";
-  if (lowerMsg.includes("rate limit") || lowerMsg.includes("too many requests")) return "Muitas tentativas. Tente novamente mais tarde.";
+  if (lowerMsg.includes("user already registered"))
+    return "Este e-mail já está cadastrado.";
+  if (lowerMsg.includes("rate limit") || lowerMsg.includes("too many requests"))
+    return "Muitas tentativas. Tente novamente mais tarde.";
   return "Ocorreu um erro ao cadastrar. Tente novamente.";
 };
 
+/**
+ * Registration form UI with validation and submit handling.
+ */
 export function RegisterForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -24,22 +32,28 @@ export function RegisterForm() {
 
   const { register, loading, error: apiError } = useRegister();
 
+  /**
+   * Updates the password field and runs live validation.
+   */
   const handlePasswordChange = (text: string) => {
-    const newErrors: Record<string, string> = {...errors};
-    
+    const newErrors: Record<string, string> = { ...errors };
+
     if (!passwordChecker(text)) {
       newErrors.password =
-      "A senha deve ter entre 8 e 20 caracteres, maiúscula, minúscula, número ou especial";
+        "A senha deve ter entre 8 e 20 caracteres, maiúscula, minúscula, número ou especial";
     } else {
       delete newErrors.password;
     }
 
     setPassword(text);
     setErrors(newErrors);
-  }
+  };
 
+  /**
+   * Updates the confirm password field and checks for a match.
+   */
   const handleConfirmPasswordChange = (text: string) => {
-    const newErrors: Record<string, string> = {...errors};
+    const newErrors: Record<string, string> = { ...errors };
 
     if (password !== text) {
       newErrors.confirmPassword = "As senhas não coincidem";
@@ -48,12 +62,15 @@ export function RegisterForm() {
     }
     setConfirmPassword(text);
     setErrors(newErrors);
-  }
+  };
 
+  /**
+   * Validates the registration form fields and updates errors.
+   */
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    const nameTrimmed = name.trim().replace(/\s+/g, ' ');
+    const nameTrimmed = name.trim().replace(/\s+/g, " ");
     if (!nameTrimmed) {
       newErrors.name = "Nome é obrigatório";
     } else if (nameTrimmed.length < 3) {
@@ -85,6 +102,9 @@ export function RegisterForm() {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Submits the registration form after validation.
+   */
   const handleRegister = async () => {
     if (!validate()) return;
 
@@ -133,7 +153,9 @@ export function RegisterForm() {
             keyboardType="email-address"
             autoCapitalize="none"
             className="h-11 w-full rounded-[15px]"
-            outLineBorderClass={errors.email ? "border-error" : "border-outline"}
+            outLineBorderClass={
+              errors.email ? "border-error" : "border-outline"
+            }
           />
           {errors.email && (
             <Text className="text-default-3 text-error">{errors.email}</Text>
@@ -148,7 +170,9 @@ export function RegisterForm() {
             maxLength={20}
             onChangeText={handlePasswordChange}
             className="h-11 w-full rounded-[15px]"
-            outLineBorderClass={errors.password ? "border-error" : "border-outline"}
+            outLineBorderClass={
+              errors.password ? "border-error" : "border-outline"
+            }
           />
           {errors.password && (
             <Text className="text-default-3 text-error">{errors.password}</Text>
@@ -163,7 +187,9 @@ export function RegisterForm() {
             maxLength={20}
             onChangeText={handleConfirmPasswordChange}
             className="h-11 w-full rounded-[15px]"
-            outLineBorderClass={errors.confirmPassword ? "border-error" : "border-outline"}
+            outLineBorderClass={
+              errors.confirmPassword ? "border-error" : "border-outline"
+            }
           />
           {errors.confirmPassword && (
             <Text className="text-default-3 text-error">
@@ -171,7 +197,11 @@ export function RegisterForm() {
             </Text>
           )}
         </View>
-        {apiError && <Text className="mt-3 text-default-3 text-error">{translateAuthError(apiError)}</Text>}
+        {apiError && (
+          <Text className="mt-3 text-default-3 text-error">
+            {translateAuthError(apiError)}
+          </Text>
+        )}
       </View>
 
       <View className="mt-7 w-full max-w-[342px] items-center gap-2">
