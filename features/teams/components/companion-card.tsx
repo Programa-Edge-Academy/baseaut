@@ -1,9 +1,12 @@
-import React from "react";
-import { View, Text } from "react-native";
-import { GraduationCap } from "lucide-react-native";
-import { CompanionItem } from "./companion-item";
 import { colors } from "@/assets/colors";
+import { GraduationCap } from "lucide-react-native";
+import React from "react";
+import { Text, View } from "react-native";
+import { CompanionItem } from "./companion-item";
 
+/**
+ * Companion list entry used by team cards.
+ */
 export type Companion = {
   id: string;
   name: string;
@@ -11,6 +14,9 @@ export type Companion = {
   status_conta?: "ativo" | "pendente" | "removido";
 };
 
+/**
+ * Props for the companion list card.
+ */
 interface CompanionCardProps {
   className?: string;
   companions: Companion[];
@@ -19,15 +25,20 @@ interface CompanionCardProps {
   onRejectCompanion?: (id: string) => void;
 }
 
-export function CompanionCard({ 
-  className, 
-  companions, 
-  onRemoveCompanion, 
-  onAcceptCompanion, 
-  onRejectCompanion 
+/**
+ * Renders a card listing team companions.
+ */
+export function CompanionCard({
+  className,
+  companions,
+  onRemoveCompanion,
+  onAcceptCompanion,
+  onRejectCompanion,
 }: CompanionCardProps) {
   return (
-    <View className={`w-full max-w-[380px] rounded-[20px] bg-level2 p-5 border border-outline ${className ?? ""}`}>
+    <View
+      className={`w-full max-w-[380px] rounded-[20px] bg-level2 p-5 border border-outline ${className ?? ""}`}
+    >
       <View className="mb-4 flex-row items-center gap-3">
         <GraduationCap size={24} color={colors.secondary} />
         <Text className="text-lg font-bold text-white">
@@ -37,17 +48,18 @@ export function CompanionCard({
 
       {companions.length === 0 ? (
         <Text className="text-sm font-medium text-muted leading-5">
-          Nenhum monitor na equipe. Convide usando email/telefone ou compartilhe o código da equipe.
+          Nenhum monitor na equipe. Convide usando email/telefone ou compartilhe
+          o código da equipe.
         </Text>
       ) : (
         <View>
           {companions.map((companion, index) => (
             <React.Fragment key={companion.id}>
-              <CompanionItem 
+              <CompanionItem
                 name={companion.name}
                 email={companion.email}
                 status_conta={companion.status_conta}
-                onRemove={() => onRemoveCompanion?.(companion.id)} 
+                onRemove={() => onRemoveCompanion?.(companion.id)}
                 onAccept={() => onAcceptCompanion?.(companion.id)}
                 onReject={() => onRejectCompanion?.(companion.id)}
               />

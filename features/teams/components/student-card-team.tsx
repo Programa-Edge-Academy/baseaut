@@ -1,15 +1,21 @@
+import { colors } from "@/assets/colors";
 import { Plus, Users } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { StudentItemTeam } from "./student-item-team";
-import { colors } from "@/assets/colors";
 
+/**
+ * Minimal student shape used in the team card.
+ */
 export type Student = {
   id: string;
   name: string;
-  [key: string]: any; 
+  [key: string]: any;
 };
 
+/**
+ * Props for the student list card in team management.
+ */
 interface StudentCardProps {
   className?: string;
   students: Student[];
@@ -18,12 +24,15 @@ interface StudentCardProps {
   onEditStudent?: (id: string) => void;
 }
 
-export function StudentCardTeam({ 
-  className, 
-  students, 
-  onAddPress, 
+/**
+ * Renders a card listing team students with actions.
+ */
+export function StudentCardTeam({
+  className,
+  students,
+  onAddPress,
   onRemoveStudent,
-  onEditStudent 
+  onEditStudent,
 }: StudentCardProps) {
   return (
     <View
@@ -32,10 +41,12 @@ export function StudentCardTeam({
       <View className="mb-4 flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
           <Users size={24} color={colors.extra} />
-          <Text className="text-lg font-bold text-white">Alunos ({students.length})</Text>
+          <Text className="text-lg font-bold text-white">
+            Alunos ({students.length})
+          </Text>
         </View>
 
-        <Pressable 
+        <Pressable
           onPress={onAddPress}
           className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1 active:opacity-70"
         >
@@ -52,8 +63,8 @@ export function StudentCardTeam({
         <View>
           {students.map((student) => (
             <StudentItemTeam
-              key={student.id} 
-              name={student.name} 
+              key={student.id}
+              name={student.name}
               onEdit={() => onEditStudent?.(student.id)}
               onRemove={() => onRemoveStudent?.(student.id)}
             />
