@@ -1,11 +1,15 @@
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
-import * as FileSystem from 'expo-file-system/legacy';
-import { decode } from 'base64-arraybuffer';
 import { Alert, Platform } from "react-native";
 
+/**
+ * Fallback team id used for team management flows.
+ */
 const EQUIPE_ID = "33af53f5-113c-42c4-aa46-6faa6cfdd5e7";
 
+/**
+ * Student data used in team management screens.
+ */
 export type StudentData = {
   id: string;
   name: string;
@@ -20,19 +24,28 @@ export type StudentData = {
   avatarUrl: string | null;
 };
 
+/**
+ * Companion (monitor) data used in team management screens.
+ */
 export type CompanionData = {
-  id: string; 
+  id: string;
   profileId: string;
   name: string;
   email: string;
   status: "ativo" | "pendente" | "removido";
 };
 
+/**
+ * Provides data and actions for team management.
+ */
 export function useTeamData() {
   const [students, setStudents] = useState<StudentData[]>([]);
   const [companions, setCompanions] = useState<CompanionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  /**
+   * Calculates age in years from a birth date string.
+   */
   const calculateAge = (birthDateString: string) => {
     const birthDate = new Date(birthDateString);
     const today = new Date();
@@ -44,12 +57,17 @@ export function useTeamData() {
     return age;
   };
 
+  /**
+   * Loads students and companions for the team.
+   */
   const fetchData = async () => {
     setIsLoading(true);
     try {
       const { data: alunosData, error: alunosError } = await supabase
         .from("alunos")
-        .select("id, nome_completo, data_nascimento, peso, altura, cintura, nivel_suporte, diagnostico_detalhado, observacoes_clinicas, avatar_url")
+        .select(
+          "id, nome_completo, data_nascimento, peso, altura, cintura, nivel_suporte, diagnostico_detalhado, observacoes_clinicas, avatar_url",
+        )
         .eq("ativo", true);
 
       if (!alunosError && alunosData) {
@@ -66,13 +84,15 @@ export function useTeamData() {
             healthConditions: aluno.diagnostico_detalhado || "",
             observations: aluno.observacoes_clinicas || "",
             avatarUrl: aluno.avatar_url,
-          }))
+          })),
         );
       }
 
       const { data: membrosData, error: membrosError } = await supabase
         .from("membros_equipe")
-        .select(`id, status, usuario_id, profiles:usuario_id (nome_completo, email)`)
+        .select(
+          `id, status, usuario_id, profiles:usuario_id (nome_completo, email)`,
+        )
         .eq("equipe_id", EQUIPE_ID)
         .neq("status", "removido");
 
@@ -87,9 +107,14 @@ export function useTeamData() {
         .eq("status_conta", "pendente");
 
       if (pendentesError) {
-        console.error("Erro ao buscar profiles pendentes (Verifique o RLS no Supabase!):", pendentesError);
+        console.error(
+          "Erro ao buscar profiles pendentes (Verifique o RLS no Supabase!):",
+          pendentesError,
+        );
       } else if (pendentesData?.length === 0) {
-        console.log("Nenhum profile pendente encontrado ou bloqueado pelo RLS da tabela 'profiles'.");
+        console.log(
+          "Nenhum profile pendente encontrado ou bloqueado pelo RLS da tabela 'profiles'.",
+        );
       }
 
       const listaMonitores: CompanionData[] = [];
@@ -125,7 +150,6 @@ export function useTeamData() {
       }
 
       setCompanions(listaMonitores);
-
     } catch (err) {
       console.error("Erro ao carregar dados da equipe:", err);
     } finally {
@@ -137,12 +161,18 @@ export function useTeamData() {
     fetchData();
   }, []);
 
+  /**
+   * Accepts a pending companion and activates their account.
+   */
   const acceptCompanion = async (id: string) => {
-    const comp = companions.find(c => c.id === id);
+    const comp = companions.find((c) => c.id === id);
     if (!comp) return;
 
     if (comp.id !== comp.profileId) {
-      await supabase.from("membros_equipe").update({ status: "ativo" }).eq("id", comp.id);
+      await supabase
+        .from("membros_equipe")
+        .update({ status: "ativo" })
+        .eq("id", comp.id);
     } else {
       await supabase.from("membros_equipe").insert([
         {
@@ -154,24 +184,36 @@ export function useTeamData() {
       ]);
     }
 
-    await supabase.from("profiles").update({ status_conta: "ativa" }).eq("id", comp.profileId);
-    
+    await supabase
+      .from("profiles")
+      .update({ status_conta: "ativa" })
+      .eq("id", comp.profileId);
+
     fetchData();
   };
 
+  /**
+   * Rejects a pending companion request.
+   */
   const rejectCompanion = async (id: string) => {
-    const comp = companions.find(c => c.id === id);
+    const comp = companions.find((c) => c.id === id);
     if (!comp) return;
 
     if (comp.id !== comp.profileId) {
       await supabase.from("membros_equipe").delete().eq("id", comp.id);
     }
 
-    await supabase.from("profiles").update({ status_conta: "recusado" }).eq("id", comp.profileId);
-    
+    await supabase
+      .from("profiles")
+      .update({ status_conta: "recusado" })
+      .eq("id", comp.profileId);
+
     fetchData();
   };
 
+  /**
+   * Soft-removes a companion from the team.
+   */
   const removeCompanion = async (membroEquipeId: string) => {
     await supabase
       .from("membros_equipe")
@@ -181,32 +223,37 @@ export function useTeamData() {
     fetchData();
   };
 
+  /**
+   * Uploads a local avatar image and returns its public URL.
+   */
   const uploadImage = async (uri: string) => {
     try {
       const filePath = `${Date.now()}_avatar.jpg`;
       let fileData: any;
 
-      if (Platform.OS === 'web') {
+      if (Platform.OS === "web") {
         const response = await fetch(uri);
         fileData = await response.blob();
       } else {
-        const FileSystem = require('expo-file-system/legacy');
-        const { decode } = require('base64-arraybuffer');
+        const FileSystem = require("expo-file-system/legacy");
+        const { decode } = require("base64-arraybuffer");
 
         const base64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: 'base64',
+          encoding: "base64",
         });
         fileData = decode(base64);
       }
 
       const { data, error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, fileData, { contentType: 'image/jpeg' });
-      
+        .from("avatars")
+        .upload(filePath, fileData, { contentType: "image/jpeg" });
+
       if (uploadError) throw uploadError;
 
       if (data) {
-        const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("avatars").getPublicUrl(filePath);
         return publicUrl;
       }
       return null;
@@ -216,7 +263,13 @@ export function useTeamData() {
     }
   };
 
-  const saveStudent = async (data: Partial<StudentData>, photoUri?: string | null) => {
+  /**
+   * Creates or updates a student within the team.
+   */
+  const saveStudent = async (
+    data: Partial<StudentData>,
+    photoUri?: string | null,
+  ) => {
     setIsLoading(true);
     try {
       let finalAvatarUrl = data.avatarUrl;
@@ -234,12 +287,24 @@ export function useTeamData() {
 
       let nivelSuporteDb = "nivel_1";
       const suporteText = data.supportLevel?.toLowerCase() || "";
-      
-      if (suporteText.includes("nível 1") || suporteText.includes("nivel 1") || suporteText === "nivel_1") {
+
+      if (
+        suporteText.includes("nível 1") ||
+        suporteText.includes("nivel 1") ||
+        suporteText === "nivel_1"
+      ) {
         nivelSuporteDb = "nivel_1";
-      } else if (suporteText.includes("nível 2") || suporteText.includes("nivel 2") || suporteText === "nivel_2") {
+      } else if (
+        suporteText.includes("nível 2") ||
+        suporteText.includes("nivel 2") ||
+        suporteText === "nivel_2"
+      ) {
         nivelSuporteDb = "nivel_2";
-      } else if (suporteText.includes("nível 3") || suporteText.includes("nivel 3") || suporteText === "nivel_3") {
+      } else if (
+        suporteText.includes("nível 3") ||
+        suporteText.includes("nivel 3") ||
+        suporteText === "nivel_3"
+      ) {
         nivelSuporteDb = "nivel_3";
       }
 
@@ -260,28 +325,44 @@ export function useTeamData() {
       console.log("Enviando Payload do Aluno corrigido:", payload);
 
       if (data.id) {
-        const { error } = await supabase.from("alunos").update(payload).eq("id", data.id);
+        const { error } = await supabase
+          .from("alunos")
+          .update(payload)
+          .eq("id", data.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("alunos").insert([payload]);
         if (error) throw error;
       }
-      
+
       await fetchData();
     } catch (error: any) {
       console.error("Erro ao salvar aluno:", error);
-      Alert.alert("Erro ao Salvar", `Não foi possível salvar o aluno. Detalhes: ${error.message}`);
+      Alert.alert(
+        "Erro ao Salvar",
+        `Não foi possível salvar o aluno. Detalhes: ${error.message}`,
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
+  /**
+   * Soft-deletes a student within the team.
+   */
   const deleteStudent = async (id: string) => {
     await supabase.from("alunos").update({ ativo: false }).eq("id", id);
     fetchData();
   };
 
   return {
-    students, companions, isLoading, acceptCompanion, rejectCompanion, removeCompanion, saveStudent, deleteStudent,
+    students,
+    companions,
+    isLoading,
+    acceptCompanion,
+    rejectCompanion,
+    removeCompanion,
+    saveStudent,
+    deleteStudent,
   };
 }
