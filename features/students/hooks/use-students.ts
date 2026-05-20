@@ -95,7 +95,7 @@ export function useStudents() {
       }
 
       const { data, error: uploadError } = await supabase.storage
-        .from("avatars")
+        .from("avatares")
         .upload(filePath, fileData, { contentType: "image/jpeg" });
 
       if (uploadError) throw uploadError;
@@ -103,7 +103,7 @@ export function useStudents() {
       if (data) {
         const {
           data: { publicUrl },
-        } = supabase.storage.from("avatars").getPublicUrl(filePath);
+        } = supabase.storage.from("avatares").getPublicUrl(filePath);
         return publicUrl;
       }
       return null;
