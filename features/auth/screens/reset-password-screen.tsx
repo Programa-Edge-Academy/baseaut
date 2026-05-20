@@ -13,6 +13,18 @@ const invalidPasswordMessage =
   "A senha deve ter entre 8 e 20 caracteres, maiúscula, minúscula, número ou especial";
 
 /**
+ * Maps Supabase reset errors to localized UI-friendly messages.
+ */
+const translateResetError = (msg: string | null | undefined) => {
+  if (!msg) return null;
+  const lowerMsg = msg.toLowerCase();
+  if (lowerMsg.includes("new password should be different") || lowerMsg.includes("same as the old password")) {
+    return "A nova senha não pode ser igual à senha anterior.";
+  }
+  return "Ocorreu um erro ao redefinir a senha. Tente novamente.";
+};
+
+/**
  * Screen to update the user password after recovery.
  */
 export function ResetPasswordScreen() {
@@ -21,6 +33,7 @@ export function ResetPasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   /**
    * Updates the password field and performs live validation.
@@ -89,13 +102,18 @@ export function ResetPasswordScreen() {
     if (!validate()) return;
 
     setLoading(true);
+    setApiError(null);
+
 
     try {
       const { error } = await supabase.auth.updateUser({
         password: password,
       });
 
-      if (error) throw error;
+      if (error) {
+        setApiError(translateResetError(error.message));
+        return;
+      }
 
       Alert.alert("Sucesso", "Senha redefinida com sucesso.");
 
@@ -104,10 +122,7 @@ export function ResetPasswordScreen() {
         params: { mode: "passwordUpdated" },
       });
     } catch (error: any) {
-      Alert.alert(
-        "Erro",
-        error.message || "Ocorreu um erro ao redefinir a senha.",
-      );
+      setApiError(error.message || "Ocorreu um erro ao redefinir a senha.");
     } finally {
       setLoading(false);
     }
@@ -165,6 +180,12 @@ export function ResetPasswordScreen() {
                 </Text>
               )}
             </View>
+                        
+            {apiError && (
+              <Text className="text-default-3 text-error text-center mt-1">
+                {apiError}
+              </Text>
+            )}
           </View>
 
           <View className="mt-7 w-full max-w-[342px] items-center">
