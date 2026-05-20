@@ -11,7 +11,7 @@ export type Companion = {
   id: string;
   name: string;
   email: string;
-  status_conta?: "ativo" | "pendente" | "removido";
+  status?: "ativo" | "pendente" | "removido";
 };
 
 /**
@@ -58,7 +58,7 @@ export function CompanionCard({
               <CompanionItem
                 name={companion.name}
                 email={companion.email}
-                status_conta={companion.status_conta}
+                status={companion.status}
                 onRemove={() => onRemoveCompanion?.(companion.id)}
                 onAccept={() => onAcceptCompanion?.(companion.id)}
                 onReject={() => onRejectCompanion?.(companion.id)}

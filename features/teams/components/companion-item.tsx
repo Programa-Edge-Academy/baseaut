@@ -9,7 +9,7 @@ import { Pressable, Text, View } from "react-native";
 interface CompanionItemProps {
   name: string;
   email: string;
-  status_conta?: "ativo" | "pendente" | "removido";
+  status?: "ativo" | "pendente" | "removido";
   onRemove?: () => void;
   onAccept?: () => void;
   onReject?: () => void;
@@ -21,7 +21,7 @@ interface CompanionItemProps {
 export function CompanionItem({
   name,
   email,
-  status_conta = "ativo",
+  status = "ativo",
   onRemove,
   onAccept,
   onReject,
@@ -38,7 +38,7 @@ export function CompanionItem({
         </View>
       </View>
 
-      {status_conta === "pendente" ? (
+      {status === "pendente" ? (
         <View className="flex-row items-center gap-2.5">
           <Pressable
             onPress={onReject}
