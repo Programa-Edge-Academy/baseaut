@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useState } from "react";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import { NewExerciseData } from "../components/new-exercise";
 
 /**
@@ -12,6 +12,7 @@ export type Exercise = {
   description: string;
   durationSeconds?: number;
   tag: string;
+  iconUrl?: string | null;
 };
 
 /**
@@ -53,6 +54,42 @@ export function useExercises() {
   const [error, setError] = useState<Error | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
 
+  const uploadIcon = async (uri: string) => {
+    try {
+      const filePath = `${Date.now()}_icon.jpg`;
+      let fileData: any;
+
+      if (Platform.OS === "web") {
+        const response = await fetch(uri);
+        fileData = await response.blob();
+      } else {
+        const FileSystem = require("expo-file-system/legacy");
+        const { decode } = require("base64-arraybuffer");
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: "base64",
+        });
+        fileData = decode(base64);
+      }
+
+      const { data, error: uploadError } = await supabase.storage
+        .from("exercicio-media")
+        .upload(filePath, fileData, { contentType: "image/jpeg" });
+
+      if (uploadError) throw uploadError;
+
+      if (data) {
+        const {
+          data: { publicUrl }
+        } = supabase.storage.from("exercicio-media").getPublicUrl(filePath);
+        return publicUrl;
+      }
+      return null;
+    } catch (e) {
+      console.error("Erro no upload do ícone:", e);
+      return null;
+    }
+  };
+
   /**
    * Loads exercises for the active team.
    */
@@ -66,10 +103,9 @@ export function useExercises() {
       }
       setEquipeId(teamId);
 
-      // TODO: Quando as colunas forem criadas, adicionar "duracao_segundos, tag" no select
       const { data, error: fetchError } = await supabase
         .from("exercicios")
-        .select("id, titulo, descricao")
+        .select("id, titulo, descricao, duracao_segundos, tag, icone_url")
         .eq("equipe_id", teamId)
         .eq("ativo", true)
         .order("created_at", { ascending: false });
@@ -82,14 +118,9 @@ export function useExercises() {
             id: row.id,
             name: row.titulo,
             description: row.descricao || "",
-
-            // TODO: Descomentar abaixo quando os atributos existirem na tabela 'exercicios'
-            // durationSeconds: row.duracao_segundos,
-            // tag: row.tag || "Locomotor",
-
-            // --- Valores provisórios mockados para a UI não ficar vazia até lá ---
-            durationSeconds: 120,
-            tag: "Locomotor",
+            durationSeconds: row.duracao_segundos,
+            tag: row.tag || "Locomotor",
+            iconUrl: row.icone_url,
           })),
         );
       }
@@ -108,19 +139,23 @@ export function useExercises() {
   /**
    * Creates a new exercise.
    */
-  const addExercise = async (data: NewExerciseData) => {
+  const addExercise = async (data: NewExerciseData, photoUri?: string | null) => {
     setIsLoading(true);
     try {
       if (!equipeId) throw new Error("ID da equipe não identificado.");
+      let finalIconUrl = null;
+      if (photoUri && !photoUri.startsWith("http")) {
+        finalIconUrl = await uploadIcon(photoUri);
+      }
 
       const payload = {
         titulo: data.name,
         descricao: data.description || null,
         equipe_id: equipeId,
         ativo: true,
-        // TODO: Descomentar quando as colunas forem adicionadas no banco
-        // duracao_segundos: data.durationSeconds || null,
-        // tag: data.tag || null,
+        duracao_segundos: data.durationSeconds || null,
+        tag: data.tag || null,
+        icone_url: finalIconUrl,
       };
 
       const { error: insertError } = await supabase
@@ -143,16 +178,21 @@ export function useExercises() {
   /**
    * Updates an existing exercise.
    */
-  const updateExercise = async (id: string, data: NewExerciseData) => {
+  const updateExercise = async (id: string, data: NewExerciseData, photoUri?: string | null) => {
     setIsLoading(true);
     try {
-      const payload = {
+      const payload: any = {
         titulo: data.name,
         descricao: data.description || null,
-        // TODO: Descomentar quando as colunas forem adicionadas no banco
-        // duracao_segundos: data.durationSeconds || null,
-        // tag: data.tag || null,
+        duracao_segundos: data.durationSeconds || null,
+        tag: data.tag || null,
       };
+
+      if (photoUri && !photoUri.startsWith("http")) {
+        payload.icone_url = await uploadIcon(photoUri);
+      } else if (photoUri === null) {
+        payload.icone_url = null;
+      }
 
       const { error: updateError } = await supabase
         .from("exercicios")
@@ -206,9 +246,9 @@ export function useExercises() {
         descricao: exercise.description || null,
         equipe_id: equipeId,
         ativo: true,
-        // TODO: Descomentar quando as colunas forem adicionadas no banco
-        // duracao_segundos: exercise.durationSeconds || null,
-        // tag: exercise.tag || null,
+        duracao_segundos: exercise.durationSeconds || null,
+        tag: exercise.tag || null,
+        icone_url: exercise.iconUrl || null,
       };
 
       const { error: insertError } = await supabase

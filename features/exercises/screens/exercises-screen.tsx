@@ -9,9 +9,9 @@ import { ListCard } from "@/components/list-card";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
 import { SectionField } from "@/components/section-field";
-import { Dumbbell } from "lucide-react-native";
+import { Dumbbell, PhoneOff } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, Text, View, Image } from "react-native";
 import { NewExercise, NewExerciseData } from "../components/new-exercise";
 import { Exercise, useExercises } from "../hooks/use-exercises";
 
@@ -99,16 +99,13 @@ export function ExercisesScreen() {
   const handleSaveExercise = async (
     data: NewExerciseData,
     photoUri: string | null,
-    videoUri: string | null,
   ) => {
     try {
-      // Por enquanto, apenas repassamos o 'data' para o hook.
-      // Futuramente, podemos atualizar o useExercises para enviar esses URIs para o Supabase Storage
       if (exerciseToEdit) {
-        await updateExercise(exerciseToEdit.id, data);
+        await updateExercise(exerciseToEdit.id, data, photoUri);
         setExerciseToEdit(null);
       } else {
-        await addExercise(data);
+        await addExercise(data, photoUri);
         setIsCreateModalOpen(false);
       }
     } catch (caught) {
@@ -190,8 +187,18 @@ export function ExercisesScreen() {
             <ListCard
               title={item.name}
               subtitle={subtitleParts}
-              icon={<Dumbbell size={20} color={colors.secondary} />}
-              iconBgColor={withOpacity(colors.secondary, 0.15)}
+              icon={
+                item.iconUrl ? (
+                  <Image
+                    source={{ uri: item.iconUrl }}
+                    style={{ width: "100%", height: "100%", borderRadius: 12 }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Dumbbell size={20} color={colors.secondary} />
+                )
+              }
+              iconBgColor={item.iconUrl ? "transparent" : withOpacity(colors.secondary, 0.15)}
               showDuplicate
               onEdit={() => setExerciseToEdit(item)}
               onDuplicate={() => handleDuplicate(item)}
@@ -247,7 +254,8 @@ export function ExercisesScreen() {
         visible={isModalOpen}
         title={exerciseToEdit ? "Editar exercício" : "Novo exercício"}
         initialData={
-          exerciseToEdit ? exerciseToFormData(exerciseToEdit) : undefined
+          exerciseToEdit ? { ...exerciseToFormData(exerciseToEdit),
+            iconUrl: exerciseToEdit.iconUrl } : undefined
         }
         availableTags={AVAILABLE_TAGS}
         onClose={handleCloseModal}
