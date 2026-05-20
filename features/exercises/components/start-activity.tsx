@@ -1,8 +1,14 @@
 import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
-import { Eye, Info } from "lucide-react-native";
-import React from "react";
-import { Pressable, Text, View } from "react-native";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Info,
+} from "lucide-react-native";
+import React, { useState } from "react";
+import { Image, Pressable, Text, View } from "react-native";
 
 export type StartActivityProps = {
   title: string;
@@ -10,14 +16,21 @@ export type StartActivityProps = {
   onStart: () => void;
   onStartAndRecord: () => void;
   onPressInfo?: () => void;
-  onPressPreview?: () => void;
+  /**
+   * Ordered list of media URLs (images) shown inside the preview carousel.
+   * When empty, the preview area is omitted even if the toggle is on.
+   */
+  mediaUrls?: string[];
+  /**
+   * Initial state of the preview toggle. Defaults to `false` (collapsed).
+   */
+  defaultPreviewVisible?: boolean;
   className?: string;
 };
 
 /**
- * Card used to launch an activity. Shows the title/subtitle of the activity,
- * two utility actions (info / preview) and the two primary actions:
- * "Iniciar atividade" (start) and "Iniciar e gravar" (start and record).
+ * Card used to launch an activity. The eye toggle reveals/hides a media
+ * carousel between the header and the action buttons.
  */
 export function StartActivity({
   title,
@@ -25,9 +38,25 @@ export function StartActivity({
   onStart,
   onStartAndRecord,
   onPressInfo,
-  onPressPreview,
+  mediaUrls = [],
+  defaultPreviewVisible = false,
   className,
 }: StartActivityProps) {
+  const [isPreviewVisible, setIsPreviewVisible] = useState(defaultPreviewVisible);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const hasMedia = mediaUrls.length > 0;
+  const safeIndex = Math.min(currentIndex, Math.max(mediaUrls.length - 1, 0));
+  const canShowPrev = safeIndex > 0;
+  const canShowNext = safeIndex < mediaUrls.length - 1;
+
+  const handlePrev = () => {
+    if (canShowPrev) setCurrentIndex((i) => i - 1);
+  };
+  const handleNext = () => {
+    if (canShowNext) setCurrentIndex((i) => i + 1);
+  };
+
   return (
     <View
       className={`w-full rounded-2xl border border-outline bg-level2 p-4 ${className ?? ""}`}
@@ -51,14 +80,67 @@ export function StartActivity({
             <Info size={20} color={colors.muted} />
           </Pressable>
           <Pressable
-            onPress={onPressPreview}
+            onPress={() => setIsPreviewVisible((current) => !current)}
             hitSlop={8}
             className="active:opacity-70"
           >
-            <Eye size={20} color={colors.muted} />
+            {isPreviewVisible ? (
+              <EyeOff size={20} color={colors.muted} />
+            ) : (
+              <Eye size={20} color={colors.muted} />
+            )}
           </Pressable>
         </View>
       </View>
+
+      {isPreviewVisible && hasMedia && (
+        <View
+          className="mt-4 w-full overflow-hidden rounded-2xl bg-level1"
+          style={{ aspectRatio: 4 / 3 }}
+        >
+          <Image
+            source={{ uri: mediaUrls[safeIndex] }}
+            className="h-full w-full"
+            resizeMode="cover"
+          />
+
+          <View className="absolute bottom-0 left-0 right-0 top-0 flex-row items-center justify-between px-2">
+            {canShowPrev ? (
+              <Pressable
+                onPress={handlePrev}
+                className="h-9 w-9 items-center justify-center rounded-full bg-black/40 active:opacity-70"
+              >
+                <ChevronLeft size={22} color="#fff" />
+              </Pressable>
+            ) : (
+              <View className="w-9" />
+            )}
+            {canShowNext ? (
+              <Pressable
+                onPress={handleNext}
+                className="h-9 w-9 items-center justify-center rounded-full bg-black/40 active:opacity-70"
+              >
+                <ChevronRight size={22} color="#fff" />
+              </Pressable>
+            ) : (
+              <View className="w-9" />
+            )}
+          </View>
+
+          {mediaUrls.length > 1 && (
+            <View className="absolute bottom-2 left-2 right-2 h-1 flex-row gap-1">
+              {mediaUrls.map((_, idx) => (
+                <View
+                  key={idx}
+                  className={`flex-1 rounded-full ${
+                    idx === safeIndex ? "bg-white" : "bg-white/30"
+                  }`}
+                />
+              ))}
+            </View>
+          )}
+        </View>
+      )}
 
       <View className="mt-4 flex-row gap-2.5">
         <DefaultButton
