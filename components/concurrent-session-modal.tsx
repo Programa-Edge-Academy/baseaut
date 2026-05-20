@@ -35,7 +35,7 @@ export function ConcurrentSessionModal({
       onRequestClose={onRequestClose}
     >
       <View className="flex-1 items-center justify-center bg-black/50 px-4">
-        <View className="w-full max-w-[30%] rounded-2xl bg-level2 p-6 shadow-[0px_0px_10px_0px_rgba(0,0,0,0.25)] outline outline-1 outline-offset-[-1px] outline-outline">
+        <View className="w-full max-w-[320px] rounded-2xl bg-level2 p-6 shadow-[0px_0px_10px_0px_rgba(0,0,0,0.25)] outline outline-1 outline-offset-[-1px] outline-outline">
           <View className="flex-row items-center justify-between gap-3 mb-4">
             <Text className="text-white text-xl font-bold leading-5">
               {title}
