@@ -1,9 +1,15 @@
+import { colors } from "@/assets/colors";
 import { Mic } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
-import { colors } from "@/assets/colors";
 
+/**
+ * Renders an open-ended question with optional audio action placeholder.
+ */
 export function OpenQuestionUI() {
+  /**
+   * Placeholder handler for starting audio recording.
+   */
   const handleRecordAudio = () => {};
 
   return (
