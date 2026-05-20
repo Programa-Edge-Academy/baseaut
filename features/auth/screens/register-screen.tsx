@@ -4,6 +4,9 @@ import React from "react";
 import { View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
+/**
+ * Screen layout for the registration form.
+ */
 export function RegisterScreen() {
   return (
     <View className="flex-1 items-center bg-level1 px-4 pt-10">

@@ -1,16 +1,20 @@
 import { DefaultButton } from "@/components/default-button";
+import { passwordChecker } from "@/features/auth/hooks/password-checker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Alert, Text, View } from "react-native";
 import { SvgXml } from "react-native-svg";
-import { passwordChecker } from "@/features/auth/hooks/password-checker";
 
 import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { PasswordInput } from "@/features/auth/components/password-input";
 import { supabase } from "@/lib/supabase";
 
-const invalidPasswordMessage = "A senha deve ter entre 8 e 20 caracteres, maiúscula, minúscula, número ou especial";
+const invalidPasswordMessage =
+  "A senha deve ter entre 8 e 20 caracteres, maiúscula, minúscula, número ou especial";
 
+/**
+ * Screen to update the user password after recovery.
+ */
 export function ResetPasswordScreen() {
   const router = useRouter();
   const [password, setPassword] = useState("");
@@ -18,13 +22,16 @@ export function ResetPasswordScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Updates the password field and performs live validation.
+   */
   const handlePasswordChange = (text: string) => {
     const newErrors: Record<string, string> = { ...errors };
-    
+
     if (!passwordChecker(text)) {
       newErrors.password = invalidPasswordMessage;
     } else {
-      delete newErrors.password; 
+      delete newErrors.password;
     }
 
     if (confirmPassword && text !== confirmPassword) {
@@ -37,6 +44,9 @@ export function ResetPasswordScreen() {
     setErrors(newErrors);
   };
 
+  /**
+   * Updates the confirm password field and checks for a match.
+   */
   const handleConfirmPasswordChange = (text: string) => {
     const newErrors: Record<string, string> = { ...errors };
 
@@ -50,6 +60,9 @@ export function ResetPasswordScreen() {
     setErrors(newErrors);
   };
 
+  /**
+   * Validates the reset password form fields and updates errors.
+   */
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -69,6 +82,9 @@ export function ResetPasswordScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Submits the password update to Supabase.
+   */
   const handleResetPassword = async () => {
     if (!validate()) return;
 
@@ -82,14 +98,16 @@ export function ResetPasswordScreen() {
       if (error) throw error;
 
       Alert.alert("Sucesso", "Senha redefinida com sucesso.");
-      
+
       router.replace({
         pathname: "/auth-feedback",
         params: { mode: "passwordUpdated" },
       });
-      
     } catch (error: any) {
-      Alert.alert("Erro", error.message || "Ocorreu um erro ao redefinir a senha.");
+      Alert.alert(
+        "Erro",
+        error.message || "Ocorreu um erro ao redefinir a senha.",
+      );
     } finally {
       setLoading(false);
     }
@@ -105,12 +123,9 @@ export function ResetPasswordScreen() {
 
       <View className="mt-10 w-full items-center">
         <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-6 shadow-panelShadow outline outline-1 outline-offset-[-1px] outline-outline">
-          <Text className="mb-5 text-header-3 text-white">
-            Redefinir senha
-          </Text>
+          <Text className="mb-5 text-header-3 text-white">Redefinir senha</Text>
 
           <View className="w-full max-w-[342px] gap-4">
-            
             <View className="gap-1">
               <Text className="text-default-2 text-muted">Nova senha</Text>
               <PasswordInput
@@ -119,22 +134,30 @@ export function ResetPasswordScreen() {
                 maxLength={20}
                 onChangeText={handlePasswordChange}
                 className="h-11 w-full rounded-[15px]"
-                outLineBorderClass={errors.password ? "border-error" : "border-outline"}
+                outLineBorderClass={
+                  errors.password ? "border-error" : "border-outline"
+                }
               />
               {errors.password && (
-                <Text className="text-default-3 text-error">{errors.password}</Text>
+                <Text className="text-default-3 text-error">
+                  {errors.password}
+                </Text>
               )}
             </View>
 
             <View className="gap-1">
-              <Text className="text-default-2 text-muted">Confirmar nova senha</Text>
+              <Text className="text-default-2 text-muted">
+                Confirmar nova senha
+              </Text>
               <PasswordInput
                 placeholder="Confirme sua nova senha"
                 value={confirmPassword}
                 maxLength={20}
                 onChangeText={handleConfirmPasswordChange}
                 className="h-11 w-full rounded-[15px]"
-                outLineBorderClass={errors.confirmPassword ? "border-error" : "border-outline"}
+                outLineBorderClass={
+                  errors.confirmPassword ? "border-error" : "border-outline"
+                }
               />
               {errors.confirmPassword && (
                 <Text className="text-default-3 text-error">
@@ -142,7 +165,6 @@ export function ResetPasswordScreen() {
                 </Text>
               )}
             </View>
-
           </View>
 
           <View className="mt-7 w-full max-w-[342px] items-center">
@@ -152,7 +174,9 @@ export function ResetPasswordScreen() {
               sizeClass="w-full h-11"
               disabled={isButtonDisabled}
               bgColorClass={isButtonDisabled ? "bg-muted" : "bg-primary"}
-              shadowClass={isButtonDisabled ? "shadow-none" : "shadow-primaryShadow"}
+              shadowClass={
+                isButtonDisabled ? "shadow-none" : "shadow-primaryShadow"
+              }
               className={`rounded-[15px] ${isButtonDisabled ? "border border-outline" : ""}`}
             />
           </View>

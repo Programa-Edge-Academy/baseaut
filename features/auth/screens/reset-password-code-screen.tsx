@@ -1,5 +1,4 @@
 import { baseautLogoXml } from "@/assets/baseaut-logo";
-import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import { DefaultTextInput } from "@/components/default-text-input";
 import { supabase } from "@/lib/supabase";
@@ -8,13 +7,19 @@ import React, { useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
+/**
+ * Screen to request a password reset email.
+ */
 export function ResetPasswordCodeScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isSent, setIsSent] = useState(false);  
+  const [isSent, setIsSent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  /**
+   * Validates the email input and updates errors.
+   */
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -28,6 +33,9 @@ export function ResetPasswordCodeScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Sends the password reset email request.
+   */
   const handleSendInstructions = async () => {
     if (!validate()) return;
 
@@ -56,7 +64,6 @@ export function ResetPasswordCodeScreen() {
 
       <View className="mt-10 w-full items-center">
         <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-6 shadow-panelShadow border border-outline">
-          
           {!isSent ? (
             <>
               <Text className="text-header-3 text-white mb-5">
@@ -77,10 +84,14 @@ export function ResetPasswordCodeScreen() {
                     keyboardType="email-address"
                     autoCapitalize="none"
                     className="h-11 w-full rounded-[15px]"
-                    outLineBorderClass={errors.email ? "border-error" : "border-outline"}
+                    outLineBorderClass={
+                      errors.email ? "border-error" : "border-outline"
+                    }
                   />
                   {errors.email && (
-                    <Text className="text-default-3 text-error">{errors.email}</Text>
+                    <Text className="text-default-3 text-error">
+                      {errors.email}
+                    </Text>
                   )}
                 </View>
 
@@ -92,10 +103,7 @@ export function ResetPasswordCodeScreen() {
                 />
               </View>
 
-              <Pressable 
-                onPress={() => router.replace("/")} 
-                className="mt-7"
-              >
+              <Pressable onPress={() => router.replace("/")} className="mt-7">
                 <Text className="text-header-3 text-primary">
                   Voltar ao login
                 </Text>
@@ -106,9 +114,10 @@ export function ResetPasswordCodeScreen() {
               <Text className="text-header-3 text-white mb-5">
                 E-mail enviado!
               </Text>
-              
+
               <Text className="text-default-2 text-muted mb-7 text-center leading-5">
-                Se o e-mail estiver cadastrado, você receberá as instruções em breve. Verifique sua caixa de entrada.
+                Se o e-mail estiver cadastrado, você receberá as instruções em
+                breve. Verifique sua caixa de entrada.
               </Text>
 
               <DefaultButton

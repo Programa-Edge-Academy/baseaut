@@ -8,6 +8,9 @@ import { supabase } from "@/lib/supabase";
 
 import { LoginForm } from "@/features/auth/components/login-form";
 
+/**
+ * Screen layout for the login form.
+ */
 export function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -17,6 +20,9 @@ export function LoginScreen() {
   const [emailError, setEmailError] = useState<string>("");
   const [passwordError, setPasswordError] = useState<string>("");
 
+  /**
+   * Validates inputs and signs the user in.
+   */
   const handleLogin = async () => {
     setError(null);
     setEmailError("");
