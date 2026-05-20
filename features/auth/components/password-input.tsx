@@ -1,3 +1,5 @@
+import { colors } from "@/assets/colors";
+import { Eye, EyeOff } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Pressable,
@@ -7,9 +9,10 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { Eye, EyeOff } from "lucide-react-native";
-import { colors } from "@/assets/colors";
 
+/**
+ * Props for the password input field.
+ */
 type PasswordInputProps = TextInputProps & {
   className?: string;
   containerStyle?: ViewStyle;
@@ -17,6 +20,9 @@ type PasswordInputProps = TextInputProps & {
   outLineBorderClass?: string;
 };
 
+/**
+ * Password input with a visibility toggle.
+ */
 export function PasswordInput({
   className,
   containerStyle,
@@ -26,6 +32,9 @@ export function PasswordInput({
 }: PasswordInputProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
+  /**
+   * Toggles between masked and visible password input.
+   */
   const togglePasswordVisibility = () => {
     setIsPasswordVisible((prev) => !prev);
   };
