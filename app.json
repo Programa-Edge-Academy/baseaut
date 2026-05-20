@@ -41,7 +41,8 @@
         }
       ],
       "expo-sqlite",
-      "expo-font"
+      "expo-font",
+      "@journeyapps/react-native-quick-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,
