@@ -22,25 +22,50 @@ BEGIN
 END;
 $$;
 
--- Função Segura para Rejeitar/Bloquear Monitor (Soft Delete)
+ALTER TYPE status_conta ADD VALUE 'rejeitada';
+
+-- Função para Rejeitar Solicitação Inicial
 CREATE OR REPLACE FUNCTION public.rejeitar_monitor(p_monitor_id UUID)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-  -- Verifica se quem está chamando é um coordenador
   IF NOT public.is_coordinator() THEN
     RAISE EXCEPTION 'Acesso negado: Apenas coordenadores podem rejeitar monitores.';
   END IF;
 
-  -- Altera apenas o status para 'bloqueada'
+  -- Muda o status para 'rejeitada' para o front-end avisar o usuário amigavelmente
   UPDATE public.profiles
   SET 
-    status_conta = 'bloqueada',
+    status_conta = 'rejeitada',
     updated_at = NOW()
   WHERE id = p_monitor_id 
     AND role = 'monitor' 
     AND status_conta = 'pendente';
+END;
+$$;
+
+
+-- Função para Remover Monitor da Equipe
+CREATE OR REPLACE FUNCTION public.remover_monitor(p_monitor_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT public.is_coordinator() THEN
+    RAISE EXCEPTION 'Acesso negado: Apenas coordenadores podem remover monitores.';
+  END IF;
+
+  -- Soft delete clássico: inativa a conta e tira da equipe (preserva histórico clínico)
+  UPDATE public.profiles
+  SET 
+    status_conta = 'bloqueada', -- Inativa a conta para impedir login
+    equipe_id = NULL,
+    updated_at = NOW()
+  WHERE id = p_monitor_id 
+    AND role = 'monitor' 
+    AND status_conta = 'ativa'; -- Garante que só remove quem já estava na equipe
 END;
 $$;
