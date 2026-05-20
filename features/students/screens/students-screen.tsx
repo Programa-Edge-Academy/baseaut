@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
 import { User } from "lucide-react-native";
 import React, { useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, View, Image } from "react-native";
 import { NewStudent } from "../components/new-student";
 import { useStudents } from "../hooks/use-students";
 
@@ -77,7 +77,18 @@ export function StudentsScreen() {
               <ListCard
                 title={item.name}
                 subtitle={`${item.age} anos · ${item.weight}kg · ${item.height}cm · ${formatSupportLevel(item.supportLevel)}`}
-                icon={<User size={20} color={colors.muted} />}
+                icon={
+                  item.avatarUrl ? (
+                    <Image
+                      source={{ uri: item.avatarUrl }}
+                      style={{ width: "100%", height: "100%", borderRadius: 12 }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <User size={20} color={colors.muted} />
+                  )
+                }
+                iconBgColor={item.avatarUrl ? "transparent" : undefined}
                 onEdit={() => {
                   setEditingStudent(item);
                   setIsNewStudentModalVisible(true);
