@@ -2,6 +2,9 @@ import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Platform } from "react-native";
 
+/**
+ * Student domain model used by the UI.
+ */
 export type Student = {
   id: string;
   name: string;
@@ -16,8 +19,13 @@ export type Student = {
   avatarUrl: string | null;
 };
 
+/**
+ * Resolves the active team id for the current user.
+ */
 async function resolveEquipeId(): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { data: membro } = await supabase
@@ -41,12 +49,18 @@ async function resolveEquipeId(): Promise<string | null> {
   return equipe?.id ?? null;
 }
 
+/**
+ * Provides CRUD operations and state for students.
+ */
 export function useStudents() {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
 
+  /**
+   * Calculates age in years from a birth date string.
+   */
   const calculateAge = (birthDateString: string) => {
     if (!birthDateString) return 0;
     const birthDate = new Date(birthDateString);
@@ -59,32 +73,37 @@ export function useStudents() {
     return age;
   };
 
+  /**
+   * Uploads a local avatar image and returns its public URL.
+   */
   const uploadImage = async (uri: string) => {
     try {
       const filePath = `${Date.now()}_avatar.jpg`;
       let fileData: any;
 
-      if (Platform.OS === 'web') {
+      if (Platform.OS === "web") {
         const response = await fetch(uri);
         fileData = await response.blob();
       } else {
-        const FileSystem = require('expo-file-system/legacy');
-        const { decode } = require('base64-arraybuffer');
+        const FileSystem = require("expo-file-system/legacy");
+        const { decode } = require("base64-arraybuffer");
 
         const base64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: 'base64',
+          encoding: "base64",
         });
         fileData = decode(base64);
       }
 
       const { data, error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, fileData, { contentType: 'image/jpeg' });
-      
+        .from("avatars")
+        .upload(filePath, fileData, { contentType: "image/jpeg" });
+
       if (uploadError) throw uploadError;
 
       if (data) {
-        const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("avatars").getPublicUrl(filePath);
         return publicUrl;
       }
       return null;
@@ -94,6 +113,9 @@ export function useStudents() {
     }
   };
 
+  /**
+   * Loads students for the active team.
+   */
   const loadStudents = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -106,7 +128,9 @@ export function useStudents() {
 
       const { data, error: fetchError } = await supabase
         .from("alunos")
-        .select("id, nome_completo, data_nascimento, peso, altura, cintura, nivel_suporte, diagnostico_detalhado, observacoes_clinicas, avatar_url")
+        .select(
+          "id, nome_completo, data_nascimento, peso, altura, cintura, nivel_suporte, diagnostico_detalhado, observacoes_clinicas, avatar_url",
+        )
         .eq("equipe_id", teamId)
         .eq("ativo", true)
         .order("nome_completo", { ascending: true });
@@ -123,11 +147,16 @@ export function useStudents() {
             weight: Number(aluno.peso) || 0,
             height: Number(aluno.altura) || 0,
             waist: Number(aluno.cintura) || 0,
-            supportLevel: aluno.nivel_suporte === "nivel_1" ? "Nível 1" : aluno.nivel_suporte === "nivel_2" ? "Nível 2" : "Nível 3",
+            supportLevel:
+              aluno.nivel_suporte === "nivel_1"
+                ? "Nível 1"
+                : aluno.nivel_suporte === "nivel_2"
+                  ? "Nível 2"
+                  : "Nível 3",
             healthConditions: aluno.diagnostico_detalhado || "",
             observations: aluno.observacoes_clinicas || "",
             avatarUrl: aluno.avatar_url,
-          }))
+          })),
         );
       }
     } catch (caught: any) {
@@ -142,7 +171,13 @@ export function useStudents() {
     loadStudents();
   }, [loadStudents]);
 
-  const addStudent = async (data: Omit<Student, "id" | "age">, photoUri?: string | null) => {
+  /**
+   * Creates a new student and uploads the avatar if needed.
+   */
+  const addStudent = async (
+    data: Omit<Student, "id" | "age">,
+    photoUri?: string | null,
+  ) => {
     setIsLoading(true);
     try {
       if (!equipeId) throw new Error("ID da equipe não identificado.");
@@ -178,19 +213,31 @@ export function useStudents() {
         ativo: true,
       };
 
-      const { error: insertError } = await supabase.from("alunos").insert([payload]);
+      const { error: insertError } = await supabase
+        .from("alunos")
+        .insert([payload]);
       if (insertError) throw insertError;
 
       await loadStudents();
     } catch (err: any) {
       console.error("Erro ao adicionar aluno:", err);
-      Alert.alert("Erro ao Criar", `Não foi possível salvar o aluno: ${err.message}`);
+      Alert.alert(
+        "Erro ao Criar",
+        `Não foi possível salvar o aluno: ${err.message}`,
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const updateStudent = async (id: string, data: Partial<Omit<Student, "id" | "age">>, photoUri?: string | null) => {
+  /**
+   * Updates a student record and uploads a new avatar if needed.
+   */
+  const updateStudent = async (
+    id: string,
+    data: Partial<Omit<Student, "id" | "age">>,
+    photoUri?: string | null,
+  ) => {
     setIsLoading(true);
     try {
       let finalAvatarUrl = data.avatarUrl;
@@ -204,8 +251,10 @@ export function useStudents() {
       if (data.weight !== undefined) payload.peso = data.weight;
       if (data.height !== undefined) payload.altura = data.height;
       if (data.waist !== undefined) payload.cintura = data.waist;
-      if (data.healthConditions !== undefined) payload.diagnostico_detalhado = data.healthConditions;
-      if (data.observations !== undefined) payload.observacoes_clinicas = data.observations;
+      if (data.healthConditions !== undefined)
+        payload.diagnostico_detalhado = data.healthConditions;
+      if (data.observations !== undefined)
+        payload.observacoes_clinicas = data.observations;
       if (finalAvatarUrl !== undefined) payload.avatar_url = finalAvatarUrl;
 
       if (data.supportLevel !== undefined) {
@@ -225,18 +274,27 @@ export function useStudents() {
         payload.data_nascimento = formattedDate;
       }
 
-      const { error: updateError } = await supabase.from("alunos").update(payload).eq("id", id);
+      const { error: updateError } = await supabase
+        .from("alunos")
+        .update(payload)
+        .eq("id", id);
       if (updateError) throw updateError;
 
       await loadStudents();
     } catch (err: any) {
       console.error("Erro ao atualizar aluno:", err);
-      Alert.alert("Erro ao Editar", `Não foi possível atualizar o aluno: ${err.message}`);
+      Alert.alert(
+        "Erro ao Editar",
+        `Não foi possível atualizar o aluno: ${err.message}`,
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
+  /**
+   * Soft-deletes a student record.
+   */
   const deleteStudent = async (id: string) => {
     setIsLoading(true);
     try {
@@ -255,13 +313,13 @@ export function useStudents() {
     }
   };
 
-  return { 
-    students, 
-    isLoading, 
-    error, 
-    refresh: loadStudents, 
-    addStudent, 
-    updateStudent, 
-    deleteStudent 
+  return {
+    students,
+    isLoading,
+    error,
+    refresh: loadStudents,
+    addStudent,
+    updateStudent,
+    deleteStudent,
   };
 }
