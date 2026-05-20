@@ -1,14 +1,19 @@
 import { RipplePressable } from "@/components/ripple-pressable";
 import React from "react";
-import { View, Text, Pressable } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
+/**
+ * Props for the continuation options list.
+ */
 interface ContinuationOptionsProps {
   onSelectOption: (id: string) => void;
   onCancel: () => void;
   className?: string;
 }
 
-// 1. Opções mockadas internamente conforme solicitado
+/**
+ * Static list of continuation options shown to the user.
+ */
 const CONTINUATION_OPTIONS = [
   {
     id: "try_unrealized",
@@ -28,22 +33,25 @@ const CONTINUATION_OPTIONS = [
 ];
 
 // 2. Subcomponente local para os itens da lista
+/**
+ * Props for a single option item in the list.
+ */
 interface OptionItemProps {
   title: string;
   description: string;
   onPress: () => void;
 }
 
+/**
+ * Renders a selectable continuation option.
+ */
 function OptionItem({ title, description, onPress }: OptionItemProps) {
   return (
     <RipplePressable
-    
       onPress={onPress}
       className="w-full rounded-[20px] bg-level1 p-5 border border-outline active:opacity-70"
     >
-      <Text className="text-[18px] font-semibold text-white">
-        {title}
-      </Text>
+      <Text className="text-[18px] font-semibold text-white">{title}</Text>
       <Text className="mt-1 text-[14px] text-muted leading-5">
         {description}
       </Text>
@@ -52,6 +60,9 @@ function OptionItem({ title, description, onPress }: OptionItemProps) {
 }
 
 // 3. Componente Principal
+/**
+ * Renders the continuation options and a cancel action.
+ */
 export function ContinuationOptions({
   onSelectOption,
   onCancel,
@@ -76,9 +87,7 @@ export function ContinuationOptions({
         onPress={onCancel}
         className="mt-5 w-full py-3 items-center justify-center active:opacity-60"
       >
-        <Text className="text-[16px] font-medium text-muted">
-          Cancelar
-        </Text>
+        <Text className="text-[16px] font-medium text-muted">Cancelar</Text>
       </Pressable>
     </View>
   );

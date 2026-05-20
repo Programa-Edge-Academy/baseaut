@@ -1,33 +1,39 @@
-import React from "react";
-import { Split } from "lucide-react-native";
-import { View, Text, ScrollView, Pressable } from "react-native";
-import { ExerciseRow } from "./exercise-row";
 import { colors } from "@/assets/colors";
+import { Split } from "lucide-react-native";
+import React from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { ExerciseRow } from "./exercise-row";
 
-// Informações puxadas para cada exercício
+/**
+ * Exercise info shown in the selection list.
+ */
 interface ExerciseData {
   id: string;
   name: string;
   description: string;
 }
 
+/**
+ * Props for the exercise selection modal.
+ */
 interface ExerciseSelectionModalProps {
-exercises: ExerciseData[];
+  exercises: ExerciseData[];
   onSelectExercise: (id: string) => void;
   onPressEngagement?: () => void;
   className?: string;
 }
 
-
-
+/**
+ * Modal that lets the user select the next exercise.
+ */
 export function ExerciseSelectionModal({
   exercises,
   onSelectExercise,
   onPressEngagement,
   className = "",
-}:ExerciseSelectionModalProps) {
+}: ExerciseSelectionModalProps) {
   return (
-    <View 
+    <View
       className={`w-full max-w-md rounded-[24px] bg-level1 p-6 border border-outline ${className}`}
       style={{ backgroundColor: colors.level1 }}
     >
@@ -48,17 +54,14 @@ export function ExerciseSelectionModal({
           className="h-11 w-11 items-center justify-center rounded-full border border-amber-500/30 active:opacity-70"
           style={{ backgroundColor: colors.extra + "25" }}
         >
-          <Split 
-            size={20} 
-            color={colors.extra}
-          />
+          <Split size={20} color={colors.extra} />
         </Pressable>
       </View>
 
       {/* Lista de Exercícios Utilizando o Subcomponente */}
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
-        className="space-y-3" 
+        className="space-y-3"
         contentContainerStyle={{ gap: 12 }}
       >
         {exercises.map((exercise) => (

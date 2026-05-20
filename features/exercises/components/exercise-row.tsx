@@ -1,10 +1,12 @@
-import React from "react";
-import { Pressable, Text, View } from "react-native";
-import { ChevronRight } from "lucide-react-native";
 import { colors } from "@/assets/colors";
 import { RipplePressable } from "@/components/ripple-pressable";
+import { ChevronRight } from "lucide-react-native";
+import React from "react";
+import { Text, View } from "react-native";
 
-
+/**
+ * Props for a compact exercise row.
+ */
 interface ExerciseRowProps {
   name: string;
   description?: string;
@@ -12,24 +14,24 @@ interface ExerciseRowProps {
   onPress?: () => void;
 }
 
+/**
+ * Renders a compact row item for an exercise selection list.
+ */
 export function ExerciseRow({
-    name,
-    description,
-    onPress,
-    className = "",
+  name,
+  description,
+  onPress,
+  className = "",
 }: ExerciseRowProps) {
-    return (
+  return (
     <RipplePressable
       onPress={onPress}
       className={`w-full flex-row items-center justify-between rounded-[20px] bg-level1 p-4 border border-outline active:opacity-70 ${className}`}
     >
-    {/* Conteúdo de Texto */}
-    <View className="flex-1 pr-4 justify-center">
-        <Text 
-        className="text-[18px] font-bold text-white" 
-        numberOfLines={1}
-        >
-        {name}
+      {/* Conteúdo de Texto */}
+      <View className="flex-1 pr-4 justify-center">
+        <Text className="text-[18px] font-bold text-white" numberOfLines={1}>
+          {name}
         </Text>
         {description ? (
           <Text
@@ -37,7 +39,7 @@ export function ExerciseRow({
             numberOfLines={2}
           >
             {description}
-        </Text>
+          </Text>
         ) : null}
       </View>
 
@@ -45,6 +47,6 @@ export function ExerciseRow({
       <View className="items-center justify-center">
         <ChevronRight size={30} color={colors.muted} />
       </View>
-      </RipplePressable>
-    );
+    </RipplePressable>
+  );
 }
