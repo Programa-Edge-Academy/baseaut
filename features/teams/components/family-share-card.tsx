@@ -1,22 +1,34 @@
-import React, { useState } from "react";
-import { View, Text, Switch } from "react-native";
 import { Share2 } from "lucide-react-native";
+import React, { useState } from "react";
+import { Switch, Text, View } from "react-native";
 
+/**
+ * Props for the family sharing toggle card.
+ */
 interface FamilyShareCardProps {
   onValueChange?: (value: boolean) => void;
   className?: string;
 }
 
-export function FamilyShareCard({ onValueChange, className }: FamilyShareCardProps) {
+/**
+ * Renders a toggle card for family sharing.
+ */
+export function FamilyShareCard({
+  onValueChange,
+  className,
+}: FamilyShareCardProps) {
   const [isEnabled, setIsEnabled] = useState(false);
 
+  /**
+   * Toggles the family share switch and notifies listeners.
+   */
   const toggleSwitch = () => {
     setIsEnabled((previousState) => !previousState);
     if (onValueChange) onValueChange(!isEnabled);
   };
 
   return (
-    <View 
+    <View
       className={`w-full max-w-[380px] rounded-[20px] bg-[#181C25] p-5 shadow-lg ${className ?? ""}`}
     >
       {/* Linha Superior: Ícone, Título e Switch */}

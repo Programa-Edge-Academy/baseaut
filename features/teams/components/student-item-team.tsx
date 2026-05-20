@@ -3,18 +3,23 @@ import { Trash2, User } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 
+/**
+ * Props for a team student row.
+ */
 export interface StudentItemProps {
   name: string;
   onRemove?: () => void;
   onEdit?: () => void;
 }
 
+/**
+ * Renders a student row inside the team card.
+ */
 export function StudentItemTeam({ name, onRemove, onEdit }: StudentItemProps) {
   return (
     <View className="mb-4 flex-row items-center justify-between last:mb-0">
-      
-      <Pressable 
-        onPress={onEdit} 
+      <Pressable
+        onPress={onEdit}
         className="flex-1 flex-row items-center gap-4 active:opacity-70"
       >
         <View className="h-11 w-11 items-center justify-center rounded-2xl bg-extra/10">

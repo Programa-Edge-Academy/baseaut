@@ -1,15 +1,21 @@
-import React from "react";
-import { View, Text, Pressable } from "react-native";
 import { Trash2 } from "lucide-react-native";
+import React from "react";
+import { Pressable, Text, View } from "react-native";
 
+/**
+ * Props for the delete team card.
+ */
 interface DeleteTeamCardProps {
   onDelete?: () => void;
   className?: string;
 }
 
+/**
+ * Renders a destructive action card for deleting a team.
+ */
 export function DeleteTeamCard({ onDelete, className }: DeleteTeamCardProps) {
   return (
-    <Pressable 
+    <Pressable
       onPress={onDelete}
       className={`w-full max-w-[380px] flex-row items-center rounded-[20px] bg-[#181C25] p-5 border border-transparent active:border-red-900/50 ${className ?? ""}`}
     >
@@ -20,9 +26,7 @@ export function DeleteTeamCard({ onDelete, className }: DeleteTeamCardProps) {
 
       {/* Textos Informativos */}
       <View className="ml-4 flex-1">
-        <Text className="text-lg font-bold text-[#E53E3E]">
-          Excluir equipe
-        </Text>
+        <Text className="text-lg font-bold text-[#E53E3E]">Excluir equipe</Text>
         <Text className="text-sm font-medium text-[#465460] leading-5">
           Apagar permanentemente esta equipe e todos os dados
         </Text>

@@ -3,6 +3,9 @@ import { Check, User, UserMinus, X } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 
+/**
+ * Props for a single companion row.
+ */
 interface CompanionItemProps {
   name: string;
   email: string;
@@ -12,13 +15,16 @@ interface CompanionItemProps {
   onReject?: () => void;
 }
 
-export function CompanionItem({ 
-  name, 
-  email, 
-  status_conta = "ativo", 
-  onRemove, 
-  onAccept, 
-  onReject 
+/**
+ * Renders a companion row with status actions.
+ */
+export function CompanionItem({
+  name,
+  email,
+  status_conta = "ativo",
+  onRemove,
+  onAccept,
+  onReject,
 }: CompanionItemProps) {
   return (
     <View className="mb-4 flex-row items-center justify-between last:mb-0">
@@ -40,7 +46,7 @@ export function CompanionItem({
           >
             <X size={20} color={colors.error} />
           </Pressable>
-          
+
           <Pressable
             onPress={onAccept}
             className="h-10 w-10 items-center justify-center rounded-2xl bg-primary shadow-primaryShadow active:opacity-60"
