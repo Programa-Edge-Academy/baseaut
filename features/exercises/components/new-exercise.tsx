@@ -1,7 +1,7 @@
 import { colors } from "@/assets/colors";
 import { ActionButtons } from "@/components/action-buttons";
 import { ConfirmationModal } from "@/components/confirmation-modal";
-import { Check, FileVideo2Icon, ImageUp, X } from "lucide-react-native";
+import { ImageUp, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
     Image,
@@ -36,12 +36,10 @@ export type NewExerciseProps = {
   onSave: (
     exercise: NewExerciseData,
     photoUri: string | null,
-    videoUri: string | null,
   ) => void;
   title?: string;
   initialData?: NewExerciseData & {
     iconUrl?: string | null;
-    mediaUrl?: string | null;
   };
 };
 
@@ -51,7 +49,6 @@ export type NewExerciseProps = {
 export function NewExercise({
   visible = true,
   onClose,
-  borderRadius = 15,
   availableTags = ["Locomotor", "Manipulativo", "Estabilizador"],
   onSave,
   title = "Novo exercício",
@@ -63,14 +60,11 @@ export function NewExercise({
   const [durationInput, setDurationInput] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [videoUri, setVideoUri] = useState<string | null>(null);
   const [deletePhotoModalVisible, setDeletePhotoModalVisible] = useState(false);
-  const [deleteVideoModalVisible, setDeleteVideoModalVisible] = useState(false);
 
   useEffect(() => {
     if (!visible) return;
     setDeletePhotoModalVisible(false);
-    setDeleteVideoModalVisible(false);
     setName(initialData?.name ?? "");
     setDescription(initialData?.description ?? "");
     setDurationInput(
@@ -78,7 +72,6 @@ export function NewExercise({
     );
     setSelectedTag(initialData?.tag ?? null);
     setPhotoUri(initialData?.iconUrl ?? null);
-    setVideoUri(initialData?.mediaUrl ?? null);
   }, [visible, initialData]);
 
   /**
@@ -99,29 +92,6 @@ export function NewExercise({
   };
 
   /**
-   * Opens the video picker and stores the selected video.
-   */
-  const handleVideoPress = async () => {
-    const ImagePicker = require("expo-image-picker");
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-      allowsEditing: true,
-      quality: 0.5,
-    });
-
-    if (!result.canceled) {
-      setVideoUri(result.assets[0].uri);
-    }
-  };
-
-  /**
-   * Closes the modal.
-   */
-  const handleClose = () => {
-    onClose();
-  };
-
-  /**
    * Validates and submits the exercise form.
    */
   const handleSave = () => {
@@ -136,7 +106,6 @@ export function NewExercise({
         tag: selectedTag,
       },
       photoUri,
-      videoUri,
     );
   };
 
@@ -157,7 +126,7 @@ export function NewExercise({
     <>
       <Modal
         visible={visible}
-        onRequestClose={handleClose}
+        onRequestClose={onClose}
         transparent
         animationType="fade"
       >
@@ -167,7 +136,7 @@ export function NewExercise({
               <View className="flex-row items-center justify-between">
                 <Text className="text-header-2 text-white">{title}</Text>
                 <Pressable
-                  onPress={handleClose}
+                  onPress={onClose}
                   className="p-1 active:opacity-70"
                 >
                   <X color={colors.muted} size={28} />
@@ -197,35 +166,6 @@ export function NewExercise({
                     {photoUri && (
                       <Pressable
                         onPress={() => setDeletePhotoModalVisible(true)}
-                        className="absolute -top-2 -right-2 bg-error p-1.5 rounded-full border-2 border-level2 active:opacity-70"
-                      >
-                        <X color="#FFFFFF" size={14} />
-                      </Pressable>
-                    )}
-                  </View>
-                </View>
-
-                <View className="items-center">
-                  <View className="relative">
-                    <Pressable
-                      onPress={handleVideoPress}
-                      className="w-24 h-24 bg-level1 border border-outline items-center justify-center rounded-2xl overflow-hidden active:opacity-80"
-                    >
-                      {videoUri ? (
-                        <View className="w-full h-full bg-level1 items-center justify-center">
-                          <Check color={colors.primary} size={40} />
-                          <Text className="text-primary text-xs mt-1 font-bold">
-                            Adicionado
-                          </Text>
-                        </View>
-                      ) : (
-                        <FileVideo2Icon color={colors.muted} size={40} />
-                      )}
-                    </Pressable>
-
-                    {videoUri && (
-                      <Pressable
-                        onPress={() => setDeleteVideoModalVisible(true)}
                         className="absolute -top-2 -right-2 bg-error p-1.5 rounded-full border-2 border-level2 active:opacity-70"
                       >
                         <X color="#FFFFFF" size={14} />
@@ -280,7 +220,7 @@ export function NewExercise({
 
                 <View className="gap-[2px] mt-2">
                   <ActionButtons
-                    onCancel={handleClose}
+                    onCancel={onClose}
                     onSave={handleSave}
                     cancelLabel="Cancelar"
                     saveLabel="Salvar"
@@ -300,17 +240,6 @@ export function NewExercise({
           setDeletePhotoModalVisible(false);
         }}
         title="Remover ícone?"
-        mode="delete"
-      />
-
-      <ConfirmationModal
-        visible={deleteVideoModalVisible}
-        onClose={() => setDeleteVideoModalVisible(false)}
-        onConfirm={() => {
-          setVideoUri(null);
-          setDeleteVideoModalVisible(false);
-        }}
-        title="Remover vídeo?"
         mode="delete"
       />
     </>
