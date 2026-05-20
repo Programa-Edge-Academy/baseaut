@@ -63,6 +63,8 @@ export function useTeamData() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
+      const { data: authData } = await supabase.auth.getUser();
+      const currentUserId = authData.user?.id;
       const { data: alunosData, error: alunosError } = await supabase
         .from("alunos")
         .select(
@@ -102,7 +104,7 @@ export function useTeamData() {
 
       const { data: pendentesData, error: pendentesError } = await supabase
         .from("profiles")
-        .select("id, nome_completo, email")
+        .select("id, nome_completo, email, status_conta")
         .eq("role", "monitor")
         .eq("status_conta", "pendente");
 
@@ -111,10 +113,6 @@ export function useTeamData() {
           "Erro ao buscar profiles pendentes (Verifique o RLS no Supabase!):",
           pendentesError,
         );
-      } else if (pendentesData?.length === 0) {
-        console.log(
-          "Nenhum profile pendente encontrado ou bloqueado pelo RLS da tabela 'profiles'.",
-        );
       }
 
       const listaMonitores: CompanionData[] = [];
@@ -122,13 +120,13 @@ export function useTeamData() {
 
       if (!membrosError && membrosData) {
         membrosData.forEach((membro: any) => {
-          if (membro.profiles) {
+          if (membro.profiles && membro.usuario_id !== currentUserId) {
             listaMonitores.push({
               id: membro.id,
               profileId: membro.usuario_id,
               name: membro.profiles.nome_completo,
               email: membro.profiles.email,
-              status: membro.status,
+              status: membro.status === "pendente" ? "pendente" : (membro.status === "removido" ? "removido" : "ativo"),
             });
             addedProfileIds.add(membro.usuario_id);
           }
@@ -137,7 +135,7 @@ export function useTeamData() {
 
       if (!pendentesError && pendentesData) {
         pendentesData.forEach((profile) => {
-          if (!addedProfileIds.has(profile.id)) {
+          if (!addedProfileIds.has(profile.id) && profile.id !== currentUserId) {
             listaMonitores.push({
               id: profile.id,
               profileId: profile.id,
@@ -162,32 +160,21 @@ export function useTeamData() {
   }, []);
 
   /**
-   * Accepts a pending companion and activates their account.
+   * Accepts a pending companion request.
    */
   const acceptCompanion = async (id: string) => {
     const comp = companions.find((c) => c.id === id);
     if (!comp) return;
 
-    if (comp.id !== comp.profileId) {
-      await supabase
-        .from("membros_equipe")
-        .update({ status: "ativo" })
-        .eq("id", comp.id);
-    } else {
-      await supabase.from("membros_equipe").insert([
-        {
-          usuario_id: comp.profileId,
-          equipe_id: EQUIPE_ID,
-          papel: "monitor",
-          status: "ativo",
-        },
-      ]);
-    }
+    const { error } = await supabase.rpc('aprovar_monitor', {
+      p_monitor_id: comp.profileId,
+      p_equipe_id: EQUIPE_ID
+    });
 
-    await supabase
-      .from("profiles")
-      .update({ status_conta: "ativa" })
-      .eq("id", comp.profileId);
+    if (error) {
+      console.error(error);
+      Alert.alert("Erro", "Não foi possível aprovar o monitor.");
+    }
 
     fetchData();
   };
@@ -199,14 +186,14 @@ export function useTeamData() {
     const comp = companions.find((c) => c.id === id);
     if (!comp) return;
 
-    if (comp.id !== comp.profileId) {
-      await supabase.from("membros_equipe").delete().eq("id", comp.id);
-    }
+    const { error } = await supabase.rpc('rejeitar_monitor', {
+      p_monitor_id: comp.profileId
+    });
 
-    await supabase
-      .from("profiles")
-      .update({ status_conta: "recusado" })
-      .eq("id", comp.profileId);
+    if (error) {
+      console.error(error);
+      Alert.alert("Erro", "Não foi possível rejeitar o monitor.");
+    }
 
     fetchData();
   };
@@ -214,11 +201,18 @@ export function useTeamData() {
   /**
    * Soft-removes a companion from the team.
    */
-  const removeCompanion = async (membroEquipeId: string) => {
-    await supabase
-      .from("membros_equipe")
-      .update({ status: "removido" })
-      .eq("id", membroEquipeId);
+  const removeCompanion = async (id: string) => {
+    const comp = companions.find((c) => c.id === id);
+    if (!comp) return;
+
+    const { error } = await supabase.rpc('remover_monitor', {
+      p_monitor_id: comp.profileId
+    });
+
+    if (error) {
+      console.error(error);
+      Alert.alert("Erro", "Não foi possível remover o monitor.");
+    }
 
     fetchData();
   };
@@ -245,7 +239,7 @@ export function useTeamData() {
       }
 
       const { data, error: uploadError } = await supabase.storage
-        .from("avatars")
+        .from("avatares")
         .upload(filePath, fileData, { contentType: "image/jpeg" });
 
       if (uploadError) throw uploadError;
@@ -253,7 +247,7 @@ export function useTeamData() {
       if (data) {
         const {
           data: { publicUrl },
-        } = supabase.storage.from("avatars").getPublicUrl(filePath);
+        } = supabase.storage.from("avatares").getPublicUrl(filePath);
         return publicUrl;
       }
       return null;
@@ -321,8 +315,6 @@ export function useTeamData() {
         equipe_id: EQUIPE_ID,
         ativo: true,
       };
-
-      console.log("Enviando Payload do Aluno corrigido:", payload);
 
       if (data.id) {
         const { error } = await supabase
