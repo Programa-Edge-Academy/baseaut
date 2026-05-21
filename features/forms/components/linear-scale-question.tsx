@@ -44,9 +44,8 @@ export function LinearScaleQuestionUI({ question }: Props) {
    * Syncs slider changes to the numeric input.
    */
   const handleSliderChange = (val: number) => {
-    const rounded = Math.round(val);
-    setSelectedValue(rounded);
-    setTextValue(String(rounded));
+    setSelectedValue(val);
+    setTextValue(String(val));
   };
 
   return (
@@ -69,11 +68,11 @@ export function LinearScaleQuestionUI({ question }: Props) {
         style={{ width: "100%", height: 40 }}
         minimumValue={question.min}
         maximumValue={question.max}
-        step={1}
+        step={question.step}
         value={selectedValue}
         onValueChange={handleSliderChange}
         minimumTrackTintColor={colors.primary}
-        maximumTrackTintColor={colors.level2}
+        maximumTrackTintColor={colors.placeholder}
         thumbTintColor={colors.primary}
       />
     </View>
