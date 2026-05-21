@@ -38,7 +38,7 @@ export function YesNoQuestionUI({ question }: Props) {
           shadowClass={selected === "nao" ? "shadow-errorShadow" : ""}
           sizeClass="flex-1 h-[44px]"
           className="rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline"
-          textClassName="text-header-3"
+          textClassName="text-header-3 text-white"
         />
 
         <DefaultButton
@@ -48,7 +48,7 @@ export function YesNoQuestionUI({ question }: Props) {
           shadowClass={selected === "sim" ? "shadow-primaryShadow" : ""}
           sizeClass="flex-1 h-[44px]"
           className="rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline"
-          textClassName="text-header-3"
+          textClassName="text-header-3 text-white"
         />
       </View>
 
