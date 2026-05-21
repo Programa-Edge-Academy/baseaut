@@ -27,7 +27,7 @@ interface NewCircuitProps {
   };
   onSave: (data: { 
     name: string; 
-    type: "padrão" | "mabc_1" | "mabc_2" | "mabc_3"; 
+    type: "padrao" | "mabc_1" | "mabc_2" | "mabc_3"; 
     executionMode: ExecutionMode; 
     form: string | null; 
     exercises: Exercise[] 
@@ -174,7 +174,7 @@ export function NewCircuit({
     try {
       await onSave({ 
         name: trimmedName, 
-        type: "padrão", 
+        type: "padrao", 
         executionMode: executionMode, 
         // 🧪 MOCK — não envia o formulário ao banco durante testes
         // ⬇️ Substituir por `form: selectedForm` quando o banco tiver formulários reais
