@@ -3,6 +3,9 @@ import { withOpacity } from "@/components/color-opacity";
 import React from "react";
 import { Pressable, Text } from "react-native";
 
+/**
+ * Props for a selectable tag pill.
+ */
 export type TagProps = {
   label: string;
   height?: number;
@@ -11,6 +14,9 @@ export type TagProps = {
   onPress?: () => void;
 };
 
+/**
+ * Renders a tag pill for filtering or selection.
+ */
 export function ExerciseTag({
   label,
   height = 30,
@@ -26,7 +32,9 @@ export function ExerciseTag({
         height,
         borderRadius,
         paddingHorizontal: 15,
-        backgroundColor: isActive ? withOpacity(colors.primary, 0.1) : colors.level2,
+        backgroundColor: isActive
+          ? withOpacity(colors.primary, 0.1)
+          : colors.level2,
         borderColor: isActive ? colors.primary : colors.outline,
       }}
     >

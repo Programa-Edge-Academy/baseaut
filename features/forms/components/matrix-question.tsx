@@ -2,13 +2,22 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { MatrixQuestion } from "../types";
 
+/**
+ * Props for a matrix question UI.
+ */
 interface Props {
   question: MatrixQuestion;
 }
 
+/**
+ * Renders a matrix question with row/column selections.
+ */
 export function MatrixQuestionUI({ question }: Props) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
+  /**
+   * Selects a column answer for a given row.
+   */
   const handleSelect = (row: string, col: string) => {
     setAnswers((prev) => ({ ...prev, [row]: col }));
   };

@@ -14,7 +14,7 @@ export function DefaultTextInput({
   outLineBorderClass = "border-outline",
   ...rest
 }: DefaultTextInputProps) {
-  const outLineClasses = `border border-outline ${outLineBorderClass}`;
+  const outLineClasses = `border ${outLineBorderClass}`;
 
   return (
     <TextInput

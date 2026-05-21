@@ -1,7 +1,10 @@
+import { Copy, KeyRound, RefreshCw } from "lucide-react-native";
 import React from "react";
-import { View, Text, Pressable } from "react-native";
-import { KeyRound, Copy, RefreshCw } from "lucide-react-native";
+import { Pressable, Text, View } from "react-native";
 
+/**
+ * Props for the access code card.
+ */
 interface AcessCodeCardProps {
   code: string;
   onCopy?: () => void;
@@ -9,22 +12,23 @@ interface AcessCodeCardProps {
   className?: string;
 }
 
-export function AcessCodeCard({ 
-  code = "acc1lucas", 
-  onCopy, 
+/**
+ * Renders a card showing a shareable access code.
+ */
+export function AcessCodeCard({
+  code = "acc1lucas",
+  onCopy,
   onRefresh,
-  className 
+  className,
 }: AcessCodeCardProps) {
   return (
-    <View 
+    <View
       className={`w-full max-w-[380px] rounded-[20px] bg-[#181C25] p-5 shadow-lg ${className ?? ""}`}
     >
       {/* Cabeçalho com Ícone de Chave */}
       <View className="mb-4 flex-row items-center gap-3">
         <KeyRound size={24} color="#0E89E5" />
-        <Text className="text-lg font-bold text-white">
-          Código de acesso
-        </Text>
+        <Text className="text-lg font-bold text-white">Código de acesso</Text>
       </View>
 
       {/* Área do Código e Botões de Ação */}
@@ -38,14 +42,14 @@ export function AcessCodeCard({
 
         {/* Botões Laterais */}
         <View className="flex-row gap-2">
-          <Pressable 
+          <Pressable
             onPress={onCopy}
             className="h-[44px] w-[44px] items-center justify-center rounded-xl active:opacity-70"
           >
             <Copy size={20} color="#66758A" />
           </Pressable>
 
-          <Pressable 
+          <Pressable
             onPress={onRefresh}
             className="h-[44px] w-[44px] items-center justify-center rounded-xl bg- active:opacity-70"
           >
