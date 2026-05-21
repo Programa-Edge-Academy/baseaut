@@ -23,6 +23,8 @@ export interface BaseQuestion {
   id: string;
   title: string;
   type: QuestionType;
+  helpText?: string;
+  allowObservation?: boolean;
 }
 
 /**
@@ -48,6 +50,7 @@ export interface LinearScaleQuestion extends BaseQuestion {
   type: "linear_scale";
   min: number;
   max: number;
+  step?: number;
 }
 
 /**
