@@ -9,6 +9,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import * as Linking from "expo-linking";
 import { supabase } from "@/lib/supabase";
+import { setupPowerSync } from "@/lib/powersync/db";
 import "./global.css";
 
 SplashScreen.preventAutoHideAsync();
@@ -26,6 +27,12 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded, error]);
+
+  useEffect(() => {
+    setupPowerSync().catch((err) => {
+      console.log("Error setting up PowerSync:", err);
+    });
+  }, []);
 
   useEffect(() => {
     const handleDeepLink = async (url: string | null) => {
