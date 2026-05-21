@@ -6,7 +6,7 @@ import { Exercise } from "./use-exercises";
 /**
  * Defines the possible circuit types matching the database enum.
  */
-export type CircuitType = "padrão" | "mabc_1" | "mabc_2" | "mabc_3";
+export type CircuitType = "padrao" | "mabc_1" | "mabc_2" | "mabc_3";
 
 /**
  * Defines the possible execution modes matching the database enum.
@@ -129,7 +129,7 @@ export function useCircuits() {
               name: row.titulo,
               description: row.descricao,
               formId: row.formulario_id,
-              type: row.tipo || "padrão",
+              type: row.tipo || "padrao",
               executionMode: row.modo_execucao || "estruturado",
               exercisesCount: sortedItems.length,
               exercisesSummary: summary || "Sem exercícios vinculados",
@@ -284,6 +284,58 @@ export function useCircuits() {
     }
   };
 
+/**
+   * Duplicates an existing circuit properties and rebuilds relational items.
+   */
+  const duplicateCircuit = async (circuit: Circuit) => {
+    setIsLoading(true);
+    try {
+      if (!equipeId) throw new Error("Team ID not identified.");
+
+      // Copia os dados principais do circuito com sufixo no nome
+      const payload = {
+        titulo: `${circuit.name} (Cópia)`,
+        descricao: circuit.description,
+        equipe_id: equipeId,
+        ativo: true,
+        formulario_id: circuit.formId, 
+        tipo: circuit.type,
+        modo_execucao: circuit.executionMode,
+      };
+
+      const { data: insertedCircuit, error: insertError } = await supabase
+        .from("circuitos")
+        .insert([payload])
+        .select()
+        .single();
+        
+      if (insertError) throw insertError;
+
+      // Duplica os vínculos com os exercícios se existirem
+      if (circuit.exercises.length > 0) {
+        const itemsPayload = circuit.exercises.map((ex, index) => ({
+          circuito_id: insertedCircuit.id,
+          exercicio_id: ex.id,
+          ordem: index + 1,
+        }));
+
+        const { error: itemsError } = await supabase
+          .from("itens_circuito")
+          .insert(itemsPayload);
+
+        if (itemsError) throw itemsError;
+      }
+
+      await loadCircuits();
+    } catch (err: any) {
+      console.error("Error duplicating circuit:", err);
+      Alert.alert("Erro ao Duplicar", `Não foi possível duplicar o circuito: ${err.message}`);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     circuits,
     isLoading,
@@ -292,5 +344,6 @@ export function useCircuits() {
     addCircuit,
     updateCircuit,
     deleteCircuit,
+    duplicateCircuit,
   };
 }

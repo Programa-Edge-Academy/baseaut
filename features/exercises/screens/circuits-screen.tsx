@@ -46,12 +46,14 @@ export function CircuitsScreen() {
     error,
     addCircuit,
     updateCircuit,
+    duplicateCircuit,
     deleteCircuit,
   } = useCircuits();
 
   const [query, setQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [circuitToEdit, setCircuitToEdit] = useState<Circuit | null>(null);
+  const [circuitToDuplicate, setCircuitToDuplicate] = useState<Circuit | null>(null);
   const [circuitToDelete, setCircuitToDelete] = useState<Circuit | null>(null);
 
   const isModalOpen = isCreateModalOpen || circuitToEdit !== null;
@@ -76,6 +78,17 @@ export function CircuitsScreen() {
   const handleCloseModal = () => {
     setIsCreateModalOpen(false);
     setCircuitToEdit(null);
+  };
+
+  /**
+   * Duplicates an circuit entry.
+   */
+  const handleDuplicate = async (circuit: Circuit) => {
+    try {
+      await duplicateCircuit(circuit);
+    } catch (caught) {
+      console.error("Erro ao duplicar circuito:", caught);
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -132,8 +145,9 @@ export function CircuitsScreen() {
               icon={iconComponent}
               iconBgColor={withOpacity(iconColor, 0.15)}
               badge={{ label: badgeLabel, color: iconColor }}
-              showDuplicate={false}
+              showDuplicate={true}
               onEdit={() => setCircuitToEdit(item)}
+              onDuplicate={() => handleDuplicate(item)}
               onDelete={() => setCircuitToDelete(item)}
             />
           );
