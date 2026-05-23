@@ -1,8 +1,10 @@
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
-import React, { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import React, { useState, useRef } from "react";
+import { ScrollView, Text, View, Animated } from "react-native";
+import { Check } from "lucide-react-native";
+import { ActivityResultModal } from "../../exercises/components/activity-result-modal";
 import { StartActivity } from "../../exercises/components/start-activity";
 import { Stopwatch } from "../../exercises/components/stopwatch";
 import {
@@ -72,6 +74,48 @@ export function SessionRunningScreen({
   const [hasAdvanced, setHasAdvanced] = useState(false);
   const [isReorderOpen, setIsReorderOpen] = useState(false);
   const [isFinishOpen, setIsFinishOpen] = useState(false);
+  const [isResultModalOpen, setIsResultModalOpen] = useState(false);
+
+  // States and refs for Success Toast feedback
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const toastTranslateY = useRef(new Animated.Value(20)).current;
+
+  const triggerToast = () => {
+    setShowSuccessToast(true);
+    toastOpacity.setValue(0);
+    toastTranslateY.setValue(20);
+
+    Animated.parallel([
+      Animated.timing(toastOpacity, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+      }),
+      Animated.timing(toastTranslateY, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(toastOpacity, {
+            toValue: 0,
+            duration: 350,
+            useNativeDriver: true,
+          }),
+          Animated.timing(toastTranslateY, {
+            toValue: 20,
+            duration: 350,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setShowSuccessToast(false);
+        });
+      }, 2500);
+    });
+  };
 
   const total = order.length;
   const currentExercise = order[currentIndex];
@@ -160,9 +204,7 @@ export function SessionRunningScreen({
                 /* TODO: register a "crise" event tied to the current exercise. */
               }}
               onStop={handleStop}
-              onPressCorner={() => {
-                /* TODO: open the per-exercise form sheet. */
-              }}
+              onPressCorner={() => setIsResultModalOpen(true)}
             />
           )}
 
@@ -181,8 +223,6 @@ export function SessionRunningScreen({
         </ScrollView>
       </View>
 
-      <Footer />
-
       <ReorderModal
         visible={isReorderOpen}
         items={reorderItems}
@@ -196,6 +236,70 @@ export function SessionRunningScreen({
         onClose={() => setIsFinishOpen(false)}
         onConfirm={handleConfirmFinish}
       />
+
+      <ActivityResultModal
+        visible={isResultModalOpen}
+        exerciseTitle={currentExercise.name}
+        onClose={() => setIsResultModalOpen(false)}
+        onDefer={() => {
+          // TODO (implementação real): salvar para responder depois.
+          console.log("[ActivityResult] Resposta adiada.");
+          setIsResultModalOpen(false);
+        }}
+        onNotCompleted={() => {
+          // TODO (implementação real): registrar como não realizada.
+          console.log("[ActivityResult] Atividade não realizada.");
+          setIsResultModalOpen(false);
+        }}
+        onConfirm={(result) => {
+          // TODO (implementação real): persistir resultado em execucoes_exercicio.
+          console.log("[ActivityResult]", result);
+          setIsResultModalOpen(false);
+          triggerToast();
+        }}
+      />
+
+      {showSuccessToast && (
+        <Animated.View
+          style={{
+            position: "absolute",
+            bottom: 100,
+            left: 20,
+            right: 20,
+            backgroundColor: "rgba(52, 199, 89, 0.25)",
+            borderColor: "#34C759",
+            borderWidth: 1,
+            borderRadius: 15,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+            opacity: toastOpacity,
+            transform: [{ translateY: toastTranslateY }],
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.15,
+            shadowRadius: 4,
+            elevation: 4,
+          }}
+        >
+          <Check size={20} color="#34C759" strokeWidth={3} />
+          <Text
+            style={{
+              fontFamily: "Inter-Medium",
+              fontSize: 14,
+              color: "#fff",
+              flex: 1,
+            }}
+          >
+            Registro atualizado
+          </Text>
+        </Animated.View>
+      )}
+
+      <Footer />
     </View>
   );
 }
+
