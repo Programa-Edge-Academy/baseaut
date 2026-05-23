@@ -117,6 +117,23 @@ export function SessionRunningScreen({
     });
   };
 
+  const handleActivityNotCompleted = (motivo: string, descricao?: string) => {
+    // TODO (implementação real): persistir no banco de dados com status "Não realizada"
+    console.log("[ActivityResult] Não realizada. Motivo:", motivo, "Descrição:", descricao);
+    setIsResultModalOpen(false);
+    triggerToast();
+
+    // Retorna ao fluxo normal e avança para o próximo exercício
+    setStage("ready");
+    setHasAdvanced(true);
+    if (currentIndex < total - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      onCompleteSession?.();
+    }
+  };
+
+
   const total = order.length;
   const currentExercise = order[currentIndex];
   const subtitle = `${circuitName} - ${currentIndex + 1}/${total}`;
@@ -246,11 +263,7 @@ export function SessionRunningScreen({
           console.log("[ActivityResult] Resposta adiada.");
           setIsResultModalOpen(false);
         }}
-        onNotCompleted={() => {
-          // TODO (implementação real): registrar como não realizada.
-          console.log("[ActivityResult] Atividade não realizada.");
-          setIsResultModalOpen(false);
-        }}
+        onNotCompleted={handleActivityNotCompleted}
         onConfirm={(result) => {
           // TODO (implementação real): persistir resultado em execucoes_exercicio.
           console.log("[ActivityResult]", result);

@@ -2,7 +2,7 @@ import { colors } from "@/assets/colors";
 import { RipplePressable } from "@/components/ripple-pressable";
 import { SelectableChip } from "@/components/selectable-chip";
 import React, { useEffect, useState } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Modal, Pressable, Text, TextInput, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
 // ---------------------------------------------------------------------------
@@ -30,7 +30,7 @@ export type ActivityResultModalProps = {
   elapsedTime?: string;
   onClose: () => void;
   onDefer?: () => void;
-  onNotCompleted?: () => void;
+  onNotCompleted?: (motivo: string, descricao?: string) => void;
   /**
    * Chamado somente após validação bem-sucedida de todos os campos.
    * TODO (implementação real): persistir resultado em execucoes_exercicio.
@@ -75,6 +75,15 @@ const NIVEIS: {
   { id: "maduro",        label: "Maduro",         svgXml: SMILE_FACE_XML, bgColor: "#25C125" },
 ];
 
+const MOTIVOS = [
+  "Recusa do aluno",
+  "Comportamento disruptivo",
+  "Fadiga ou cansaço",
+  "Tempo insuficiente",
+  "Dificuldade física",
+  "Outro",
+];
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -88,6 +97,10 @@ const NIVEIS: {
  * Seção 2:   Registro de Ajuda — chips lista (Autônomo / Ajuda intrusiva).
  *              Autônomo expande subcategorias Verbal e Modelo (multi-select).
  * Rodapé:    "Não realizada" (vermelho) | "Concluir" (escuro/borda azul).
+ *
+ * Fluxo de Não Realizada:
+ *            Apresenta uma lista de motivos padrão. Se "Outro" for selecionado,
+ *            exige a especificação complementar em um campo de texto.
  */
 export function ActivityResultModal({
   visible,
@@ -98,9 +111,12 @@ export function ActivityResultModal({
   onNotCompleted,
   onConfirm,
 }: ActivityResultModalProps) {
+  const [viewMode, setViewMode] = useState<"result" | "reasons">("result");
   const [nivel, setNivel] = useState<NivelDesenvolvimento | null>(null);
   const [ajuda, setAjuda] = useState<RegistroAjuda | null>(null);
   const [subCategorias, setSubCategorias] = useState<SubCategoria[]>([]);
+  const [selectedMotivo, setSelectedMotivo] = useState<string | null>(null);
+  const [outroDescricao, setOutroDescricao] = useState<string>("");
   const [submitted, setSubmitted] = useState(false);
 
   // Reset completo ao fechar/reabrir o modal
@@ -110,6 +126,9 @@ export function ActivityResultModal({
       setAjuda(null);
       setSubCategorias([]);
       setSubmitted(false);
+      setViewMode("result");
+      setSelectedMotivo(null);
+      setOutroDescricao("");
     }
   }, [visible]);
 
@@ -139,6 +158,20 @@ export function ActivityResultModal({
         registroAjuda: ajuda!,
         subCategorias,
       });
+    }
+  };
+
+  const isRegistrarDisabled =
+    selectedMotivo === null ||
+    (selectedMotivo === "Outro" && outroDescricao.trim() === "");
+
+  const handleConfirmNotCompleted = () => {
+    if (isRegistrarDisabled) return;
+    if (onNotCompleted && selectedMotivo) {
+      onNotCompleted(
+        selectedMotivo,
+        selectedMotivo === "Outro" ? outroDescricao.trim() : undefined
+      );
     }
   };
 
@@ -251,210 +284,342 @@ export function ActivityResultModal({
             {null}
           </View>
 
-          {/* ----------------------------------------------------------------
-              Seção 1 — Nível de Desenvolvimento
-          ---------------------------------------------------------------- */}
-          <View style={{ gap: 8 }}>
-            <Text
-              style={{
-                fontFamily: "Inter-Medium",
-                fontSize: 14,
-                color: colors.muted,
-              }}
-            >
-              Nível de desenvolvimento
-            </Text>
+          {viewMode === "result" ? (
+            <>
+              {/* ----------------------------------------------------------------
+                  Seção 1 — Nível de Desenvolvimento
+              ---------------------------------------------------------------- */}
+              <View style={{ gap: 8 }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter-Medium",
+                    fontSize: 14,
+                    color: colors.muted,
+                  }}
+                >
+                  Nível de desenvolvimento
+                </Text>
 
-            {/* 3 cards em linha */}
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              {NIVEIS.map((item) => {
-                const isSelected = nivel === item.id;
-                const hasErr = nivelError && !isSelected;
-                return (
-                  <RipplePressable
-                    key={item.id}
-                    onPress={() => setNivel(item.id)}
+                {/* 3 cards em linha */}
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  {NIVEIS.map((item) => {
+                    const isSelected = nivel === item.id;
+                    const hasErr = nivelError && !isSelected;
+                    return (
+                      <RipplePressable
+                        key={item.id}
+                        onPress={() => setNivel(item.id)}
+                        style={{
+                          flex: 1,
+                          alignItems: "center",
+                          paddingVertical: 15,
+                          paddingHorizontal: 10,
+                          gap: 5,
+                          borderRadius: 15,
+                          borderWidth: 1,
+                          borderColor: hasErr
+                            ? colors.error
+                            : isSelected
+                            ? item.bgColor
+                            : colors.outline,
+                          backgroundColor: isSelected
+                            ? `${item.bgColor}22`
+                            : hasErr
+                            ? "#BE222311"
+                            : colors.level2,
+                        }}
+                      >
+                        {/* Círculo colorido com emoji SVG */}
+                        <View
+                          style={{
+                            width: 50,
+                            height: 50,
+                            borderRadius: 25,
+                            backgroundColor: item.bgColor,
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <SvgXml xml={item.svgXml} width={22} height={22} />
+                        </View>
+                        <Text
+                          style={{
+                            fontFamily: "Inter-Medium",
+                            fontSize: 12,
+                            color: "#fff",
+                            textAlign: "center",
+                          }}
+                        >
+                          {item.label}
+                        </Text>
+                      </RipplePressable>
+                    );
+                  })}
+                </View>
+
+                {nivelError && (
+                  <Text
                     style={{
-                      flex: 1,
-                      alignItems: "center",
-                      paddingVertical: 15,
-                      paddingHorizontal: 10,
-                      gap: 5,
-                      borderRadius: 15,
-                      borderWidth: 1,
-                      borderColor: hasErr
-                        ? colors.error
-                        : isSelected
-                        ? item.bgColor
-                        : colors.outline,
-                      backgroundColor: isSelected
-                        ? `${item.bgColor}22`
-                        : hasErr
-                        ? "#BE222311"
-                        : colors.level2,
+                      fontFamily: "Inter-Medium",
+                      fontSize: 12,
+                      color: colors.error,
                     }}
                   >
-                    {/* Círculo colorido com emoji SVG */}
-                    <View
-                      style={{
-                        width: 50,
-                        height: 50,
-                        borderRadius: 25,
-                        backgroundColor: item.bgColor,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <SvgXml xml={item.svgXml} width={22} height={22} />
-                    </View>
+                    Selecione um nível de desenvolvimento.
+                  </Text>
+                )}
+              </View>
+
+              {/* ----------------------------------------------------------------
+                  Seção 2 — Registro de Ajuda
+              ---------------------------------------------------------------- */}
+              <View style={{ gap: 8 }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter-Medium",
+                    fontSize: 14,
+                    color: colors.muted,
+                  }}
+                >
+                  Registro de ajuda
+                </Text>
+
+                <View style={{ gap: 5 }}>
+                  {/* Autônomo — expande Verbal/Modelo ao ser selecionado */}
+                  <SelectableChip
+                    label="Autônomo"
+                    type="nivelAjuda"
+                    isSelected={ajuda === "autonomo"}
+                    onToggle={() => handleSelectAjuda("autonomo")}
+                    selectedSubOptions={subCategorias}
+                    onSelectSubOption={toggleSubCategoria}
+                    hasError={ajudaError && ajuda !== "autonomo"}
+                    subOptionsHasError={subError}
+                  />
+
+                  {/* Ajuda intrusiva */}
+                  <SelectableChip
+                    label="Ajuda intrusiva"
+                    isSelected={ajuda === "ajuda_intrusiva"}
+                    onToggle={() => handleSelectAjuda("ajuda_intrusiva")}
+                    hasError={ajudaError && ajuda !== "ajuda_intrusiva"}
+                  />
+                </View>
+
+                {ajudaError && (
+                  <Text
+                    style={{
+                      fontFamily: "Inter-Medium",
+                      fontSize: 12,
+                      color: colors.error,
+                    }}
+                  >
+                    Selecione um registro de ajuda.
+                  </Text>
+                )}
+                {subError && (
+                  <Text
+                    style={{
+                      fontFamily: "Inter-Medium",
+                      fontSize: 12,
+                      color: colors.error,
+                    }}
+                  >
+                    Selecione ao menos uma categoria (Verbal ou Modelo).
+                  </Text>
+                )}
+              </View>
+
+              {/* ---- Rodapé: botões de ação ---- */}
+              <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
+                {/* Não realizada — vermelho com sombra vermelha */}
+                <RipplePressable
+                  onPress={() => setViewMode("reasons")}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    borderRadius: 15,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: colors.error,
+                    shadowColor: "rgba(255,0,0,0.25)",
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 1,
+                    shadowRadius: 10,
+                    elevation: 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Inter-Medium",
+                      fontSize: 16,
+                      color: "#fff",
+                    }}
+                  >
+                    Não realizada
+                  </Text>
+                </RipplePressable>
+
+                {/* Concluir — escuro com sombra azul */}
+                <RipplePressable
+                  onPress={handleConfirm}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    borderRadius: 15,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#1F2933",
+                    borderWidth: 1,
+                    borderColor: "#2F3A46",
+                    shadowColor: "rgba(14,137,229,0.25)",
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 1,
+                    shadowRadius: 10,
+                    elevation: 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Inter-Bold",
+                      fontSize: 16,
+                      color: "#fff",
+                    }}
+                  >
+                    Concluir
+                  </Text>
+                </RipplePressable>
+              </View>
+            </>
+          ) : (
+            <>
+              {/* ----------------------------------------------------------------
+                  Seção 3 — Motivos de Não Realização
+              ---------------------------------------------------------------- */}
+              <View style={{ gap: 8 }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter-Medium",
+                    fontSize: 14,
+                    color: colors.muted,
+                  }}
+                >
+                  Motivo:
+                </Text>
+
+                <View style={{ gap: 5 }}>
+                  {MOTIVOS.map((motivo) => (
+                    <SelectableChip
+                      key={motivo}
+                      label={motivo}
+                      type="motivos"
+                      isSelected={selectedMotivo === motivo}
+                      onToggle={() => setSelectedMotivo(motivo)}
+                    />
+                  ))}
+                </View>
+
+                {/* Campo de descrição complementar para "Outro" */}
+                {selectedMotivo === "Outro" && (
+                  <View style={{ gap: 5, marginTop: 5 }}>
                     <Text
                       style={{
                         fontFamily: "Inter-Medium",
-                        fontSize: 12,
-                        color: "#fff",
-                        textAlign: "center",
+                        fontSize: 14,
+                        color: colors.muted,
                       }}
                     >
-                      {item.label}
+                      Descrição do motivo:
                     </Text>
-                  </RipplePressable>
-                );
-              })}
-            </View>
+                    <TextInput
+                      value={outroDescricao}
+                      onChangeText={setOutroDescricao}
+                      placeholder="Descreva o motivo..."
+                      placeholderTextColor={colors.placeholder}
+                      multiline
+                      numberOfLines={3}
+                      style={{
+                        backgroundColor: colors.level1,
+                        borderColor: colors.outline,
+                        borderWidth: 1,
+                        borderRadius: 15,
+                        padding: 10,
+                        color: "#fff",
+                        fontFamily: "Inter-Medium",
+                        fontSize: 14,
+                        textAlignVertical: "top",
+                        minHeight: 80,
+                      }}
+                    />
+                  </View>
+                )}
+              </View>
 
-            {nivelError && (
-              <Text
-                style={{
-                  fontFamily: "Inter-Medium",
-                  fontSize: 12,
-                  color: colors.error,
-                }}
-              >
-                Selecione um nível de desenvolvimento.
-              </Text>
-            )}
-          </View>
+              {/* ---- Rodapé: botões de ação para Motivos ---- */}
+              <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
+                {/* Voltar — escuro/cinza */}
+                <RipplePressable
+                  onPress={() => {
+                    setViewMode("result");
+                    setSelectedMotivo(null);
+                    setOutroDescricao("");
+                  }}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    borderRadius: 15,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: colors.level2,
+                    borderWidth: 1,
+                    borderColor: colors.outline,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Inter-Medium",
+                      fontSize: 16,
+                      color: colors.muted,
+                    }}
+                  >
+                    Voltar
+                  </Text>
+                </RipplePressable>
 
-          {/* ----------------------------------------------------------------
-              Seção 2 — Registro de Ajuda
-          ---------------------------------------------------------------- */}
-          <View style={{ gap: 8 }}>
-            <Text
-              style={{
-                fontFamily: "Inter-Medium",
-                fontSize: 14,
-                color: colors.muted,
-              }}
-            >
-              Registro de ajuda
-            </Text>
-
-            <View style={{ gap: 5 }}>
-              {/* Autônomo — expande Verbal/Modelo ao ser selecionado */}
-              <SelectableChip
-                label="Autônomo"
-                type="nivelAjuda"
-                isSelected={ajuda === "autonomo"}
-                onToggle={() => handleSelectAjuda("autonomo")}
-                selectedSubOptions={subCategorias}
-                onSelectSubOption={toggleSubCategoria}
-                hasError={ajudaError && ajuda !== "autonomo"}
-                subOptionsHasError={subError}
-              />
-
-              {/* Ajuda intrusiva */}
-              <SelectableChip
-                label="Ajuda intrusiva"
-                isSelected={ajuda === "ajuda_intrusiva"}
-                onToggle={() => handleSelectAjuda("ajuda_intrusiva")}
-                hasError={ajudaError && ajuda !== "ajuda_intrusiva"}
-              />
-            </View>
-
-            {ajudaError && (
-              <Text
-                style={{
-                  fontFamily: "Inter-Medium",
-                  fontSize: 12,
-                  color: colors.error,
-                }}
-              >
-                Selecione um registro de ajuda.
-              </Text>
-            )}
-            {subError && (
-              <Text
-                style={{
-                  fontFamily: "Inter-Medium",
-                  fontSize: 12,
-                  color: colors.error,
-                }}
-              >
-                Selecione ao menos uma categoria (Verbal ou Modelo).
-              </Text>
-            )}
-          </View>
-
-          {/* ---- Rodapé: botões de ação ---- */}
-          <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
-            {/* Não realizada — vermelho com sombra vermelha */}
-            <RipplePressable
-              onPress={onNotCompleted}
-              style={{
-                flex: 1,
-                height: 44,
-                borderRadius: 15,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: colors.error,
-                shadowColor: "rgba(255,0,0,0.25)",
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: 1,
-                shadowRadius: 10,
-                elevation: 6,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Inter-Medium",
-                  fontSize: 16,
-                  color: "#fff",
-                }}
-              >
-                Não realizada
-              </Text>
-            </RipplePressable>
-
-            {/* Concluir — escuro com sombra azul */}
-            <RipplePressable
-              onPress={handleConfirm}
-              style={{
-                flex: 1,
-                height: 44,
-                borderRadius: 15,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#1F2933",
-                borderWidth: 1,
-                borderColor: "#2F3A46",
-                shadowColor: "rgba(14,137,229,0.25)",
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: 1,
-                shadowRadius: 10,
-                elevation: 6,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Inter-Bold",
-                  fontSize: 16,
-                  color: "#fff",
-                }}
-              >
-                Concluir
-              </Text>
-            </RipplePressable>
-          </View>
+                {/* Registrar — azul (ou escuro opaco se desabilitado) */}
+                <RipplePressable
+                  onPress={handleConfirmNotCompleted}
+                  disabled={isRegistrarDisabled}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    borderRadius: 15,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: isRegistrarDisabled ? "#1F2933" : colors.primary,
+                    borderWidth: 1,
+                    borderColor: isRegistrarDisabled ? "#2b303b" : colors.primary,
+                    opacity: isRegistrarDisabled ? 0.5 : 1,
+                    shadowColor: isRegistrarDisabled ? "transparent" : "rgba(14,137,229,0.25)",
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 1,
+                    shadowRadius: 10,
+                    elevation: isRegistrarDisabled ? 0 : 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Inter-Bold",
+                      fontSize: 16,
+                      color: isRegistrarDisabled ? colors.muted : "#fff",
+                    }}
+                  >
+                    Registrar
+                  </Text>
+                </RipplePressable>
+              </View>
+            </>
+          )}
         </Pressable>
       </Pressable>
     </Modal>
