@@ -27,5 +27,5 @@ jobs:
           supabase link --project-ref $PROJECT_ID --password $DB_PASSWORD
           supabase db push
 
-      - name: Deploy das Edge Functions
-        run: supabase functions deploy --project-ref $PROJECT_ID
+      #- name: Deploy das Edge Functions
+      #  run: supabase functions deploy --project-ref $PROJECT_ID
