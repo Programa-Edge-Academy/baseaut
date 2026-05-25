@@ -11,6 +11,7 @@ import React, { useState } from "react";
 import { ActivityIndicator, View, Image } from "react-native";
 import { NewStudent } from "../components/new-student";
 import { useStudents } from "../hooks/use-students";
+import { router } from "expo-router";
 
 /**
  * Students list screen with search and CRUD modals.
@@ -51,6 +52,7 @@ export function StudentsScreen() {
               setEditingStudent(null);
               setIsNewStudentModalVisible(true);
             }}
+            onHistoryPress={() => router.push("/history")}
           />
         </View>
 
