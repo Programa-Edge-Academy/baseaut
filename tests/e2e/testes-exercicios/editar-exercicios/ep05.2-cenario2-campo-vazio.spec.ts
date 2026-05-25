@@ -24,8 +24,7 @@ test.describe('US05.02: Editar Exercício', () => {
     await page.waitForTimeout(2000);
   });
 
-  // O teste encontrou um bug, marcamos com o método fail pois indica que ele foi eficiente e o bug é do próprio sistema, assim o playwriht não marca como teste falho
-  test.fail('Cenário 2: Edição com campo obrigatório vazio', async ({ page }) => {
+  test('Cenário 2: Edição com campo obrigatório vazio', async ({ page }) => {
 
     // Mapeando elementos de tela
     const inputNome = page.getByRole('textbox', { name: 'Ex: Girar bambolê' });
