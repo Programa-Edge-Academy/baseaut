@@ -23,8 +23,7 @@ test.describe('US05.03: Remover Exercício', () => {
     await page.waitForTimeout(1000);
   });
 
-  // O teste encontrou um bug, marcamos com o método fail pois indica que ele foi eficiente e o bug é do próprio sistema, assim o playwriht não marca como teste falho
-  test.fail('Cenário 2: Remoção de exercício vinculado a circuitos', async ({ page }) => {
+  test('Cenário 2: Remoção de exercício vinculado a circuitos', async ({ page }) => {
     
     // Aciona a opção "Excluir"
     const btnExcluirMenu = page.locator('div').filter({ hasText: /^Excluir$/ }).first();
