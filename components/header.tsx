@@ -1,12 +1,12 @@
 import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { colors } from "@/assets/colors";
-import { ArrowLeft, Settings, Users, X } from "lucide-react-native";
+import { supabase } from "@/lib/supabase";
 import { usePathname, useRouter } from "expo-router";
+import { ArrowLeft, Settings, Users, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SvgXml } from "react-native-svg";
-import { supabase } from "@/lib/supabase";
 
 type HeaderProps = {
   variant?: "default" | "back" | "finish" | "finishEngagement";
