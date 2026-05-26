@@ -21,6 +21,9 @@ const translateResetError = (msg: string | null | undefined) => {
   if (lowerMsg.includes("new password should be different") || lowerMsg.includes("same as the old password")) {
     return "A nova senha não pode ser igual à senha anterior.";
   }
+  if (lowerMsg.includes("session missing") || lowerMsg.includes("unauthorized") || lowerMsg.includes("jwt") || lowerMsg.includes("expired") || lowerMsg.includes("invalid token")) {
+    return "Link de redefinição inválido ou expirado. Por favor, solicite um novo.";
+  }
   return "Ocorreu um erro ao redefinir a senha. Tente novamente.";
 };
 
