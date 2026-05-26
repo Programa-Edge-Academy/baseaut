@@ -8,7 +8,7 @@ import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
 import { SectionField } from "@/components/section-field";
-import { StudentItemSessions } from "@/features/sessions/components/student-item-sessions";
+import { StudentItemSessions } from "@/features/students/components/student-item-sessions";
 
 import { useHistory } from "@/features/sessions/hooks/use-history"; // 🟢 Hook personalizado para lidar com o histórico de sessões
 
