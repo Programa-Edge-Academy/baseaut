@@ -7,8 +7,7 @@ import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
-import { SectionField } from "@/components/section-field";
-import { StudentItemSessions } from "@/features/sessions/components/student-item-sessions";
+import { StudentItemSessions } from "@/features/students/components/student-item-sessions";
 
 import { useHistory } from "@/features/sessions/hooks/use-history"; // 🟢 Hook personalizado para lidar com o histórico de sessões
 
@@ -69,10 +68,10 @@ export default function HistoryScreen() {
       <Header />
 
       <View className="mx-8 mt-5">
-      <PageHeader
-        title="Histórico de registros"
-        subtitle="Selecione um aluno para acessar registros passados"
-      />
+        <PageHeader
+          title="Histórico de registros"
+          subtitle="Selecione um aluno para acessar registros passados"
+        />
       </View>
 
       <View className="flex-1">
