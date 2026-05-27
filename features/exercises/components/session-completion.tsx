@@ -10,7 +10,9 @@ import { WarningBanner } from "./warning-banner"; // Certifique-se de que o cami
  * Props for the session completion summary.
  */
 interface SessionCompletionProps {
+  title?: string; // Ex: "Sessão Concluída"
   details: string; // Ex: "Lucas · Circuito 1 · Estruturado"
+  progress: string; // Ex: "100% concluído"
   statusLabel?: string; // Ex: "Realizadas"
   hasWarnings?: boolean;
   onContinue: () => void;
@@ -22,7 +24,9 @@ interface SessionCompletionProps {
  * Renders a completion summary with optional warnings and actions.
  */
 export function SessionCompletion({
+  title = "Sessão Concluída!",
   details,
+  progress,
   statusLabel = "Realizadas",
   hasWarnings = false,
   onContinue,
@@ -34,14 +38,22 @@ export function SessionCompletion({
       {/* Ícone de Sucesso Verde Circular */}
       <View
         className="h-20 w-20 items-center justify-center rounded-full mb-6"
-        style={{ backgroundColor: colors.level1 }}
+        style={{ backgroundColor: colors.secondary + "15" }}
       >
         <Check size={40} color={colors.secondary} strokeWidth={3} />
       </View>
 
       {/* Textos Informativos Centralizados */}
+      <Text className="text-[24px] font-bold text-white text-center mb-2">
+        {title}
+      </Text>
+
       <Text className="text-[16px] font-medium text-muted text-center mb-2">
         {details}
+      </Text>
+
+      <Text className="text-[24px] font-bold text-white text-center mb-2">
+        {progress}
       </Text>
 
       <Text className="text-[16px] font-medium text-muted text-center mb-8">
