@@ -32,13 +32,16 @@ export function useLogin() {
 
         if (profileError) throw profileError;
 
-        if (
-          profile.role !== "coordenador" &&
-          profile.status_conta === "pendente"
-        ) {
-          await supabase.auth.signOut();
-          setIsPendingApproval(true);
-          return false;
+        if (profile.role !== "coordenador") {
+          if (profile.status_conta === "pendente") {
+            await supabase.auth.signOut();
+            setIsPendingApproval(true);
+            return false;
+          }
+          if (profile.status_conta === "bloqueada" || profile.status_conta === "rejeitada") {
+            await supabase.auth.signOut();
+            throw new Error("Invalid login credentials");
+          }
         }
 
         return true;
