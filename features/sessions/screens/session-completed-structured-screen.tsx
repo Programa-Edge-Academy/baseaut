@@ -20,7 +20,7 @@ export function SessionCompletedStructuredScreen() {
                     <View className="left-6 top-[2%] w-[264px]">
                         <PageHeader title="Sessão de Lucas" subtitle="Circuito 2 · Livre" />
                     </View>
-                    <View className="top-[5%] mx-5 rounded-2xl bg-level1 border border-primary p-5 justify-center items-center">
+                    <View className="top-[5%] mx-5 rounded-2xl bg-level1 p-5 justify-center items-center">
                         <SessionCompletion details={"Lucas · Circuito 1 · Estruturado"} className="" statusLabel="Realizadas" hasWarnings={false} onContinue={function (): void {
                             throw new Error("Function not implemented.");
                         }} onBackToStart={function (): void {
