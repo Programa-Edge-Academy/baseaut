@@ -1,7 +1,7 @@
 import { colors } from "@/assets/colors";
 import { withOpacity } from "@/components/color-opacity";
 import { CardMenu } from "@/components/card-menu";
-import { ChevronRight, MoreVertical } from "lucide-react-native";
+import { ChevronRight, MoreVertical, AlertCircle } from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
@@ -19,6 +19,7 @@ export type ListCardProps = {
   iconBgColor?: string;
   rightAction?: RightActionType;
   badge?: ListCardBadge;
+  pendencyAlert?: boolean;
   className?: string;
   onPress?: () => void;
   onEdit?: () => void;
@@ -34,6 +35,7 @@ export function ListCard({
   iconBgColor = withOpacity(colors.muted, 0.2),
   rightAction = "more",
   badge,
+  pendencyAlert = false,
   className,
   onPress,
   onEdit,
@@ -85,11 +87,21 @@ export function ListCard({
       className={`mb-4 h-20 w-full flex-row items-center rounded-2xl border border-outline bg-level2 p-3.5 ${onPress ? "active:opacity-80" : ""} ${className ?? ""}`}
       style={{ zIndex: menuVisible ? 10 : 1 }}
     >
-      <View
-        className="mr-3.5 h-11 w-11 items-center justify-center rounded-2xl"
-        style={{ backgroundColor: iconBgColor }}
-      >
-        {icon}
+      <View className="relative mr-3.5 h-11 w-11">
+        {/* O Quadrado de Fundo do Ícone */}
+        <View
+          className="h-full w-full items-center justify-center rounded-2xl"
+          style={{ backgroundColor: iconBgColor }}
+        >
+          {icon}
+        </View>
+
+        {/* Alerta de Pendência */}
+        {pendencyAlert && (
+          <View className="absolute -right-0.5 -top-1 rounded-full p-0.5">
+            <AlertCircle size={16} color={colors.extra} />
+          </View>
+        )}
       </View>
 
       <View className="flex-1 flex-col justify-center pr-2">
