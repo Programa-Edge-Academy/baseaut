@@ -25,7 +25,7 @@ jobs:
       - name: Aplicar Migrations em Produção
         run: |
           supabase link --project-ref $PROJECT_ID --password $DB_PASSWORD
-          supabase db push
+          supabase db push --include-all
 
       #- name: Deploy das Edge Functions
       #  run: supabase functions deploy --project-ref $PROJECT_ID
