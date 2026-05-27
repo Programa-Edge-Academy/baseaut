@@ -7,7 +7,7 @@ import React from "react";
 import { ScrollView, View } from "react-native";
 
 
-export function SessionCompletedStructuredScreenContinuation() {
+export function SessionCompletedStructuredContinuationScreen() {
     const router = useRouter();
 
     return (
@@ -23,7 +23,7 @@ export function SessionCompletedStructuredScreenContinuation() {
                     </View>
 
                     {/* Cartão de Conclusão */}
-                    <View className="top-[5%] mx-5 rounded-2xl bg-level1 border border-primary p-5 justify-center items-center">
+                    <View className="top-[5%] mx-5 rounded-2xl bg-level1 p-5 justify-center items-center">
                         <SessionCompletion
                             details={"Lucas · Circuito 1 · Estruturado"}
                             className=""
