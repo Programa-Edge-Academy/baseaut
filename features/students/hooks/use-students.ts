@@ -17,7 +17,7 @@ export type Student = {
   healthConditions: string;
   observations: string;
   avatarUrl: string | null;
-  pendencyAlert: Boolean;
+  pendencyAlert: boolean;
 };
 
 /**
