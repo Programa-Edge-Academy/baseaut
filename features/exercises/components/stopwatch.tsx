@@ -1,10 +1,10 @@
 import { colors } from "@/assets/colors";
 import {
-  Bell,
   ClipboardEdit,
   Minimize2,
   Pause,
   Play,
+  Siren,
   Timer,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
@@ -103,7 +103,7 @@ export function Stopwatch({
           hitSlop={6}
           className="flex-row items-center gap-1.5 rounded-full border border-extra bg-extra/10 px-3 py-1 active:opacity-70"
         >
-          <Bell size={14} color={colors.extra} />
+          <Siren size={14} color={colors.extra} />
           <Text className="text-default-2 text-extra">Crise</Text>
         </Pressable>
       </View>
