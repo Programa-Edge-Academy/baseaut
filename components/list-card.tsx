@@ -46,7 +46,7 @@ export function ListCard({
   const [menuVisible, setMenuVisible] = useState(false);
   const buttonRef = useRef<View>(null);
   const [menuLayout, setMenuLayout] = useState({ top: 0, left: 0, width: 0 });
-  const hasMenuOptions = !!(onEdit && onDelete);
+  const hasMenuOptions = !!(onEdit || onDelete || onDuplicate);
 
   const handleMorePress = () => {
     if (hasMenuOptions) {
@@ -60,6 +60,7 @@ export function ListCard({
   const renderRightAction = () => {
     switch (rightAction) {
       case "more":
+        if (!hasMenuOptions) return null;
         return (
           <Pressable
             ref={buttonRef}
@@ -136,9 +137,9 @@ export function ListCard({
             onClose={() => setMenuVisible(false)}
             layout={menuLayout}
             showDuplicate={showDuplicate}
-            onEdit={onEdit!}
+            onEdit={onEdit}
             onDuplicate={onDuplicate}
-            onDelete={onDelete!}
+            onDelete={onDelete}
           />
         )}
       </View>

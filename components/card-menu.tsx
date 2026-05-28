@@ -8,9 +8,9 @@ export type CardMenuProps = {
   onClose: () => void;
   layout: { top: number; left: number; width: number };
   showDuplicate?: boolean;
-  onEdit: () => void;
+  onEdit?: () => void;
   onDuplicate?: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
 };
 
 export function CardMenu({
@@ -46,13 +46,15 @@ export function CardMenu({
           onPress={(e) => e.stopPropagation()}
         >
           <View className="gap-5">
-            <Pressable 
-              onPress={() => { onClose(); onEdit(); }} 
-              className="flex-row items-center justify-between active:opacity-70"
-            >
-              <Text className="text-sm font-medium text-white">Editar</Text>
-              <Edit2 size={16} color="#FFFFFF" />
-            </Pressable>
+            {onEdit && (
+              <Pressable 
+                onPress={() => { onClose(); onEdit(); }} 
+                className="flex-row items-center justify-between active:opacity-70"
+              >
+                <Text className="text-sm font-medium text-white">Editar</Text>
+                <Edit2 size={16} color="#FFFFFF" />
+              </Pressable>
+            )}
 
             {showDuplicate && (
               <Pressable 
@@ -64,13 +66,15 @@ export function CardMenu({
               </Pressable>
             )}
 
-            <Pressable 
-              onPress={() => { onClose(); onDelete(); }} 
-              className="flex-row items-center justify-between active:opacity-70"
-            >
-              <Text className="text-sm font-medium text-error">Excluir</Text>
-              <Trash2 size={16} color={colors.error} />
-            </Pressable>
+            {onDelete && (
+              <Pressable 
+                onPress={() => { onClose(); onDelete(); }} 
+                className="flex-row items-center justify-between active:opacity-70"
+              >
+                <Text className="text-sm font-medium text-error">Excluir</Text>
+                <Trash2 size={16} color={colors.error} />
+              </Pressable>
+            )}
           </View>
         </Pressable>
       </Pressable>
