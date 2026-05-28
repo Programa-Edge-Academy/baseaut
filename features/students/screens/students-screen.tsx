@@ -28,6 +28,7 @@ export function StudentsScreen() {
   const filteredStudents = students.filter((student) =>
     student.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
+  const hasPendingAlert = students.some(student => student.pendencyAlert);
 
   /**
    * Normalizes support level values to display labels.
@@ -45,7 +46,7 @@ export function StudentsScreen() {
       <View className="flex-1">
         <View className="mx-8 mt-5">
           <PageHeader
-            mode="inicio"
+            mode={hasPendingAlert ? "inicio-pendente" : "inicio"}
             title="Início"
             subtitle="Selecione um aluno para iniciar uma sessão"
             onNewPress={() => {
@@ -78,6 +79,7 @@ export function StudentsScreen() {
             renderItem={({ item }) => (
               <ListCard
                 title={item.name}
+                pendencyAlert={item.pendencyAlert}
                 subtitle={`${item.age} anos · ${item.weight}kg · ${item.height}cm · ${formatSupportLevel(item.supportLevel)}`}
                 icon={
                   item.avatarUrl ? (
