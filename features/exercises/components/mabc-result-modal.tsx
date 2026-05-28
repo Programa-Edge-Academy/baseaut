@@ -12,7 +12,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { SvgXml } from "react-native-svg";
 import {
   MABC_EXERCISE_CONFIGS,
   MabcExerciseConfig,
@@ -22,12 +21,10 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-export type NivelDesenvolvimento = "inicial" | "intermediario" | "maduro";
 export type RegistroAjuda = "autonomo" | "ajuda_intrusiva";
 export type SubCategoria = "verbal" | "modelo";
 
 export type MabcResultData = {
-  nivelDesenvolvimento: NivelDesenvolvimento;
   registroAjuda: RegistroAjuda;
   subCategorias: SubCategoria[];
   scores: Record<string, string>;
@@ -44,37 +41,8 @@ export interface MabcResultModalProps {
 }
 
 // ---------------------------------------------------------------------------
-// SVG XML Content for faces matching Figma designs
+// Constants
 // ---------------------------------------------------------------------------
-
-const SAD_FACE_XML = `
-<svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M15 15C15 15 13.5 13 11 13C8.5 13 7 15 7 15M8 8H8.01M14 8H14.01M21 11C21 16.5228 16.5228 21 11 21C5.47715 21 1 16.5228 1 11C1 5.47715 5.47715 1 11 1C16.5228 1 21 5.47715 21 11Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-`;
-
-const NEUTRAL_FACE_XML = `
-<svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M7 14H15M8 8H8.01M14 8H14.01M21 11C21 16.5228 16.5228 21 11 21C5.47715 21 1 16.5228 1 11C1 5.47715 5.47715 1 11 1C16.5228 1 21 5.47715 21 11Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-`;
-
-const SMILE_FACE_XML = `
-<svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M7 13C7 13 8.5 15 11 15C13.5 15 15 13 15 13M8 8H8.01M14 8H14.01M21 11C21 16.5228 16.5228 21 11 21C5.47715 21 1 16.5228 1 11C1 5.47715 5.47715 1 11 1C16.5228 1 21 5.47715 21 11Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-`;
-
-const NIVEIS: {
-  id: NivelDesenvolvimento;
-  label: string;
-  svgXml: string;
-  bgColor: string;
-}[] = [
-  { id: "inicial",       label: "Inicial",       svgXml: SAD_FACE_XML, bgColor: "#BE2223" },
-  { id: "intermediario", label: "Intermediário",  svgXml: NEUTRAL_FACE_XML, bgColor: "#C49A00" },
-  { id: "maduro",        label: "Maduro",         svgXml: SMILE_FACE_XML, bgColor: "#25C125" },
-];
 
 const MOTIVOS = [
   "Recusa do aluno",
@@ -99,12 +67,25 @@ export function MabcResultModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
 
-  // Standard form states
-  const [nivel, setNivel] = useState<NivelDesenvolvimento | null>(null);
+  // Form states
   const [ajuda, setAjuda] = useState<RegistroAjuda | null>(null);
   const [subCategorias, setSubCategorias] = useState<SubCategoria[]>([]);
   const [selectedMotivo, setSelectedMotivo] = useState<string | null>(null);
   const [outroDescricao, setOutroDescricao] = useState<string>("");
+
+  const handleSelectAjuda = (value: RegistroAjuda) => {
+    setAjuda(value);
+    // Limpa sub-categorias ao sair de "Autônomo"
+    if (value !== "autonomo") setSubCategorias([]);
+  };
+
+  /** Toggle multi-select: Verbal e Modelo podem coexistir. */
+  const toggleSubCategoria = (id: string) => {
+    const sub = id as SubCategoria;
+    setSubCategorias((prev) =>
+      prev.includes(sub) ? prev.filter((s) => s !== sub) : [...prev, sub]
+    );
+  };
 
   // Get configuration for current exercise
   const config: MabcExerciseConfig | undefined =
@@ -117,7 +98,6 @@ export function MabcResultModal({
       setErrors({});
       setSubmitted(false);
       setViewMode("result");
-      setNivel(null);
       setAjuda(null);
       setSubCategorias([]);
       setSelectedMotivo(null);
@@ -138,38 +118,6 @@ export function MabcResultModal({
     }
   };
 
-  const handleSelectAjuda = (value: RegistroAjuda) => {
-    setAjuda(value);
-    if (value !== "autonomo") setSubCategorias([]);
-
-    if (errors["ajuda"] || errors["subError"]) {
-      setErrors((prev) => {
-        const next = { ...prev };
-        delete next["ajuda"];
-        delete next["subError"];
-        return next;
-      });
-    }
-  };
-
-  const toggleSubCategoria = (id: string) => {
-    const sub = id as SubCategoria;
-    setSubCategorias((prev) => {
-      const updated = prev.includes(sub)
-        ? prev.filter((s) => s !== sub)
-        : [...prev, sub];
-
-      if (updated.length > 0 && errors["subError"]) {
-        setErrors((errs) => {
-          const next = { ...errs };
-          delete next["subError"];
-          return next;
-        });
-      }
-      return updated;
-    });
-  };
-
   const handleConfirm = () => {
     setSubmitted(true);
     if (!config) return;
@@ -185,7 +133,7 @@ export function MabcResultModal({
           const val = values[key]?.trim() || "";
 
           if (!val) {
-            newErrors[key] = "Obrigatório";
+            newErrors[key] = "Requerido";
             hasValidationError = true;
             continue;
           }
@@ -206,15 +154,15 @@ export function MabcResultModal({
     }
 
     // 2. Validate standard fields
-    if (nivel === null) {
-      newErrors["nivel"] = "Obrigatório";
+    const ajudaOk = ajuda !== null;
+    const subOk = ajuda !== "autonomo" || subCategorias.length > 0;
+
+    if (!ajudaOk) {
+      newErrors["ajuda"] = "Requerido";
       hasValidationError = true;
     }
-    if (ajuda === null) {
-      newErrors["ajuda"] = "Obrigatório";
-      hasValidationError = true;
-    } else if (ajuda === "autonomo" && subCategorias.length === 0) {
-      newErrors["subError"] = "Obrigatório";
+    if (!subOk) {
+      newErrors["subCategorias"] = "Requerido";
       hasValidationError = true;
     }
 
@@ -224,7 +172,6 @@ export function MabcResultModal({
     }
 
     onConfirm({
-      nivelDesenvolvimento: nivel!,
       registroAjuda: ajuda!,
       subCategorias,
       scores: values,
@@ -246,7 +193,6 @@ export function MabcResultModal({
   };
 
   // Standard errors checking
-  const nivelError = submitted && nivel === null;
   const ajudaError = submitted && ajuda === null;
   const subError = submitted && ajuda === "autonomo" && subCategorias.length === 0;
 
@@ -393,16 +339,18 @@ export function MabcResultModal({
                           </Text>
                         )}
 
-                        <View style={{ gap: 10 }}>
+                        {/* Render trials side-by-side in a row */}
+                        <View style={{ flexDirection: "row", gap: 10 }}>
                           {config.trials.map((trial, tIndex) => (
                             <View
                               key={trial}
                               style={{
+                                flex: 1,
                                 backgroundColor: colors.level1,
                                 borderRadius: 12,
                                 borderWidth: 1,
                                 borderColor: colors.outline,
-                                padding: 12,
+                                padding: 10,
                               }}
                             >
                               <Text
@@ -416,7 +364,8 @@ export function MabcResultModal({
                                 {trial === "T1" ? "Tentativa 1" : "Tentativa 2"}
                               </Text>
 
-                              <View style={{ flexDirection: "row", gap: 10 }}>
+                              {/* Render fields side-by-side inside each trial */}
+                              <View style={{ flexDirection: "row", gap: 8 }}>
                                 {config.fields.map((field) => {
                                   const key = `${side.key}_${tIndex}_${field.type}`;
                                   const hasError = !!errors[key];
@@ -426,10 +375,11 @@ export function MabcResultModal({
                                       <Text
                                         style={{
                                           fontFamily: "Inter-Medium",
-                                          fontSize: 12,
+                                          fontSize: 11,
                                           color: "#fff",
                                           marginBottom: 4,
                                         }}
+                                        numberOfLines={1}
                                       >
                                         {field.label}
                                       </Text>
@@ -440,24 +390,25 @@ export function MabcResultModal({
                                         placeholderTextColor={colors.placeholder}
                                         keyboardType="numeric"
                                         style={{
-                                          height: 40,
+                                          height: 36,
                                           backgroundColor: colors.level2,
                                           borderColor: hasError
                                             ? colors.error
                                             : colors.outline,
                                           borderWidth: 1,
                                           borderRadius: 8,
-                                          paddingHorizontal: 10,
+                                          paddingHorizontal: 8,
                                           color: "#fff",
                                           fontFamily: "Inter-Medium",
-                                          fontSize: 14,
+                                          fontSize: 13,
+                                          textAlign: "center",
                                         }}
                                       />
                                       {hasError && (
                                         <Text
                                           style={{
                                             fontFamily: "Inter-Medium",
-                                            fontSize: 10,
+                                            fontSize: 9,
                                             color: colors.error,
                                             marginTop: 2,
                                           }}
@@ -485,105 +436,7 @@ export function MabcResultModal({
                     }}
                   />
 
-                  {/* 2. Nível de Desenvolvimento Section */}
-                  <View style={{ gap: 8, marginBottom: 16 }}>
-                    <Text
-                      style={{
-                        fontFamily: "Inter-Medium",
-                        fontSize: 14,
-                        color: colors.muted,
-                      }}
-                    >
-                      Nível de desenvolvimento
-                    </Text>
-
-                    <View style={{ flexDirection: "row", gap: 8 }}>
-                      {NIVEIS.map((item) => {
-                        const isSelected = nivel === item.id;
-                        const hasErr = nivelError && !isSelected;
-                        return (
-                          <RipplePressable
-                            key={item.id}
-                            onPress={() => {
-                              setNivel(item.id);
-                              if (errors["nivel"]) {
-                                setErrors((errs) => {
-                                  const next = { ...errs };
-                                  delete next["nivel"];
-                                  return next;
-                                });
-                              }
-                            }}
-                            style={{
-                              flex: 1,
-                              alignItems: "center",
-                              paddingVertical: 12,
-                              paddingHorizontal: 8,
-                              gap: 5,
-                              borderRadius: 15,
-                              borderWidth: 1,
-                              borderColor: hasErr
-                                ? colors.error
-                                : isSelected
-                                ? item.bgColor
-                                : colors.outline,
-                              backgroundColor: isSelected
-                                ? `${item.bgColor}22`
-                                : hasErr
-                                ? "#BE222311"
-                                : colors.level2,
-                            }}
-                          >
-                            <View
-                              style={{
-                                width: 44,
-                                height: 44,
-                                borderRadius: 22,
-                                backgroundColor: item.bgColor,
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                            >
-                              <SvgXml xml={item.svgXml} width={20} height={20} />
-                            </View>
-                            <Text
-                              style={{
-                                fontFamily: "Inter-Medium",
-                                fontSize: 11,
-                                color: "#fff",
-                                textAlign: "center",
-                              }}
-                            >
-                              {item.label}
-                            </Text>
-                          </RipplePressable>
-                        );
-                      })}
-                    </View>
-
-                    {nivelError && (
-                      <Text
-                        style={{
-                          fontFamily: "Inter-Medium",
-                          fontSize: 12,
-                          color: colors.error,
-                        }}
-                      >
-                        Selecione um nível de desenvolvimento.
-                      </Text>
-                    )}
-                  </View>
-
-                  {/* Separator */}
-                  <View
-                    style={{
-                      height: 1,
-                      backgroundColor: colors.outline,
-                      marginVertical: 12,
-                    }}
-                  />
-
-                  {/* 3. Registro de Ajuda Section */}
+                  {/* 2. Registro de ajuda Section */}
                   <View style={{ gap: 8, marginBottom: 8 }}>
                     <Text
                       style={{
@@ -595,8 +448,7 @@ export function MabcResultModal({
                       Registro de ajuda
                     </Text>
 
-                    <View style={{ gap: 6 }}>
-                      {/* Autônomo */}
+                    <View style={{ gap: 5 }}>
                       <SelectableChip
                         label="Autônomo"
                         type="nivelAjuda"
@@ -608,7 +460,6 @@ export function MabcResultModal({
                         subOptionsHasError={subError}
                       />
 
-                      {/* Ajuda intrusiva */}
                       <SelectableChip
                         label="Ajuda intrusiva"
                         isSelected={ajuda === "ajuda_intrusiva"}
