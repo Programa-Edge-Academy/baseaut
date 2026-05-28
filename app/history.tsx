@@ -2,14 +2,14 @@ import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 
 import { colors } from "@/assets/colors";
-import { DataList } from "@/components/data-list"; // 🟢 Alinhado com o padrão do projeto
+import { DataList } from "@/components/data-list"; 
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
 import { StudentItemSessions } from "@/features/students/components/student-item-sessions";
 
-import { useHistory } from "@/features/sessions/hooks/use-history"; // 🟢 Hook personalizado para lidar com o histórico de sessões
+import { useHistory } from "@/features/sessions/hooks/use-history"; //
 
 export default function HistoryScreen() {
   const { studentsHistory, isLoading, error } = useHistory();
@@ -23,7 +23,8 @@ export default function HistoryScreen() {
     });
   }, [query, studentsHistory]);
 
-  // Renderização do corpo seguindo estritamente o exemplo funcional fornecido
+  
+  // Renderização do corpo
   const renderListBody = () => {
     if (isLoading) {
       return (
