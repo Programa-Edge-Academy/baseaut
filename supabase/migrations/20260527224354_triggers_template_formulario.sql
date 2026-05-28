@@ -25,7 +25,6 @@ AS $$
 DECLARE
   v_template   RECORD;
   v_novo_form  UUID;
-  v_pergunta   RECORD;
 BEGIN
   -- Itera sobre todos os templates globais de ATA e CARS
   FOR v_template IN
@@ -55,31 +54,26 @@ BEGIN
     )
     RETURNING id INTO v_novo_form;
 
-    -- Copia todas as perguntas do template para a nova instância
-    FOR v_pergunta IN
-      SELECT texto_pergunta, tipo_resposta, opcoes, obrigatoria, ordem, protegida
-      FROM public.perguntas
-      WHERE formulario_id = v_template.id
-    LOOP
-      INSERT INTO public.perguntas (
-        formulario_id,
-        texto_pergunta,
-        tipo_resposta,
-        opcoes,
-        obrigatoria,
-        ordem,
-        protegida
-      )
-      VALUES (
-        v_novo_form,
-        v_pergunta.texto_pergunta,
-        v_pergunta.tipo_resposta,
-        v_pergunta.opcoes,
-        v_pergunta.obrigatoria,
-        v_pergunta.ordem,
-        v_pergunta.protegida
-      );
-    END LOOP;
+    -- Copia todas as perguntas do template para a nova instância em uma única operação
+    INSERT INTO public.perguntas (
+      formulario_id,
+      texto_pergunta,
+      tipo_resposta,
+      opcoes,
+      obrigatoria,
+      ordem,
+      protegida
+    )
+    SELECT
+      v_novo_form,
+      texto_pergunta,
+      tipo_resposta,
+      opcoes,
+      obrigatoria,
+      ordem,
+      protegida
+    FROM public.perguntas
+    WHERE formulario_id = v_template.id;
   END LOOP;
 
   RETURN NEW;
