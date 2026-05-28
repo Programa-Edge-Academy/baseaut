@@ -93,15 +93,15 @@ CREATE TRIGGER on_aluno_created
 -- TRG-02 — Propagar Formulário do Circuito para a Sessão
 -- ════════════════════════════════════════════════════════════════════
 -- Objetivo: quando uma sessão for criada com um circuito que possui
--- formulario_id (Registro de Controle), propagar esse formulario_id
--- para a sessão recém-criada (US7.1: RC disponível imediatamente).
+-- formulario_id (Registro de Controle), definir esse formulario_id
+-- antes da gravação da sessão (US7.1: RC disponível imediatamente).
 --
 -- Critérios atendidos:
---   ✓ AFTER INSERT na tabela sessoes
+--   ✓ BEFORE INSERT na tabela sessoes
 --   ✓ SECURITY DEFINER
 --   ✓ Proteção de sobrescrita: se formulario_id já vier preenchido, aborta
 --   ✓ Condição de ignorar: se não houver circuito_id, não altera nada
---   ✓ Herança do circuito: propaga o formulario_id do circuito para a sessão
+--   ✓ Herança do circuito: define NEW.formulario_id antes da gravação da sessão
 -- ════════════════════════════════════════════════════════════════════
 
 CREATE OR REPLACE FUNCTION public.handle_sessao_created()
@@ -135,10 +135,8 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- Propaga o formulario_id do circuito para a sessão recém-criada
-  UPDATE public.sessoes
-     SET formulario_id = v_formulario_id
-   WHERE id = NEW.id;
+  -- Define o formulario_id antes do INSERT, evitando UPDATE pós-INSERT
+  NEW.formulario_id := v_formulario_id;
 
   RETURN NEW;
 END;
@@ -148,6 +146,6 @@ $$;
 DROP TRIGGER IF EXISTS on_sessao_created ON public.sessoes;
 
 CREATE TRIGGER on_sessao_created
-  AFTER INSERT ON public.sessoes
+  BEFORE INSERT ON public.sessoes
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_sessao_created();
