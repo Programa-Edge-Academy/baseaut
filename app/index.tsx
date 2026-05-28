@@ -1,5 +1,5 @@
 import { colors } from "@/assets/colors";
-import { LoginScreen } from "@/features/auth/screens/login-screen";
+import EngagementActivityScreen from "@/features/exercises/screens/engagement-activity-screen";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -42,5 +42,5 @@ export default function Index() {
     );
   }
 
-  return <LoginScreen />;
+  return <EngagementActivityScreen />;
 }
