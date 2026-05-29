@@ -2,7 +2,7 @@
 -- RPC-02 — Salvar Resultado (salvar_resultado_atividade)
 -- ════════════════════════════════════════════════════════════════════
 -- Objetivo: Persistir a avaliação do monitor após um exercício na
--- sessão (Épico 9), garantindo integridade e prevenindo lixo no banco.
+-- sessão (Épico 8), garantindo integridade e prevenindo lixo no banco.
 -- Grava o que aconteceu durante o exercício, bloqueando dados
 -- incompletos ou contraditórios.
 --
