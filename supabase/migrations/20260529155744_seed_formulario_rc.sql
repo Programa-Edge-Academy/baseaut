@@ -38,8 +38,8 @@ BEGIN
     (v_form_id, 'Contato visual - Objetos', 'selecao_unica', '{"valores": ["Sim", "Não"]}'::jsonb, true, 3, true),
     
     -- Bloco 3: Comportamentos
-    (v_form_id, 'Comportamentos Estereotipados', 'selecao_multipla', '{"valores": ["Corridas de um lugar a outro", "Saltos no mesmo lugar", "Balanceio", "Olha e brinca com as mãos e os dedos", "Pontapés", "Faz caretas", "Roda objetos ou sobre si mesmo", "Caminha na ponta dos pés ou saltando", "Arrasta os pés", "Torce o corpo", "Nenhuma das opções"]}'::jsonb, true, 4, true),
-    (v_form_id, 'Comportamentos Inaptos', 'selecao_multipla', '{"valores": ["Cabeçada", "Pegada na roupa", "Chute", "Tapa", "Mordida", "Puxar cabelo", "Beliscar", "Nenhuma das opções"]}'::jsonb, true, 5, true),
+    (v_form_id, 'Comportamentos Estereotipados', 'multipla_escolha', '{"valores": ["Corridas de um lugar a outro", "Saltos no mesmo lugar", "Balanceio", "Olha e brinca com as mãos e os dedos", "Pontapés", "Faz caretas", "Roda objetos ou sobre si mesmo", "Caminha na ponta dos pés ou saltando", "Arrasta os pés", "Torce o corpo", "Nenhuma das opções"]}'::jsonb, true, 4, true),
+    (v_form_id, 'Comportamentos Inaptos', 'multipla_escolha', '{"valores": ["Cabeçada", "Pegada na roupa", "Chute", "Tapa", "Mordida", "Puxar cabelo", "Beliscar", "Nenhuma das opções"]}'::jsonb, true, 5, true),
     
     -- Bloco 4: Fugas
     (v_form_id, 'Fugas (número de fugas e tempo do ocorrido)', 'texto_curto', null, true, 6, true),
