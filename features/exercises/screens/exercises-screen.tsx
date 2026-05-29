@@ -187,6 +187,7 @@ export function ExercisesScreen() {
             <ListCard
               title={item.name}
               subtitle={subtitleParts}
+              onPress={() => setExerciseToEdit(item)}
               icon={
                 item.iconUrl ? (
                   <Image
