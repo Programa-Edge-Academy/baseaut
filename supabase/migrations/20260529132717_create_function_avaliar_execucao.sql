@@ -1,3 +1,25 @@
+-- ════════════════════════════════════════════════════════════════════
+-- RPC-02 — Salvar Resultado (salvar_resultado_atividade)
+-- ════════════════════════════════════════════════════════════════════
+-- Objetivo: Persistir a avaliação do monitor após um exercício na
+-- sessão (Épico 9), garantindo integridade e prevenindo lixo no banco.
+-- Grava o que aconteceu durante o exercício, bloqueando dados
+-- incompletos ou contraditórios.
+--
+-- Critérios atendidos:
+--   ✓ Passo 1 — Validação de Sucesso: bloqueia salvamento se status =
+--               'realizada' sem nivel_desenvolvimento ou registro_ajuda
+--   ✓ Passo 2 — Trava do Array Vazio: exige complementos quando ajuda
+--               for 'autonomo', bloqueando NULL e array de tamanho zero
+--   ✓ Passo 3 — Validação de Falha: exige motivo quando status =
+--               'nao_realizada'
+--   ✓ Passo 4 — Trava do Espaço em Branco: usa trim() para impedir
+--               descricao_adicional vazia quando motivo = 'outro'
+--   ✓ Passo 5 — Mapeamento de Colunas: UPDATE direto em
+--               execucoes_exercicio pelo id exato, sem JOINs
+--   ✓ Erros retornados como jsonb { ok: false, erro: '...' } em PT-BR
+-- ════════════════════════════════════════════════════════════════════
+
 CREATE OR REPLACE FUNCTION public.avaliar_execucao_exercicio(
     p_execucao_id             uuid,
     p_status_realizacao        status_realizacao_enum,
