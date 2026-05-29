@@ -70,7 +70,12 @@ BEGIN
                     'erro',  'Ao selecionar Ajuda Autônoma é necessário informar pelo menos um complemento.'
                 );
             END IF;
+        ELSE
+            p_complementos_ajuda := NULL;
         END IF;
+
+        p_motivo_nao_realizacao := NULL;
+        p_descricao_adicional   := NULL;
 
     END IF;
 
@@ -97,7 +102,13 @@ BEGIN
                     'erro',  'A Descrição Adicional é obrigatória quando o motivo for "Outro".'
                 );
             END IF;
+        ELSE
+            p_descricao_adicional := NULL;
         END IF;
+
+        p_nivel_desenvolvimento := NULL;
+        p_registro_ajuda        := NULL;
+        p_complementos_ajuda    := NULL;
 
     END IF;
 
