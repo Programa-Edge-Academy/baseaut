@@ -93,6 +93,12 @@ export function StudentsScreen() {
                   )
                 }
                 iconBgColor={item.avatarUrl ? "transparent" : undefined}
+                onPress={() => {
+                  router.push({
+                    pathname: "/circuit-selection",
+                    params: { studentName: item.name }
+                  });
+                }}
                 onEdit={() => {
                   setEditingStudent(item);
                   setIsNewStudentModalVisible(true);
