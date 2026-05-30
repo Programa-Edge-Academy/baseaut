@@ -65,6 +65,7 @@ export function StudentCardTeam({
             <StudentItemTeam
               key={student.id}
               name={student.name}
+              avatarUrl={student.avatarUrl}
               onEdit={() => onEditStudent?.(student.id)}
               onRemove={() => onRemoveStudent?.(student.id)}
             />
