@@ -14,6 +14,7 @@ import { ActivityIndicator, Text, View } from "react-native";
 import { NewCircuit } from "../components/new-circuit"; 
 import { Circuit, CircuitType, ExecutionMode, useCircuits } from "../hooks/use-circuits";
 import { Exercise } from "../hooks/use-exercises";
+import { ViewCircuit } from "../components/view-circuit";
 
 export interface SaveCircuitPayload {
   name: string;
@@ -53,6 +54,7 @@ export function CircuitsScreen() {
   const [query, setQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [circuitToEdit, setCircuitToEdit] = useState<Circuit | null>(null);
+  const [circuitToView, setCircuitToView] = useState<Circuit | null>(null);
   const [circuitToDuplicate, setCircuitToDuplicate] = useState<Circuit | null>(null);
   const [circuitToDelete, setCircuitToDelete] = useState<Circuit | null>(null);
 
@@ -171,6 +173,7 @@ export function CircuitsScreen() {
               iconBgColor={withOpacity(iconColor, 0.15)}
               badge={{ label: badgeLabel, color: iconColor }}
               showDuplicate={!isMabc}
+              onPress={isMabc ? () => setCircuitToView(item) : () => setCircuitToEdit(item)}
               onEdit={isMabc ? undefined : () => setCircuitToEdit(item)}
               onDuplicate={isMabc ? undefined : () => handleDuplicate(item)}
               onDelete={isMabc ? undefined : () => setCircuitToDelete(item)}
@@ -217,6 +220,16 @@ export function CircuitsScreen() {
         initialData={circuitToEdit ? circuitToFormData(circuitToEdit) : undefined}
         onClose={handleCloseModal}
         onSave={handleSaveCircuit}
+      />
+
+      <ViewCircuit
+        visible={circuitToView !== null}
+        circuitData={circuitToView ? {
+          name: circuitToView.name,
+          executionMode: circuitToView.executionMode,
+          exercises: circuitToView.exercises,
+        } : null}
+        onClose={() => setCircuitToView(null)}
       />
 
       <ConfirmationModal
