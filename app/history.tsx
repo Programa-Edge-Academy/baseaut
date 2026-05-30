@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
+import { router } from "expo-router";
 
 import { colors } from "@/assets/colors";
 import { DataList } from "@/components/data-list"; 
@@ -56,7 +57,7 @@ export default function HistoryScreen() {
             sessions={item.sessions}
             pendencyAlert={item.pendencyAlert}
             onClick={() => {
-              console.log(`Navegando para os detalhes do aluno: ${item.id}`);
+              router.push(`../history/${item.id}`);
             }}
           />
         )}
