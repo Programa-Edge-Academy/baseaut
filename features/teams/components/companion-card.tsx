@@ -42,7 +42,7 @@ export function CompanionCard({
       <View className="mb-4 flex-row items-center gap-3">
         <GraduationCap size={24} color={colors.secondary} />
         <Text className="text-lg font-bold text-white">
-          Monitores ({companions.length})
+          Monitores ({companions.length - companions.filter((c) => c.status === "pendente").length})
         </Text>
       </View>
 
@@ -63,9 +63,6 @@ export function CompanionCard({
                 onAccept={() => onAcceptCompanion?.(companion.id)}
                 onReject={() => onRejectCompanion?.(companion.id)}
               />
-              {index < companions.length - 1 && (
-                <View className="my-2 h-[1px] w-full bg-outline opacity-50" />
-              )}
             </React.Fragment>
           ))}
         </View>
