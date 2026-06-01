@@ -1,5 +1,5 @@
 import { colors } from "@/assets/colors";
-import { Calendar, ChevronDown, ImageUp, X } from "lucide-react-native";
+import { Calendar, ChevronDown, ImageUp, Pencil, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Image, Modal, Pressable, Text, View } from "react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -8,6 +8,7 @@ import { ConfirmationModal } from "../../../components/confirmation-modal";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { DropdownModal } from "../../../components/dropdown-modal";
 import { StudentData } from "../../teams/hooks/use-team-data";
+import { DefaultButton } from "@/components/default-button";
 
 /**
  * Props for the create/edit student modal.
@@ -46,6 +47,8 @@ export function NewStudent({
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [deletePhotoModalVisible, setDeletePhotoModalVisible] = useState(false);
+  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const supportLevelRef = useRef<View>(null);
   const [supportLevelLayout, setSupportLevelLayout] = useState({
@@ -63,6 +66,7 @@ export function NewStudent({
   useEffect(() => {
     if (visible) {
       setDeletePhotoModalVisible(false);
+      setIsSaving(false);
       if (mode === "edit" && initialData) {
         setFullName(initialData.name);
         setWeight(`${initialData.weight} Kg`);
@@ -282,7 +286,8 @@ export function NewStudent({
    * Validates and prepares student data before saving.
    */
   const handleSaveWrapper = () => {
-    if (validateForm()) {
+    if (validateForm() && !isSaving) {
+      setIsSaving(true);
       const cleanName = fullName.trim().replace(/\s+/g, " ");
       const [day, month, year] = birthDate.split("/");
       const dbDate = `${year}-${month}-${day}`;
@@ -328,7 +333,7 @@ export function NewStudent({
               <View className="items-center">
                 <View className="relative">
                   <Pressable
-                    onPress={handlePhotoPress}
+                    onPress={photoUri ? () => setIsPreviewVisible(true) : handlePhotoPress}
                     className="w-24 h-24 bg-level1 border border-outline items-center justify-center rounded-2xl overflow-hidden active:opacity-80"
                   >
                     {photoUri ? (
@@ -342,12 +347,24 @@ export function NewStudent({
                   </Pressable>
 
                   {photoUri && (
-                    <Pressable
-                      onPress={() => setDeletePhotoModalVisible(true)}
-                      className="absolute -top-2 -right-2 bg-error p-1.5 rounded-full border-2 border-level2 active:opacity-70"
-                    >
-                      <X color="#FFFFFF" size={14} />
-                    </Pressable>
+                    <View>
+                      <View className="absolute -bottom-0 -left-0" >
+                        <Pressable
+                          onPress={handlePhotoPress}
+                          className="bg-primary p-1.5 rounded-full border-2 border-level2 active:opacity-70 -bottom-0 -left-0"
+                        >
+                          <Pencil color="#FFFFFF" size={14} />
+                        </Pressable>
+                      </View>
+                      <View className="absolute -bottom-0 -right-0">
+                        <Pressable
+                          onPress={() => setDeletePhotoModalVisible(true)}
+                          className="bg-error p-1.5 rounded-full border-2 border-level2 active:opacity-70 -bottom-0 -right-0"
+                        >
+                          <X color="#FFFFFF" size={14} />
+                        </Pressable>
+                      </View>
+                    </View>
                   )}
                 </View>
               </View>
@@ -423,7 +440,14 @@ export function NewStudent({
                   <DefaultTextInput
                     placeholder="Ex: 30.5"
                     value={weight}
-                    onChangeText={(text) => setWeight(text.replace(/,/g, "."))}
+                    onChangeText={(text) => {
+                      let valStr = text.replace(/,/g, ".").replace(/[^\d.]/g, "");
+                      if (valStr) {
+                        const numericVal = parseFloat(valStr);
+                        if (numericVal > 1000) valStr = "1000";
+                      }
+                      setWeight(valStr);
+                    }}
                     onBlur={handleWeightBlur}
                     onFocus={handleWeightFocus}
                     keyboardType="decimal-pad"
@@ -444,7 +468,14 @@ export function NewStudent({
                   <DefaultTextInput
                     placeholder="Ex: 120"
                     value={height}
-                    onChangeText={(text) => setHeight(text.replace(/,/g, "."))}
+                    onChangeText={(text) => {
+                      let valStr = text.replace(/,/g, ".").replace(/[^\d.]/g, "");
+                      if (valStr) {
+                        const numericVal = parseFloat(valStr);
+                        if (numericVal > 300) valStr = "300";
+                      }
+                      setHeight(valStr);
+                    }}
                     onBlur={handleHeightBlur}
                     onFocus={handleHeightFocus}
                     keyboardType="decimal-pad"
@@ -465,7 +496,14 @@ export function NewStudent({
                   <DefaultTextInput
                     placeholder="Ex: 50"
                     value={waist}
-                    onChangeText={(text) => setWaist(text.replace(/,/g, "."))}
+                    onChangeText={(text) => {
+                      let valStr = text.replace(/,/g, ".").replace(/[^\d.]/g, "");
+                      if (valStr) {
+                        const numericVal = parseFloat(valStr);
+                        if (numericVal > 350) valStr = "350";
+                      }
+                      setWaist(valStr);
+                    }}
                     onBlur={handleWaistBlur}
                     onFocus={handleWaistFocus}
                     keyboardType="decimal-pad"
@@ -551,8 +589,8 @@ export function NewStudent({
                 onCancel={onClose}
                 onSave={handleSaveWrapper}
                 cancelLabel="Cancelar"
-                saveLabel="Salvar"
-                className="mt-2"
+                saveLabel={isSaving ? "Salvando..." : "Salvar"}
+                disabled={isSaving}
               />
             </View>
           </View>
@@ -569,6 +607,54 @@ export function NewStudent({
         title="Remover foto?"
         mode="delete"
       />
+
+      <Modal
+        visible={isPreviewVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsPreviewVisible(false)}
+      >
+        <View className="flex-1 bg-black/90 justify-center items-center px-6">
+          <Pressable
+            onPress={() => setIsPreviewVisible(false)}
+            className="absolute top-12 right-6 z-50 p-2 active:opacity-70"
+          >
+            <X color="#FFFFFF" size={32} />
+          </Pressable>
+
+          {photoUri && (
+            <Image
+              source={{ uri: photoUri }}
+              style={{ width: "100%", height: "60%" }}
+              resizeMode="contain"
+            />
+          )}
+
+          <View className="flex-row gap-4 mt-10 w-full max-w-[342px]">
+            <DefaultButton
+              label="Remover"
+              onPress={() => {
+                setPhotoUri(null);
+                setIsPreviewVisible(false);
+              }}
+              bgColorClass="bg-level2"
+              isOutline
+              hasShadow={false}
+              outlineBorderClass="border-error"
+              textClassName="text-error"
+              className="flex-1"
+            />
+            <DefaultButton
+              label="Substituir"
+              onPress={() => {
+                setIsPreviewVisible(false);
+                setTimeout(handlePhotoPress, 300);
+              }}
+              className="flex-1"
+            />
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }

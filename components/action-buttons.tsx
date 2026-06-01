@@ -8,6 +8,7 @@ export interface ActionButtonsProps {
   cancelLabel?: string;
   saveLabel?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export function ActionButtons({
@@ -16,6 +17,7 @@ export function ActionButtons({
   cancelLabel = "Cancelar",
   saveLabel = "Salvar",
   className,
+  disabled = false,
 }: ActionButtonsProps) {
   return (
     <View className={`w-full flex-row items-center justify-between gap-4 ${className ?? ""}`}>
@@ -28,14 +30,16 @@ export function ActionButtons({
         className="border border-outline"
         textClassName="text-muted"
         rippleColor="rgba(255, 255, 255, 0.1)"
+        disabled={disabled}
       />
       <DefaultButton
         label={saveLabel}
         onPress={onSave}
-        bgColorClass="bg-primary"
-        shadowClass="shadow-primaryShadow"
+        bgColorClass={disabled ? "bg-muted" : "bg-primary"}
+        shadowClass={disabled ? "shadow-none" : "shadow-primaryShadow"}
         sizeClass="flex-1 h-11"
         textClassName="text-white"
+        disabled={disabled}
       />
     </View>
   );

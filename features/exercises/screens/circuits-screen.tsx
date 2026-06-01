@@ -173,7 +173,7 @@ export function CircuitsScreen() {
               iconBgColor={withOpacity(iconColor, 0.15)}
               badge={{ label: badgeLabel, color: iconColor }}
               showDuplicate={!isMabc}
-              onPress={isMabc ? () => setCircuitToView(item) : () => setCircuitToEdit(item)}
+              onPress={!isMabc ? () => setCircuitToEdit(item) : undefined}
               onEdit={isMabc ? undefined : () => setCircuitToEdit(item)}
               onDuplicate={isMabc ? undefined : () => handleDuplicate(item)}
               onDelete={isMabc ? undefined : () => setCircuitToDelete(item)}
