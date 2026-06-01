@@ -381,7 +381,8 @@ export function NewStudent({
                   }
                   value={fullName}
                   onChangeText={(text) => {
-                    setFullName(text);
+                    const cleanText = text.replace(/\d/g, "");
+                    setFullName(cleanText);
                     if (errors.fullName)
                       setErrors((prev) => ({ ...prev, fullName: "" }));
                   }}

@@ -219,7 +219,8 @@ export function NewExercise({
                   <DefaultTextInput
                     value={name}
                     onChangeText={(val) => {
-                      setName(val);
+                      const cleanVal = val.replace(/\d/g, "");
+                      setName(cleanVal);
                       if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
                     }}
                     placeholder="Ex: Girar bambolê"
