@@ -231,7 +231,8 @@ export function NewCircuit({
                   value={name}
                   maxLength={20} 
                   onChangeText={(val) => {
-                    setName(val);
+                    const cleanVal = val.replace(/\d/g, "");
+                    setName(cleanVal);
                     if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
                   }}
                   placeholder="Nome do circuito"
