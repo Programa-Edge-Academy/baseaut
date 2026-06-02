@@ -1,7 +1,8 @@
 import { colors } from "@/assets/colors";
-import { withOpacity } from "@/components/color-opacity";
 import { CardMenu } from "@/components/card-menu";
-import { ChevronRight, MoreVertical, AlertCircle } from "lucide-react-native";
+import { withOpacity } from "@/components/color-opacity";
+import { RipplePressable } from "@/components/ripple-pressable";
+import { AlertCircle, ChevronRight, MoreVertical } from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
@@ -26,6 +27,7 @@ export type ListCardProps = {
   onDelete?: () => void;
   onDuplicate?: () => void;
   showDuplicate?: boolean;
+  enableRipple?: boolean;
 };
 
 export function ListCard({
@@ -42,6 +44,7 @@ export function ListCard({
   onDelete,
   onDuplicate,
   showDuplicate = false,
+  enableRipple = false,
 }: ListCardProps) {
   const [menuVisible, setMenuVisible] = useState(false);
   const buttonRef = useRef<View>(null);
@@ -82,10 +85,12 @@ export function ListCard({
     }
   };
 
+  const PressableComponent = enableRipple ? RipplePressable : Pressable;
+
   return (
-    <Pressable
+    <PressableComponent
       onPress={onPress}
-      className={`mb-4 h-20 w-full flex-row items-center rounded-2xl border border-outline bg-level2 p-3.5 ${onPress ? "active:opacity-80" : ""} ${className ?? ""}`}
+      className={`mb-4 h-20 w-full flex-row items-center rounded-2xl border border-outline bg-level2 p-3.5 ${onPress && !enableRipple ? "active:opacity-80" : ""} ${className ?? ""}`}
       style={{ zIndex: menuVisible ? 10 : 1 }}
     >
       <View className="relative mr-3.5 h-11 w-11">
@@ -107,7 +112,10 @@ export function ListCard({
 
       <View className="flex-1 flex-col justify-center pr-2">
         <View className="flex-row items-center">
-          <Text className="text-base font-medium text-white flex-shrink" numberOfLines={1}>
+          <Text
+            className="text-base font-medium text-white flex-shrink"
+            numberOfLines={1}
+          >
             {title}
           </Text>
           {badge && (
@@ -115,7 +123,10 @@ export function ListCard({
               className="ml-2 items-center justify-center rounded-[10px] px-2 py-0.5"
               style={{ backgroundColor: withOpacity(badge.color, 0.1) }}
             >
-              <Text className="text-xs font-bold" style={{ color: badge.color }}>
+              <Text
+                className="text-xs font-bold"
+                style={{ color: badge.color }}
+              >
                 {badge.label}
               </Text>
             </View>
@@ -130,7 +141,7 @@ export function ListCard({
 
       <View className="relative z-50">
         {renderRightAction()}
-        
+
         {hasMenuOptions && (
           <CardMenu
             visible={menuVisible}
@@ -143,6 +154,6 @@ export function ListCard({
           />
         )}
       </View>
-    </Pressable>
+    </PressableComponent>
   );
 }
