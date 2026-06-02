@@ -177,6 +177,7 @@ export function CircuitsScreen() {
               onEdit={isMabc ? undefined : () => setCircuitToEdit(item)}
               onDuplicate={isMabc ? undefined : () => handleDuplicate(item)}
               onDelete={isMabc ? undefined : () => setCircuitToDelete(item)}
+              enableRipple={!isMabc}
             />
           );
         }}
