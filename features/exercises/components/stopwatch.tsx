@@ -81,7 +81,7 @@ export function Stopwatch({
   const handleStop = () => {
     setIsRunning(false);
     onStop?.(seconds);
-    setSeconds(0);
+    //setSeconds(0); Estava zerando o cronômetro, então se esbarrar o dedo e sair do modal, vocÊ perde o tempo registrado.
   };
 
   return (
