@@ -27,7 +27,8 @@ export function SessionCompletedFreeScreen() {
                 throw new Error("Function not implemented.");
               }}
               onBackToStart={function (): void {
-                throw new Error("Function not implemented.");
+                console.log("Voltando para o início das sessões...");
+                router.replace("/students")
               }}
               progress={"3 atividades realizadas"}
               onSelectContinuation={(id) =>
