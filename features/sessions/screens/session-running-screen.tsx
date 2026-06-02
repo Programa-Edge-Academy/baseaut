@@ -1,14 +1,14 @@
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
-import React, { useState, useRef } from "react";
-import { ScrollView, Text, View, Animated } from "react-native";
 import { Check } from "lucide-react-native";
+import React, { useRef, useState } from "react";
+import { Animated, ScrollView, Text, View } from "react-native";
 import { ActivityResultModal } from "../../exercises/components/activity-result-modal";
+import { MabcResultModal } from "../../exercises/components/mabc-result-modal";
 import { StartActivity } from "../../exercises/components/start-activity";
 import { Stopwatch } from "../../exercises/components/stopwatch";
 import { CircuitType } from "../../exercises/hooks/use-circuits";
-import { MabcResultModal } from "../../exercises/components/mabc-result-modal";
 import {
   DEFAULT_FINISH_MOTIVOS,
   FinishSessionModal,
@@ -79,9 +79,16 @@ export function SessionRunningScreen({
   const [isReorderOpen, setIsReorderOpen] = useState(false);
   const [isFinishOpen, setIsFinishOpen] = useState(false);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
+  const [elapsedTimeStr, setElapsedTimeStr] = useState<string | undefined>();
   const [deferredExercises, setDeferredExercises] = useState<string[]>([]);
+  const [historicoExercicios, setHistoricoExercicios] = useState<
+    Record<string, "concluido" | "nao_realizada" | "adiado">
+  >({});
 
-  const isMabc = circuitType === "mabc_1" || circuitType === "mabc_2" || circuitType === "mabc_3";
+  const isMabc =
+    circuitType === "mabc_1" ||
+    circuitType === "mabc_2" ||
+    circuitType === "mabc_3";
 
   // States and refs for Success Toast feedback
   const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -125,17 +132,30 @@ export function SessionRunningScreen({
   };
 
   const handleActivityNotCompleted = (motivo: string, descricao?: string) => {
-    console.log("[ActivityResult] Não realizada. Motivo:", motivo, "Descrição:", descricao);
+    console.log(
+      "[ActivityResult] Não realizada. Motivo:",
+      motivo,
+      "Descrição:",
+      descricao,
+    );
     setIsResultModalOpen(false);
     triggerToast();
-    advanceSession(false);
+    advanceSession("nao_realizada");
+  };
+
+  const handleActivityDefer = () => {
+    console.log("[ActivityResult] Resposta adiada.");
+    
+    setIsResultModalOpen(false);
+    
+    advanceSession("adiado");
   };
 
   const handleMabcConfirm = (result: any) => {
     console.log("[MabcResult] Confirmado:", result);
     setIsResultModalOpen(false);
     triggerToast();
-    advanceSession(false);
+    advanceSession("concluido");
   };
 
   const handleMabcDefer = () => {
@@ -143,27 +163,42 @@ export function SessionRunningScreen({
     const updatedDeferred = [...deferredExercises, currentExercise.id];
     setDeferredExercises(updatedDeferred);
     setIsResultModalOpen(false);
-    advanceSession(true, updatedDeferred);
+    advanceSession("adiado");
   };
 
   const handleMabcNotCompleted = (motivo: string, descricao?: string) => {
-    console.log("[MabcResult] Não realizada. Motivo:", motivo, "Descrição:", descricao);
+    console.log(
+      "[MabcResult] Não realizada. Motivo:",
+      motivo,
+      "Descrição:",
+      descricao,
+    );
     setIsResultModalOpen(false);
     triggerToast();
-    advanceSession(false);
+    advanceSession("nao_realizada");
   };
 
-  const advanceSession = (isDeferringCurrent: boolean, customDeferred?: string[]) => {
+  const advanceSession = (
+    statusAtual: "concluido" | "nao_realizada" | "adiado",
+  ) => {
     setStage("ready");
     setHasAdvanced(true);
+
+    const historicoAtualizado = {
+      ...historicoExercicios,
+      [currentExercise.id]: statusAtual,
+    };
+
+    setHistoricoExercicios(historicoAtualizado);
+
     if (currentIndex < total - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      const list = customDeferred || deferredExercises;
-      onCompleteSession?.(list.length > 0);
+      const temPendencias =
+        Object.values(historicoAtualizado).includes("adiado");
+      onCompleteSession?.(temPendencias);
     }
   };
-
 
   const total = order.length;
   const currentExercise = order[currentIndex];
@@ -175,13 +210,14 @@ export function SessionRunningScreen({
     setStage("running");
   };
 
-  const handleStop = (_elapsed: number) => {
-    // TODO: persist elapsed seconds to execucoes_exercicio.
-    if (isMabc) {
-      setIsResultModalOpen(true);
-    } else {
-      advanceSession(false);
-    }
+  const handleStop = (elapsed: number) => {
+    const minutes = Math.floor(elapsed / 60)
+      .toString()
+      .padStart(2, "0");
+    const seconds = (elapsed % 60).toString().padStart(2, "0");
+
+    setElapsedTimeStr(`${minutes}:${seconds}`);
+    setIsResultModalOpen(true);
   };
 
   const handleConfirmFinish = (motivo: string) => {
@@ -193,7 +229,7 @@ export function SessionRunningScreen({
     // Stitch the upcoming part of the queue back together with the already
     // executed/locked prefix in front of the current index.
     const upcomingById = new Map(
-      order.slice(currentIndex).map((exercise) => [exercise.id, exercise])
+      order.slice(currentIndex).map((exercise) => [exercise.id, exercise]),
     );
     const reorderedUpcoming = reorderedRemaining
       .map((item) => upcomingById.get(item.id))
@@ -250,7 +286,12 @@ export function SessionRunningScreen({
                 /* TODO: register a "crise" event tied to the current exercise. */
               }}
               onStop={handleStop}
-              onPressCorner={() => setIsResultModalOpen(true)}
+              onPressCorner={() => {
+                // Error text
+                throw new Error(
+                  "Módulo de formulários (ATA/CARS) pendente de implementação!",
+                );
+              }}
             />
           )}
 
@@ -289,7 +330,10 @@ export function SessionRunningScreen({
           exerciseName={currentExercise.name}
           circuitType={circuitType as "mabc_1" | "mabc_2" | "mabc_3"}
           onClose={() => setIsResultModalOpen(false)}
-          onDefer={handleMabcDefer}
+          onDefer={() => {
+            setIsResultModalOpen(false);
+            advanceSession("adiado");
+          }}
           onNotCompleted={handleMabcNotCompleted}
           onConfirm={handleMabcConfirm}
         />
@@ -297,16 +341,15 @@ export function SessionRunningScreen({
         <ActivityResultModal
           visible={isResultModalOpen}
           exerciseTitle={currentExercise.name}
+          elapsedTime={elapsedTimeStr}
           onClose={() => setIsResultModalOpen(false)}
-          onDefer={() => {
-            console.log("[ActivityResult] Resposta adiada.");
-            setIsResultModalOpen(false);
-          }}
+          onDefer={handleActivityDefer}
           onNotCompleted={handleActivityNotCompleted}
           onConfirm={(result) => {
             console.log("[ActivityResult]", result);
             setIsResultModalOpen(false);
             triggerToast();
+            advanceSession("concluido");
           }}
         />
       )}
@@ -354,4 +397,3 @@ export function SessionRunningScreen({
     </View>
   );
 }
-
