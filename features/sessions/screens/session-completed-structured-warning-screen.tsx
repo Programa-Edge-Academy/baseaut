@@ -26,9 +26,7 @@ export function SessionCompletedStructuredWarningsScreen() {
                             className="" 
                             statusLabel="Realizadas" 
                             hasWarnings={true} 
-                            onContinue={function (): void {
-                                throw new Error("Function not implemented.");
-                            }} 
+                            unrealizedCount={2}
                             onSelectContinuation={function (): void {
                                 console.log("Selecionando continuação...");
                             }} 

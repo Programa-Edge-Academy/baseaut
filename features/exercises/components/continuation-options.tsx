@@ -6,31 +6,11 @@ import { Pressable, Text, View } from "react-native";
  * Props for the continuation options list.
  */
 interface ContinuationOptionsProps {
+  unrealizedCount: number;
   onSelectOption: (id: string) => void;
   onCancel: () => void;
   className?: string;
 }
-
-/**
- * Static list of continuation options shown to the user.
- */
-const CONTINUATION_OPTIONS = [
-  {
-    id: "try_unrealized",
-    title: "Tentar exercício não realizado",
-    description: "1 exercício não realizado",
-  },
-  {
-    id: "repeat_exercise",
-    title: "Repetir exercício",
-    description: "Escolher exercício do circuito para repetir",
-  },
-  {
-    id: "do_other",
-    title: "Realizar outro exercício",
-    description: "Escolher qualquer exercício da equipe",
-  },
-];
 
 // 2. Subcomponente local para os itens da lista
 /**
@@ -64,10 +44,33 @@ function OptionItem({ title, description, onPress }: OptionItemProps) {
  * Renders the continuation options and a cancel action.
  */
 export function ContinuationOptions({
+  unrealizedCount,
   onSelectOption,
   onCancel,
   className = "",
 }: ContinuationOptionsProps) {
+  /**
+   * Static list of continuation options shown to the user.
+   */
+  const CONTINUATION_OPTIONS = [
+    {
+      id: "try_unrealized",
+      title: "Tentar exercício não realizado",
+      description: unrealizedCount === 1 
+        ? "1 exercício não realizado" 
+        : `${unrealizedCount} exercícios não realizados`,
+    },
+    {
+      id: "repeat_exercise",
+      title: "Repetir exercício",
+      description: "Escolher exercício do circuito para repetir",
+    },
+    {
+      id: "do_other",
+      title: "Realizar outro exercício",
+      description: "Escolher qualquer exercício da equipe",
+    },
+  ];
   return (
     <View className={`w-full max-w-md p-4 ${className}`}>
       {/* Container das opções com espaçamento (gap) entre elas */}

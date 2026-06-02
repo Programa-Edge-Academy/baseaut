@@ -2,21 +2,21 @@ import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import { RipplePressable } from "@/components/ripple-pressable";
 import { Check, RotateCcw } from "lucide-react-native";
-import React, { useState } from "react"; 
+import React, { useState } from "react";
 import { Text, View } from "react-native";
-import { WarningBanner } from "./warning-banner"; 
-import { ContinuationOptions } from "./continuation-options"; 
+import { ContinuationOptions } from "./continuation-options";
+import { WarningBanner } from "./warning-banner";
 /**
  * Props for the session completion summary.
  */
 interface SessionCompletionProps {
-  title?: string; 
-  details: string; 
-  progress: string; 
-  statusLabel?: string; 
+  title?: string;
+  details: string;
+  progress: string;
+  statusLabel?: string;
   hasWarnings?: boolean;
-  onContinue: () => void; 
-  onSelectContinuation: (id: string) => void; 
+  unrealizedCount: number;
+  onSelectContinuation: (id: string) => void;
   onBackToStart: () => void;
   className?: string;
 }
@@ -30,12 +30,11 @@ export function SessionCompletion({
   progress,
   statusLabel = "Realizadas",
   hasWarnings = false,
-  onContinue,
-  onSelectContinuation, 
+  unrealizedCount,
+  onSelectContinuation,
   onBackToStart,
   className = "",
 }: SessionCompletionProps) {
-  
   const [showOptions, setShowOptions] = useState(false);
 
   return (
@@ -49,10 +48,18 @@ export function SessionCompletion({
       </View>
 
       {/* Textos Informativos Centralizados */}
-      <Text className="text-[24px] font-bold text-white text-center mb-2">{title}</Text>
-      <Text className="text-[16px] font-medium text-muted text-center mb-2">{details}</Text>
-      <Text className="text-[24px] font-bold text-white text-center mb-2">{progress}</Text>
-      <Text className="text-[16px] font-medium text-muted text-center mb-8">{statusLabel}</Text>
+      <Text className="text-[24px] font-bold text-white text-center mb-2">
+        {title}
+      </Text>
+      <Text className="text-[16px] font-medium text-muted text-center mb-2">
+        {details}
+      </Text>
+      <Text className="text-[24px] font-bold text-white text-center mb-2">
+        {progress}
+      </Text>
+      <Text className="text-[16px] font-medium text-muted text-center mb-8">
+        {statusLabel}
+      </Text>
 
       {hasWarnings ? <WarningBanner className="mb-8" /> : null}
 
@@ -60,7 +67,7 @@ export function SessionCompletion({
       <View className="w-full flex-row" style={{ gap: 12 }}>
         {/* Botão Continuar */}
         <RipplePressable
-          onPress={() => setShowOptions(true)} // 
+          onPress={() => setShowOptions(true)} //
           className="flex-1 flex-row items-center justify-center rounded-[16px] bg-level1 border border-outline py-4 active:opacity-70"
           style={{ gap: 8 }}
         >
@@ -72,21 +79,23 @@ export function SessionCompletion({
 
         {/* Botão Voltar ao Início */}
         <DefaultButton
-          label="Voltar ao início" 
-          sizeClass="flex-1 py-4" 
-          hasShadow={true} 
-          textClassName="text-[16px] font-bold text-white" 
-          onPress={onBackToStart} 
+          label="Voltar ao início"
+          sizeClass="flex-1 py-4"
+          hasShadow={true}
+          textClassName="text-[16px] font-bold text-white"
+          onPress={onBackToStart}
         />
       </View>
 
       {showOptions && (
         <View className="mt-6 w-full items-center">
           <ContinuationOptions 
+            unrealizedCount={unrealizedCount} 
+            
             onCancel={() => setShowOptions(false)}
             onSelectOption={(id) => {
               setShowOptions(false); 
-              onSelectContinuation(id); // Dispara a função pra tela principal fazer a navegação
+              onSelectContinuation(id); 
             }}
           />
         </View>
