@@ -29,8 +29,12 @@ export function SessionCompletedStructuredWarningsScreen() {
                             onContinue={function (): void {
                                 throw new Error("Function not implemented.");
                             }} 
+                            onSelectContinuation={function (): void {
+                                console.log("Selecionando continuação...");
+                            }} 
                             onBackToStart={function (): void {
-                                throw new Error("Function not implemented.");
+                                console.log("Voltando para o início das sessões...");
+                                router.replace("/students")
                             }} 
                             progress={"3/3"} 
                         />
