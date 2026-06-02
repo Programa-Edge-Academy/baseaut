@@ -204,6 +204,7 @@ export function ExercisesScreen() {
               onEdit={() => setExerciseToEdit(item)}
               onDuplicate={() => handleDuplicate(item)}
               onDelete={() => setExerciseToDelete(item)}
+              enableRipple={true}
             />
           );
         }}
