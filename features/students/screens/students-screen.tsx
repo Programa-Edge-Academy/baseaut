@@ -93,6 +93,7 @@ export function StudentsScreen() {
                   )
                 }
                 iconBgColor={item.avatarUrl ? "transparent" : undefined}
+                enableRipple={true}
                 onPress={() => {
                   router.push({
                     pathname: "/circuit-selection",
@@ -104,6 +105,7 @@ export function StudentsScreen() {
                   setIsNewStudentModalVisible(true);
                 }}
                 onDelete={() => setStudentToDelete(item)}
+                
               />
             )}
           />
