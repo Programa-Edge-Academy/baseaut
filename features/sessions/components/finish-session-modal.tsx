@@ -42,8 +42,8 @@ export function FinishSessionModal({
   motivos = DEFAULT_FINISH_MOTIVOS,
   title = "Finalizar sessão?",
   message = "O progresso atual desta sessão será salvo de acordo com o tipo de circuito escolhido.",
-  cancelLabel = "Voltar",
-  confirmLabel = "Cancelar",
+  cancelLabel = "Cancelar",
+  confirmLabel = "Finalizar",
 }: FinishSessionModalProps) {
   const [selected, setSelected] = useState<string | null>(null);
 
