@@ -1,20 +1,27 @@
 import React from "react";
 import { useLocalSearchParams, router } from "expo-router";
-
-import { CircuitSelectionScreen } from "../features/sessions/screens/circuit-selection-screen";
+import { CircuitSelectionScreen, CircuitItem } from "../features/sessions/screens/circuit-selection-screen";
 
 export default function CircuitSelectionRoute() {
   const { studentName } = useLocalSearchParams<{ studentName: string }>();
 
   return (
     <CircuitSelectionScreen 
-      // Passa o nome pra tela (ou "Aluno" como fallback de segurança)
       studentName={studentName || "Aluno"} 
-      
       onPressBack={() => router.back()} 
       
-      onPressCircuit={(circuit) => {
-        console.log("Clicou no circuito:", circuit.name);
+      onPressCircuit={(circuit: CircuitItem) => {
+        if (circuit.type === "livre") {
+          router.push({
+            pathname: "/session/free",
+            params: { studentName, circuitName: circuit.name }
+          });
+        } else {
+          router.push({
+            pathname: "/session/structured",
+            params: { studentName, circuitName: circuit.name }
+          });
+        }
       }}
     />
   );
