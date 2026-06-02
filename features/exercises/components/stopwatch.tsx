@@ -114,7 +114,14 @@ export function Stopwatch({
 
           <Text
             className="text-white"
-            style={{ fontFamily: "Inter-Bold", fontSize: 30, lineHeight: 32 }}
+            style={{
+              fontFamily: "Inter-Bold",
+              fontSize: 30,
+              lineHeight: 32,
+              fontVariant: ["tabular-nums"],
+              minWidth: 90,
+              textAlign: "center",
+            }}
           >
             {formatTime(seconds)}
           </Text>
