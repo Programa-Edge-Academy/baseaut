@@ -1,16 +1,17 @@
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { router } from "expo-router";
+import { User } from "lucide-react-native";
 
 import { colors } from "@/assets/colors";
 import { DataList } from "@/components/data-list"; 
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { ListCard } from "@/components/list-card"; 
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
-import { StudentItemSessions } from "@/features/students/components/student-item-sessions";
 
-import { useHistory } from "@/features/sessions/hooks/use-history"; //
+import { useHistory } from "@/features/sessions/hooks/use-history";
 
 export default function HistoryScreen() {
   const { studentsHistory, isLoading, error } = useHistory();
@@ -24,7 +25,6 @@ export default function HistoryScreen() {
     });
   }, [query, studentsHistory]);
 
-  
   // Renderização do corpo
   const renderListBody = () => {
     if (isLoading) {
@@ -49,16 +49,25 @@ export default function HistoryScreen() {
       <DataList
         className="mt-5 px-8"
         data={filteredHistory}
-        emptyMessage="Nenhum histórico encontrado." // O DataList já renderiza o texto de vazio automaticamente
+        emptyMessage="Nenhum histórico encontrado."
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <StudentItemSessions
-            name={item.name}
-            sessions={item.sessions}
+          // 🛠️ Substituição executada aqui:
+          <ListCard
+            title={item.name}
+            // Exibe a quantidade de registros ou sessões do aluno de forma limpa
+            subtitle={`${item.sessions} registros`} 
+            // Se houver alerta de pendência no histórico do aluno, aplica a borda de destaque
             pendencyAlert={item.pendencyAlert}
-            onClick={() => {
+            // Ícone padrão de usuário com a cor primária do app
+            icon={<User size={20} color={colors.primary} />}
+            // Fundo do ícone com 15% de opacidade (sufixo 26)
+            iconBgColor={`${colors.primary}26`}
+            onPress={() => {
               router.push(`../history/${item.id}`);
             }}
+            // Ativa o feedback visual de toque nativo configurado anteriormente
+            enableRipple={true}
           />
         )}
       />
@@ -77,7 +86,6 @@ export default function HistoryScreen() {
       </View>
 
       <View className="flex-1">
-
         <View className="relative z-10 mx-8 mt-5">
           <SearchInput
             placeholder="Buscar aluno no histórico..."
