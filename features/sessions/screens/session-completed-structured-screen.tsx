@@ -23,9 +23,7 @@ export function SessionCompletedStructuredScreen() {
               className=""
               statusLabel="Realizadas"
               hasWarnings={false}
-              onContinue={function (): void {
-                throw new Error("Function not implemented.");
-              }}
+              unrealizedCount={9}
               onBackToStart={function (): void {
                 console.log("Voltando para o início das sessões...");
                 router.replace("/students")
