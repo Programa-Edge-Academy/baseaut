@@ -1,5 +1,3 @@
-/* features/analysis/components/mabc2-motor-development-card.tsx*/
-
 import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import { ClipboardList, Dumbbell } from "lucide-react-native";
@@ -53,19 +51,13 @@ export function Mabc2MotorDevelopmentCard({
       </View>
 
       <View className="flex-row gap-3">
-        <View
-          className="flex-1 rounded-xl border px-3 py-1.5"
-          style={{ backgroundColor: "#1A2836", borderColor: colors.primary }}
-        >
+        <View className="flex-1 rounded-xl border border-outline bg-level1 px-3 py-1.5">
           <Text className="text-xs font-medium text-muted">Pontuação total</Text>
           <Text className="text-xl font-bold text-white">
             {totalScore !== null ? String(totalScore) : "—"}
           </Text>
         </View>
-        <View
-          className="flex-1 rounded-xl border px-3 py-1.5"
-          style={{ backgroundColor: "#1A2836", borderColor: colors.primary }}
-        >
+        <View className="flex-1 rounded-xl border border-outline bg-level1 px-3 py-1.5">
           <Text className="text-xs font-medium text-muted">Percentil total</Text>
           <Text className="text-xl font-bold text-white">
             {totalPercentile ?? "—"}
@@ -78,7 +70,7 @@ export function Mabc2MotorDevelopmentCard({
           {index > 0 && (
             <View className="h-px bg-outline w-full" />
           )}
-          <Mabc2Section {...section} />
+          <Mabc2Section {...section} readOnly={readOnly} />
         </React.Fragment>
       ))}
 
