@@ -83,7 +83,7 @@ export const FormComponent = forwardRef(function FormComponent(
     loadQuestions();
   }, [formularioId]);
 
-  const handleSave = async () => {
+  const handleSave = async (silent = true) => {
     setSaving(true);
 
     try {
@@ -112,12 +112,14 @@ export const FormComponent = forwardRef(function FormComponent(
 
       if (error) throw error;
 
-      Alert.alert("Sucesso", "Avaliação salva com sucesso!");
+      if (!silent) {
+        Alert.alert("Sucesso", "Avaliação salva com sucesso!");
+      }
       if (onSuccess) onSuccess();
 
     } catch (error) {
       console.error(error);
-      Alert.alert("Erro", "Ocorreu um erro ao salvar as respostas.");
+      if (!silent) Alert.alert("Erro", "Ocorreu um erro ao salvar as respostas.");
     } finally {
       setSaving(false);
     }
