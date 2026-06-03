@@ -1,3 +1,30 @@
+-- ════════════════════════════════════════════════════════════════════
+-- RPC — Iniciar Avaliação MABC-2 (rpc_iniciar_mabc2)
+-- ════════════════════════════════════════════════════════════════════
+-- Objetivo: Gerar uma nova instância de avaliação MABC-2 no banco a
+-- partir do ID do aluno e do avaliador. Calcula a faixa etária,
+-- localiza o template correto e retorna o formulario_id recém-criado
+-- junto do array de itens prontos para a UI renderizar a prova.
+--
+-- Critérios atendidos:
+--   ✓ Passo 1 — Busca do Aluno: SELECT da data_nascimento pelo
+--               p_aluno_id, com RAISE EXCEPTION se não encontrado
+--   ✓ Passo 2 — Cálculo de Idade: usa DATE_PART('year', AGE(...))
+--               para obter a idade exata em anos
+--   ✓ Passo 3 — Determinação da Faixa: CASE (3–6 = faixa 1;
+--               7–10 = faixa 2; 11–16 = faixa 3) com RAISE EXCEPTION
+--               se idade estiver fora do intervalo suportado
+--   ✓ Passo 4 — Busca do Template: localiza em formularios onde
+--               tipo = 'mabc2', protegido = TRUE e
+--               metadados->>'faixa_mabc' = faixa calculada
+--   ✓ Passo 5 — Inserção da Instância: INSERT em formularios com
+--               protegido = FALSE e template_origem_id apontando para
+--               o template base; colunas copiadas via SELECT do template
+--   ✓ Passo 6 — Montagem dos Itens: jsonb_agg das perguntas do
+--               template (não da instância), ordenadas por ordem
+--   ✓ Passo 7 — Retorno: JSONB com formulario_id e array itens
+-- ════════════════════════════════════════════════════════════════════
+
 CREATE OR REPLACE FUNCTION rpc_iniciar_mabc2(
     p_aluno_id    UUID,
     p_avaliador_id UUID
