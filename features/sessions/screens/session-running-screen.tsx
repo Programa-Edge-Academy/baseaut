@@ -14,6 +14,23 @@ import {
   FinishSessionModal,
 } from "../components/finish-session-modal";
 import { ReorderItem, ReorderModal } from "../components/reorder-modal";
+import type {
+  ExecutionRecord,
+  MotivoNaoRealizacao,
+} from "../hooks/use-session-flow";
+
+/**
+ * Maps the human-readable reasons surfaced by the result modals to the
+ * `motivo_nao_realizacao_enum` values stored in the database.
+ */
+const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
+  "Recusa do aluno": "recusa_aluno",
+  "Comportamento disruptivo": "comportamento_disruptivo",
+  "Fadiga ou cansaço": "fadiga_cansaco",
+  "Tempo insuficiente": "tempo_insuficiente",
+  "Dificuldade física": "dificuldade_fisica",
+  Outro: "outro",
+};
 
 export type SessionExercise = {
   id: string;
@@ -51,8 +68,11 @@ export type SessionRunningScreenProps = {
   circuitType?: CircuitType;
   exercises?: SessionExercise[];
   onPressBack?: () => void;
-  onFinishSession?: (motivo: string) => void;
-  onCompleteSession?: (hasWarnings: boolean) => void;
+  onFinishSession?: (motivo: string, executions: ExecutionRecord[]) => void;
+  onCompleteSession?: (
+    hasWarnings: boolean,
+    executions: ExecutionRecord[],
+  ) => void;
 };
 
 /**
@@ -84,6 +104,13 @@ export function SessionRunningScreen({
   const [historicoExercicios, setHistoricoExercicios] = useState<
     Record<string, "concluido" | "nao_realizada" | "adiado">
   >({});
+
+  // Accumulates the persisted execution records across exercises so the parent
+  // route can write them all once the session completes/finishes. A ref avoids
+  // stale-closure issues while advancing through the queue.
+  const executionsRef = useRef<ExecutionRecord[]>([]);
+  // Elapsed seconds captured at the last stopwatch stop, persisted per exercise.
+  const lastElapsedSecondsRef = useRef<number | null>(null);
 
   const isMabc =
     circuitType === "mabc_1" ||
@@ -132,34 +159,31 @@ export function SessionRunningScreen({
   };
 
   const handleActivityNotCompleted = (motivo: string, descricao?: string) => {
-    console.log(
-      "[ActivityResult] Não realizada. Motivo:",
-      motivo,
-      "Descrição:",
-      descricao,
-    );
     setIsResultModalOpen(false);
     triggerToast();
-    advanceSession("nao_realizada");
+    advanceSession("nao_realizada", {
+      statusRealizacao: "nao_realizada",
+      motivoNaoRealizacao: MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro",
+      descricaoAdicional: descricao ?? null,
+      duracaoRealSegundos: lastElapsedSecondsRef.current,
+    });
   };
 
   const handleActivityDefer = () => {
-    console.log("[ActivityResult] Resposta adiada.");
-    
     setIsResultModalOpen(false);
-    
     advanceSession("adiado");
   };
 
-  const handleMabcConfirm = (result: any) => {
-    console.log("[MabcResult] Confirmado:", result);
+  const handleMabcConfirm = (_result: any) => {
     setIsResultModalOpen(false);
     triggerToast();
-    advanceSession("concluido");
+    advanceSession("concluido", {
+      statusRealizacao: "realizada",
+      duracaoRealSegundos: lastElapsedSecondsRef.current,
+    });
   };
 
   const handleMabcDefer = () => {
-    console.log("[MabcResult] Resposta adiada.");
     const updatedDeferred = [...deferredExercises, currentExercise.id];
     setDeferredExercises(updatedDeferred);
     setIsResultModalOpen(false);
@@ -167,19 +191,19 @@ export function SessionRunningScreen({
   };
 
   const handleMabcNotCompleted = (motivo: string, descricao?: string) => {
-    console.log(
-      "[MabcResult] Não realizada. Motivo:",
-      motivo,
-      "Descrição:",
-      descricao,
-    );
     setIsResultModalOpen(false);
     triggerToast();
-    advanceSession("nao_realizada");
+    advanceSession("nao_realizada", {
+      statusRealizacao: "nao_realizada",
+      motivoNaoRealizacao: MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro",
+      descricaoAdicional: descricao ?? null,
+      duracaoRealSegundos: lastElapsedSecondsRef.current,
+    });
   };
 
   const advanceSession = (
     statusAtual: "concluido" | "nao_realizada" | "adiado",
+    record?: Omit<ExecutionRecord, "exercicioId" | "ordemExecucao">,
   ) => {
     setStage("ready");
     setHasAdvanced(true);
@@ -191,12 +215,28 @@ export function SessionRunningScreen({
 
     setHistoricoExercicios(historicoAtualizado);
 
+    // Deferred ("adiado") exercises have no DB execution; only realized or
+    // not-realized attempts are persisted.
+    if (record) {
+      executionsRef.current = [
+        ...executionsRef.current,
+        {
+          exercicioId: currentExercise.id,
+          ordemExecucao: currentIndex + 1,
+          ...record,
+        },
+      ];
+    }
+
+    // Reset the captured stopwatch value for the next exercise.
+    lastElapsedSecondsRef.current = null;
+
     if (currentIndex < total - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
       const temPendencias =
         Object.values(historicoAtualizado).includes("adiado");
-      onCompleteSession?.(temPendencias);
+      onCompleteSession?.(temPendencias, executionsRef.current);
     }
   };
 
@@ -211,6 +251,8 @@ export function SessionRunningScreen({
   };
 
   const handleStop = (elapsed: number) => {
+    lastElapsedSecondsRef.current = elapsed;
+
     const minutes = Math.floor(elapsed / 60)
       .toString()
       .padStart(2, "0");
@@ -221,7 +263,7 @@ export function SessionRunningScreen({
   };
 
   const handleConfirmFinish = (motivo: string) => {
-    onFinishSession?.(motivo);
+    onFinishSession?.(motivo, executionsRef.current);
     setIsFinishOpen(false);
   };
 
@@ -346,10 +388,15 @@ export function SessionRunningScreen({
           onDefer={handleActivityDefer}
           onNotCompleted={handleActivityNotCompleted}
           onConfirm={(result) => {
-            console.log("[ActivityResult]", result);
             setIsResultModalOpen(false);
             triggerToast();
-            advanceSession("concluido");
+            advanceSession("concluido", {
+              statusRealizacao: "realizada",
+              nivelDesenvolvimento: result.nivelDesenvolvimento,
+              registroAjuda: result.registroAjuda,
+              complementosAjuda: result.subCategorias,
+              duracaoRealSegundos: lastElapsedSecondsRef.current,
+            });
           }}
         />
       )}

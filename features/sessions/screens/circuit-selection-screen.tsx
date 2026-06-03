@@ -7,43 +7,31 @@ import { ListCard } from "@/components/list-card";
 import { SearchInput } from "@/components/search-input";
 import { ClipboardEdit, Layers } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
-import { Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 
 export type CircuitType = "estruturado" | "livre" | "form";
+
+export type CircuitSessionExercise = {
+  id: string;
+  name: string;
+  description: string;
+};
 
 export type CircuitItem = {
   id: string;
   name: string;
   description: string;
   type: CircuitType;
+  /** Exercises linked to the circuit, forwarded to the running session. */
+  exercises?: CircuitSessionExercise[];
+  /** Form bound to the circuit, when any. */
+  formId?: string | null;
 };
-
-const MOCK_CIRCUITS: CircuitItem[] = [
-  {
-    id: "1",
-    name: "Circuito 1",
-    description:
-      "3 exercícios - Girar bambolê, Equilíbrio na tábua, Escalada",
-    type: "estruturado",
-  },
-  {
-    id: "2",
-    name: "Circuito 2",
-    description:
-      "3 exercícios - Arremesso de bola, Empilhamento de cones, Escalada",
-    type: "livre",
-  },
-  {
-    id: "ata",
-    name: "Formulário ATA",
-    description: "",
-    type: "form",
-  },
-];
 
 export type CircuitSelectionScreenProps = {
   studentName: string;
   circuits?: CircuitItem[];
+  isLoading?: boolean;
   onPressBack?: () => void;
   onPressCircuit?: (circuit: CircuitItem) => void;
 };
@@ -54,7 +42,8 @@ export type CircuitSelectionScreenProps = {
  */
 export function CircuitSelectionScreen({
   studentName,
-  circuits = MOCK_CIRCUITS,
+  circuits = [],
+  isLoading = false,
   onPressBack,
   onPressCircuit,
 }: CircuitSelectionScreenProps) {
@@ -89,6 +78,11 @@ export function CircuitSelectionScreen({
           onChangeText={setQuery}
         />
 
+        {isLoading ? (
+          <View className="mt-16 items-center justify-center">
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : (
         <DataList
           className="mt-5 px-8"
           data={filtered}
@@ -125,6 +119,7 @@ export function CircuitSelectionScreen({
             );
           }}
         />
+        )}
       </View>
 
       <Footer />

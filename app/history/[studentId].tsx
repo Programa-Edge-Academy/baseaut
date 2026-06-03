@@ -1,5 +1,5 @@
-import { useLocalSearchParams } from "expo-router";
-import { ClipboardList, Route, X } from "lucide-react-native"; 
+import { router, useLocalSearchParams } from "expo-router";
+import { ClipboardList, Route, X } from "lucide-react-native";
 import React, { useState, useMemo } from "react"; 
 import { ActivityIndicator, Pressable, Text, View } from "react-native"; 
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker"; 
@@ -108,7 +108,18 @@ export default function HistoryDetailsScreen() {
                   isForm ? `${colors.primary}26` : `${colors.secondary}26`
                 }
                 onPress={() => {
-                  console.log(`Abrindo detalhes do ${item.type}: ${item.id}`);
+                  const studentName = profile?.name ?? "Aluno";
+                  if (isForm) {
+                    router.push({
+                      pathname: "/history/form/[formId]",
+                      params: { formId: item.id, studentName },
+                    });
+                  } else {
+                    router.push({
+                      pathname: "/history/session/[sessionId]",
+                      params: { sessionId: item.id, studentName },
+                    });
+                  }
                 }}
                 enableRipple={true}
                 rightAction="chevron"

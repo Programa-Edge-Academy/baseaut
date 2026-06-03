@@ -6,25 +6,23 @@ import { ChevronRight, Split } from "lucide-react-native";
 import React from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
-const EXERCISES = [
-  {
-    id: "1",
-    title: "Arremesso de bola",
-    description: "Arremessar bola ao alvo",
-  },
-  {
-    id: "2",
-    title: "Empilhamento de cones",
-    description: "Empilhar cones alternadamente",
-  },
-  {
-    id: "3",
-    title: "Escalada",
-    description: "Escalar parede",
-  },
-];
+export type FreeSessionExercise = {
+  id: string;
+  title: string;
+  description: string;
+};
 
-export function SessionRunningFreeScreen() {
+export type SessionRunningFreeScreenProps = {
+  studentName?: string;
+  circuitName?: string;
+  exercises?: FreeSessionExercise[];
+};
+
+export function SessionRunningFreeScreen({
+  studentName = "Aluno",
+  circuitName = "Circuito",
+  exercises = [],
+}: SessionRunningFreeScreenProps) {
   const router = useRouter();
 
   return (
@@ -36,7 +34,10 @@ export function SessionRunningFreeScreen() {
           <Header variant="back" />
 
           <View className="left-6 top-[2%] w-[264px]">
-            <PageHeader title="Sessão de Lucas" subtitle="Circuito 2 · Livre" />
+            <PageHeader
+              title={`Sessão de ${studentName}`}
+              subtitle={`${circuitName} · Livre`}
+            />
           </View>
 
           <View className="top-[5%] mx-5 rounded-2xl bg-level1 border border-primary p-5">
@@ -58,7 +59,12 @@ export function SessionRunningFreeScreen() {
 
             {/* Lista de exercícios */}
             <View className="space-y-2">
-              {EXERCISES.map((exercise) => (
+              {exercises.length === 0 && (
+                <Text className="text-muted text-sm font-medium leading-5">
+                  Nenhum exercício vinculado a este circuito.
+                </Text>
+              )}
+              {exercises.map((exercise) => (
                 <Pressable
                   key={exercise.id}
                   className="flex-row items-center justify-between rounded-2xl bg-level2 border border-outline px-5 py-3"
