@@ -3,8 +3,10 @@ import { DropdownModal } from "@/components/dropdown-modal";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
+import { AnalysisOptionCard } from "@/features/analysis/components/analysis-option-card";
+import { AppliedProtocolsCard } from "@/features/analysis/components/applied-protocols-card";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronDown, User, AlertTriangle } from "lucide-react-native";
+import { ChevronDown, User } from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from "react-native";
 
@@ -36,68 +38,115 @@ export function StudentAnalysisScreen() {
       {/* Cabeçalho de navegação */}
       <Header variant="back" onPressBack={() => router.back()} />
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }} className="flex-1">
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }} className="flex-1">
         <View className="mx-8 mt-5">
           {isLoading ? (
             <View className="items-center justify-center py-10">
               <ActivityIndicator size="large" color={colors.primary} />
             </View>
           ) : (
-            <View className="flex-row items-center justify-between border-b border-outline/50 pb-5">
-              {/* Perfil e contagem de sessões do aluno */}
-              <View className="flex-row items-center flex-1 mr-4">
-                <View className="h-11 w-11 items-center justify-center rounded-2xl bg-level2 mr-3 overflow-hidden">
-                  {profile?.avatarUrl ? (
-                    <Image
-                      source={{ uri: profile.avatarUrl }}
-                      style={{ width: "100%", height: "100%" }}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <User size={20} color={colors.muted} />
-                  )}
+            <>
+              {/* Seção superior de Perfil do Aluno e Classificação */}
+              <View className="flex-row items-center justify-between border-b border-outline/50 pb-5 mb-5">
+                <View className="flex-row items-center flex-1 mr-4">
+                  <View className="h-11 w-11 items-center justify-center rounded-2xl bg-level2 mr-3 overflow-hidden">
+                    {profile?.avatarUrl ? (
+                      <Image
+                        source={{ uri: profile.avatarUrl }}
+                        style={{ width: "100%", height: "100%" }}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <User size={20} color={colors.muted} />
+                    )}
+                  </View>
+
+                  <View className="flex-1 justify-center">
+                    <Text className="text-xl font-bold text-white leading-tight" numberOfLines={1}>
+                      {profile?.name || "Aluno"}
+                    </Text>
+                    <Text className="text-sm font-medium text-muted mt-0.5">
+                      {sessions.length} {sessions.length === 1 ? "sessão registrada" : "sessões registradas"}
+                    </Text>
+                  </View>
                 </View>
 
-                <View className="flex-1 justify-center">
-                  <Text className="text-xl font-bold text-white leading-tight" numberOfLines={1}>
-                    {profile?.name || "Aluno"}
+                {/* Seletor de Classificação */}
+                <View className="items-end">
+                  <Text className="text-[12px] font-medium text-muted mb-1" style={{ fontFamily: "Inter-Medium" }}>
+                    Classificação
                   </Text>
-                  <Text className="text-sm font-medium text-muted mt-0.5">
-                    {sessions.length} {sessions.length === 1 ? "sessão registrada" : "sessões registradas"}
-                  </Text>
+                  <Pressable
+                    ref={buttonRef}
+                    onPress={handleDropdownPress}
+                    className="flex-row items-center justify-between bg-level2 border border-outline px-3 py-1.5 rounded-lg min-w-[120px] h-[32px] active:opacity-80"
+                  >
+                    <Text className="text-xs text-muted font-medium mr-2" numberOfLines={1}>
+                      {selectedClassificacao || "Selecionar"}
+                    </Text>
+                    <ChevronDown size={14} color={colors.muted} />
+                  </Pressable>
                 </View>
               </View>
 
-              {/* Seletor de Classificação */}
-              <View className="items-end">
-                <Text className="text-[12px] font-medium text-muted mb-1" style={{ fontFamily: "Inter-Medium" }}>
-                  Classificação
-                </Text>
-                <Pressable
-                  ref={buttonRef}
-                  onPress={handleDropdownPress}
-                  className="flex-row items-center justify-between bg-level2 border border-outline px-3 py-1.5 rounded-lg min-w-[120px] h-[32px] active:opacity-80"
-                >
-                  <Text className="text-xs text-muted font-medium mr-2" numberOfLines={1}>
-                    {selectedClassificacao || "Selecionar"}
-                  </Text>
-                  <ChevronDown size={14} color={colors.muted} />
-                </Pressable>
-              </View>
-            </View>
-          )}
+              {/* Lista de Opções de Análise */}
+              <View className="flex-col gap-4">
+                {/* Progresso por exercício */}
+                <AnalysisOptionCard
+                  title="Progresso por exercício"
+                  description="Acompanhe a evolução de cada exercício nas sessões."
+                  onPress={() => {
+                    console.log("Progresso por exercício selecionado");
+                  }}
+                />
 
-          {/* Placeholder para futuros componentes adicionais */}
-          {!isLoading && (
-            <View className="mt-8 items-center justify-center bg-level2 border border-dashed border-outline/80 p-8 rounded-2xl">
-              <AlertTriangle size={24} color={colors.muted} />
-              <Text className="text-white font-medium text-base mt-2 text-center">
-                Visualização de Análises
-              </Text>
-              <Text className="text-muted text-sm mt-1 text-center max-w-[240px]">
-                Novos componentes de análises e progresso de exercícios serão inseridos aqui.
-              </Text>
-            </View>
+                {/* Registros de ajuda por sessão */}
+                <AnalysisOptionCard
+                  title="Registros de ajuda por sessão"
+                  description="Acompanhe a evolução da autonomia nas sessões."
+                  onPress={() => {
+                    console.log("Registros de ajuda por sessão selecionado");
+                  }}
+                />
+
+                {/* Comportamentos observados */}
+                <AnalysisOptionCard
+                  title="Comportamentos observados"
+                  description="Visualize a frequência dos comportamentos observados"
+                  onPress={() => {
+                    console.log("Comportamentos observados selecionado");
+                  }}
+                />
+
+                {/* Comparar desempenho */}
+                <AnalysisOptionCard
+                  title="Comparar desempenho"
+                  description="Compare dois períodos e acompanhe diferenças no desempenho do aluno."
+                  onPress={() => {
+                    console.log("Comparar desempenho selecionado");
+                  }}
+                />
+
+                {/* Protocolos/Testes aplicados */}
+                <AppliedProtocolsCard
+                  carsStatus="registrado"
+                  ataStatus="registrado"
+                  mabcStatus="registrado"
+                  onCarsPress={() => console.log("CARS pressionado")}
+                  onAtaPress={() => console.log("ATA pressionado")}
+                  onMabcPress={() => console.log("MABC-2 pressionado")}
+                />
+
+                {/* Registros de desenvolvimento motor */}
+                <AnalysisOptionCard
+                  title="Registros de desenvolvimento motor"
+                  description="Visualize e registre avaliações motoras do aluno."
+                  onPress={() => {
+                    console.log("Registros de desenvolvimento motor selecionado");
+                  }}
+                />
+              </View>
+            </>
           )}
         </View>
       </ScrollView>
