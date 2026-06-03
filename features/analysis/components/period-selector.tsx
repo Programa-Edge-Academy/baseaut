@@ -14,7 +14,8 @@ export function PeriodSelector({ label = "Período 1: selecionar intervalo de da
   return (
     <Container
       onPress={onPress}
-      className="w-full flex-row items-center rounded-lg border border-outline bg-level2 py-3 px-4 pr-6"
+      className="w-auto flex-row items-center rounded-lg border border-outline bg-level2 py-3 px-4 pr-6"
+      style={{ marginVertical: 8 , marginHorizontal: 22}}
     >
       <View className="mr-3">
         <Calendar size={20} color={colors.muted} strokeWidth={2} />
