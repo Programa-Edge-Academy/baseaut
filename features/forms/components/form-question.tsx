@@ -17,32 +17,35 @@ import { YesNoQuestionUI } from "./yes-no-question";
 interface Props {
   question: FormQuestionProps;
   isSubQuestion?: boolean;
+  value?: any; // <-- ADICIONADO: Recebe a resposta atual do pai
+  onChange?: (val: any) => void; // <-- ADICIONADO: Envia a nova resposta pro pai
 }
 
 /**
  * Renders a question title, the corresponding UI, and optional help/observations.
  */
-export function FormQuestion({ question, isSubQuestion = false }: Props) {
+export function FormQuestion({ question, isSubQuestion = false, value, onChange }: Props) {
   const [isHelpModalVisible, setIsHelpModalVisible] = useState(false);
   const [observationText, setObservationText] = useState("");
 
   /**
    * Selects the appropriate question UI based on type.
+   * Repassando value e onChange para que as UIs internas atualizem o estado.
    */
   const renderQuestionUI = () => {
     switch (question.type) {
       case "open":
-        return <OpenQuestionUI />;
+        return <OpenQuestionUI question={question} value={value} onChange={onChange} />;
       case "yes_no":
-        return <YesNoQuestionUI question={question} />;
+        return <YesNoQuestionUI question={question} value={value} onChange={onChange} />;
       case "choice_list":
-        return <ChoiceListQuestionUI question={question} />;
+        return <ChoiceListQuestionUI question={question} value={value} onChange={onChange} />;
       case "dropdown":
-        return <DropdownQuestionUI question={question} />;
+        return <DropdownQuestionUI question={question} value={value} onChange={onChange} />;
       case "linear_scale":
-        return <LinearScaleQuestionUI question={question} />;
+        return <LinearScaleQuestionUI question={question} value={value} onChange={onChange} />;
       case "matrix":
-        return <MatrixQuestionUI question={question} />;
+        return <MatrixQuestionUI question={question} value={value} onChange={onChange} />;
       default:
         return null;
     }
@@ -79,7 +82,6 @@ export function FormQuestion({ question, isSubQuestion = false }: Props) {
               placeholder="Adicione uma observação"
             />
             <Pressable
-              // TODO: Integrar áudio
               onPress={() => {}}
               className="w-[44px] h-[44px] bg-level1 rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline justify-center items-center active:opacity-60"
             >
@@ -96,7 +98,7 @@ export function FormQuestion({ question, isSubQuestion = false }: Props) {
       {isSubQuestion ? (
         <View className="self-stretch flex flex-col gap-2 mt-4">{content}</View>
       ) : (
-        <View className="w-full p-[15px] bg-level2 rounded-2xl shadow-panelShadow outline outline-1 outline-offset-[-1px] outline-outline flex flex-col justify-start items-start gap-2">
+        <View className="w-full p-[15px] bg-level2 rounded-2xl outline outline-1 outline-offset-[-1px] outline-outline flex flex-col justify-start items-start gap-2">
           {content}
         </View>
       )}

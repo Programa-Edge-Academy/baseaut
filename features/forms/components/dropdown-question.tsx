@@ -11,15 +11,17 @@ import { DropdownQuestion } from "../types";
  */
 interface Props {
   question: DropdownQuestion;
+  value?: any;
+  onChange?: (val: any) => void;
 }
 
 /**
  * Renders a dropdown question with optional "other" input.
  */
-export function DropdownQuestionUI({ question }: Props) {
+export function DropdownQuestionUI({ question, value, onChange }: Props) {
   const [isOpen, setIsOpen] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [otherText, setOtherText] = useState("");
+  const selected = value?.selected || null;
+  const otherText = value?.other || "";
 
   const [modalLayout, setModalLayout] = useState({ top: 0, left: 0, width: 0 });
   const buttonRef = useRef<View>(null);
@@ -33,10 +35,9 @@ export function DropdownQuestionUI({ question }: Props) {
    */
   const handleSelect = (opt: string) => {
     if (opt === "") {
-      setSelected(null);
-      setOtherText("");
+      if (onChange) onChange({ selected: null, other: "" });
     } else {
-      setSelected(opt);
+      if (onChange) onChange({ selected: opt, other: otherText });
     }
   };
 
@@ -82,7 +83,9 @@ export function DropdownQuestionUI({ question }: Props) {
       {selected === "Outro" && (
         <DefaultTextInput
           value={otherText}
-          onChangeText={setOtherText}
+          onChangeText={(text) => {
+            if (onChange) onChange({ selected, other: text });
+          }}
           placeholder="Especifique..."
           className="mt-2 min-h-[44px]"
         />
