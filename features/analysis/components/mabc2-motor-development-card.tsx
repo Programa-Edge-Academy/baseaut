@@ -14,6 +14,9 @@ export type Mabc2MotorDevelopmentCardProps = {
   onViewRecords?: () => void;
   onViewExercises?: () => void;
   readOnly?: boolean;
+  className?: string;
+  testID?: string;
+  accessibilityLabel?: string;
 };
 
 export function Mabc2MotorDevelopmentCard({
@@ -25,13 +28,25 @@ export function Mabc2MotorDevelopmentCard({
   onViewRecords,
   onViewExercises,
   readOnly = false,
+  className,
+  testID,
+  accessibilityLabel = "Desenvolvimento motor",
 }: Mabc2MotorDevelopmentCardProps) {
   return (
-    <View className="w-full rounded-xl border border-outline bg-level2 p-4 gap-4">
-      <Text className="text-base font-bold text-white">Desenvolvimento motor</Text>
+    <View
+      testID={testID}
+      accessibilityLabel={accessibilityLabel}
+      className={`w-full gap-4 rounded-xl border border-outline bg-level2 p-4 ${className ?? ""}`}
+    >
+      <Text className="text-base font-bold text-white">
+        Desenvolvimento motor
+      </Text>
 
       <View className="flex-row gap-2.5">
         <Pressable
+          testID={testID ? `${testID}-records-button` : undefined}
+          accessibilityRole="button"
+          accessibilityLabel={`Ver registros, ${recordCount} encontrados`}
           onPress={onViewRecords}
           className="flex-row items-center gap-1.5 rounded-xl border border-outline bg-level1 px-2.5 py-1 active:opacity-70"
         >
@@ -42,6 +57,9 @@ export function Mabc2MotorDevelopmentCard({
         </Pressable>
 
         <Pressable
+          testID={testID ? `${testID}-exercises-button` : undefined}
+          accessibilityRole="button"
+          accessibilityLabel="Ver exercícios"
           onPress={onViewExercises}
           className="flex-row items-center gap-1 rounded-xl border border-outline bg-level1 px-2.5 py-1 active:opacity-70"
         >
@@ -52,13 +70,18 @@ export function Mabc2MotorDevelopmentCard({
 
       <View className="flex-row gap-3">
         <View className="flex-1 rounded-xl border border-outline bg-level1 px-3 py-1.5">
-          <Text className="text-xs font-medium text-muted">Pontuação total</Text>
+          <Text className="text-xs font-medium text-muted">
+            Pontuação total
+          </Text>
           <Text className="text-xl font-bold text-white">
             {totalScore !== null ? String(totalScore) : "—"}
           </Text>
         </View>
+
         <View className="flex-1 rounded-xl border border-outline bg-level1 px-3 py-1.5">
-          <Text className="text-xs font-medium text-muted">Percentil total</Text>
+          <Text className="text-xs font-medium text-muted">
+            Percentil total
+          </Text>
           <Text className="text-xl font-bold text-white">
             {totalPercentile ?? "—"}
           </Text>
@@ -66,15 +89,21 @@ export function Mabc2MotorDevelopmentCard({
       </View>
 
       {sections.map((section, index) => (
-        <React.Fragment key={section.title}>
-          {index > 0 && (
-            <View className="h-px bg-outline w-full" />
-          )}
-          <Mabc2Section {...section} readOnly={readOnly} />
+        <React.Fragment key={section.id ?? section.title}>
+          {index > 0 ? <View className="h-px w-full bg-outline" /> : null}
+
+          <Mabc2Section
+            {...section}
+            readOnly={section.readOnly ?? readOnly}
+            testID={
+              section.testID ??
+              (testID ? `${testID}-section-${index}` : undefined)
+            }
+          />
         </React.Fragment>
       ))}
 
-      {!readOnly && (
+      {!readOnly ? (
         <DefaultButton
           label="Registrar"
           onPress={onRegister}
@@ -83,7 +112,7 @@ export function Mabc2MotorDevelopmentCard({
           sizeClass="w-full h-11"
           textClassName="text-white"
         />
-      )}
+      ) : null}
     </View>
   );
 }
