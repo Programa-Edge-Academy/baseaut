@@ -9,6 +9,7 @@ export type Mabc2ExerciseItemProps = {
   attemptCount: number | string | null;
   score: number | string | null;
   onChangeAttemptCount?: (value: string) => void;
+  onChangeScore?: (value: string) => void;
   readOnly?: boolean;
   className?: string;
   testID?: string;
@@ -21,6 +22,7 @@ export function Mabc2ExerciseItem({
   attemptCount,
   score,
   onChangeAttemptCount,
+  onChangeScore,
   readOnly = false,
   className,
   testID,
@@ -66,9 +68,24 @@ export function Mabc2ExerciseItem({
           )}
         </View>
 
-        <View className="flex-row items-center">
-          <Text className="mr-2 text-sm font-medium text-muted">Score:</Text>
-          <Text className="text-white">{displayScore}</Text>
+        <View className="flex-row items-center gap-2">
+          <Text className="text-sm font-medium text-muted">Score:</Text>
+          {readOnly ? (
+            <Text className="text-white">{displayScore}</Text>
+          ) : (
+            <View className="min-w-[60px] items-center justify-center rounded-xl border border-outline bg-level2 px-4 py-1">
+              <TextInput
+                testID={testID ? `${testID}-score-input` : undefined}
+                accessibilityLabel={`Score de ${name}`}
+                className="m-0 w-full p-0 text-center text-sm font-medium text-white"
+                value={score !== null ? String(score) : ""}
+                onChangeText={onChangeScore}
+                keyboardType="numeric"
+                placeholder="-"
+                placeholderTextColor={colors.muted}
+              />
+            </View>
+          )}
         </View>
       </View>
     </View>

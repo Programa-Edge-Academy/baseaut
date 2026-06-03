@@ -2,13 +2,15 @@ import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import { ClipboardList, Dumbbell } from "lucide-react-native";
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { Mabc2Section, Mabc2SectionProps } from "./mabc2-section";
 
 export type Mabc2MotorDevelopmentCardProps = {
   recordCount: number;
   totalScore: number | null;
   totalPercentile: string | null;
+  onChangeTotalScore?: (value: string) => void;
+  onChangeTotalPercentile?: (value: string) => void;
   sections: Mabc2SectionProps[];
   onRegister?: () => void;
   onViewRecords?: () => void;
@@ -23,6 +25,8 @@ export function Mabc2MotorDevelopmentCard({
   recordCount,
   totalScore,
   totalPercentile,
+  onChangeTotalScore,
+  onChangeTotalPercentile,
   sections,
   onRegister,
   onViewRecords,
@@ -73,18 +77,42 @@ export function Mabc2MotorDevelopmentCard({
           <Text className="text-xs font-medium text-muted">
             Pontuação total
           </Text>
-          <Text className="text-xl font-bold text-white">
-            {totalScore !== null ? String(totalScore) : "—"}
-          </Text>
+          {readOnly ? (
+            <Text className="text-xl font-bold text-white">
+              {totalScore !== null ? String(totalScore) : "—"}
+            </Text>
+          ) : (
+            <TextInput
+              testID={testID ? `${testID}-total-score-input` : undefined}
+              className="m-0 p-0 text-xl font-bold text-white"
+              value={totalScore !== null ? String(totalScore) : ""}
+              onChangeText={onChangeTotalScore}
+              keyboardType="numeric"
+              placeholder="—"
+              placeholderTextColor={colors.muted}
+            />
+          )}
         </View>
 
         <View className="flex-1 rounded-xl border border-outline bg-level1 px-3 py-1.5">
           <Text className="text-xs font-medium text-muted">
             Percentil total
           </Text>
-          <Text className="text-xl font-bold text-white">
-            {totalPercentile ?? "—"}
-          </Text>
+          {readOnly ? (
+            <Text className="text-xl font-bold text-white">
+              {totalPercentile ?? "—"}
+            </Text>
+          ) : (
+            <TextInput
+              testID={testID ? `${testID}-total-percentile-input` : undefined}
+              className="m-0 p-0 text-xl font-bold text-white"
+              value={totalPercentile !== null ? String(totalPercentile) : ""}
+              onChangeText={onChangeTotalPercentile}
+              keyboardType="numeric"
+              placeholder="—"
+              placeholderTextColor={colors.muted}
+            />
+          )}
         </View>
       </View>
 
