@@ -3,10 +3,12 @@ import { useLocalSearchParams, router } from "expo-router";
 import { SessionRunningScreen } from "../../features/sessions/screens/session-running-screen";
 
 export default function SessionEstruturadoRoute() {
-  const { studentName, circuitName } = useLocalSearchParams<any>();
+  const { studentName, circuitName, sessionId, studentId } = useLocalSearchParams<any>();
 
   return (
     <SessionRunningScreen 
+      sessionId={sessionId || ""}
+      studentId={studentId || ""}
       studentName={studentName || "Aluno"}
       circuitName={circuitName || "Circuito"}
       circuitType={"estruturado" as any} // Ficar de olho caso dê erro futurametne, será removido quando integrarmos com o backend
