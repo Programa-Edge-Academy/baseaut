@@ -1,6 +1,5 @@
 import { colors } from "@/assets/colors";
 import { DataList } from "@/components/data-list";
-import { DefaultButton } from "@/components/default-button";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import React from "react";
@@ -30,19 +29,10 @@ export function Mabc2RecordsListScreen({
 
       <View className="mx-5 mt-5">
         <PageHeader
+          mode="exercicios"
           title={`MABC-2 — ${studentName}`}
           subtitle="Registros de avaliação motora"
-        />
-      </View>
-
-      <View className="items-center mt-4 mb-2">
-        <DefaultButton
-          label="+ Novo Registro"
-          onPress={onPressNewRecord}
-          bgColorClass="bg-primary"
-          shadowClass="shadow-primaryShadow"
-          sizeClass="w-[210px] h-11"
-          textClassName="text-white"
+          onNewPress={onPressNewRecord}
         />
       </View>
 
