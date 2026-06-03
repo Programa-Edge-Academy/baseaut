@@ -142,16 +142,17 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
     if (width > 0) setContainerWidth(width);
   };
 
+  // Sem dados: não renderiza o card
+  if (sessions.length === 0) return null;
+
   const yMax = calcYMax(sessions);
   const yTicks = calcYTicks(yMax);
 
   // Largura total do SVG rolável
   const svgScrollWidth =
-    sessions.length > 0
-      ? X_START_PADDING +
-        sessions.length * SESSION_SLOT_WIDTH +
-        GROUP_SPACING
-      : containerWidth - Y_AXIS_WIDTH;
+    X_START_PADDING +
+    sessions.length * SESSION_SLOT_WIDTH +
+    GROUP_SPACING;
 
   // Coordenada Y de um tick no SVG
   const tickToSvgY = (tick: number) =>
@@ -302,33 +303,18 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
                 );
               })}
 
-              {/* Estado vazio */}
-              {sessions.length === 0 && (
-                <SvgText
-                  x={svgScrollWidth / 2}
-                  y={CHART_HEIGHT / 2}
-                  fill={colors.muted}
-                  fontSize={12}
-                  fontFamily="Inter-Medium"
-                  textAnchor="middle"
-                >
-                  Nenhuma sessão no período
-                </SvgText>
-              )}
             </Svg>
           </ScrollView>
         </View>
       </View>
 
       {/* Label "Sessão" centralizado abaixo da área rolável */}
-      {sessions.length > 0 && (
-        <Text
-          className="text-center text-muted font-medium"
-          style={{ fontSize: 12, lineHeight: 20 }}
-        >
-          Sessão
-        </Text>
-      )}
+      <Text
+        className="text-center text-muted font-medium"
+        style={{ fontSize: 12, lineHeight: 20 }}
+      >
+        Sessão
+      </Text>
 
       {/* ── Texto explicativo ──────────────────────────────────────────────── */}
       <Text
