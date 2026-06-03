@@ -9,25 +9,28 @@ import { ChoiceListQuestion } from "../types";
  */
 interface Props {
   question: ChoiceListQuestion;
+  value?: any;
+  onChange?: (val: any) => void;
 }
 
 /**
  * Renders a choice list with optional "other" input.
  */
-export function ChoiceListQuestionUI({ question }: Props) {
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [otherText, setOtherText] = useState("");
+export function ChoiceListQuestionUI({ question, value, onChange }: Props) {
+  const selectedOptions = value?.selected || [];
+  const otherText = value?.other || "";
 
   /**
    * Toggles a choice option and updates selection state.
    */
   const toggleOption = (option: string) => {
-    setSelectedOptions((prev) => {
-      if (prev.includes(option)) {
-        return prev.filter((o) => o !== option);
-      }
-      return question.multiple ? [...prev, option] : [option];
-    });
+    let newOptions;
+    if (selectedOptions.includes(option)) {
+      newOptions = selectedOptions.filter((o: string) => o !== option);
+    } else {
+      newOptions = question.multiple ? [...selectedOptions, option] : [option];
+    }
+    if (onChange) onChange({ selected: newOptions, other: otherText });
   };
 
   const options = question.allowOther
@@ -57,7 +60,9 @@ export function ChoiceListQuestionUI({ question }: Props) {
             {opt === "Outro" && isSelected && (
               <DefaultTextInput
                 value={otherText}
-                onChangeText={setOtherText}
+                onChangeText={(text) => {
+                  if (onChange) onChange({ selected: selectedOptions, other: text });
+                }}
                 placeholder="Especifique..."
                 className="ml-11 min-h-[44px]"
               />

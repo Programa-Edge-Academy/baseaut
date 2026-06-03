@@ -14,6 +14,7 @@ import {
   FinishSessionModal,
 } from "../components/finish-session-modal";
 import { ReorderItem, ReorderModal } from "../components/reorder-modal";
+import { FormComponent } from "@/features/forms/components/form-component";
 
 export type SessionExercise = {
   id: string;
@@ -46,6 +47,8 @@ const MOCK_EXERCISES: SessionExercise[] = [
 ];
 
 export type SessionRunningScreenProps = {
+  sessionId: string;
+  studentId: string;
   studentName: string;
   circuitName?: string;
   circuitType?: CircuitType;
@@ -64,6 +67,8 @@ export type SessionRunningScreenProps = {
  * session via the FinishSessionModal.
  */
 export function SessionRunningScreen({
+  sessionId,
+  studentId,
   studentName,
   circuitName = "Circuito",
   circuitType = "padrao",
@@ -72,6 +77,7 @@ export function SessionRunningScreen({
   onFinishSession,
   onCompleteSession,
 }: SessionRunningScreenProps) {
+  const formRef = useRef<any>(null);
   const [order, setOrder] = useState<SessionExercise[]>(exercises);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [stage, setStage] = useState<ExerciseStage>("ready");
@@ -196,6 +202,9 @@ export function SessionRunningScreen({
     } else {
       const temPendencias =
         Object.values(historicoAtualizado).includes("adiado");
+      if (formRef.current) {
+        formRef.current.handleSave();
+      }
       onCompleteSession?.(temPendencias);
     }
   };
@@ -221,6 +230,9 @@ export function SessionRunningScreen({
   };
 
   const handleConfirmFinish = (motivo: string) => {
+    if (formRef.current) {
+      formRef.current.handleSave();
+    }
     onFinishSession?.(motivo);
     setIsFinishOpen(false);
   };
@@ -300,13 +312,12 @@ export function SessionRunningScreen({
             is out of scope here — wire to features/forms once available.
             Placeholder block kept so the layout reflects the design intent.
           */}
-          {stage === "running" && (
-            <View className="mt-5 items-center justify-center rounded-2xl border border-outline bg-level2 p-6">
-              <Text className="text-center text-default-2 text-muted">
-                Perguntas do formulário aparecerão aqui.
-              </Text>
-            </View>
-          )}
+          <FormComponent
+            ref={formRef}
+            formularioId={"00000000-0000-4000-0000-0000000000fc"}
+            sessaoId={sessionId}
+            alunoId={studentId}
+          />
         </ScrollView>
       </View>
 

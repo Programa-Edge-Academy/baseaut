@@ -10,14 +10,16 @@ import { LinearScaleQuestion } from "../types";
  */
 interface Props {
   question: LinearScaleQuestion;
+  value?: any;
+  onChange?: (val: any) => void;
 }
 
 /**
  * Renders a linear scale slider with numeric input.
  */
-export function LinearScaleQuestionUI({ question }: Props) {
-  const [selectedValue, setSelectedValue] = useState<number>(question.min);
-  const [textValue, setTextValue] = useState<string>(String(question.min));
+export function LinearScaleQuestionUI({ question, value, onChange }: Props) {
+  const selectedValue = value !== undefined ? Number(value) : question.min;
+  const [textValue, setTextValue] = useState<string>(String(selectedValue));
 
   /**
    * Updates the numeric input while preserving valid characters.
@@ -37,15 +39,15 @@ export function LinearScaleQuestionUI({ question }: Props) {
     if (val > question.max) val = question.max;
 
     setTextValue(String(val));
-    setSelectedValue(val);
+    if (onChange) onChange(val);
   };
 
   /**
    * Syncs slider changes to the numeric input.
    */
   const handleSliderChange = (val: number) => {
-    setSelectedValue(val);
     setTextValue(String(val));
+    if (onChange) onChange(val);
   };
 
   return (

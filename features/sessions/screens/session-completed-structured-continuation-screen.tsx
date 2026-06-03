@@ -61,19 +61,6 @@ export function SessionCompletedStructuredContinuationScreen() {
               progress={"3/3"}
             />
           </View>
-
-          {/* Opções de Continuação */}
-          <View className="top-[8%] mx-5 rounded-2xl justify-center items-center">
-            <ContinuationOptions
-              unrealizedCount={8}
-              onSelectOption={function (id: string): void {
-                throw new Error("Function not implemented.");
-              }}
-              onCancel={function (): void {
-                throw new Error("Function not implemented.");
-              }}
-            />
-          </View>
         </View>
       </ScrollView>
     </View>
