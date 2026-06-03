@@ -13,6 +13,7 @@ export interface SessionItem {
 
 export interface StudentProfile {
   name: string;
+  avatarUrl: string | null;
 }
 
 export function useStudentSessions(studentId?: string) {
@@ -29,12 +30,17 @@ export function useStudentSessions(studentId?: string) {
       // 1. Busca o perfil do aluno
       const { data: studentData, error: studentError } = await supabase
         .from("alunos")
-        .select("nome_completo")
+        .select("nome_completo, avatar_url")
         .eq("id", studentId)
         .single();
 
       if (studentError) throw studentError;
-      if (studentData) setProfile({ name: studentData.nome_completo });
+      if (studentData) {
+        setProfile({
+          name: studentData.nome_completo,
+          avatarUrl: studentData.avatar_url,
+        });
+      }
 
       // 2. Busca as Sessões
       const { data: sessionsData, error: sessionsError } = await supabase
