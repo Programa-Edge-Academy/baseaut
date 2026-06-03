@@ -9,7 +9,7 @@ import { ClipboardEdit, Layers } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import { Text, View } from "react-native";
 
-export type CircuitType = "estruturado" | "livre" | "form";
+export type CircuitType = "estruturado" | "livre" | "ata" | "cars" | "mabc";
 
 export type CircuitItem = {
   id: string;
@@ -37,7 +37,13 @@ const MOCK_CIRCUITS: CircuitItem[] = [
     id: "ata",
     name: "Formulário ATA",
     description: "",
-    type: "form",
+    type: "ata",
+  },
+  {
+    id: "cars",
+    name: "Formulário CARS",
+    description: "",
+    type: "cars",
   },
 ];
 
@@ -95,7 +101,7 @@ export function CircuitSelectionScreen({
           emptyMessage="Nenhum circuito encontrado."
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => {
-            const isForm = item.type === "form";
+            const isForm = item.type === "ata" || item.type === "cars" || item.type === "mabc";
             const badge =
               item.type === "estruturado"
                 ? { label: "Estruturado", color: colors.primary }
