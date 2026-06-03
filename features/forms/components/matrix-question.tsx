@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { MatrixQuestion } from "../types";
 
@@ -7,19 +6,22 @@ import { MatrixQuestion } from "../types";
  */
 interface Props {
   question: MatrixQuestion;
+  value?: any;
+  onChange?: (val: any) => void;
 }
 
 /**
  * Renders a matrix question with row/column selections.
  */
-export function MatrixQuestionUI({ question }: Props) {
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+export function MatrixQuestionUI({ question, value, onChange }: Props) {
+  const answers = value || {};
 
   /**
    * Selects a column answer for a given row.
    */
   const handleSelect = (row: string, col: string) => {
-    setAnswers((prev) => ({ ...prev, [row]: col }));
+    const newAnswers = { ...answers, [row]: col };
+    if (onChange) onChange(newAnswers);
   };
 
   return (
