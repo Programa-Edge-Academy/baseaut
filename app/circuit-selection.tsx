@@ -16,12 +16,22 @@ export default function CircuitSelectionRoute() {
             pathname: "/session/free",
             params: { studentName, circuitName: circuit.name }
           });
-        } else {
+        } else if (circuit.type === "estruturado") {
           router.push({
             pathname: "/session/structured",
             params: { studentName, circuitName: circuit.name }
           });
-        }
+        } else if (circuit.type === "ata") {
+          router.push({
+            pathname: "/form/ata",
+            params: { studentName, circuitName: circuit.name }
+          });
+        } else if (circuit.type === "cars") {
+          router.push({
+            pathname: "/form/cars",
+            params: { studentName, circuitName: circuit.name }
+          });
+        }       
       }}
     />
   );
