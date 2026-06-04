@@ -19,30 +19,33 @@
 --               metadados->>'faixa_mabc' = faixa calculada
 --   ✓ Passo 5 — Inserção da Instância: INSERT em formularios com
 --               protegido = FALSE e template_origem_id apontando para
---               o template base; colunas copiadas via SELECT do template
+--               o template base; equipe_id vindo do aluno
 --   ✓ Passo 6 — Montagem dos Itens: jsonb_agg das perguntas do
 --               template (não da instância), ordenadas por ordem
 --   ✓ Passo 7 — Retorno: JSONB com formulario_id e array itens
 -- ════════════════════════════════════════════════════════════════════
 
 CREATE OR REPLACE FUNCTION rpc_iniciar_mabc2(
-    p_aluno_id    UUID,
+    p_aluno_id     UUID,
     p_avaliador_id UUID
 )
 RETURNS JSONB
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
     v_data_nascimento DATE;
+    v_equipe_id       UUID;
     v_idade           INT;
     v_faixa           INT;
     v_template_id     UUID;
     v_formulario_id   UUID;
     v_itens           JSONB;
 BEGIN
-    -- 1. Buscar data de nascimento do aluno
-    SELECT data_nascimento
-    INTO v_data_nascimento
+    -- 1. Buscar data de nascimento e equipe do aluno
+    SELECT data_nascimento, equipe_id
+    INTO v_data_nascimento, v_equipe_id
     FROM alunos
     WHERE id = p_aluno_id;
 
@@ -80,6 +83,7 @@ BEGIN
     -- 5. Inserir nova instância
     INSERT INTO formularios (
         titulo,
+        descricao,
         tipo,
         equipe_id,
         ativo,
@@ -91,8 +95,9 @@ BEGIN
     )
     SELECT
         f.titulo,
+        f.descricao,
         f.tipo,
-        f.equipe_id,
+        v_equipe_id,
         TRUE,
         p_aluno_id,
         p_avaliador_id,
