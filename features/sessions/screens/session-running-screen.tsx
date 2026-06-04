@@ -324,11 +324,11 @@ export function SessionRunningScreen({
 
       <ReorderModal
         visible={isReorderOpen}
-        items={order} // Passamos a lista completa
-        currentIndex={currentIndex} // Informamos qual exercício está rodando agora
-        swapIndex={swapIndex} // O estado de quem está "esperando" a troca
+        items={order} 
+        currentIndex={currentIndex} 
+        swapIndex={swapIndex} 
         onClose={() => setIsReorderOpen(false)}
-        onItemPress={handleSwapClick} // A nossa função de Swap que criamos no passo anterior
+        onItemPress={handleSwapClick} 
       />
 
       <FinishSessionModal
