@@ -55,7 +55,10 @@ export type SessionRunningScreenProps = {
   exercises?: SessionExercise[];
   onPressBack?: () => void;
   onFinishSession?: (motivo: string) => void;
-  onCompleteSession?: (hasWarnings: boolean) => void;
+  onCompleteSession?: (
+    hasWarnings: boolean,
+    pendentes: SessionExercise[],
+  ) => void;
 };
 
 /**
@@ -201,22 +204,24 @@ export function SessionRunningScreen({
     if (currentIndex < total - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      const temPendencias =
-        Object.values(historicoAtualizado).includes("adiado");
+      const pendentes = order.filter(
+        (ex) => historicoAtualizado[ex.id] !== "concluido",
+      );
+      const temPendencias = pendentes.length > 0;
+
       if (formRef.current) {
         formRef.current.handleSave();
       }
-      onCompleteSession?.(temPendencias);
+      onCompleteSession?.(temPendencias, pendentes);
     }
   };
 
   const handleSwapClick = (indexClicked: number) => {
     if (swapIndex === null) {
-      setSwapIndex(indexClicked); // 
+      setSwapIndex(indexClicked); //
     } else if (swapIndex === indexClicked) {
-      setSwapIndex(null); 
+      setSwapIndex(null);
     } else {
-
       setOrder((prev) => {
         const newList = [...prev];
         const temp = newList[swapIndex];
@@ -224,7 +229,7 @@ export function SessionRunningScreen({
         newList[indexClicked] = temp;
         return newList;
       });
-      setSwapIndex(null); 
+      setSwapIndex(null);
     }
   };
   const total = order.length;
@@ -251,7 +256,14 @@ export function SessionRunningScreen({
     if (formRef.current) {
       formRef.current.handleSave();
     }
+
+    const pendentes = order.filter(
+      (ex) => historicoExercicios[ex.id] !== "concluido",
+    );
+    const temPendencias = pendentes.length > 0;
+
     onFinishSession?.(motivo);
+    onCompleteSession?.(temPendencias, pendentes);
     setIsFinishOpen(false);
   };
 
@@ -324,11 +336,11 @@ export function SessionRunningScreen({
 
       <ReorderModal
         visible={isReorderOpen}
-        items={order} 
-        currentIndex={currentIndex} 
-        swapIndex={swapIndex} 
+        items={order}
+        currentIndex={currentIndex}
+        swapIndex={swapIndex}
         onClose={() => setIsReorderOpen(false)}
-        onItemPress={handleSwapClick} 
+        onItemPress={handleSwapClick}
       />
 
       <FinishSessionModal

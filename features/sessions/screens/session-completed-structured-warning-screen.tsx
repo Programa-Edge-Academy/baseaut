@@ -1,20 +1,20 @@
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { SessionCompletion } from "@/features/exercises/components/session-completion";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import React from "react";
 import { ScrollView, View } from "react-native";
 
-
 export function SessionCompletedStructuredWarningsScreen() {
     const router = useRouter();
+    const { queue } = useLocalSearchParams<{ queue: string }>();
+    
+    const filaDePendentes = queue ? JSON.parse(queue) : [];
 
     return (
         <View className="flex-1 bg-level1">
-
             <ScrollView>
                 <View>
-
                     <Header variant="back" />
 
                     <View className="left-6 top-[2%] w-[264px]">
@@ -26,18 +26,23 @@ export function SessionCompletedStructuredWarningsScreen() {
                             className="" 
                             statusLabel="Realizadas" 
                             hasWarnings={true} 
-                            unrealizedCount={2}
-                            onSelectContinuation={function (): void {
-                                console.log("Selecionando continuação...");
+                            unrealizedCount={filaDePendentes.length}
+                            onSelectContinuation={(id) => {
+                                if (id === "try_unrealized") {
+                                    router.push({
+                                        pathname: "/session/free",
+                                        params: {
+                                            queue: JSON.stringify(filaDePendentes),
+                                        },
+                                    });
+                                }
                             }} 
-                            onBackToStart={function (): void {
-                                console.log("Voltando para o início das sessões...");
+                            onBackToStart={() => {
                                 router.replace("/students")
                             }} 
                             progress={"3/3"} 
                         />
                     </View>
-
                 </View>
             </ScrollView>
         </View>

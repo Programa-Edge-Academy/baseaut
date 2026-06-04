@@ -23,7 +23,6 @@ export function SessionCompletedStructuredScreen() {
               className=""
               statusLabel="Realizadas"
               hasWarnings={false}
-              unrealizedCount={9}
               onBackToStart={function (): void {
                 console.log("Voltando para o início das sessões...");
                 router.replace("/students")
