@@ -2,7 +2,7 @@ import React from "react";
 import { Modal, Text, View, Pressable, ScrollView } from "react-native";
 import { X, ArrowUpDown } from "lucide-react-native";
 import { colors } from "@/assets/colors";
-import { SessionExercise } from "../screens/session-running-screen"; // Ajuste o import se necessário
+import { SessionExercise } from "../screens/session-running-screen";
 
 interface ReorderModalProps {
   visible: boolean;
