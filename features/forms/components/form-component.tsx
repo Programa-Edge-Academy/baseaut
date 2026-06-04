@@ -54,6 +54,9 @@ export const FormComponent = forwardRef(function FormComponent(
           min = q.opcoes?.min ?? 0;
           max = q.opcoes?.max ?? 2;
           step = 1;
+        } else if (q.tipo_resposta === "selecao_unica" && Array.isArray(q.opcoes?.valores) && q.opcoes.valores.length === 2 && q.opcoes.valores[0] === "Sim" && q.opcoes.valores[1] === "Não") {
+          type = "yes_no";
+          options = q.opcoes?.valores ?? [];
         } else if (q.tipo_resposta === "selecao_unica") {
           type = "dropdown";
           options = q.opcoes?.valores ?? [];
