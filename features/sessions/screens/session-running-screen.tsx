@@ -1,6 +1,7 @@
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
+import { FormComponent } from "@/features/forms/components/form-component";
 import { Check } from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import { Animated, ScrollView, Text, View } from "react-native";
@@ -13,8 +14,7 @@ import {
   DEFAULT_FINISH_MOTIVOS,
   FinishSessionModal,
 } from "../components/finish-session-modal";
-import { ReorderItem, ReorderModal } from "../components/reorder-modal";
-import { FormComponent } from "@/features/forms/components/form-component";
+import { ReorderModal } from "../components/reorder-modal";
 
 export type SessionExercise = {
   id: string;
@@ -90,6 +90,7 @@ export function SessionRunningScreen({
   const [historicoExercicios, setHistoricoExercicios] = useState<
     Record<string, "concluido" | "nao_realizada" | "adiado">
   >({});
+  const [swapIndex, setSwapIndex] = useState<number | null>(null);
 
   const isMabc =
     circuitType === "mabc_1" ||
@@ -151,9 +152,9 @@ export function SessionRunningScreen({
 
   const handleActivityDefer = () => {
     console.log("[ActivityResult] Resposta adiada.");
-    
+
     setIsResultModalOpen(false);
-    
+
     advanceSession("adiado");
   };
 
@@ -209,6 +210,23 @@ export function SessionRunningScreen({
     }
   };
 
+  const handleSwapClick = (indexClicked: number) => {
+    if (swapIndex === null) {
+      setSwapIndex(indexClicked); // 
+    } else if (swapIndex === indexClicked) {
+      setSwapIndex(null); 
+    } else {
+
+      setOrder((prev) => {
+        const newList = [...prev];
+        const temp = newList[swapIndex];
+        newList[swapIndex] = newList[indexClicked];
+        newList[indexClicked] = temp;
+        return newList;
+      });
+      setSwapIndex(null); 
+    }
+  };
   const total = order.length;
   const currentExercise = order[currentIndex];
   const subtitle = `${circuitName} - ${currentIndex + 1}/${total}`;
@@ -236,23 +254,6 @@ export function SessionRunningScreen({
     onFinishSession?.(motivo);
     setIsFinishOpen(false);
   };
-
-  const handleConfirmReorder = (reorderedRemaining: ReorderItem[]) => {
-    // Stitch the upcoming part of the queue back together with the already
-    // executed/locked prefix in front of the current index.
-    const upcomingById = new Map(
-      order.slice(currentIndex).map((exercise) => [exercise.id, exercise]),
-    );
-    const reorderedUpcoming = reorderedRemaining
-      .map((item) => upcomingById.get(item.id))
-      .filter((exercise): exercise is SessionExercise => Boolean(exercise));
-    setOrder([...order.slice(0, currentIndex), ...reorderedUpcoming]);
-    setIsReorderOpen(false);
-  };
-
-  const reorderItems: ReorderItem[] = order
-    .slice(currentIndex)
-    .map((exercise) => ({ id: exercise.id, name: exercise.name }));
 
   return (
     <View className="flex-1 bg-level1">
@@ -323,9 +324,11 @@ export function SessionRunningScreen({
 
       <ReorderModal
         visible={isReorderOpen}
-        items={reorderItems}
+        items={order} 
+        currentIndex={currentIndex} 
+        swapIndex={swapIndex} 
         onClose={() => setIsReorderOpen(false)}
-        onConfirm={handleConfirmReorder}
+        onItemPress={handleSwapClick} 
       />
 
       <FinishSessionModal

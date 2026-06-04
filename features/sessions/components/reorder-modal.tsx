@@ -1,110 +1,97 @@
+import React from "react";
+import { Modal, Text, View, Pressable, ScrollView } from "react-native";
+import { X, ArrowUpDown } from "lucide-react-native";
 import { colors } from "@/assets/colors";
-import { ActionButtons } from "@/components/action-buttons";
-import { GripVertical, X } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { SessionExercise } from "../screens/session-running-screen";
 
-export type ReorderItem = {
-  id: string;
-  name: string;
-};
-
-export type ReorderModalProps = {
+interface ReorderModalProps {
   visible: boolean;
-  items: ReorderItem[];
+  items: SessionExercise[];
+  currentIndex: number;
+  swapIndex: number | null;
   onClose: () => void;
-  onConfirm: (items: ReorderItem[]) => void;
-  title?: string;
-  description?: string;
-};
+  onItemPress: (index: number) => void;
+}
 
-/**
- * Modal listing items that the user can reorder. The visual scaffolding
- * (numbering, grip handles) is in place; a future iteration can plug in a
- * drag-and-drop library to mutate `draft` while the user moves rows.
- */
 export function ReorderModal({
   visible,
   items,
+  currentIndex,
+  swapIndex,
   onClose,
-  onConfirm,
-  title = "Mudar ordem",
-  description = "Arraste para reordenar os exercícios restantes.",
+  onItemPress,
 }: ReorderModalProps) {
-  const { width, height } = useWindowDimensions();
-  const [draft, setDraft] = useState<ReorderItem[]>(items);
-
-  useEffect(() => {
-    if (visible) setDraft(items);
-  }, [visible, items]);
-
-  // TODO: wire to a drag-and-drop library (e.g. react-native-draggable-flatlist)
-  // to reorder `draft` while the user moves a row.
-
   return (
-    <Modal
-      visible={visible}
-      onRequestClose={onClose}
-      transparent
-      animationType="fade"
-    >
-      <Pressable
-        onPress={onClose}
-        className="flex-1 items-center justify-center bg-black/50"
-      >
-        <Pressable
-          onPress={(e) => e.stopPropagation()}
-          className="bg-level2 border border-outline rounded-2xl"
-          style={{
-            width: width * 0.92,
-            maxWidth: 420,
-            maxHeight: height * 0.8,
-          }}
-        >
-          <View className="gap-4 p-5">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-header-2 text-white">{title}</Text>
-              <Pressable onPress={onClose} hitSlop={8}>
-                <X color={colors.muted} size={24} />
-              </Pressable>
+    <Modal visible={visible} transparent animationType="slide">
+      <View className="flex-1 bg-black/60 justify-end">
+        <View className="bg-level2 rounded-t-[32px] p-6 h-[80%] border-t border-outline">
+          
+          {/* Cabeçalho do Modal */}
+          <View className="flex-row justify-between items-center mb-6">
+            <View>
+              <Text className="text-white text-[24px] font-bold">Mudar ordem</Text>
+              <Text className="text-muted text-[14px]">Toque em dois exercícios para trocar</Text>
             </View>
-
-            <Text className="text-default-2 text-muted leading-5">
-              {description}
-            </Text>
-
-            <ScrollView style={{ maxHeight: height * 0.45 }}>
-              <View className="gap-2">
-                {draft.map((item, index) => (
-                  <View
-                    key={item.id}
-                    className="flex-row items-center rounded-2xl border border-outline bg-level1 p-3"
-                  >
-                    <GripVertical size={18} color={colors.muted} />
-                    <Text className="ml-2 text-default-1 text-white">
-                      {index + 1}. {item.name}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </ScrollView>
-
-            <ActionButtons
-              onCancel={onClose}
-              onSave={() => onConfirm(draft)}
-              cancelLabel="Cancelar"
-              saveLabel="Confirmar"
-            />
+            <Pressable onPress={onClose} className="bg-level1 p-2 rounded-full border border-outline">
+              <X size={24} color="#fff" />
+            </Pressable>
           </View>
-        </Pressable>
-      </Pressable>
+
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={{ gap: 12 }}>
+              {items.map((item, index) => {
+                const isSelectedForSwap = swapIndex === index;
+                const isCurrent = index === currentIndex;
+                const isCompleted = index < currentIndex;
+
+                return (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => !isCompleted && onItemPress(index)}
+                    disabled={isCompleted} // Não permite trocar o que já foi feito
+                    className={`flex-row items-center p-4 rounded-2xl border ${
+                      isSelectedForSwap 
+                        ? "border-primary bg-primary/10" 
+                        : isCurrent 
+                          ? "border-secondary bg-secondary/10" 
+                          : "border-outline bg-level1"
+                    } ${isCompleted ? "opacity-40" : ""}`}
+                  >
+                    {/* Número da Posição */}
+                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-4 ${
+                      isSelectedForSwap ? "bg-primary" : "bg-outline"
+                    }`}>
+                      <Text className="text-white font-bold">{index + 1}</Text>
+                    </View>
+
+                    <View className="flex-1">
+                      <Text className={`text-[16px] font-semibold ${
+                        isSelectedForSwap ? "text-primary" : "text-white"
+                      }`}>
+                        {item.name}
+                      </Text>
+                      {isCurrent && <Text className="text-secondary text-[12px]">Exercício atual</Text>}
+                      {isCompleted && <Text className="text-muted text-[12px]">Já realizado</Text>}
+                    </View>
+
+                    {!isCompleted && (
+                      <ArrowUpDown size={20} color={isSelectedForSwap ? colors.primary : colors.muted} />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </ScrollView>
+
+          {/* Botão de Fechar no rodapé */}
+          <Pressable 
+            onPress={onClose}
+            className="mt-6 w-full py-4 bg-level1 border border-outline rounded-2xl items-center"
+          >
+            <Text className="text-white font-bold">Concluir reordenagem</Text>
+          </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
