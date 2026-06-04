@@ -11,29 +11,23 @@ CREATE OR REPLACE FUNCTION public.rpc_editar_resposta(
 )
 RETURNS JSON AS $$
 DECLARE
-    v_aluno_id UUID;
+    v_equipe_id UUID;
     v_autorizado BOOLEAN;
 BEGIN
-    -- Identificar o aluno dono da resposta
-    SELECT COALESCE(f.aluno_id, s.aluno_id) INTO v_aluno_id
+    -- Identificar a equipe do aluno dono da resposta
+    SELECT a.equipe_id INTO v_equipe_id
     FROM public.respostas_formulario rf
     LEFT JOIN public.formularios f ON rf.formulario_id = f.id
     LEFT JOIN public.sessoes s ON rf.sessao_id = s.id
+    LEFT JOIN public.alunos a ON a.id = COALESCE(f.aluno_id, s.aluno_id)
     WHERE rf.id = p_resposta_id;
 
-    IF v_aluno_id IS NULL THEN
+    IF v_equipe_id IS NULL THEN
         RAISE EXCEPTION 'Resposta não encontrada no histórico.';
     END IF;
 
     -- [Critério B (Segurança)]: Valida se o usuário pertence à equipe do aluno
-    SELECT EXISTS (
-        SELECT 1 
-        FROM public.alunos a
-        JOIN public.membros_equipe me ON a.equipe_id = me.equipe_id
-        WHERE a.id = v_aluno_id 
-          AND me.usuario_id = auth.uid()
-          AND me.status = 'ativo'
-    ) INTO v_autorizado;
+    v_autorizado := public.is_team_member(v_equipe_id);
 
     IF NOT v_autorizado THEN
         RAISE EXCEPTION 'Acesso negado: Você não tem permissão para editar dados deste aluno.';
@@ -65,28 +59,22 @@ CREATE OR REPLACE FUNCTION public.rpc_deletar_registro(
 )
 RETURNS JSON AS $$
 DECLARE
-    v_aluno_id UUID;
     v_equipe_id UUID;
     v_autorizado BOOLEAN;
     v_protegido BOOLEAN;
 BEGIN
     -- Validação por tipo: Sessão
     IF p_tipo = 'sessao' THEN
-        SELECT aluno_id, equipe_id INTO v_aluno_id, v_equipe_id
+        SELECT equipe_id INTO v_equipe_id
         FROM public.sessoes
         WHERE id = p_id;
 
-        IF v_aluno_id IS NULL THEN
+        IF v_equipe_id IS NULL THEN
             RAISE EXCEPTION 'Sessão não encontrada.';
         END IF;
 
         -- [Critério E (Sessão)]: Valida autorização da equipe
-        SELECT EXISTS (
-            SELECT 1 FROM public.membros_equipe 
-            WHERE equipe_id = v_equipe_id 
-              AND usuario_id = auth.uid() 
-              AND status = 'ativo'
-        ) INTO v_autorizado;
+        v_autorizado := public.is_team_member(v_equipe_id);
 
         IF NOT v_autorizado THEN
             RAISE EXCEPTION 'Acesso negado para deletar esta sessão.';
@@ -99,7 +87,7 @@ BEGIN
     -- Validação por tipo: Formulário
     ELSIF p_tipo = 'formulario' THEN
         -- [Critério F (Proteção)]: Bloqueia deleção se formulário for protegido
-        SELECT equipe_id, (metadados->>'protegido')::boolean INTO v_equipe_id, v_protegido
+        SELECT equipe_id, protegido INTO v_equipe_id, v_protegido
         FROM public.formularios
         WHERE id = p_id;
 
@@ -112,12 +100,7 @@ BEGIN
         END IF;
 
         -- [Critério G (Formulário)]: Valida autorização da equipe
-        SELECT EXISTS (
-            SELECT 1 FROM public.membros_equipe 
-            WHERE equipe_id = v_equipe_id 
-              AND usuario_id = auth.uid() 
-              AND status = 'ativo'
-        ) INTO v_autorizado;
+        v_autorizado := public.is_team_member(v_equipe_id);
 
         IF NOT v_autorizado THEN
             RAISE EXCEPTION 'Acesso negado para deletar este formulário.';
