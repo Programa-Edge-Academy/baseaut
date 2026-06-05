@@ -13,7 +13,7 @@ export default function CircuitSelectionRoute() {
       onPressCircuit={(circuit: CircuitItem) => {
         if (circuit.type === "livre") {
           router.push({
-            pathname: "/session/free",
+            pathname: "/session/semi-structured",
             params: { studentName, circuitName: circuit.name }
           });
         } else if (circuit.type === "estruturado") {

@@ -1,25 +1,21 @@
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
-
-import { SessionCompletedFreeScreen } from "../../features/sessions/screens/session-completed-free-screen";
-import { SessionCompletedStructuredScreen } from "../../features/sessions/screens/session-completed-structured-screen";
-import { SessionCompletedStructuredContinuationScreen } from "../../features/sessions/screens/session-completed-structured-continuation-screen";
-import { SessionCompletedStructuredWarningsScreen } from "../../features/sessions/screens/session-completed-structured-warning-screen";
+import { SessionCompletedScreen } from "@/features/sessions/screens/session-completed-screen";
 
 export default function SessionCompletedHubRoute() {
-  const { type } = useLocalSearchParams<{ type: string }>();
+  const { type, studentName, queue, fullCircuit } = useLocalSearchParams<{ 
+    type: string; 
+    studentName: string;
+    queue: string;
+    fullCircuit: string;
+  }>();
 
-  // O Hub decide qual das suas telas prontas carregar
-  switch (type) {
-    case "free":
-      return <SessionCompletedFreeScreen />;
-    case "structured":
-      return <SessionCompletedStructuredScreen />;
-    case "structured-continuation":
-      return <SessionCompletedStructuredContinuationScreen />;
-    case "structured-warnings":
-      return <SessionCompletedStructuredWarningsScreen />;
-    default:
-      return <SessionCompletedStructuredScreen />;
-  }
+  return (
+    <SessionCompletedScreen 
+      type={type || "structured"}
+      studentName={studentName || "Aluno"}
+      queue={queue}
+      fullCircuit={fullCircuit}
+    />
+  );
 }
