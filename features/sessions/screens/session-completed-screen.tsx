@@ -38,9 +38,12 @@ export function SessionCompletedScreen({ type, studentName, queue, fullCircuit }
   };
 
   const handleConfirmRepeat = () => {
-    const exercisesToRepeat = circuitoCompleto.filter((ex: any) =>
-      selectedRepeatIds.includes(ex.id)
-    );
+    const exercisesToRepeat = circuitoCompleto
+      .filter((ex: any) => selectedRepeatIds.includes(ex.id))
+      .map((ex: any) => ({
+        ...ex,
+        id: `repeated-${ex.id}-${Date.now()}`, 
+      }));
 
     if (exercisesToRepeat.length > 0) {
       setIsRepeatModalOpen(false);
