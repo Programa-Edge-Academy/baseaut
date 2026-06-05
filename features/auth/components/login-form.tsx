@@ -40,9 +40,7 @@ export function LoginForm() {
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!email.trim()) {
-      newErrors.email = "Email é obrigatório";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       newErrors.email = "Email inválido";
     }
 
@@ -62,6 +60,7 @@ export function LoginForm() {
   };
 
   const displayApiError = translateAuthError(apiError);
+  const isButtonDisabled = !email.trim() || !password.trim() || loading;
 
   return (
     <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-6 shadow-panelShadow outline outline-1 outline-offset-[-1px] outline-outline">
@@ -129,8 +128,10 @@ export function LoginForm() {
           label={loading ? "Entrando..." : "Entrar"}
           onPress={handleSubmit}
           sizeClass="w-full h-11"
-          className="rounded-[15px]"
-          disabled={loading}
+          disabled={isButtonDisabled}
+          bgColorClass={isButtonDisabled ? "bg-muted" : "bg-primary"}
+          shadowClass={isButtonDisabled ? "shadow-none" : "shadow-primaryShadow"}
+          className={`rounded-[15px] ${isButtonDisabled ? "border border-outline" : ""}`}
         />
       </View>
 

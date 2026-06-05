@@ -1,10 +1,10 @@
 import { colors } from "@/assets/colors";
 import {
-  Bell,
   ClipboardEdit,
   Minimize2,
   Pause,
   Play,
+  Siren,
   Timer,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
@@ -81,7 +81,7 @@ export function Stopwatch({
   const handleStop = () => {
     setIsRunning(false);
     onStop?.(seconds);
-    setSeconds(0);
+    //setSeconds(0); Estava zerando o cronômetro, então se esbarrar o dedo e sair do modal, vocÊ perde o tempo registrado.
   };
 
   return (
@@ -103,7 +103,7 @@ export function Stopwatch({
           hitSlop={6}
           className="flex-row items-center gap-1.5 rounded-full border border-extra bg-extra/10 px-3 py-1 active:opacity-70"
         >
-          <Bell size={14} color={colors.extra} />
+          <Siren size={14} color={colors.extra} />
           <Text className="text-default-2 text-extra">Crise</Text>
         </Pressable>
       </View>
@@ -114,7 +114,14 @@ export function Stopwatch({
 
           <Text
             className="text-white"
-            style={{ fontFamily: "Inter-Bold", fontSize: 30, lineHeight: 32 }}
+            style={{
+              fontFamily: "Inter-Bold",
+              fontSize: 30,
+              lineHeight: 32,
+              fontVariant: ["tabular-nums"],
+              minWidth: 90,
+              textAlign: "center",
+            }}
           >
             {formatTime(seconds)}
           </Text>

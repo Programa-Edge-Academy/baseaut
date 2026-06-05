@@ -17,6 +17,7 @@ export type Student = {
   healthConditions: string;
   observations: string;
   avatarUrl: string | null;
+  pendencyAlert: boolean;
 };
 
 /**
@@ -116,7 +117,7 @@ export function useStudents() {
   /**
    * Loads students for the active team.
    */
-  const loadStudents = useCallback(async () => {
+const loadStudents = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -126,37 +127,48 @@ export function useStudents() {
       }
       setEquipeId(teamId);
 
-      const { data, error: fetchError } = await supabase
+      // 1. Buscamos alunos
+      const { data: alunos, error: fetchError } = await supabase
         .from("alunos")
-        .select(
-          "id, nome_completo, data_nascimento, peso, altura, cintura, nivel_suporte, diagnostico_detalhado, observacoes_clinicas, avatar_url",
-        )
+        .select("id, nome_completo, data_nascimento, peso, altura, cintura, nivel_suporte, diagnostico_detalhado, observacoes_clinicas, avatar_url")
         .eq("equipe_id", teamId)
         .eq("ativo", true)
         .order("nome_completo", { ascending: true });
 
       if (fetchError) throw fetchError;
 
-      if (data) {
+      // 2. Buscamos as pendências separadamente
+      const { data: pendencias } = await supabase
+        .from("vw_alunos_pendencias")
+        .select("aluno_id, tem_pendencia");
+
+      if (alunos) {
         setStudents(
-          data.map((aluno) => ({
-            id: aluno.id,
-            name: aluno.nome_completo,
-            birthDate: aluno.data_nascimento,
-            age: calculateAge(aluno.data_nascimento),
-            weight: Number(aluno.peso) || 0,
-            height: Number(aluno.altura) || 0,
-            waist: Number(aluno.cintura) || 0,
-            supportLevel:
-              aluno.nivel_suporte === "nivel_1"
-                ? "Nível 1"
+          alunos.map((aluno) => {
+            // Verifica pendência para este aluno específico
+            const temPendencia = pendencias?.some(
+              (p) => p.aluno_id === aluno.id && p.tem_pendencia
+            ) ?? false;
+
+            return {
+              id: aluno.id,
+              name: aluno.nome_completo,
+              birthDate: aluno.data_nascimento,
+              age: calculateAge(aluno.data_nascimento),
+              weight: Number(aluno.peso) || 0,
+              height: Number(aluno.altura) || 0,
+              waist: Number(aluno.cintura) || 0,
+              supportLevel: 
+              aluno.nivel_suporte === "nivel_1" ? "Nível 1"
                 : aluno.nivel_suporte === "nivel_2"
                   ? "Nível 2"
                   : "Nível 3",
-            healthConditions: aluno.diagnostico_detalhado || "",
-            observations: aluno.observacoes_clinicas || "",
-            avatarUrl: aluno.avatar_url,
-          })),
+              healthConditions: aluno.diagnostico_detalhado || "",
+              observations: aluno.observacoes_clinicas || "",
+              avatarUrl: aluno.avatar_url,
+              pendencyAlert: temPendencia, 
+            };
+          }),
         );
       }
     } catch (caught: any) {

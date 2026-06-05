@@ -8,12 +8,13 @@ import { ListCard } from "@/components/list-card";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
 import { SectionField } from "@/components/section-field";
-import { Share2, Shuffle } from "lucide-react-native";
+import { ClipboardList, Share2, Shuffle } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { NewCircuit } from "../components/new-circuit"; 
 import { Circuit, CircuitType, ExecutionMode, useCircuits } from "../hooks/use-circuits";
 import { Exercise } from "../hooks/use-exercises";
+import { ViewCircuit } from "../components/view-circuit";
 
 export interface SaveCircuitPayload {
   name: string;
@@ -53,6 +54,7 @@ export function CircuitsScreen() {
   const [query, setQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [circuitToEdit, setCircuitToEdit] = useState<Circuit | null>(null);
+  const [circuitToView, setCircuitToView] = useState<Circuit | null>(null);
   const [circuitToDuplicate, setCircuitToDuplicate] = useState<Circuit | null>(null);
   const [circuitToDelete, setCircuitToDelete] = useState<Circuit | null>(null);
 
@@ -60,8 +62,19 @@ export function CircuitsScreen() {
 
   const filteredCircuits = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return circuits.filter((circuit) => {
+    const filtered = circuits.filter((circuit) => {
       return !normalizedQuery || circuit.name.toLowerCase().includes(normalizedQuery);
+    });
+
+    return [...filtered].sort((a, b) => {
+      const typeOrder: Record<string, number> = {
+        mabc_1: 1,
+        mabc_2: 2,
+        mabc_3: 3,
+      };
+      const orderA = typeOrder[a.type] || 99;
+      const orderB = typeOrder[b.type] || 99;
+      return orderA - orderB;
     });
   }, [query, circuits]);
 
@@ -128,14 +141,28 @@ export function CircuitsScreen() {
         emptyMessage="Nenhum circuito encontrado."
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
+          const isMabc = item.type === "mabc_1" || item.type === "mabc_2" || item.type === "mabc_3";
           const isStructured = item.executionMode === "estruturado";
 
-          const iconColor = isStructured ? colors.primary : colors.extra || "#EAB308";
-          const iconComponent = !isStructured
+          let iconColor = isStructured ? colors.primary : colors.extra || "#EAB308";
+          let iconComponent = !isStructured
             ? <Shuffle size={20} color={iconColor} /> 
             : <Share2 size={20} color={iconColor} />;
             
-          const badgeLabel = isStructured ? "Estruturado" : "Livre";
+          let badgeLabel = isStructured ? "Estruturado" : "Livre";
+
+          if (isMabc) {
+            if (item.type === "mabc_1") {
+              iconColor = colors.mabc1;
+            } else if (item.type === "mabc_2") {
+              iconColor = colors.mabc2;
+            } else {
+              iconColor = colors.mabc3;
+            }
+            iconComponent = <ClipboardList size={20} color={iconColor} />;
+            badgeLabel = "MABC-2";
+          }
+
           const subtitleText = `${item.exercisesCount} exercícios · ${item.exercisesSummary}`;
 
           return (
@@ -145,10 +172,12 @@ export function CircuitsScreen() {
               icon={iconComponent}
               iconBgColor={withOpacity(iconColor, 0.15)}
               badge={{ label: badgeLabel, color: iconColor }}
-              showDuplicate={true}
-              onEdit={() => setCircuitToEdit(item)}
-              onDuplicate={() => handleDuplicate(item)}
-              onDelete={() => setCircuitToDelete(item)}
+              showDuplicate={!isMabc}
+              onPress={!isMabc ? () => setCircuitToEdit(item) : undefined}
+              onEdit={isMabc ? undefined : () => setCircuitToEdit(item)}
+              onDuplicate={isMabc ? undefined : () => handleDuplicate(item)}
+              onDelete={isMabc ? undefined : () => setCircuitToDelete(item)}
+              enableRipple={!isMabc}
             />
           );
         }}
@@ -192,6 +221,16 @@ export function CircuitsScreen() {
         initialData={circuitToEdit ? circuitToFormData(circuitToEdit) : undefined}
         onClose={handleCloseModal}
         onSave={handleSaveCircuit}
+      />
+
+      <ViewCircuit
+        visible={circuitToView !== null}
+        circuitData={circuitToView ? {
+          name: circuitToView.name,
+          executionMode: circuitToView.executionMode,
+          exercises: circuitToView.exercises,
+        } : null}
+        onClose={() => setCircuitToView(null)}
       />
 
       <ConfirmationModal

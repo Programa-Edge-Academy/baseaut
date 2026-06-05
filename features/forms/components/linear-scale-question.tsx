@@ -10,14 +10,16 @@ import { LinearScaleQuestion } from "../types";
  */
 interface Props {
   question: LinearScaleQuestion;
+  value?: any;
+  onChange?: (val: any) => void;
 }
 
 /**
  * Renders a linear scale slider with numeric input.
  */
-export function LinearScaleQuestionUI({ question }: Props) {
-  const [selectedValue, setSelectedValue] = useState<number>(question.min);
-  const [textValue, setTextValue] = useState<string>(String(question.min));
+export function LinearScaleQuestionUI({ question, value, onChange }: Props) {
+  const selectedValue = value !== undefined ? Number(value) : question.min;
+  const [textValue, setTextValue] = useState<string>(String(selectedValue));
 
   /**
    * Updates the numeric input while preserving valid characters.
@@ -37,16 +39,15 @@ export function LinearScaleQuestionUI({ question }: Props) {
     if (val > question.max) val = question.max;
 
     setTextValue(String(val));
-    setSelectedValue(val);
+    if (onChange) onChange(val);
   };
 
   /**
    * Syncs slider changes to the numeric input.
    */
   const handleSliderChange = (val: number) => {
-    const rounded = Math.round(val);
-    setSelectedValue(rounded);
-    setTextValue(String(rounded));
+    setTextValue(String(val));
+    if (onChange) onChange(val);
   };
 
   return (
@@ -69,11 +70,11 @@ export function LinearScaleQuestionUI({ question }: Props) {
         style={{ width: "100%", height: 40 }}
         minimumValue={question.min}
         maximumValue={question.max}
-        step={1}
+        step={question.step}
         value={selectedValue}
         onValueChange={handleSliderChange}
         minimumTrackTintColor={colors.primary}
-        maximumTrackTintColor={colors.level2}
+        maximumTrackTintColor={colors.placeholder}
         thumbTintColor={colors.primary}
       />
     </View>

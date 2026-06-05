@@ -11,6 +11,7 @@ import React, { useState } from "react";
 import { ActivityIndicator, View, Image } from "react-native";
 import { NewStudent } from "../components/new-student";
 import { useStudents } from "../hooks/use-students";
+import { router } from "expo-router";
 
 /**
  * Students list screen with search and CRUD modals.
@@ -27,6 +28,7 @@ export function StudentsScreen() {
   const filteredStudents = students.filter((student) =>
     student.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
+  const hasPendingAlert = students.some(student => student.pendencyAlert);
 
   /**
    * Normalizes support level values to display labels.
@@ -44,13 +46,14 @@ export function StudentsScreen() {
       <View className="flex-1">
         <View className="mx-8 mt-5">
           <PageHeader
-            mode="inicio"
+            mode={hasPendingAlert ? "inicio-pendente" : "inicio"}
             title="Início"
             subtitle="Selecione um aluno para iniciar uma sessão"
             onNewPress={() => {
               setEditingStudent(null);
               setIsNewStudentModalVisible(true);
             }}
+            onHistoryPress={() => router.push("/history")}
           />
         </View>
 
@@ -76,6 +79,7 @@ export function StudentsScreen() {
             renderItem={({ item }) => (
               <ListCard
                 title={item.name}
+                pendencyAlert={item.pendencyAlert}
                 subtitle={`${item.age} anos · ${item.weight}kg · ${item.height}cm · ${formatSupportLevel(item.supportLevel)}`}
                 icon={
                   item.avatarUrl ? (
@@ -89,11 +93,19 @@ export function StudentsScreen() {
                   )
                 }
                 iconBgColor={item.avatarUrl ? "transparent" : undefined}
+                enableRipple={true}
+                onPress={() => {
+                  router.push({
+                    pathname: "/circuit-selection",
+                    params: { studentName: item.name }
+                  });
+                }}
                 onEdit={() => {
                   setEditingStudent(item);
                   setIsNewStudentModalVisible(true);
                 }}
                 onDelete={() => setStudentToDelete(item)}
+                
               />
             )}
           />

@@ -3,9 +3,7 @@ import { DefaultButton } from "@/components/default-button";
 import {
   ChevronLeft,
   ChevronRight,
-  Eye,
-  EyeOff,
-  Info,
+  ReplaceAll,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
@@ -77,18 +75,14 @@ export function StartActivity({
             hitSlop={8}
             className="active:opacity-70"
           >
-            <Info size={20} color={colors.muted} />
+            <ReplaceAll size={20} color={colors.muted} />
           </Pressable>
           <Pressable
             onPress={() => setIsPreviewVisible((current) => !current)}
             hitSlop={8}
             className="active:opacity-70"
           >
-            {isPreviewVisible ? (
-              <EyeOff size={20} color={colors.muted} />
-            ) : (
-              <Eye size={20} color={colors.muted} />
-            )}
+            
           </Pressable>
         </View>
       </View>
@@ -148,14 +142,6 @@ export function StartActivity({
           onPress={onStart}
           bgColorClass="bg-primary"
           shadowClass="shadow-primaryShadow"
-          sizeClass="flex-1 h-11"
-          textClassName="text-white"
-        />
-        <DefaultButton
-          label="Iniciar e gravar"
-          onPress={onStartAndRecord}
-          bgColorClass="bg-secondary"
-          shadowClass="shadow-secondaryShadow"
           sizeClass="flex-1 h-11"
           textClassName="text-white"
         />

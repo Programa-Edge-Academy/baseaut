@@ -1,15 +1,16 @@
 import { colors } from "@/assets/colors";
 import { ActionButtons } from "@/components/action-buttons";
 import { ConfirmationModal } from "@/components/confirmation-modal";
-import { ImageUp, X } from "lucide-react-native";
+import { DefaultButton } from "@/components/default-button";
+import { ImageUp, Pencil, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
-    Image,
-    Modal,
-    Pressable,
-    Text,
-    useWindowDimensions,
-    View,
+  Image,
+  Modal,
+  Pressable,
+  Text,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { TagProps } from "./exercise-tag";
@@ -61,10 +62,16 @@ export function NewExercise({
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [deletePhotoModalVisible, setDeletePhotoModalVisible] = useState(false);
+  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState({ name: "", tag: "" });
 
   useEffect(() => {
     if (!visible) return;
     setDeletePhotoModalVisible(false);
+    setIsPreviewVisible(false);
+    setIsSaving(false);
+    setErrors({ name: "", tag: "" });
     setName(initialData?.name ?? "");
     setDescription(initialData?.description ?? "");
     setDurationInput(
@@ -95,7 +102,23 @@ export function NewExercise({
    * Validates and submits the exercise form.
    */
   const handleSave = () => {
-    if (!name.trim()) return;
+    let isValid = true;
+    const newErrors = { name: "", tag: "" };
+
+    if (!name.trim()) {
+      newErrors.name = "Este campo é obrigatório";
+      isValid = false;
+    }
+
+    if (!selectedTag) {
+      newErrors.tag = "É obrigatória a seleção de uma tag";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+
+    if (!isValid || isSaving) return;
+    setIsSaving(true);
     const seconds = parseInt(durationInput, 10) || 0;
 
     onSave(
@@ -114,6 +137,7 @@ export function NewExercise({
    */
   const selectTag = (label: string) => {
     setSelectedTag((current) => (current === label ? null : label));
+    if (errors.tag) setErrors((prev) => ({ ...prev, tag: "" }));
   };
 
   const tags: TagProps[] = availableTags.map((label) => ({
@@ -150,7 +174,7 @@ export function NewExercise({
                 <View className="items-center">
                   <View className="relative">
                     <Pressable
-                      onPress={handlePhotoPress}
+                      onPress={photoUri ? () => setIsPreviewVisible(true) : handlePhotoPress}
                       className="w-24 h-24 bg-level1 border border-outline items-center justify-center rounded-2xl overflow-hidden active:opacity-80"
                     >
                       {photoUri ? (
@@ -164,18 +188,29 @@ export function NewExercise({
                     </Pressable>
 
                     {photoUri && (
-                      <Pressable
-                        onPress={() => setDeletePhotoModalVisible(true)}
-                        className="absolute -top-2 -right-2 bg-error p-1.5 rounded-full border-2 border-level2 active:opacity-70"
-                      >
-                        <X color="#FFFFFF" size={14} />
-                      </Pressable>
+                      <View>
+                        <View className="absolute -bottom-0 -left-0" >
+                          <Pressable
+                            onPress={handlePhotoPress}
+                            className="bg-primary p-1.5 rounded-full border-2 border-level2 active:opacity-70 -bottom-0 -left-0"
+                          >
+                            <Pencil color="#FFFFFF" size={14} />
+                          </Pressable>
+                        </View>
+                        <View className="absolute -bottom-0 -right-0">
+                          <Pressable
+                            onPress={() => setDeletePhotoModalVisible(true)}
+                            className="bg-error p-1.5 rounded-full border-2 border-level2 active:opacity-70 -bottom-0 -right-0"
+                          >
+                            <X color="#FFFFFF" size={14} />
+                          </Pressable>
+                        </View>
+                      </View>
                     )}
                   </View>
                 </View>
               </View>
 
-              {/* Campos de Texto */}
               <View className="gap-[10px]">
                 <View className="gap-[2px]">
                   <Text className="text-muted text-default-1">
@@ -183,10 +218,18 @@ export function NewExercise({
                   </Text>
                   <DefaultTextInput
                     value={name}
-                    onChangeText={setName}
+                    onChangeText={(val) => {
+                      const cleanVal = val.replace(/\d/g, "");
+                      setName(cleanVal);
+                      if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
+                    }}
                     placeholder="Ex: Girar bambolê"
                     className="h-[44px]"
+                    outLineBorderClass={errors.name ? "border-error" : ""} 
                   />
+                  {errors.name ? (
+                    <Text className="text-error text-default-3 mt-1 ml-1">{errors.name}</Text>
+                  ) : null}
                 </View>
 
                 <View className="gap-[2px]">
@@ -216,6 +259,9 @@ export function NewExercise({
                 <View className="gap-[2px]">
                   <Text className="text-muted text-default-1">Tags*</Text>
                   <TagGroup tags={tags} onAddTag={() => {}} />
+                  {errors.tag ? (
+                    <Text className="text-error text-default-3 mt-1 ml-1">{errors.tag}</Text>
+                  ) : null}
                 </View>
 
                 <View className="gap-[2px] mt-2">
@@ -223,7 +269,8 @@ export function NewExercise({
                     onCancel={onClose}
                     onSave={handleSave}
                     cancelLabel="Cancelar"
-                    saveLabel="Salvar"
+                    saveLabel={isSaving ? "Salvando..." : "Salvar"}
+                    disabled={isSaving}
                   />
                 </View>
               </View>
@@ -242,6 +289,54 @@ export function NewExercise({
         title="Remover ícone?"
         mode="delete"
       />
+      
+      <Modal
+        visible={isPreviewVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsPreviewVisible(false)}
+      >
+        <View className="flex-1 bg-black/90 justify-center items-center px-6">
+          <Pressable
+            onPress={() => setIsPreviewVisible(false)}
+            className="absolute top-12 right-6 z-50 p-2 active:opacity-70"
+          >
+            <X color="#FFFFFF" size={32} />
+          </Pressable>
+
+          {photoUri && (
+            <Image
+              source={{ uri: photoUri }}
+              style={{ width: "100%", height: "60%" }}
+              resizeMode="contain"
+            />
+          )}
+
+          <View className="flex-row gap-4 mt-10 w-full max-w-[342px]">
+            <DefaultButton
+              label="Remover"
+              onPress={() => {
+                setPhotoUri(null);
+                setIsPreviewVisible(false);
+              }}
+              bgColorClass="bg-level2"
+              isOutline
+              hasShadow={false}
+              outlineBorderClass="border-error"
+              textClassName="text-error"
+              className="flex-1"
+            />
+            <DefaultButton
+              label="Substituir"
+              onPress={() => {
+                setIsPreviewVisible(false);
+                setTimeout(handlePhotoPress, 300);
+              }}
+              className="flex-1"
+            />
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }

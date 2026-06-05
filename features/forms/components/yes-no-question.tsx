@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { View } from "react-native";
 import { DefaultButton } from "../../../components/default-button";
 import { YesNoQuestion } from "../types";
@@ -9,19 +8,22 @@ import { FormQuestion } from "./form-question";
  */
 interface Props {
   question: YesNoQuestion;
+  value?: any;
+  onChange?: (val: any) => void;
 }
 
 /**
  * Renders a yes/no question with optional conditional sub-question.
  */
-export function YesNoQuestionUI({ question }: Props) {
-  const [selected, setSelected] = useState<"sim" | "nao" | null>(null);
+export function YesNoQuestionUI({ question, value, onChange }: Props) {
+  const selected = value as "sim" | "nao" | null;
 
   /**
    * Toggles the selected answer option.
    */
   const handleSelect = (option: "sim" | "nao") => {
-    setSelected((prev) => (prev === option ? null : option));
+    const newVal = selected === option ? null : option;
+    if (onChange) onChange(newVal);
   };
 
   const showSubQuestion =
@@ -38,7 +40,7 @@ export function YesNoQuestionUI({ question }: Props) {
           shadowClass={selected === "nao" ? "shadow-errorShadow" : ""}
           sizeClass="flex-1 h-[44px]"
           className="rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline"
-          textClassName="text-header-3"
+          textClassName="text-header-3 text-white"
         />
 
         <DefaultButton
@@ -48,7 +50,7 @@ export function YesNoQuestionUI({ question }: Props) {
           shadowClass={selected === "sim" ? "shadow-primaryShadow" : ""}
           sizeClass="flex-1 h-[44px]"
           className="rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline"
-          textClassName="text-header-3"
+          textClassName="text-header-3 text-white"
         />
       </View>
 

@@ -2,8 +2,8 @@ import { colors } from "@/assets/colors";
 import { Check } from "lucide-react-native";
 import React from "react";
 import { Text, View } from "react-native";
-import { RipplePressable } from "./ripple-pressable";
 import { DefaultButton } from "./default-button";
+import { RipplePressable } from "./ripple-pressable";
 
 // --- 1. DICTIONARIES ---
 
@@ -22,9 +22,24 @@ export type SelectableChipProps = {
   label: string;
   isSelected: boolean;
   onToggle: () => void;
-  type?: ChipType; 
-  selectedSubOption?: string | null;
+  type?: ChipType;
+  /**
+   * IDs das sub-opções ativas. Suporta multi-select: "verbal" e "modelo"
+   * podem estar selecionados ao mesmo tempo.
+   * Substitui a antiga prop `selectedSubOption: string | null`.
+   */
+  selectedSubOptions?: string[];
   onSelectSubOption?: (id: string) => void;
+  /**
+   * Quando true, exibe borda e fundo vermelhos no chip para indicar que
+   * uma seleção obrigatória não foi feita. Só visível quando !isSelected.
+   */
+  hasError?: boolean;
+  /**
+   * Quando true, exibe borda e texto vermelhos nos botões de sub-opção
+   * que não estão ativos, indicando que pelo menos um deve ser escolhido.
+   */
+  subOptionsHasError?: boolean;
   className?: string;
 };
 
@@ -34,29 +49,37 @@ export function SelectableChip({
   isSelected,
   onToggle,
   type = "default",
-  selectedSubOption,
+  selectedSubOptions = [],
   onSelectSubOption,
+  hasError = false,
+  subOptionsHasError = false,
   className = "",
 }: SelectableChipProps) {
-  
+
   // --- Dynamic Styling based on 'type' ---
-  
+
   // 1. Setup base colors
   let activeBgBorder = "bg-primary/20 border-primary";
   let iconColor = colors.primary;
-  let rippleInactive = "rgba(14, 137, 229, 0.3)"; 
-  
+  let rippleInactive = "rgba(14, 137, 229, 0.3)";
+
   // REQUIREMENT: If the "motivos" parameter is passed, the selectable chip gets a red background and red borders.
   if (type === "motivos") {
     activeBgBorder = "bg-error/20 border-error";
     iconColor = colors.error;
-    rippleInactive = "rgba(190, 34, 35, 0.3)"; 
+    rippleInactive = "rgba(190, 34, 35, 0.3)";
   }
 
-  // 3. Apply the final visual state
-  const modoAtual = isSelected ? activeBgBorder : "bg-level2 border-outline";
+  // 3. Apply the final visual state.
+  //    Prioridade: isSelected → estilo ativo | hasError → estilo de erro | padrão → outline.
+  const modoAtual = isSelected
+    ? activeBgBorder
+    : hasError
+    ? "bg-error/10 border-error"
+    : "bg-level2 border-outline";
+
   const currentRippleColor = isSelected ? "rgba(255, 255, 255, 0.2)" : rippleInactive;
-  
+
   const subOptions = type === "nivelAjuda" ? subOptionsDict.nivelAjuda : null;
 
   // REQUIREMENT: The "motivos" selectable must not display the check icon.
@@ -82,33 +105,42 @@ export function SelectableChip({
       </View>
 
       {/* Right Area: Sub-Options (Uses DefaultButton) */}
-      {/* REQUIREMENT: The "motivos" type has no inner buttons. 
+      {/* REQUIREMENT: The "motivos" type has no inner buttons.
           This is handled because 'subOptions' will be null for "motivos", skipping this block. */}
       {isSelected && subOptions && (
         <View className="flex-row gap-[8px]">
           {subOptions.map((option) => {
-            
-            // Checks if the current button is the one selected in the UI
-            const isActive = selectedSubOption === option.id;
-            
+
+            // CHANGED: multi-select — verifica se o id está no array, não compara string única.
+            const isActive = selectedSubOptions.includes(option.id);
+
+            // Sub-opções inativas ficam vermelhas quando subOptionsHasError=true.
+            const subBorderClass =
+              subOptionsHasError && !isActive ? "border-error" : "border-primary";
+            const subTextClass = isActive
+              ? "text-white"
+              : subOptionsHasError
+              ? "text-error"
+              : "text-primary";
+
             return (
               <DefaultButton
                 key={option.id}
                 label={option.label}
-                sizeClass="h-[32px] px-[16px]" 
+                sizeClass="h-[32px] px-[16px]"
                 hasShadow={false}
-                
+
                 // REQUIREMENT: When clicked (active), it has no outline. When inactive, it has an outline.
                 isOutline={!isActive}
-                
-                // REQUIREMENT: When active, bg-primary. When inactive, it remains transparent in this code.
+
+                // REQUIREMENT: When active, bg-primary. When inactive, it remains transparent.
                 bgColorClass={isActive ? "bg-primary" : "bg-transparent"}
-                
-                outlineBorderClass="border-primary"
-                
-                // REQUIREMENT: When active, text-white. When inactive, text-primary.
-                textClassName={`text-sm font-medium ${isActive ? "text-white" : "text-primary"}`}
-                
+
+                outlineBorderClass={subBorderClass}
+
+                // REQUIREMENT: When active, text-white. When inactive, text-primary (or text-error on error).
+                textClassName={`text-sm font-medium ${subTextClass}`}
+
                 onPress={() => {
                   if (onSelectSubOption) onSelectSubOption(option.id);
                 }}

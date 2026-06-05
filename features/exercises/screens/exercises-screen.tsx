@@ -187,6 +187,7 @@ export function ExercisesScreen() {
             <ListCard
               title={item.name}
               subtitle={subtitleParts}
+              onPress={() => setExerciseToEdit(item)}
               icon={
                 item.iconUrl ? (
                   <Image
@@ -203,6 +204,7 @@ export function ExercisesScreen() {
               onEdit={() => setExerciseToEdit(item)}
               onDuplicate={() => handleDuplicate(item)}
               onDelete={() => setExerciseToDelete(item)}
+              enableRipple={true}
             />
           );
         }}

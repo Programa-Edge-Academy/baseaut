@@ -11,4 +11,7 @@ export const colors = {
   physical: "#DC0886",
   muted: "#66758A",
   placeholder: "#465460",
+  mabc1: "#F43F5E",
+  mabc2: "#8B5CF6",
+  mabc3: "#0EA5E9",
 };
