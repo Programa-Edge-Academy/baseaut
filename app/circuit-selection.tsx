@@ -21,15 +21,10 @@ export default function CircuitSelectionRoute() {
             pathname: "/session/structured",
             params: { studentName, circuitName: circuit.name }
           });
-        } else if (circuit.type === "ata") {
+        } else if (circuit.type === "ata" || circuit.type === "cars") {
           router.push({
-            pathname: "/form/ata",
-            params: { studentName, circuitName: circuit.name }
-          });
-        } else if (circuit.type === "cars") {
-          router.push({
-            pathname: "/form/cars",
-            params: { studentName, circuitName: circuit.name }
+            pathname: "/form",
+            params: { studentName, circuitType: circuit.type, circuitName: circuit.name }
           });
         }       
       }}
