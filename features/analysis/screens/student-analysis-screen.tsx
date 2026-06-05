@@ -5,6 +5,7 @@ import { Header } from "@/components/header";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
 import { AnalysisOptionCard } from "@/features/analysis/components/analysis-option-card";
 import { AppliedProtocolsCard } from "@/features/analysis/components/applied-protocols-card";
+import { StudentInfoCard } from "@/features/analysis/components/student-info-card";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronDown, User } from "lucide-react-native";
 import React, { useRef, useState } from "react";
@@ -88,6 +89,18 @@ export function StudentAnalysisScreen() {
                   </Pressable>
                 </View>
               </View>
+
+              {/* Informações da criança */}
+              <StudentInfoCard
+                name={profile?.name || "Aluno"}
+                avatarUrl={profile?.avatarUrl}
+                height={profile?.height}
+                weight={profile?.weight}
+                waist={profile?.waist}
+                birthDate={profile?.birthDate}
+                supportLevel={profile?.supportLevel}
+                observations={profile?.observations}
+              />
 
               {/* Lista de Opções de Análise */}
               <View className="flex-col gap-4">
