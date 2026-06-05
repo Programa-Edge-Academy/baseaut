@@ -2,10 +2,10 @@ import { colors } from "@/assets/colors";
 import { DropdownModal } from "@/components/dropdown-modal";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
-import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
 import { AnalysisOptionCard } from "@/features/analysis/components/analysis-option-card";
 import { AppliedProtocolsCard } from "@/features/analysis/components/applied-protocols-card";
 import { StudentInfoCard } from "@/features/analysis/components/student-info-card";
+import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronDown, User } from "lucide-react-native";
 import React, { useRef, useState } from "react";
@@ -48,7 +48,7 @@ export function StudentAnalysisScreen() {
           ) : (
             <>
               {/* Seção superior de Perfil do Aluno e Classificação */}
-              <View className="flex-row items-center justify-between border-b border-outline/50 pb-5 mb-5">
+              <View className="flex-row items-center justify-between pb-5 mb-5">
                 <View className="flex-row items-center flex-1 mr-4">
                   <View className="h-11 w-11 items-center justify-center rounded-2xl bg-level2 mr-3 overflow-hidden">
                     {profile?.avatarUrl ? (
