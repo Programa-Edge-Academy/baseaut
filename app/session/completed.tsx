@@ -9,14 +9,13 @@ import { SessionCompletedStructuredWarningsScreen } from "../../features/session
 export default function SessionCompletedHubRoute() {
   const { type } = useLocalSearchParams<{ type: string }>();
 
-  // O Hub decide qual das suas telas prontas carregar
   switch (type) {
     case "free":
       return <SessionCompletedFreeScreen />;
     case "structured":
       return <SessionCompletedStructuredScreen />;
     case "structured-continuation":
-      return <SessionCompletedStructuredContinuationScreen />;
+      return <SessionCompletedStructuredContinuationScreen />; //zombie code?
     case "structured-warnings":
       return <SessionCompletedStructuredWarningsScreen />;
     default:

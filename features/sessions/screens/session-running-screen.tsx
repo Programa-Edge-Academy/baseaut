@@ -55,12 +55,8 @@ export type SessionRunningScreenProps = {
   exercises?: SessionExercise[];
   onPressBack?: () => void;
   onFinishSession?: (motivo: string) => void;
-  onCompleteSession?: (
-    hasWarnings: boolean,
-    pendentes: SessionExercise[],
-  ) => void;
+  onCompleteSession?: (hasWarnings: boolean, pendentes: SessionExercise[], todos: SessionExercise[]) => void;
 };
-
 /**
  * Drives a running circuit. Holds the current exercise stage (StartActivity vs
  * Stopwatch), the playback order, and the two modals (reorder, finish session).
@@ -205,14 +201,14 @@ export function SessionRunningScreen({
       setCurrentIndex(currentIndex + 1);
     } else {
       const pendentes = order.filter(
-        (ex) => historicoAtualizado[ex.id] !== "concluido",
+        (ex) => historicoAtualizado[ex.id] !== "concluido"
       );
       const temPendencias = pendentes.length > 0;
 
       if (formRef.current) {
         formRef.current.handleSave();
       }
-      onCompleteSession?.(temPendencias, pendentes);
+      onCompleteSession?.(temPendencias, pendentes, order);
     }
   };
 
@@ -258,12 +254,12 @@ export function SessionRunningScreen({
     }
 
     const pendentes = order.filter(
-      (ex) => historicoExercicios[ex.id] !== "concluido",
+      (ex) => historicoExercicios[ex.id] !== "concluido"
     );
     const temPendencias = pendentes.length > 0;
 
     onFinishSession?.(motivo);
-    onCompleteSession?.(temPendencias, pendentes);
+    onCompleteSession?.(temPendencias, pendentes, order);
     setIsFinishOpen(false);
   };
 
