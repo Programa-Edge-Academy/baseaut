@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocalSearchParams, router } from "expo-router";
-import { SessionRunningScreen, SessionExercise } from "../../features/sessions/screens/session-running-screen";
+import { SessionRunningScreen } from "../../features/sessions/screens/session-running-screen";
 
 export default function SessionEstruturadoRoute() {
   const { studentName, circuitName, sessionId, studentId } = useLocalSearchParams<any>();
@@ -14,13 +14,14 @@ export default function SessionEstruturadoRoute() {
       circuitType={"estruturado" as any}
       onPressBack={() => router.back()}
       
-      onCompleteSession={(hasWarnings, pendentes) => {
+      onCompleteSession={(hasWarnings, pendentes, todos) => {
         router.push({
           pathname: "/session/completed",
           params: { 
             type: hasWarnings ? "structured-warnings" : "structured",
             studentName,
-            queue: JSON.stringify(pendentes || [])
+            queue: JSON.stringify(pendentes || []),
+            fullCircuit: JSON.stringify(todos || [])
           }
         });
       }}
