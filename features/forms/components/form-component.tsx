@@ -90,9 +90,42 @@ export const FormComponent = forwardRef(function FormComponent(
     setSaving(true);
 
     try {
+      const missingRequired = questions.some((q) => {
+        if (!q.obrigatoria) return false;        
+        const rawValue = answers[q.id];
+        let isFilled = rawValue !== undefined && rawValue !== "" && rawValue !== null;
+        if (isFilled && typeof rawValue === "object") {
+           if (Array.isArray(rawValue)) {
+             isFilled = rawValue.length > 0;
+           } else if (rawValue.selected !== undefined) {
+             isFilled = rawValue.selected !== null && rawValue.selected !== "" && (!Array.isArray(rawValue.selected) || rawValue.selected.length > 0);
+           }
+        }
+        
+        return !isFilled;
+      });
+
+      if (missingRequired) {
+        setSaving(false);
+        return { 
+          success: false, 
+          title: "Erro ao salvar formulário", 
+          description: "Não é possível salvar formulários com campos vazios" 
+        };
+      }
+
       const payloadRespostas = questions.map((q) => {
         const rawValue = answers[q.id];
-        const isFilled = rawValue !== undefined && rawValue !== "" && rawValue !== null;
+        let isFilled = rawValue !== undefined && rawValue !== "" && rawValue !== null;
+
+        if (isFilled && typeof rawValue === "object") {
+           if (Array.isArray(rawValue)) {
+             isFilled = rawValue.length > 0;
+           } else if (rawValue.selected !== undefined) {
+             isFilled = rawValue.selected !== null && rawValue.selected !== "" && 
+                        (!Array.isArray(rawValue.selected) || rawValue.selected.length > 0);
+           }
+        }
 
         let stringValue = null;
         if (isFilled) {
@@ -115,14 +148,18 @@ export const FormComponent = forwardRef(function FormComponent(
 
       if (error) throw error;
 
-      if (!silent) {
-        Alert.alert("Sucesso", "Avaliação salva com sucesso!");
-      }
+      if (!silent) Alert.alert("Sucesso", "Avaliação salva com sucesso!");
       if (onSuccess) onSuccess();
 
+      return { success: true };
     } catch (error) {
       console.error(error);
       if (!silent) Alert.alert("Erro", "Ocorreu um erro ao salvar as respostas.");
+      return { 
+        success: false, 
+        title: "Erro de conexão", 
+        description: "Falha ao se conectar com os servidores. Verifique sua internet." 
+      };
     } finally {
       setSaving(false);
     }
