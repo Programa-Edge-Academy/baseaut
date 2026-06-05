@@ -5,12 +5,12 @@ import { DefaultButton } from "@/components/default-button";
 import { ImageUp, Pencil, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
-  Image,
-  Modal,
-  Pressable,
-  Text,
-  useWindowDimensions,
-  View,
+    Image,
+    Modal,
+    Pressable,
+    Text,
+    useWindowDimensions,
+    View,
 } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { TagProps } from "./exercise-tag";
@@ -34,10 +34,7 @@ export type NewExerciseProps = {
   borderRadius?: number;
   onClose: () => void;
   availableTags?: string[];
-  onSave: (
-    exercise: NewExerciseData,
-    photoUri: string | null,
-  ) => void;
+  onSave: (exercise: NewExerciseData, photoUri: string | null) => void;
   title?: string;
   initialData?: NewExerciseData & {
     iconUrl?: string | null;
@@ -87,7 +84,7 @@ export function NewExercise({
   const handlePhotoPress = async () => {
     const ImagePicker = require("expo-image-picker");
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: [ImagePicker.MediaType.Images],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
@@ -159,10 +156,7 @@ export function NewExercise({
             <View className="p-[25px] gap-[25px]">
               <View className="flex-row items-center justify-between">
                 <Text className="text-header-2 text-white">{title}</Text>
-                <Pressable
-                  onPress={onClose}
-                  className="p-1 active:opacity-70"
-                >
+                <Pressable onPress={onClose} className="p-1 active:opacity-70">
                   <X color={colors.muted} size={28} />
                 </Pressable>
               </View>
@@ -174,7 +168,11 @@ export function NewExercise({
                 <View className="items-center">
                   <View className="relative">
                     <Pressable
-                      onPress={photoUri ? () => setIsPreviewVisible(true) : handlePhotoPress}
+                      onPress={
+                        photoUri
+                          ? () => setIsPreviewVisible(true)
+                          : handlePhotoPress
+                      }
                       className="w-24 h-24 bg-level1 border border-outline items-center justify-center rounded-2xl overflow-hidden active:opacity-80"
                     >
                       {photoUri ? (
@@ -189,7 +187,7 @@ export function NewExercise({
 
                     {photoUri && (
                       <View>
-                        <View className="absolute -bottom-0 -left-0" >
+                        <View className="absolute -bottom-0 -left-0">
                           <Pressable
                             onPress={handlePhotoPress}
                             className="bg-primary p-1.5 rounded-full border-2 border-level2 active:opacity-70 -bottom-0 -left-0"
@@ -221,14 +219,17 @@ export function NewExercise({
                     onChangeText={(val) => {
                       const cleanVal = val.replace(/\d/g, "");
                       setName(cleanVal);
-                      if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
+                      if (errors.name)
+                        setErrors((prev) => ({ ...prev, name: "" }));
                     }}
                     placeholder="Ex: Girar bambolê"
                     className="h-[44px]"
-                    outLineBorderClass={errors.name ? "border-error" : ""} 
+                    outLineBorderClass={errors.name ? "border-error" : ""}
                   />
                   {errors.name ? (
-                    <Text className="text-error text-default-3 mt-1 ml-1">{errors.name}</Text>
+                    <Text className="text-error text-default-3 mt-1 ml-1">
+                      {errors.name}
+                    </Text>
                   ) : null}
                 </View>
 
@@ -260,7 +261,9 @@ export function NewExercise({
                   <Text className="text-muted text-default-1">Tags*</Text>
                   <TagGroup tags={tags} onAddTag={() => {}} />
                   {errors.tag ? (
-                    <Text className="text-error text-default-3 mt-1 ml-1">{errors.tag}</Text>
+                    <Text className="text-error text-default-3 mt-1 ml-1">
+                      {errors.tag}
+                    </Text>
                   ) : null}
                 </View>
 
@@ -289,7 +292,7 @@ export function NewExercise({
         title="Remover ícone?"
         mode="delete"
       />
-      
+
       <Modal
         visible={isPreviewVisible}
         transparent
