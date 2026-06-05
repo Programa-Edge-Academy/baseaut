@@ -13,7 +13,7 @@ AS $$
 DECLARE
   -- Armazena o aluno vinculado ao formulário
   v_aluno_id UUID;
-
+  v_equipe_id UUID;
   -- Armazena o JSON de ajuda com segurança
   -- Fica NULL para itens adiados/não realizados
   v_valor_ajuda JSONB := NULL;
@@ -21,8 +21,8 @@ BEGIN
   ------------------------------------------------------------------
   -- 1) Buscar o aluno_id do formulário
   ------------------------------------------------------------------
-  SELECT aluno_id
-    INTO v_aluno_id
+  SELECT aluno_id, equipe_id
+    INTO v_aluno_id, v_equipe_id
   FROM public.formularios
   WHERE id = p_formulario_id;
 
@@ -30,6 +30,9 @@ BEGIN
     RAISE EXCEPTION 'Formulário sem aluno vinculado.';
   END IF;
 
+  IF NOT public.is_team_member(v_equipe_id) THEN
+    RAISE EXCEPTION 'Acesso negado: Você não tem permissão para responder itens desta equipe.';
+  END IF;
   ------------------------------------------------------------------
   -- 2) Validar apenas quando o item foi respondido
   ------------------------------------------------------------------
@@ -74,7 +77,7 @@ BEGIN
   VALUES (
     p_formulario_id,
     p_pergunta_id,
-    p_escore_bruto::TEXT,
+    CASE WHEN p_status = 'respondido' THEN p_escore_bruto::TEXT ELSE NULL END,
     v_valor_ajuda,
     p_status::status_item_resposta,
     now(),
