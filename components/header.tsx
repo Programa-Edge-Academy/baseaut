@@ -2,16 +2,17 @@ import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { colors } from "@/assets/colors";
 import { supabase } from "@/lib/supabase";
 import { usePathname, useRouter } from "expo-router";
-import { ArrowLeft, Settings, Users, X } from "lucide-react-native";
+import { ArrowLeft, Save, Settings, Users, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SvgXml } from "react-native-svg";
 
 type HeaderProps = {
-  variant?: "default" | "back" | "finish" | "finishEngagement";
+  variant?: "default" | "back" | "finish" | "finishEngagement" | "form";
   onPressBack?: () => void;
   onPressFinish?: () => void;
+  onPressSave?: () => void;
 };
 
 const styles = StyleSheet.create({
@@ -29,6 +30,7 @@ export function Header({
   variant = "default",
   onPressBack,
   onPressFinish,
+  onPressSave,
 }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -56,10 +58,11 @@ export function Header({
     fetchUserRole();
   }, []);
 
-  const showBack = ["back", "finish", "finishEngagement"].includes(variant);
+  const showBack = ["back", "finish", "finishEngagement", "form"].includes(variant);
   const showDefaultActions = variant === "default";
   const showFinishError = variant === "finish";
   const showFinishExtra = variant === "finishEngagement";
+  const showFormSave = variant === "form";
 
   const handleLogoPress = () => {
     if (pathname !== "/students") {
@@ -96,6 +99,16 @@ export function Header({
               >
                 <X color={colors.extra} size={24} />
                 <Text className="text-extra text-default-1 ml-2">Finalizar</Text>
+              </Pressable>
+            )}
+
+            {showFormSave && (
+              <Pressable
+                onPress={onPressSave}
+                className="flex-row items-center px-4 py-2.5 rounded-2xl bg-primary shadow-primaryShadow active:opacity-70"
+              >
+                <Save color="#FFFFFF" size={20} />
+                <Text className="text-white text-default-1 ml-2">Salvar</Text>
               </Pressable>
             )}
           </View>
