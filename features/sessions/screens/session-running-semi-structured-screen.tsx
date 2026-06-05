@@ -4,7 +4,10 @@ import { PageHeader } from "@/components/page-header";
 import { ActivityResultModal } from "@/features/exercises/components/activity-result-modal";
 import { StartActivity } from "@/features/exercises/components/start-activity";
 import { Stopwatch } from "@/features/exercises/components/stopwatch";
-import { FinishSessionModal, DEFAULT_FINISH_MOTIVOS } from "@/features/sessions/components/finish-session-modal";
+import {
+  DEFAULT_FINISH_MOTIVOS,
+  FinishSessionModal,
+} from "@/features/sessions/components/finish-session-modal";
 import { SessionExercise } from "@/features/sessions/screens/session-running-screen";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { CheckCircle2, ChevronRight, Split } from "lucide-react-native";
@@ -15,14 +18,19 @@ type ExerciseStage = "ready" | "running";
 
 export function SessionRunningSemiStructuredScreen() {
   const router = useRouter();
-  const { queue, studentName } = useLocalSearchParams<{ queue: string; studentName: string }>();
+  const { queue, studentName } = useLocalSearchParams<{
+    queue: string;
+    studentName: string;
+  }>();
 
   const exercises: SessionExercise[] = queue ? JSON.parse(queue) : [];
   const safeStudentName = studentName || "Aluno";
 
-  const [activeExercise, setActiveExercise] = useState<SessionExercise | null>(null);
+  const [activeExercise, setActiveExercise] = useState<SessionExercise | null>(
+    null,
+  );
   const [stage, setStage] = useState<ExerciseStage>("ready");
-  
+
   const [historicoExercicios, setHistoricoExercicios] = useState<
     Record<string, "concluido" | "nao_realizada" | "adiado">
   >({});
@@ -41,13 +49,29 @@ export function SessionRunningSemiStructuredScreen() {
     toastTranslateY.setValue(20);
 
     Animated.parallel([
-      Animated.timing(toastOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
-      Animated.timing(toastTranslateY, { toValue: 0, duration: 350, useNativeDriver: true }),
+      Animated.timing(toastOpacity, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+      }),
+      Animated.timing(toastTranslateY, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+      }),
     ]).start(() => {
       setTimeout(() => {
         Animated.parallel([
-          Animated.timing(toastOpacity, { toValue: 0, duration: 350, useNativeDriver: true }),
-          Animated.timing(toastTranslateY, { toValue: 20, duration: 350, useNativeDriver: true }),
+          Animated.timing(toastOpacity, {
+            toValue: 0,
+            duration: 350,
+            useNativeDriver: true,
+          }),
+          Animated.timing(toastTranslateY, {
+            toValue: 20,
+            duration: 350,
+            useNativeDriver: true,
+          }),
         ]).start(() => setShowSuccessToast(false));
       }, 2500);
     });
@@ -59,35 +83,55 @@ export function SessionRunningSemiStructuredScreen() {
   };
 
   const handleStop = (elapsed: number) => {
-    const minutes = Math.floor(elapsed / 60).toString().padStart(2, "0");
+    const minutes = Math.floor(elapsed / 60)
+      .toString()
+      .padStart(2, "0");
     const seconds = (elapsed % 60).toString().padStart(2, "0");
     setElapsedTimeStr(`${minutes}:${seconds}`);
     setIsResultModalOpen(true);
   };
 
   const handleResult = (status: "concluido" | "nao_realizada" | "adiado") => {
-    if (activeExercise) {
-      setHistoricoExercicios((prev) => ({ ...prev, [activeExercise.id]: status }));
-    }
+    if (!activeExercise) return;
+
+    const novoHistorico = { ...historicoExercicios, [activeExercise.id]: status };
+    setHistoricoExercicios(novoHistorico);
+    
     setIsResultModalOpen(false);
-    setActiveExercise(null);
     triggerToast();
+
+    const pendentes = exercises.filter((ex) => !novoHistorico[ex.id]);
+
+    if (pendentes.length === 0) {
+      
+      router.replace({
+        pathname: "/session/completed",
+        params: { 
+          type: "semi-structured", 
+          studentName: safeStudentName,
+          fullCircuit: JSON.stringify(exercises), 
+          queue: JSON.stringify([]) 
+        },
+      });
+    } else {
+      setActiveExercise(null);
+    }
   };
 
   const handleFinishSession = (motivo: string) => {
     setIsFinishOpen(false);
-    
+
     const filaDePendentes = exercises.filter(
-      (ex) => historicoExercicios[ex.id] !== "concluido"
+      (ex) => historicoExercicios[ex.id] !== "concluido",
     );
 
     router.push({
       pathname: "/session/completed",
-      params: { 
-        type: "semi-structured", 
+      params: {
+        type: "semi-structured",
         studentName: safeStudentName,
-        fullCircuit: JSON.stringify(exercises), 
-        queue: JSON.stringify(filaDePendentes)  
+        fullCircuit: JSON.stringify(exercises),
+        queue: JSON.stringify(filaDePendentes),
       },
     });
   };
@@ -132,7 +176,10 @@ export function SessionRunningSemiStructuredScreen() {
     return (
       <View className="flex-1">
         <View className="left-6 top-4 w-[264px] mb-8">
-          <PageHeader title={`Sessão de ${safeStudentName}`} subtitle="Circuito Livre" />
+          <PageHeader
+            title={`Sessão de ${safeStudentName}`}
+            subtitle="Circuito Livre"
+          />
         </View>
 
         <View className="mx-5 rounded-2xl bg-level1 border border-primary p-5">
@@ -158,22 +205,30 @@ export function SessionRunningSemiStructuredScreen() {
               return (
                 <Pressable
                   key={exercise.id}
+                  disabled={isConcluido}
                   className={`flex-row items-center justify-between rounded-2xl border px-5 py-4 ${
-                    isConcluido ? "bg-[#34C759]/10 border-[#34C759]" : "bg-level2 border-outline"
+                    isConcluido
+                      ? "bg-[#34C759]/10 border-[#34C759] opacity-70"
+                      : "bg-level2 border-outline"
                   }`}
                   onPress={() => handleSelectExercise(exercise)}
                 >
                   <View className="flex-1 mr-4">
-                    <Text className={`text-base font-medium leading-5 ${isConcluido ? "text-[#34C759]" : "text-white"}`}>
+                    <Text
+                      className={`text-base font-medium leading-5 ${isConcluido ? "text-[#34C759]" : "text-white"}`}
+                    >
                       {exercise.name}
                     </Text>
                     {exercise.description && (
-                      <Text className={`text-sm font-medium leading-5 mt-1 ${isConcluido ? "text-[#34C759]/80" : "text-muted"}`} numberOfLines={2}>
+                      <Text
+                        className={`text-sm font-medium leading-5 mt-1 ${isConcluido ? "text-[#34C759]/80" : "text-muted"}`}
+                        numberOfLines={2}
+                      >
                         {exercise.description}
                       </Text>
                     )}
                   </View>
-                  
+
                   {isConcluido ? (
                     <CheckCircle2 color="#34C759" size={24} />
                   ) : (
@@ -196,7 +251,10 @@ export function SessionRunningSemiStructuredScreen() {
         onPressFinish={() => setIsFinishOpen(true)}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         {activeExercise ? renderExecutionView() : renderListView()}
       </ScrollView>
 
@@ -245,7 +303,14 @@ export function SessionRunningSemiStructuredScreen() {
           }}
         >
           <CheckCircle2 size={20} color="#34C759" strokeWidth={3} />
-          <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: "#fff", flex: 1 }}>
+          <Text
+            style={{
+              fontFamily: "Inter-Medium",
+              fontSize: 14,
+              color: "#fff",
+              flex: 1,
+            }}
+          >
             Registro atualizado
           </Text>
         </Animated.View>
