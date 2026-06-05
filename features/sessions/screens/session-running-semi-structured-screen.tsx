@@ -76,9 +76,19 @@ export function SessionRunningSemiStructuredScreen() {
 
   const handleFinishSession = (motivo: string) => {
     setIsFinishOpen(false);
+    
+    const filaDePendentes = exercises.filter(
+      (ex) => historicoExercicios[ex.id] !== "concluido"
+    );
+
     router.push({
       pathname: "/session/completed",
-      params: { type: "semi-structured", studentName: safeStudentName },
+      params: { 
+        type: "semi-structured", 
+        studentName: safeStudentName,
+        fullCircuit: JSON.stringify(exercises), 
+        queue: JSON.stringify(filaDePendentes)  
+      },
     });
   };
 
