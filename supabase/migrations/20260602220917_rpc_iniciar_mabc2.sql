@@ -1,0 +1,133 @@
+-- ════════════════════════════════════════════════════════════════════
+-- RPC — Iniciar Avaliação MABC-2 (rpc_iniciar_mabc2)
+-- ════════════════════════════════════════════════════════════════════
+-- Objetivo: Gerar uma nova instância de avaliação MABC-2 no banco a
+-- partir do ID do aluno e do avaliador. Calcula a faixa etária,
+-- localiza o template correto e retorna o formulario_id recém-criado
+-- junto do array de itens prontos para a UI renderizar a prova.
+--
+-- Critérios atendidos:
+--   ✓ Passo 1 — Busca do Aluno: SELECT da data_nascimento pelo
+--               p_aluno_id, com RAISE EXCEPTION se não encontrado
+--   ✓ Passo 2 — Cálculo de Idade: usa DATE_PART('year', AGE(...))
+--               para obter a idade exata em anos
+--   ✓ Passo 3 — Determinação da Faixa: CASE (3–6 = faixa 1;
+--               7–10 = faixa 2; 11–16 = faixa 3) com RAISE EXCEPTION
+--               se idade estiver fora do intervalo suportado
+--   ✓ Passo 4 — Busca do Template: localiza em formularios onde
+--               tipo = 'mabc2', protegido = TRUE e
+--               metadados->>'faixa_mabc' = faixa calculada
+--   ✓ Passo 5 — Inserção da Instância: INSERT em formularios com
+--               protegido = FALSE e template_origem_id apontando para
+--               o template base; equipe_id vindo do aluno
+--   ✓ Passo 6 — Montagem dos Itens: jsonb_agg das perguntas do
+--               template (não da instância), ordenadas por ordem
+--   ✓ Passo 7 — Retorno: JSONB com formulario_id e array itens
+-- ════════════════════════════════════════════════════════════════════
+
+CREATE OR REPLACE FUNCTION rpc_iniciar_mabc2(
+    p_aluno_id     UUID,
+    p_avaliador_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_data_nascimento DATE;
+    v_equipe_id       UUID;
+    v_idade           INT;
+    v_faixa           INT;
+    v_template_id     UUID;
+    v_formulario_id   UUID;
+    v_itens           JSONB;
+BEGIN
+    -- 1. Buscar data de nascimento e equipe do aluno
+    SELECT data_nascimento, equipe_id
+    INTO v_data_nascimento, v_equipe_id
+    FROM alunos
+    WHERE id = p_aluno_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Aluno não encontrado: %', p_aluno_id;
+    END IF;
+
+    -- 2. Calcular idade
+    v_idade := DATE_PART('year', AGE(v_data_nascimento));
+
+    -- 3. Determinar faixa
+    v_faixa := CASE
+        WHEN v_idade BETWEEN 3  AND 6  THEN 1
+        WHEN v_idade BETWEEN 7  AND 10 THEN 2
+        WHEN v_idade BETWEEN 11 AND 16 THEN 3
+        ELSE NULL
+    END;
+
+    IF v_faixa IS NULL THEN
+        RAISE EXCEPTION 'Idade % fora do intervalo suportado pelo MABC-2 (3–16 anos)', v_idade;
+    END IF;
+
+    -- 4. Buscar template da faixa
+    SELECT id
+    INTO v_template_id
+    FROM formularios
+    WHERE tipo = 'mabc2'
+      AND protegido = TRUE
+      AND metadados->>'faixa_mabc' = v_faixa::TEXT;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Template MABC-2 não encontrado para faixa %', v_faixa;
+    END IF;
+
+    -- 5. Inserir nova instância
+    INSERT INTO formularios (
+        titulo,
+        descricao,
+        tipo,
+        equipe_id,
+        ativo,
+        aluno_id,
+        avaliador_id,
+        protegido,
+        template_origem_id,
+        metadados
+    )
+    SELECT
+        f.titulo,
+        f.descricao,
+        f.tipo,
+        v_equipe_id,
+        TRUE,
+        p_aluno_id,
+        p_avaliador_id,
+        FALSE,
+        v_template_id,
+        f.metadados
+    FROM formularios f
+    WHERE f.id = v_template_id
+    RETURNING id INTO v_formulario_id;
+
+    -- 6. Montar array de itens do template
+    SELECT jsonb_agg(
+        jsonb_build_object(
+            'id',             p.id,
+            'texto_pergunta', p.texto_pergunta,
+            'tipo_resposta',  p.tipo_resposta,
+            'opcoes',         p.opcoes,
+            'obrigatoria',    p.obrigatoria,
+            'ordem',          p.ordem
+        )
+        ORDER BY p.ordem
+    )
+    INTO v_itens
+    FROM perguntas p
+    WHERE p.formulario_id = v_template_id;
+
+    -- 7. Retornar resultado
+    RETURN jsonb_build_object(
+        'formulario_id', v_formulario_id,
+        'itens',         v_itens
+    );
+END;
+$$;
