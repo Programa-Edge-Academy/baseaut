@@ -4,20 +4,32 @@ import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { SelectableChip } from "@/components/selectable-chip";
 import { SessionCompletion } from "@/features/exercises/components/session-completion";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { X } from "lucide-react-native";
 import React, { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 
-export function SessionCompletedStructuredScreen() {
+interface SessionCompletedScreenProps {
+  type: string;
+  studentName: string;
+  queue?: string;
+  fullCircuit?: string;
+}
+
+export function SessionCompletedScreen({ type, studentName, queue, fullCircuit }: SessionCompletedScreenProps) {
   const router = useRouter();
-  const { queue, fullCircuit } = useLocalSearchParams<{ queue: string; fullCircuit: string }>();
   
   const filaDePendentes = queue ? JSON.parse(queue) : [];
   const circuitoCompleto = fullCircuit ? JSON.parse(fullCircuit) : [];
 
   const [isRepeatModalOpen, setIsRepeatModalOpen] = useState(false);
   const [selectedRepeatIds, setSelectedRepeatIds] = useState<string[]>([]);
+
+  const isSemiStructured = type === "semi-structured" || type === "free";
+  const temWarnings = type === "structured-warnings" && filaDePendentes.length > 0;
+
+  const subtitleLabel = isSemiStructured ? "Circuito Semi-estruturado" : "Circuito Estruturado";
+  const detailsLabel = `${studentName} · ${subtitleLabel}`;
 
   const handleToggleRepeat = (id: string) => {
     setSelectedRepeatIds((prev) =>
@@ -33,9 +45,10 @@ export function SessionCompletedStructuredScreen() {
     if (exercisesToRepeat.length > 0) {
       setIsRepeatModalOpen(false);
       router.push({
-        pathname: "/session/free",
+        pathname: "/session/semi-structured",
         params: {
           queue: JSON.stringify(exercisesToRepeat),
+          studentName,
         },
       });
     }
@@ -43,30 +56,32 @@ export function SessionCompletedStructuredScreen() {
 
   return (
     <View className="flex-1 bg-level1">
-      <ScrollView>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         <View>
           <Header variant="back" />
 
           <View className="left-6 top-[2%] w-[264px]">
-            <PageHeader title="Sessão de Lucas" subtitle="Circuito 2 · Livre" />
+            <PageHeader title={`Sessão de ${studentName}`} subtitle={subtitleLabel} />
           </View>
+
           <View className="top-[5%] mx-5 rounded-2xl bg-level1 p-5 justify-center items-center">
             <SessionCompletion
-              details={"Lucas · Circuito 1 · Estruturado"}
+              details={detailsLabel}
               className=""
-              statusLabel="Realizadas"
-              hasWarnings={false}
+              statusLabel={isSemiStructured ? "" : "Realizadas"}
+              hasWarnings={temWarnings}
               unrealizedCount={filaDePendentes.length}
-              onBackToStart={function (): void {
+              progress={isSemiStructured ? `${circuitoCompleto.length} atividades realizadas` : "3/3"}
+              onBackToStart={() => {
                 router.replace("/students");
               }}
-              progress={"3/3"}
               onSelectContinuation={(id) => {
                 if (id === "try_unrealized") {
                   router.push({
-                    pathname: "/session/free",
+                    pathname: "/session/semi-structured",
                     params: {
                       queue: JSON.stringify(filaDePendentes),
+                      studentName,
                     },
                   });
                 } else if (id === "repeat_exercise") {
@@ -97,7 +112,7 @@ export function SessionCompletedStructuredScreen() {
                 {circuitoCompleto.map((ex: any) => (
                   <SelectableChip
                     key={ex.id}
-                    label={ex.name}
+                    label={ex.name || ex.title}
                     isSelected={selectedRepeatIds.includes(ex.id)}
                     onToggle={() => handleToggleRepeat(ex.id)}
                   />
@@ -105,7 +120,7 @@ export function SessionCompletedStructuredScreen() {
               </View>
             </ScrollView>
 
-            <View className="p-5 border-t border-outline/30">
+            <View className="p-5 border-t border-t-outline/30">
               <ActionButtons
                 onCancel={() => setIsRepeatModalOpen(false)}
                 onSave={handleConfirmRepeat}
