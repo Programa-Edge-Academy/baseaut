@@ -91,7 +91,9 @@ export function Mabc2RecordFormScreen({
           onDelete?.();
         }}
         title="Excluir registro?"
-        message="Esta ação não pode ser desfeita. O registro MABC-2 será removido permanentemente."
+        message={
+          "Tem certeza que deseja excluir este registro de desenvolvimento motor?\nEsta ação não poderá ser desfeita."
+        }
         mode="delete"
       />
     </View>
