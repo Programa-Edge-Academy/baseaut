@@ -15,7 +15,7 @@ interface SessionCompletionProps {
   progress: string;
   statusLabel?: string;
   hasWarnings?: boolean;
-  unrealizedCount: number;
+  unrealizedCount?: number;
   onSelectContinuation: (id: string) => void;
   onBackToStart: () => void;
   className?: string;
@@ -30,7 +30,7 @@ export function SessionCompletion({
   progress,
   statusLabel = "Realizadas",
   hasWarnings = false,
-  unrealizedCount,
+  unrealizedCount =0,
   onSelectContinuation,
   onBackToStart,
   className = "",

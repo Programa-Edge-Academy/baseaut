@@ -52,14 +52,19 @@ export function ContinuationOptions({
   /**
    * Static list of continuation options shown to the user.
    */
-  const CONTINUATION_OPTIONS = [
-    {
+  const CONTINUATION_OPTIONS: { id: string; title: string; description: string }[] = [];
+
+  if (unrealizedCount > 0) {
+    CONTINUATION_OPTIONS.push({
       id: "try_unrealized",
       title: "Tentar exercício não realizado",
-      description: unrealizedCount === 1 
-        ? "1 exercício não realizado" 
+      description: unrealizedCount === 1
+        ? "1 exercício não realizado"
         : `${unrealizedCount} exercícios não realizados`,
-    },
+    });
+  }
+
+  CONTINUATION_OPTIONS.push(
     {
       id: "repeat_exercise",
       title: "Repetir exercício",
@@ -69,8 +74,8 @@ export function ContinuationOptions({
       id: "do_other",
       title: "Realizar outro exercício",
       description: "Escolher qualquer exercício da equipe",
-    },
-  ];
+    }
+  );
   return (
     <View className={`w-full max-w-md p-4 ${className}`}>
       {/* Container das opções com espaçamento (gap) entre elas */}
