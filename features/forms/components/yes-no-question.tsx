@@ -1,7 +1,7 @@
+import type { ReactNode } from "react";
 import { View } from "react-native";
 import { DefaultButton } from "../../../components/default-button";
 import { YesNoQuestion } from "../types";
-import { FormQuestion } from "./form-question";
 
 /**
  * Props for a yes/no question UI.
@@ -10,12 +10,20 @@ interface Props {
   question: YesNoQuestion;
   value?: any;
   onChange?: (val: any) => void;
+  renderSubQuestion?: (
+    question: NonNullable<YesNoQuestion["subQuestion"]>,
+  ) => ReactNode;
 }
 
 /**
  * Renders a yes/no question with optional conditional sub-question.
  */
-export function YesNoQuestionUI({ question, value, onChange }: Props) {
+export function YesNoQuestionUI({
+  question,
+  value,
+  onChange,
+  renderSubQuestion,
+}: Props) {
   const selected = value as "sim" | "nao" | null;
 
   /**
@@ -54,9 +62,9 @@ export function YesNoQuestionUI({ question, value, onChange }: Props) {
         />
       </View>
 
-      {showSubQuestion && question.subQuestion && (
-        <FormQuestion question={question.subQuestion} isSubQuestion={true} />
-      )}
+      {showSubQuestion &&
+        question.subQuestion &&
+        renderSubQuestion?.(question.subQuestion)}
     </View>
   );
 }
