@@ -61,7 +61,8 @@ export function SessionCompletedScreen({ type, studentName, queue, fullCircuit }
     <View className="flex-1 bg-level1">
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         <View>
-          <Header variant="back" />
+          <Header variant="back" 
+            onPressBack={() => router.replace("/students")} />
 
           <View className="left-6 top-[2%] w-[264px]">
             <PageHeader title={`Sessão de ${studentName}`} subtitle={subtitleLabel} />

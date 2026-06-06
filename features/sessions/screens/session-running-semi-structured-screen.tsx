@@ -249,7 +249,9 @@ export function SessionRunningSemiStructuredScreen() {
     <View className="flex-1 bg-level1">
       <Header
         variant={activeExercise ? "back" : "finish"}
-        onPressBack={() => setActiveExercise(null)}
+        onPressBack={() => 
+          activeExercise ? setActiveExercise(null) : router.replace("/students")
+        }
         onPressFinish={() => setIsFinishOpen(true)}
       />
 
