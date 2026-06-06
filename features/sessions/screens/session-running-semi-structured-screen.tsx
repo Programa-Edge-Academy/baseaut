@@ -246,79 +246,83 @@ export function SessionRunningSemiStructuredScreen() {
   };
 
   return (
-    <View className="flex-1 bg-level1">
-      <Header
-        variant={activeExercise ? "back" : "finish"}
-        onPressBack={() => 
-          activeExercise ? setActiveExercise(null) : router.replace("/students")
-        }
-        onPressFinish={() => setIsFinishOpen(true)}
-      />
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      >
-        {activeExercise ? renderExecutionView() : renderListView()}
-      </ScrollView>
-
-      <FinishSessionModal
-        visible={isFinishOpen}
-        motivos={DEFAULT_FINISH_MOTIVOS}
-        onClose={() => setIsFinishOpen(false)}
-        onConfirm={handleFinishSession}
-      />
-
-      {activeExercise && (
-        <ActivityResultModal
-          visible={isResultModalOpen}
-          exerciseTitle={activeExercise.name}
-          elapsedTime={elapsedTimeStr}
-          onClose={() => setIsResultModalOpen(false)}
-          onDefer={() => handleResult("adiado")}
-          onNotCompleted={(motivo, desc) => handleResult("nao_realizada")}
-          onConfirm={() => handleResult("concluido")}
+    <>
+      <View className="flex-1 bg-level1">
+        <Header
+          variant={activeExercise ? "back" : "finish"}
+          onPressBack={() =>
+            activeExercise
+              ? setActiveExercise(null)
+              : router.replace("/students")
+          }
+          onPressFinish={() => setIsFinishOpen(true)}
         />
-      )}
 
-      {showSuccessToast && (
-        <Animated.View
-          style={{
-            position: "absolute",
-            bottom: 100,
-            left: 20,
-            right: 20,
-            backgroundColor: "rgba(52, 199, 89, 0.25)",
-            borderColor: "#34C759",
-            borderWidth: 1,
-            borderRadius: 15,
-            paddingVertical: 12,
-            paddingHorizontal: 16,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 10,
-            opacity: toastOpacity,
-            transform: [{ translateY: toastTranslateY }],
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.15,
-            shadowRadius: 4,
-            elevation: 4,
-          }}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 40 }}
         >
-          <CheckCircle2 size={20} color="#34C759" strokeWidth={3} />
-          <Text
+          {activeExercise ? renderExecutionView() : renderListView()}
+        </ScrollView>
+
+        <FinishSessionModal
+          visible={isFinishOpen}
+          motivos={DEFAULT_FINISH_MOTIVOS}
+          onClose={() => setIsFinishOpen(false)}
+          onConfirm={handleFinishSession}
+        />
+
+        {activeExercise && (
+          <ActivityResultModal
+            visible={isResultModalOpen}
+            exerciseTitle={activeExercise.name}
+            elapsedTime={elapsedTimeStr}
+            onClose={() => setIsResultModalOpen(false)}
+            onDefer={() => handleResult("adiado")}
+            onNotCompleted={(motivo, desc) => handleResult("nao_realizada")}
+            onConfirm={() => handleResult("concluido")}
+          />
+        )}
+
+        {showSuccessToast && (
+          <Animated.View
             style={{
-              fontFamily: "Inter-Medium",
-              fontSize: 14,
-              color: "#fff",
-              flex: 1,
+              position: "absolute",
+              bottom: 100,
+              left: 20,
+              right: 20,
+              backgroundColor: "rgba(52, 199, 89, 0.25)",
+              borderColor: "#34C759",
+              borderWidth: 1,
+              borderRadius: 15,
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              opacity: toastOpacity,
+              transform: [{ translateY: toastTranslateY }],
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.15,
+              shadowRadius: 4,
+              elevation: 4,
             }}
           >
-            Registro atualizado
-          </Text>
-        </Animated.View>
-      )}
-    </View>
+            <CheckCircle2 size={20} color="#34C759" strokeWidth={3} />
+            <Text
+              style={{
+                fontFamily: "Inter-Medium",
+                fontSize: 14,
+                color: "#fff",
+                flex: 1,
+              }}
+            >
+              Registro atualizado
+            </Text>
+          </Animated.View>
+        )}
+      </View>
+    </>
   );
 }

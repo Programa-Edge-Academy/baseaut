@@ -1,4 +1,3 @@
-import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { FormComponent } from "@/features/forms/components/form-component";
@@ -55,7 +54,11 @@ export type SessionRunningScreenProps = {
   exercises?: SessionExercise[];
   onPressBack?: () => void;
   onFinishSession?: (motivo: string) => void;
-  onCompleteSession?: (hasWarnings: boolean, pendentes: SessionExercise[], todos: SessionExercise[]) => void;
+  onCompleteSession?: (
+    hasWarnings: boolean,
+    pendentes: SessionExercise[],
+    todos: SessionExercise[],
+  ) => void;
 };
 /**
  * Drives a running circuit. Holds the current exercise stage (StartActivity vs
@@ -201,7 +204,9 @@ export function SessionRunningScreen({
       setCurrentIndex(currentIndex + 1);
     } else {
       const pendentes = order.filter(
-        (ex) => historicoAtualizado[ex.id] !== "concluido" && historicoAtualizado[ex.id] !== "adiado"
+        (ex) =>
+          historicoAtualizado[ex.id] !== "concluido" &&
+          historicoAtualizado[ex.id] !== "adiado",
       );
       const temPendencias = pendentes.length > 0;
 
@@ -254,7 +259,9 @@ export function SessionRunningScreen({
     }
 
     const pendentes = order.filter(
-      (ex) => historicoExercicios[ex.id] !== "concluido" && historicoExercicios[ex.id] !== "adiado"
+      (ex) =>
+        historicoExercicios[ex.id] !== "concluido" &&
+        historicoExercicios[ex.id] !== "adiado",
     );
     const temPendencias = pendentes.length > 0;
 
@@ -264,158 +271,160 @@ export function SessionRunningScreen({
   };
 
   return (
-    <View className="flex-1 bg-level1">
-      <Header
-        variant={hasAdvanced ? "finish" : "back"}
-        onPressBack={onPressBack}
-        onPressFinish={() => setIsFinishOpen(true)}
-      />
+    <>
+      <View className="flex-1 bg-level1">
+        <Header
+          variant={hasAdvanced ? "finish" : "back"}
+          onPressBack={onPressBack}
+          onPressFinish={() => setIsFinishOpen(true)}
+        />
 
-      <View className="flex-1">
-        <View className="mx-8 mt-5">
-          <PageHeader
-            mode="execucao"
-            title={`Sessão de ${studentName}`}
-            subtitle={subtitle}
-            totalExercises={total}
-            completedExercises={currentIndex}
-            isExecuting={stage === "running"}
-          />
-        </View>
-
-        <ScrollView
-          className="mt-5 px-8"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 24 }}
-        >
-          {stage === "ready" ? (
-            <StartActivity
-              title={currentExercise.name}
-              subtitle={currentExercise.description}
-              mediaUrls={currentExercise.mediaUrls ?? []}
-              onStart={handleStart}
-              onStartAndRecord={handleStartAndRecord}
-              onPressInfo={() => setIsReorderOpen(true)}
+        <View className="flex-1">
+          <View className="mx-8 mt-5">
+            <PageHeader
+              mode="execucao"
+              title={`Sessão de ${studentName}`}
+              subtitle={subtitle}
+              totalExercises={total}
+              completedExercises={currentIndex}
+              isExecuting={stage === "running"}
             />
-          ) : (
-            <Stopwatch
-              title={currentExercise.name}
-              subtitle={currentExercise.description}
-              autoStart
-              variant="form"
-              onPressCrise={() => {
-                /* TODO: register a "crise" event tied to the current exercise. */
-              }}
-              onStop={handleStop}
-              onPressCorner={() => {
-                // Error text
-                throw new Error(
-                  "Módulo de formulários (ATA/CARS) pendente de implementação!",
-                );
-              }}
-            />
-          )}
+          </View>
 
-          {/*
+          <ScrollView
+            className="mt-5 px-8"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 24 }}
+          >
+            {stage === "ready" ? (
+              <StartActivity
+                title={currentExercise.name}
+                subtitle={currentExercise.description}
+                mediaUrls={currentExercise.mediaUrls ?? []}
+                onStart={handleStart}
+                onStartAndRecord={handleStartAndRecord}
+                onPressInfo={() => setIsReorderOpen(true)}
+              />
+            ) : (
+              <Stopwatch
+                title={currentExercise.name}
+                subtitle={currentExercise.description}
+                autoStart
+                variant="form"
+                onPressCrise={() => {
+                  /* TODO: register a "crise" event tied to the current exercise. */
+                }}
+                onStop={handleStop}
+                onPressCorner={() => {
+                  // Error text
+                  throw new Error(
+                    "Módulo de formulários (ATA/CARS) pendente de implementação!",
+                  );
+                }}
+              />
+            )}
+
+            {/*
             TODO: form questions section (Contato visual com pessoas, etc.)
             is out of scope here — wire to features/forms once available.
             Placeholder block kept so the layout reflects the design intent.
           */}
-          <FormComponent
-            ref={formRef}
-            formularioId={"00000000-0000-4000-0000-0000000000fc"}
-            sessaoId={sessionId}
-            alunoId={studentId}
+            <FormComponent
+              ref={formRef}
+              formularioId={"00000000-0000-4000-0000-0000000000fc"}
+              sessaoId={sessionId}
+              alunoId={studentId}
+            />
+          </ScrollView>
+        </View>
+
+        <ReorderModal
+          visible={isReorderOpen}
+          items={order}
+          currentIndex={currentIndex}
+          swapIndex={swapIndex}
+          onClose={() => setIsReorderOpen(false)}
+          onItemPress={handleSwapClick}
+        />
+
+        <FinishSessionModal
+          visible={isFinishOpen}
+          motivos={DEFAULT_FINISH_MOTIVOS}
+          onClose={() => setIsFinishOpen(false)}
+          onConfirm={handleConfirmFinish}
+        />
+
+        {isMabc ? (
+          <MabcResultModal
+            visible={isResultModalOpen}
+            exerciseName={currentExercise.name}
+            circuitType={circuitType as "mabc_1" | "mabc_2" | "mabc_3"}
+            onClose={() => setIsResultModalOpen(false)}
+            onDefer={() => {
+              setIsResultModalOpen(false);
+              advanceSession("adiado");
+            }}
+            onNotCompleted={handleMabcNotCompleted}
+            onConfirm={handleMabcConfirm}
           />
-        </ScrollView>
-      </View>
+        ) : (
+          <ActivityResultModal
+            visible={isResultModalOpen}
+            exerciseTitle={currentExercise.name}
+            elapsedTime={elapsedTimeStr}
+            onClose={() => setIsResultModalOpen(false)}
+            onDefer={handleActivityDefer}
+            onNotCompleted={handleActivityNotCompleted}
+            onConfirm={(result) => {
+              console.log("[ActivityResult]", result);
+              setIsResultModalOpen(false);
+              triggerToast();
+              advanceSession("concluido");
+            }}
+          />
+        )}
 
-      <ReorderModal
-        visible={isReorderOpen}
-        items={order}
-        currentIndex={currentIndex}
-        swapIndex={swapIndex}
-        onClose={() => setIsReorderOpen(false)}
-        onItemPress={handleSwapClick}
-      />
-
-      <FinishSessionModal
-        visible={isFinishOpen}
-        motivos={DEFAULT_FINISH_MOTIVOS}
-        onClose={() => setIsFinishOpen(false)}
-        onConfirm={handleConfirmFinish}
-      />
-
-      {isMabc ? (
-        <MabcResultModal
-          visible={isResultModalOpen}
-          exerciseName={currentExercise.name}
-          circuitType={circuitType as "mabc_1" | "mabc_2" | "mabc_3"}
-          onClose={() => setIsResultModalOpen(false)}
-          onDefer={() => {
-            setIsResultModalOpen(false);
-            advanceSession("adiado");
-          }}
-          onNotCompleted={handleMabcNotCompleted}
-          onConfirm={handleMabcConfirm}
-        />
-      ) : (
-        <ActivityResultModal
-          visible={isResultModalOpen}
-          exerciseTitle={currentExercise.name}
-          elapsedTime={elapsedTimeStr}
-          onClose={() => setIsResultModalOpen(false)}
-          onDefer={handleActivityDefer}
-          onNotCompleted={handleActivityNotCompleted}
-          onConfirm={(result) => {
-            console.log("[ActivityResult]", result);
-            setIsResultModalOpen(false);
-            triggerToast();
-            advanceSession("concluido");
-          }}
-        />
-      )}
-
-      {showSuccessToast && (
-        <Animated.View
-          style={{
-            position: "absolute",
-            bottom: 100,
-            left: 20,
-            right: 20,
-            backgroundColor: "rgba(52, 199, 89, 0.25)",
-            borderColor: "#34C759",
-            borderWidth: 1,
-            borderRadius: 15,
-            paddingVertical: 12,
-            paddingHorizontal: 16,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 10,
-            opacity: toastOpacity,
-            transform: [{ translateY: toastTranslateY }],
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.15,
-            shadowRadius: 4,
-            elevation: 4,
-          }}
-        >
-          <Check size={20} color="#34C759" strokeWidth={3} />
-          <Text
+        {showSuccessToast && (
+          <Animated.View
             style={{
-              fontFamily: "Inter-Medium",
-              fontSize: 14,
-              color: "#fff",
-              flex: 1,
+              position: "absolute",
+              bottom: 100,
+              left: 20,
+              right: 20,
+              backgroundColor: "rgba(52, 199, 89, 0.25)",
+              borderColor: "#34C759",
+              borderWidth: 1,
+              borderRadius: 15,
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              opacity: toastOpacity,
+              transform: [{ translateY: toastTranslateY }],
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.15,
+              shadowRadius: 4,
+              elevation: 4,
             }}
           >
-            Registro atualizado
-          </Text>
-        </Animated.View>
-      )}
+            <Check size={20} color="#34C759" strokeWidth={3} />
+            <Text
+              style={{
+                fontFamily: "Inter-Medium",
+                fontSize: 14,
+                color: "#fff",
+                flex: 1,
+              }}
+            >
+              Registro atualizado
+            </Text>
+          </Animated.View>
+        )}
 
-      <Footer />
-    </View>
+        
+      </View>
+    </>
   );
 }
