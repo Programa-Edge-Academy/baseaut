@@ -220,6 +220,8 @@ export function NewStudent({
       newErrors.fullName = "Nome é obrigatório";
     } else if (nameTrimmed.length < 3) {
       newErrors.fullName = "No mínimo 3 caracteres";
+    } else if (nameTrimmed.length > 100) {
+      newErrors.fullName = "O nome deve ter no máximo 100 caracteres";
     } else if (!nameTrimmed.includes(" ")) {
       newErrors.fullName = "Informe nome e sobrenome";
     }
@@ -246,6 +248,10 @@ export function NewStudent({
           dateObj > today
         ) {
           newErrors.birthDate = "Data irreal ou no futuro";
+        }
+
+        if (observations.length > 250) {
+          newErrors.observations = "O campo deve ter no máximo 250 caracteres";
         }
       }
     }
@@ -587,13 +593,24 @@ export function NewStudent({
 
               <View className="w-full gap-1">
                 <Text className="text-default-2 text-muted">Observações</Text>
-                <DefaultTextInput
-                  placeholder="Observações adicionais (opcionais)"
-                  className="h-11 rounded-[15px]"
-                  maxLength={100}
-                  value={observations}
-                  onChangeText={setObservations}
-                />
+                  <DefaultTextInput
+                    placeholder="Observações adicionais (opcionais)"
+                    className="h-11 rounded-[15px]"
+                    maxLength={250} // Garante o limite no componente
+                    value={observations}
+                    onChangeText={setObservations} // Adicione aqui a limpeza do erro se necessário
+                    outLineBorderClass={errors.observations ? "border-error" : "border-outline"} // Adicione borda de erro
+                  />
+                  {/* Contador visual abaixo do input */}
+                  <Text className="text-muted text-default-3 text-right">
+                    {observations.length}/250
+                  </Text>
+                  {/* Exibição da mensagem de erro se houver */}
+                  {errors.observations && (
+                    <Text className="mt-1 text-default-3 text-error">
+                      {errors.observations}
+                    </Text>
+                  )}
               </View>
 
               <ActionButtons
