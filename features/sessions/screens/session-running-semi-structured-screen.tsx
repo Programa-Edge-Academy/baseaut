@@ -94,23 +94,25 @@ export function SessionRunningSemiStructuredScreen() {
   const handleResult = (status: "concluido" | "nao_realizada" | "adiado") => {
     if (!activeExercise) return;
 
-    const novoHistorico = { ...historicoExercicios, [activeExercise.id]: status };
+    const novoHistorico = {
+      ...historicoExercicios,
+      [activeExercise.id]: status,
+    };
     setHistoricoExercicios(novoHistorico);
-    
+
     setIsResultModalOpen(false);
     triggerToast();
 
     const pendentes = exercises.filter((ex) => !novoHistorico[ex.id]);
 
     if (pendentes.length === 0) {
-      
       router.replace({
         pathname: "/session/completed",
-        params: { 
-          type: "semi-structured", 
+        params: {
+          type: "semi-structured",
           studentName: safeStudentName,
-          fullCircuit: JSON.stringify(exercises), 
-          queue: JSON.stringify([]) 
+          fullCircuit: JSON.stringify(exercises),
+          queue: JSON.stringify([]),
         },
       });
     } else {
@@ -121,9 +123,10 @@ export function SessionRunningSemiStructuredScreen() {
   const handleFinishSession = (motivo: string) => {
     setIsFinishOpen(false);
 
-    const filaDePendentes = exercises.filter(
-      (ex) => historicoExercicios[ex.id] !== "concluido",
-    );
+    const filaDePendentes = exercises.filter((ex) => {
+      const status = historicoExercicios[ex.id];
+      return status !== "concluido" && status !== "adiado";
+    });
 
     router.push({
       pathname: "/session/completed",
@@ -200,8 +203,7 @@ export function SessionRunningSemiStructuredScreen() {
           <View className="gap-2.5">
             {exercises.map((exercise) => {
               const status = historicoExercicios[exercise.id];
-              const isConcluido = status === "concluido";
-
+              const isConcluido = status === "concluido" || status === "adiado";
               return (
                 <Pressable
                   key={exercise.id}
