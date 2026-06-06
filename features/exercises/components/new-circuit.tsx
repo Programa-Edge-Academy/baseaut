@@ -28,6 +28,26 @@ interface NewCircuitProps {
   }) => Promise<void>;
 }
 
+const SwapItem = React.memo(({ item, index, isSelected, onPress }: { 
+  item: Exercise, 
+  index: number, 
+  isSelected: boolean, 
+  onPress: () => void 
+}) => (
+  <Pressable 
+    style={[STYLES.swapItem, isSelected && STYLES.swapItemSelected]}
+    onPress={onPress}
+  >
+    <View style={[STYLES.swapNumberBox, isSelected && STYLES.swapNumberBoxSelected]}>
+      <Text style={STYLES.swapNumberText}>{index + 1}</Text>
+    </View>
+    <Text style={[STYLES.swapItemName, isSelected && STYLES.swapItemNameSelected]} numberOfLines={2}>
+      {item.name}
+    </Text>
+    {isSelected && <Text style={STYLES.swapHelperText}>Trocar com...</Text>}
+  </Pressable>
+));
+
 const STYLES = StyleSheet.create({
   swapItem: {
     flexDirection: 'row',
@@ -139,22 +159,22 @@ export function NewCircuit({
     });
   };
 
-  const handleSwapClick = (index: number) => {
-    if (swapIndex === null) {
-      setSwapIndex(index);
-    } else if (swapIndex === index) {
-      setSwapIndex(null);
-    } else {
-      setOrderedExercises((prev) => {
-        const newList = [...prev];
-        const temp = newList[swapIndex];
-        newList[swapIndex] = newList[index];
-        newList[index] = temp;
-        return newList;
-      });
-      setSwapIndex(null);
-    }
-  };
+const handleSwapClick = React.useCallback((index: number) => {
+  if (swapIndex === null) {
+    setSwapIndex(index);
+  } else if (swapIndex === index) {
+    setSwapIndex(null);
+  } else {
+    setOrderedExercises((prev) => {
+      const newList = [...prev];
+      const temp = newList[swapIndex];
+      newList[swapIndex] = newList[index];
+      newList[index] = temp;
+      return newList;
+    });
+    setSwapIndex(null);
+  }
+}, [swapIndex]);
 
   const handleValidationAndSave = async () => {
     let isValid = true;
@@ -299,30 +319,15 @@ export function NewCircuit({
                   Toque em um exercício e depois em outro para trocar suas posições.
                 </Text>
 
-                {orderedExercises.map((item, index) => {
-                  const isSelectedForSwap = swapIndex === index;
-                  
-                  return (
-                    <Pressable 
-                      key={item.id}
-                      style={[STYLES.swapItem, isSelectedForSwap && STYLES.swapItemSelected]}
-                      onPress={() => handleSwapClick(index)}
-                    >
-                      <View style={[STYLES.swapNumberBox, isSelectedForSwap && STYLES.swapNumberBoxSelected]}>
-                        <Text style={STYLES.swapNumberText}>{index + 1}</Text>
-                      </View>
-                      <Text 
-                        style={[STYLES.swapItemName, isSelectedForSwap && STYLES.swapItemNameSelected]} 
-                        numberOfLines={2}
-                      >
-                        {item.name}
-                      </Text>
-                      {isSelectedForSwap && (
-                        <Text style={STYLES.swapHelperText}>Trocar com...</Text>
-                      )}
-                    </Pressable>
-                  );
-                })}
+                {orderedExercises.map((item, index) => (
+                  <SwapItem 
+                    key={item.id}
+                    item={item}
+                    index={index}
+                    isSelected={swapIndex === index}
+                    onPress={() => handleSwapClick(index)}
+                  />
+                ))}
               </View>
             )}
           </ScrollView>
