@@ -5,12 +5,12 @@ import { DefaultButton } from "@/components/default-button";
 import { ImageUp, Pencil, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
-    Image,
-    Modal,
-    Pressable,
-    Text,
-    useWindowDimensions,
-    View,
+  Image,
+  Modal,
+  Pressable,
+  Text,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { TagProps } from "./exercise-tag";
@@ -61,14 +61,14 @@ export function NewExercise({
   const [deletePhotoModalVisible, setDeletePhotoModalVisible] = useState(false);
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [errors, setErrors] = useState({ name: "", tag: "" });
+  const [errors, setErrors] = useState({ name: "", tag: "", duration: "" });
 
   useEffect(() => {
     if (!visible) return;
     setDeletePhotoModalVisible(false);
     setIsPreviewVisible(false);
     setIsSaving(false);
-    setErrors({ name: "", tag: "" });
+    setErrors({ name: "", tag: "", duration: "" });
     setName(initialData?.name ?? "");
     setDescription(initialData?.description ?? "");
     setDurationInput(
@@ -100,7 +100,10 @@ export function NewExercise({
    */
   const handleSave = () => {
     let isValid = true;
-    const newErrors = { name: "", tag: "" };
+    const newErrors = { name: "", tag: "", duration: "" };
+
+    const parsed = parseInt(durationInput, 10);
+    const seconds = Number.isNaN(parsed) ? 0 : parsed;
 
     if (!name.trim()) {
       newErrors.name = "Este campo é obrigatório";
@@ -112,11 +115,22 @@ export function NewExercise({
       isValid = false;
     }
 
+    if (name.trim().length > 100) {
+      newErrors.name = "O nome deve ter no máximo 100 caracteres";
+      isValid = false;
+    }
+
+    if (durationInput.trim()) {
+      if (Number.isNaN(parsed) || seconds < 60 || seconds > 300) {
+        newErrors.duration = "A duração deve estar entre 60 e 300 segundos";
+        isValid = false;
+      }
+    }
+
     setErrors(newErrors);
 
     if (!isValid || isSaving) return;
     setIsSaving(true);
-    const seconds = parseInt(durationInput, 10) || 0;
 
     onSave(
       {
@@ -225,6 +239,7 @@ export function NewExercise({
                     placeholder="Ex: Girar bambolê"
                     className="h-[44px]"
                     outLineBorderClass={errors.name ? "border-error" : ""}
+                    maxLength={100}
                   />
                   {errors.name ? (
                     <Text className="text-error text-default-3 mt-1 ml-1">
@@ -254,7 +269,13 @@ export function NewExercise({
                     keyboardType="numeric"
                     placeholder="Ex: 120"
                     className="h-[44px]"
+                    maxLength={3}
                   />
+                  {errors.duration ? (
+                    <Text className="text-error text-default-3 mt-1 ml-1">
+                      {errors.duration}
+                    </Text>
+                  ) : null}
                 </View>
 
                 <View className="gap-[2px]">
