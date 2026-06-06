@@ -79,7 +79,7 @@ export function useExercises() {
 
       if (data) {
         const {
-          data: { publicUrl }
+          data: { publicUrl },
         } = supabase.storage.from("exercicio-media").getPublicUrl(filePath);
         return publicUrl;
       }
@@ -139,7 +139,10 @@ export function useExercises() {
   /**
    * Creates a new exercise.
    */
-  const addExercise = async (data: NewExerciseData, photoUri?: string | null) => {
+  const addExercise = async (
+    data: NewExerciseData,
+    photoUri?: string | null,
+  ) => {
     setIsLoading(true);
     try {
       if (!equipeId) throw new Error("ID da equipe não identificado.");
@@ -178,7 +181,11 @@ export function useExercises() {
   /**
    * Updates an existing exercise.
    */
-  const updateExercise = async (id: string, data: NewExerciseData, photoUri?: string | null) => {
+  const updateExercise = async (
+    id: string,
+    data: NewExerciseData,
+    photoUri?: string | null,
+  ) => {
     setIsLoading(true);
     try {
       const payload: any = {
@@ -268,6 +275,25 @@ export function useExercises() {
     }
   };
 
+  /**
+   * Returns how many circuits reference the given exercise.
+   */
+  async function getExerciseCircuitCount(id: string) {
+    try {
+      const { data, count, error } = await supabase
+        .from("itens_circuito")
+        .select("circuito_id", { count: "exact" })
+        .eq("exercicio_id", id);
+
+      if (error) throw error;
+      // prefer count when available, fallback to data length
+      return typeof count === "number" ? count : data ? data.length : 0;
+    } catch (err) {
+      console.error("Erro ao verificar vínculos do exercício:", err);
+      return 0;
+    }
+  }
+
   return {
     exercises,
     isLoading,
@@ -276,6 +302,7 @@ export function useExercises() {
     addExercise,
     updateExercise,
     deleteExercise,
+    getExerciseCircuitCount,
     duplicateExercise,
   };
 }

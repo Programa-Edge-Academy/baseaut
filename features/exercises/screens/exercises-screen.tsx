@@ -9,9 +9,9 @@ import { ListCard } from "@/components/list-card";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
 import { SectionField } from "@/components/section-field";
-import { Dumbbell, PhoneOff } from "lucide-react-native";
+import { Dumbbell } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, Text, View, Image } from "react-native";
+import { ActivityIndicator, Image, Text, View } from "react-native";
 import { NewExercise, NewExerciseData } from "../components/new-exercise";
 import { Exercise, useExercises } from "../hooks/use-exercises";
 
@@ -61,6 +61,7 @@ export function ExercisesScreen() {
     addExercise,
     updateExercise,
     deleteExercise,
+    getExerciseCircuitCount,
     duplicateExercise,
   } = useExercises();
 
@@ -70,6 +71,9 @@ export function ExercisesScreen() {
   const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(
     null,
   );
+  const [deleteModalMessage, setDeleteModalMessage] = useState<
+    string | undefined
+  >(undefined);
   const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(["all"]);
 
@@ -143,6 +147,25 @@ export function ExercisesScreen() {
       console.error("Erro ao excluir exercício:", caught);
     } finally {
       setExerciseToDelete(null);
+      setDeleteModalMessage(undefined);
+    }
+  };
+
+  const handleDeleteRequest = async (exercise: Exercise) => {
+    try {
+      const count = await getExerciseCircuitCount(exercise.id);
+      setExerciseToDelete(exercise);
+      if (count > 0) {
+        setDeleteModalMessage(
+          `Este exercício está vinculado a ${count} circuito${count > 1 ? "s" : ""}. A exclusão pode impactar esses circuitos e não pode ser desfeita.`,
+        );
+      } else {
+        setDeleteModalMessage(undefined);
+      }
+    } catch (err) {
+      console.error("Erro ao verificar vínculos de circuitos:", err);
+      setExerciseToDelete(exercise);
+      setDeleteModalMessage(undefined);
     }
   };
 
@@ -199,11 +222,15 @@ export function ExercisesScreen() {
                   <Dumbbell size={20} color={colors.secondary} />
                 )
               }
-              iconBgColor={item.iconUrl ? "transparent" : withOpacity(colors.secondary, 0.15)}
+              iconBgColor={
+                item.iconUrl
+                  ? "transparent"
+                  : withOpacity(colors.secondary, 0.15)
+              }
               showDuplicate
               onEdit={() => setExerciseToEdit(item)}
               onDuplicate={() => handleDuplicate(item)}
-              onDelete={() => setExerciseToDelete(item)}
+              onDelete={() => handleDeleteRequest(item)}
               enableRipple={true}
             />
           );
@@ -256,8 +283,12 @@ export function ExercisesScreen() {
         visible={isModalOpen}
         title={exerciseToEdit ? "Editar exercício" : "Novo exercício"}
         initialData={
-          exerciseToEdit ? { ...exerciseToFormData(exerciseToEdit),
-            iconUrl: exerciseToEdit.iconUrl } : undefined
+          exerciseToEdit
+            ? {
+                ...exerciseToFormData(exerciseToEdit),
+                iconUrl: exerciseToEdit.iconUrl,
+              }
+            : undefined
         }
         availableTags={AVAILABLE_TAGS}
         onClose={handleCloseModal}
@@ -267,7 +298,11 @@ export function ExercisesScreen() {
       <ConfirmationModal
         visible={exerciseToDelete !== null}
         title="Excluir exercício?"
-        onClose={() => setExerciseToDelete(null)}
+        message={deleteModalMessage}
+        onClose={() => {
+          setExerciseToDelete(null);
+          setDeleteModalMessage(undefined);
+        }}
         onConfirm={handleConfirmDelete}
       />
 
