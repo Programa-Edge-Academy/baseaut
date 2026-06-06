@@ -39,7 +39,9 @@ export function SessionCompletedScreen({
   const detailsLabel = `${studentName} · ${subtitleLabel}`;
 
   const totalExercicios = circuitoCompleto.length;
-  const concluidosCount = totalExercicios - filaDePendentes.length;
+  const concluidosCount = circuitoCompleto.filter(
+    (ex: any) => !filaDePendentes.some((p: any) => p.id === ex.id),
+  ).length;
   const progressLabel = `${concluidosCount}/${totalExercicios}`;
 
   const exerciciosRealizados = circuitoCompleto.filter(

@@ -16,20 +16,24 @@ import { Animated, Pressable, ScrollView, Text, View } from "react-native";
 
 type ExerciseStage = "ready" | "running";
 
-export function SessionRunningSemiStructuredScreen() {
-  const router = useRouter();
-  const { queue, studentName } = useLocalSearchParams<{
-    queue: string;
-    studentName: string;
-  }>();
+export type SessionRunningSemiStructuredProps = {
+  studentName: string;
+  exercises: SessionExercise[];
+};
 
-  const exercises: SessionExercise[] = queue ? JSON.parse(queue) : [];
+export function SessionRunningSemiStructuredScreen({
+  studentName,
+  exercises,
+}: SessionRunningSemiStructuredProps) {
+  const router = useRouter();
+  
+
   const safeStudentName = studentName || "Aluno";
 
-  const [activeExercise, setActiveExercise] = useState<SessionExercise | null>(
-    null,
-  );
+  const [activeExercise, setActiveExercise] = useState<SessionExercise | null>(null);
   const [stage, setStage] = useState<ExerciseStage>("ready");
+  
+  
 
   const [historicoExercicios, setHistoricoExercicios] = useState<
     Record<string, "concluido" | "nao_realizada" | "adiado">
