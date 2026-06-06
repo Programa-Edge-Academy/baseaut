@@ -201,7 +201,7 @@ export function SessionRunningScreen({
       setCurrentIndex(currentIndex + 1);
     } else {
       const pendentes = order.filter(
-        (ex) => historicoAtualizado[ex.id] !== "concluido"
+        (ex) => historicoAtualizado[ex.id] !== "concluido" && historicoAtualizado[ex.id] !== "adiado"
       );
       const temPendencias = pendentes.length > 0;
 
@@ -254,7 +254,7 @@ export function SessionRunningScreen({
     }
 
     const pendentes = order.filter(
-      (ex) => historicoExercicios[ex.id] !== "concluido"
+      (ex) => historicoExercicios[ex.id] !== "concluido" && historicoExercicios[ex.id] !== "adiado"
     );
     const temPendencias = pendentes.length > 0;
 
