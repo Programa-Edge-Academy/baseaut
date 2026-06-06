@@ -196,12 +196,21 @@ export function SessionRunningSemiStructuredScreen({
                 Selecione o próximo exercício
               </Text>
               <Text className="text-muted text-sm font-medium leading-5">
-                Toque em qualquer atividade abaixo para iniciar a execução
+                Para atividades de engajamento, pressione o botão amarelo ao lado
               </Text>
             </View>
-            <View className="w-10 h-10 rounded-full bg-extra/10 border border-extra justify-center items-center flex-shrink-0">
+            
+            <Pressable 
+              className="w-10 h-10 rounded-full bg-extra/10 border border-extra justify-center items-center flex-shrink-0 active:opacity-70"
+              onPress={() => {
+                router.push({
+                  pathname: "/session/engagement", 
+                  params: { studentName: safeStudentName }
+                });
+              }}
+            >
               <Split color={colors.extra} size={24} />
-            </View>
+            </Pressable>
           </View>
 
           <View className="gap-2.5">
