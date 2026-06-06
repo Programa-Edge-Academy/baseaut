@@ -28,15 +28,20 @@ export function CompanionItem({
 }: CompanionItemProps) {
   return (
     <View className="mb-4 flex-row items-center justify-between last:mb-0">
-      <View className="flex-row items-center gap-4">
-        <View className="h-11 w-11 items-center justify-center rounded-2xl bg-secondary/10">
-          <User size={20} color={colors.secondary} />
-        </View>
-        <View>
-          <Text className="text-header-3 text-white mb-1">{name}</Text>
-          <Text className="text-default-2 text-muted">{email}</Text>
-        </View>
-      </View>
+      <View className="flex-1 min-w-0 flex-row items-center gap-4">
+  <View className="h-11 w-11 items-center justify-center rounded-2xl bg-secondary/10">
+    <User size={20} color={colors.secondary} />
+  </View>
+
+  <View className="flex-1 pr-2">
+    <Text className="text-header-3 text-white" numberOfLines={1}>
+      {name}
+    </Text>
+    <Text className="text-default-2 text-muted" numberOfLines={1}>
+      {email}
+    </Text>
+  </View>
+</View>
 
       {status === "pendente" ? (
         <View className="flex-row items-center gap-2.5">
