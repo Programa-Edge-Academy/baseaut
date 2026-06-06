@@ -12,7 +12,7 @@ export function EngagementActivityRunningScreen() {
     <View className="flex-1 bg-level1">
       <ScrollView >
 
-        <Header variant="finishEngagement" onPressBack={() => router.back()} />
+        <Header variant="finishEngagement" onPressBack={() => router.replace("/students")} />
 
         <View className="left-6 top-[2%] w-[264px]">
           <PageHeader title="Sessão de Lucas" subtitle="Circuito 2 · Exercício 1" />

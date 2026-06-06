@@ -10,23 +10,31 @@ export function EngagementActivityScreen() {
 
   return (
     <View className="flex-1 bg-level1">
-      <ScrollView >
-
-        <Header variant="back" onPressBack={() => router.back()} />
-
+      <ScrollView>
+        <Header
+          variant="back"
+          onPressBack={() => router.replace("/students")}
+        />
         <View className="left-6 top-[2%] w-[264px]">
-          <PageHeader title="Sessão de Lucas" subtitle="Circuito 2 · Exercício 1" />
+          <PageHeader
+            title="Sessão de Lucas"
+            subtitle="Circuito 2 · Exercício 1"
+          />
         </View>
 
         {/* Main panel with actions */}
         <View className="top-[4%] p-5 rounded-2xl w-[100%] justify-center align-center">
-          <StartActivity title={"Atividade de engajamento"} subtitle={"Momento focado na interação com o aluno"} onStart={function (): void {
-            throw new Error("Function not implemented.");
-          }} onStartAndRecord={function (): void {
-            throw new Error("Function not implemented.");
-          }} />
+          <StartActivity
+            title={"Atividade de engajamento"}
+            subtitle={"Momento focado na interação com o aluno"}
+            onStart={function (): void {
+              throw new Error("Function not implemented.");
+            }}
+            onStartAndRecord={function (): void {
+              throw new Error("Function not implemented.");
+            }}
+          />
         </View>
-        
       </ScrollView>
     </View>
   );
