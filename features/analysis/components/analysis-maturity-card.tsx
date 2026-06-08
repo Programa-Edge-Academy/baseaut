@@ -14,14 +14,15 @@ export type DevelopmentLevel =
 
 export type AnalysisMaturityCardProps = {
     exercise: string;
-    previous: {
+    // Ajustado para aceitar nulo ou indefinido caso o exercício não exista no período
+    previous?: {
         label?: string;
         status: DevelopmentLevel;
-    };
-    current: {
+    } | null;
+    current?: {
         label?: string;
         status: DevelopmentLevel;
-    };
+    } | null;
     className?: string;
 };
 
@@ -67,9 +68,19 @@ function getBadgeLabel(
 }
 
 function getChangeData(
-    previousStatus: DevelopmentLevel,
-    currentStatus: DevelopmentLevel
+    previousStatus: DevelopmentLevel | undefined | null,
+    currentStatus: DevelopmentLevel | undefined | null
 ) {
+    // Se um dos períodos não possuir registro, não há cálculo de variação possível
+    if (!previousStatus || !currentStatus) {
+        return {
+            Icon: MinusCircle,
+            iconColor: colors.muted,
+            textColor: colors.muted,
+            value: "-",
+        };
+    }
+
     const delta =
         statusOrder[currentStatus] -
         statusOrder[previousStatus];
@@ -106,9 +117,10 @@ export function AnalysisMaturityCard({
     current,
     className,
 }: AnalysisMaturityCardProps) {
+    // Executa a nova lógica de variação tolerante a valores nulos
     const changeData = getChangeData(
-        previous.status,
-        current.status
+        previous?.status,
+        current?.status
     );
 
     const ChangeIcon = changeData.Icon;
@@ -141,27 +153,25 @@ export function AnalysisMaturityCard({
                         alignItems: "center",
                     }}
                 >
-                    <View
-                        className="rounded-sm border px-2 py-1"
-                        style={{
-                            backgroundColor:
-                                levelStyles[previous.status]
-                                    .backgroundColor,
-                            borderColor:
-                                levelStyles[previous.status]
-                                    .borderColor,
-                        }}
-                    >
-                        <Text
-                            numberOfLines={1}
-                            className="text-[10px] text-white"
+                    {previous?.status ? (
+                        <View
+                            className="rounded-sm border px-2 py-1"
+                            style={{
+                                backgroundColor: levelStyles[previous.status].backgroundColor,
+                                borderColor: levelStyles[previous.status].borderColor,
+                            }}
                         >
-                            {getBadgeLabel(
-                                previous.label,
-                                previous.status
-                            )}
-                        </Text>
-                    </View>
+                            <Text
+                                numberOfLines={1}
+                                className="text-[10px] text-white"
+                            >
+                                {getBadgeLabel(previous.label, previous.status)}
+                            </Text>
+                        </View>
+                    ) : (
+                        // Exibe a indicação de ausência exigida pelo QA
+                        <Text className="text-muted text-xs font-medium">-</Text>
+                    )}
                 </View>
 
                 {/* Período 2 */}
@@ -171,27 +181,25 @@ export function AnalysisMaturityCard({
                         alignItems: "center",
                     }}
                 >
-                    <View
-                        className="rounded-sm border px-2 py-1"
-                        style={{
-                            backgroundColor:
-                                levelStyles[current.status]
-                                    .backgroundColor,
-                            borderColor:
-                                levelStyles[current.status]
-                                    .borderColor,
-                        }}
-                    >
-                        <Text
-                            numberOfLines={1}
-                            className="text-[10px] text-white"
+                    {current?.status ? (
+                        <View
+                            className="rounded-sm border px-2 py-1"
+                            style={{
+                                backgroundColor: levelStyles[current.status].backgroundColor,
+                                borderColor: levelStyles[current.status].borderColor,
+                            }}
                         >
-                            {getBadgeLabel(
-                                current.label,
-                                current.status
-                            )}
-                        </Text>
-                    </View>
+                            <Text
+                                numberOfLines={1}
+                                className="text-[10px] text-white"
+                            >
+                                {getBadgeLabel(current.label, current.status)}
+                            </Text>
+                        </View>
+                    ) : (
+                        // Exibe a indicação de ausência exigida pelo QA
+                        <Text className="text-muted text-xs font-medium">-</Text>
+                    )}
                 </View>
 
                 {/* Variação */}
