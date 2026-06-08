@@ -1,7 +1,7 @@
 import { colors } from "@/assets/colors";
 import { Check, ChevronDown } from "lucide-react-native";
 import React, { useState } from "react";
-import { Pressable, Text, useWindowDimensions, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 const OPTIONS = [
   "Todos",
@@ -16,32 +16,28 @@ export type ExerciseSelectionCardProps = {
   className?: string;
 };
 
-const SIDE_MARGIN = 16;
 const BORDER_RADIUS = 12;
 const PADDING_HORIZONTAL = 16;
 const PADDING_VERTICAL = 10;
 const OPTION_HEIGHT = 44;
-const OPTION_GAP = 8;
 
-export function ExerciseSelectionCard({ onSelect, className }: ExerciseSelectionCardProps) {
-  const { width: windowWidth } = useWindowDimensions();
+export function ExerciseSelectionCard({
+  onSelect,
+  className,
+}: ExerciseSelectionCardProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+
   const selectedOption = OPTIONS[selectedIndex];
-  const width = Math.max(0, windowWidth - SIDE_MARGIN * 2);
 
   return (
     <View
-      className={className ?? ""}
+      className={`w-full ${className ?? ""}`}
       style={{
-        width,
-        borderRadius: 0,
         backgroundColor: "transparent",
-        borderWidth: 1,
-        borderColor: "transparent",
-        marginHorizontal: SIDE_MARGIN,
       }}
     >
+      {/* Header */}
       <Pressable
         onPress={() => setIsOpen((prev) => !prev)}
         className="flex-row items-center justify-between"
@@ -49,21 +45,37 @@ export function ExerciseSelectionCard({ onSelect, className }: ExerciseSelection
           backgroundColor: colors.level1,
           paddingHorizontal: PADDING_HORIZONTAL,
           paddingVertical: PADDING_VERTICAL,
-          borderBottomWidth: 0,
-          borderBottomColor: colors.outline,
-          borderTopLeftRadius: BORDER_RADIUS,
-          borderTopRightRadius: BORDER_RADIUS,
+          borderWidth: 1,
+          borderColor: colors.outline,
+          borderRadius: BORDER_RADIUS,
         }}
       >
-        <Text className="text-white text-[14px] font-normal">Exercício: {selectedOption}</Text>
+        <Text
+          numberOfLines={1}
+          className="flex-1 text-white text-[14px] font-normal"
+        >
+          Exercício: {selectedOption}
+        </Text>
+
         <ChevronDown
           size={24}
           color={colors.muted}
         />
       </Pressable>
 
-      {isOpen ? (
-        <View style={{ paddingHorizontal: PADDING_HORIZONTAL, paddingVertical: 10, backgroundColor: colors.level2 }}>
+      {/* Dropdown */}
+      {isOpen && (
+        <View
+          style={{
+            marginTop: 4,
+            paddingHorizontal: PADDING_HORIZONTAL,
+            paddingVertical: 10,
+            backgroundColor: colors.level2,
+            borderWidth: 1,
+            borderColor: colors.outline,
+            borderRadius: BORDER_RADIUS,
+          }}
+        >
           {OPTIONS.map((exercise, index) => {
             const isSelected = index === selectedIndex;
 
@@ -73,22 +85,19 @@ export function ExerciseSelectionCard({ onSelect, className }: ExerciseSelection
                 onPress={() => {
                   setSelectedIndex(index);
                   onSelect?.(index);
-                  setIsOpen(false); // Optional: close dropdown after selection
+                  setIsOpen(false);
                 }}
                 style={{
-                  marginBottom: 0,
                   minHeight: OPTION_HEIGHT,
                   justifyContent: "center",
-                  paddingHorizontal: 0,
-                  borderRadius: 0,
+                  paddingHorizontal: 8,
+                  borderRadius: 8,
                   backgroundColor: isSelected
                     ? colors.primary
                     : colors.level2,
-                  borderWidth: 1,
-                  borderColor: "transparent",
                 }}
               >
-                <View className="flex-row items-center">
+                <View className="flex-row items-center flex-1">
                   {isSelected ? (
                     <Check
                       size={20}
@@ -97,15 +106,21 @@ export function ExerciseSelectionCard({ onSelect, className }: ExerciseSelection
                       style={{ marginRight: 12 }}
                     />
                   ) : (
-                    <View style={{ width: 24, marginRight: 12 }} />
+                    <View
+                      style={{
+                        width: 20,
+                        marginRight: 12,
+                      }}
+                    />
                   )}
 
                   <Text
-                    className="text-[14px] font-medium"
+                    numberOfLines={1}
+                    className="flex-1 text-[14px] font-medium"
                     style={{
                       color: isSelected
                         ? "#FFFFFF"
-                        : "#e2e8f0",
+                        : "#E2E8F0",
                     }}
                   >
                     {exercise}
@@ -115,7 +130,7 @@ export function ExerciseSelectionCard({ onSelect, className }: ExerciseSelection
             );
           })}
         </View>
-      ) : null}
+      )}
     </View>
   );
 }
