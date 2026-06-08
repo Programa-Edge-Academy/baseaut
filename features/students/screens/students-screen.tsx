@@ -97,7 +97,7 @@ export function StudentsScreen() {
                 onPress={() => {
                   router.push({
                     pathname: "/circuit-selection",
-                    params: { studentName: item.name }
+                    params: { studentId: item.id, studentName: item.name }
                   });
                 }}
                 onEdit={() => {
