@@ -3,11 +3,11 @@ import { Header } from "@/components/header";
 import { DefaultButton } from "@/components/default-button";
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
+import RangeCalendar from "@/components/range-calendar";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Calendar, X } from "lucide-react-native";
+import { X } from "lucide-react-native";
 import React, { useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View, Modal, Pressable } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
 
 const monthsPt = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -25,6 +25,11 @@ function formatDateRange(start: Date, end: Date): string {
   return `${formatSingleDate(start)} - ${formatSingleDate(end)}`;
 }
 
+function parseDateString(dateStr: string): Date {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export function PerformanceComparisonScreen() {
   const router = useRouter();
   const { studentId } = useLocalSearchParams();
@@ -34,12 +39,11 @@ export function PerformanceComparisonScreen() {
   const [period1Range, setPeriod1Range] = useState<{ start: Date; end: Date } | null>(null);
   const [period2Range, setPeriod2Range] = useState<{ start: Date; end: Date } | null>(null);
 
-  // Modal and Picker States
+  // Modal States
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [activePeriod, setActivePeriod] = useState<1 | 2 | null>(null);
   const [tempStart, setTempStart] = useState<Date | null>(null);
   const [tempEnd, setTempEnd] = useState<Date | null>(null);
-  const [showPicker, setShowPicker] = useState<"start" | "end" | null>(null);
 
   const handlePeriodPress = (periodNum: 1 | 2) => {
     setActivePeriod(periodNum);
@@ -60,7 +64,21 @@ export function PerformanceComparisonScreen() {
     setIsModalVisible(false);
   };
 
-  const isSaveDisabled = !tempStart || !tempEnd || tempStart > tempEnd;
+  const handleRangeSelected = (start: string, end: string | null) => {
+    if (start) {
+      setTempStart(parseDateString(start));
+    } else {
+      setTempStart(null);
+    }
+
+    if (end) {
+      setTempEnd(parseDateString(end));
+    } else {
+      setTempEnd(null);
+    }
+  };
+
+  const isSaveDisabled = !tempStart || !tempEnd;
 
   const getLabel = (periodNum: 1 | 2, range: { start: Date; end: Date } | null) => {
     if (range) {
@@ -126,10 +144,10 @@ export function PerformanceComparisonScreen() {
           onPress={() => setIsModalVisible(false)}
         >
           <Pressable 
-            className="bg-level2 border border-outline rounded-[15px] w-full max-w-[340px] p-[25px]"
+            className="bg-level2 border border-outline rounded-[15px] w-full max-w-[380px] p-[25px]"
             onPress={(e) => e.stopPropagation()}
           >
-            <View className="flex-row items-center justify-between mb-5">
+            <View className="flex-row items-center justify-between mb-2">
               <Text className="text-header-2 text-white">
                 Período {activePeriod}
               </Text>
@@ -138,48 +156,15 @@ export function PerformanceComparisonScreen() {
               </Pressable>
             </View>
 
-            <View className="gap-4 mb-6">
-              {/* Data Inicial */}
-              <View className="w-full gap-1">
-                <Text className="text-default-2 text-muted">Data inicial</Text>
-                <Pressable
-                  onPress={() => setShowPicker("start")}
-                  className="w-full flex-row items-center justify-between bg-level1 border border-outline p-3 rounded-xl active:opacity-80"
-                >
-                  <View className="flex-row items-center">
-                    <Calendar size={18} color={colors.muted} style={{ marginRight: 12 }} />
-                    <Text className={`text-sm ${tempStart ? "text-white" : "text-muted"}`}>
-                      {tempStart ? tempStart.toLocaleDateString("pt-BR") : "Selecionar data"}
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-
-              {/* Data Final */}
-              <View className="w-full gap-1">
-                <Text className="text-default-2 text-muted">Data final</Text>
-                <Pressable
-                  onPress={() => setShowPicker("end")}
-                  className="w-full flex-row items-center justify-between bg-level1 border border-outline p-3 rounded-xl active:opacity-80"
-                >
-                  <View className="flex-row items-center">
-                    <Calendar size={18} color={colors.muted} style={{ marginRight: 12 }} />
-                    <Text className={`text-sm ${tempEnd ? "text-white" : "text-muted"}`}>
-                      {tempEnd ? tempEnd.toLocaleDateString("pt-BR") : "Selecionar data"}
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-
-              {/* Mensagem de Erro de Intervalo */}
-              {tempStart && tempEnd && tempStart > tempEnd && (
-                <Text className="text-default-3 text-error mt-1">
-                  A data final deve ser igual ou posterior à data inicial.
-                </Text>
-              )}
+            {/* Calendário de Seleção de Range */}
+            <View className="w-full mb-4">
+              <RangeCalendar 
+                key={`${activePeriod}-${isModalVisible}`}
+                onRangeSelected={handleRangeSelected} 
+              />
             </View>
 
-            {/* Botão Salvar (Fica embaixo do calendário/seletores no modal) */}
+            {/* Botão Salvar (Fica embaixo do calendário no modal) */}
             <View className="items-center">
               <DefaultButton
                 label="Salvar"
@@ -192,37 +177,6 @@ export function PerformanceComparisonScreen() {
           </Pressable>
         </Pressable>
       </Modal>
-
-      {/* DateTimePicker nativo */}
-      {showPicker === "start" && (
-        <DateTimePicker
-          value={tempStart || new Date()}
-          mode="date"
-          display="default"
-          onChange={(event, date) => {
-            setShowPicker(null);
-            if (event.type === "set" && date) {
-              setTempStart(date);
-            }
-          }}
-          maximumDate={new Date()}
-        />
-      )}
-
-      {showPicker === "end" && (
-        <DateTimePicker
-          value={tempEnd || tempStart || new Date()}
-          mode="date"
-          display="default"
-          onChange={(event, date) => {
-            setShowPicker(null);
-            if (event.type === "set" && date) {
-              setTempEnd(date);
-            }
-          }}
-          maximumDate={new Date()}
-        />
-      )}
     </View>
   );
 }
