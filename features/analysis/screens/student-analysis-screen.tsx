@@ -5,6 +5,8 @@ import { Header } from "@/components/header";
 import { AnalysisOptionCard } from "@/features/analysis/components/analysis-option-card";
 import { AppliedProtocolsCard } from "@/features/analysis/components/applied-protocols-card";
 import { StudentInfoCard } from "@/features/analysis/components/student-info-card";
+import { useProtocolStatuses } from "@/features/analysis/hooks/use-protocol-statuses";
+import type { ProtocolTipo } from "@/features/analysis/hooks/use-protocol-records";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronDown, User } from "lucide-react-native";
@@ -15,6 +17,18 @@ export function StudentAnalysisScreen() {
   const router = useRouter();
   const { studentId } = useLocalSearchParams();
   const { sessions, profile, isLoading } = useStudentSessions(studentId as string);
+  const { statuses: protocolStatuses } = useProtocolStatuses(studentId as string);
+
+  // Navega para a lista de registros do protocolo selecionado.
+  const openProtocol = (tipo: ProtocolTipo) =>
+    router.push({
+      pathname: "/protocol-records",
+      params: {
+        studentId: String(studentId ?? ""),
+        studentName: profile?.name ?? "Aluno",
+        tipo,
+      },
+    });
 
   const [selectedClassificacao, setSelectedClassificacao] = useState<string | null>(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -142,12 +156,12 @@ export function StudentAnalysisScreen() {
 
                 {/* Protocolos/Testes aplicados */}
                 <AppliedProtocolsCard
-                  carsStatus="registrado"
-                  ataStatus="registrado"
-                  mabcStatus="registrado"
-                  onCarsPress={() => console.log("CARS pressionado")}
-                  onAtaPress={() => console.log("ATA pressionado")}
-                  onMabcPress={() => console.log("MABC-2 pressionado")}
+                  carsStatus={protocolStatuses.cars}
+                  ataStatus={protocolStatuses.ata}
+                  mabcStatus={protocolStatuses.mabc2}
+                  onCarsPress={() => openProtocol("cars")}
+                  onAtaPress={() => openProtocol("ata")}
+                  onMabcPress={() => openProtocol("mabc2")}
                 />
 
                 {/* Registros de desenvolvimento motor */}
