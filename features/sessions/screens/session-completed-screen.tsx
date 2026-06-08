@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { SelectableChip } from "@/components/selectable-chip";
 import { SessionCompletion } from "@/features/exercises/components/session-completion";
 import { useRouter } from "expo-router";
-import { X } from "lucide-react-native";
+import { ClipboardList, X } from "lucide-react-native";
 import React, { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 
@@ -14,6 +14,8 @@ interface SessionCompletedScreenProps {
   studentName: string;
   queue?: string;
   fullCircuit?: string;
+  studentId?: string;
+  sessionId?: string;
 }
 
 export function SessionCompletedScreen({
@@ -21,8 +23,24 @@ export function SessionCompletedScreen({
   studentName,
   queue,
   fullCircuit,
+  studentId,
+  sessionId,
 }: SessionCompletedScreenProps) {
   const router = useRouter();
+
+  // Abre o Registro de Controle da sessão, reaproveitando a rota de formulário.
+  const handleOpenRegistroControle = () => {
+    router.push({
+      pathname: "/form",
+      params: {
+        circuitType: "registro_controle",
+        circuitName: "Registro de Controle",
+        studentName,
+        studentId: studentId ?? "",
+        sessionId: sessionId ?? "",
+      },
+    });
+  };
 
   const filaDePendentes = queue ? JSON.parse(queue) : [];
   const circuitoCompleto = fullCircuit ? JSON.parse(fullCircuit) : [];
@@ -119,6 +137,19 @@ export function SessionCompletedScreen({
                   }
                 }}
               />
+            </View>
+
+            {/* Registro de Controle da sessão */}
+            <View className="mx-5 mt-2">
+              <Pressable
+                onPress={handleOpenRegistroControle}
+                className="flex-row items-center justify-center gap-2 rounded-2xl border border-outline bg-level2 py-4 active:opacity-70"
+              >
+                <ClipboardList size={20} color={colors.primary} />
+                <Text className="text-default-2 font-semibold text-white">
+                  Registro de Controle
+                </Text>
+              </Pressable>
             </View>
           </View>
         </ScrollView>

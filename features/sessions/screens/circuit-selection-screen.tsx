@@ -11,11 +11,19 @@ import { Text, View } from "react-native";
 
 export type CircuitType = "estruturado" | "livre" | "ata" | "cars" | "mabc";
 
+export type CircuitSelectionExercise = {
+  id: string;
+  name: string;
+  description: string;
+};
+
 export type CircuitItem = {
   id: string;
   name: string;
   description: string;
   type: CircuitType;
+  /** Exercises linked to the circuit, forwarded to the running session. */
+  exercises?: CircuitSelectionExercise[];
 };
 
 const MOCK_CIRCUITS: CircuitItem[] = [

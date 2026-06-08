@@ -1,8 +1,8 @@
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { FormComponent } from "@/features/forms/components/form-component";
-import { Check, Minimize2, Maximize2 } from "lucide-react-native";
-import React, { useRef, useState } from "react";
+import { Check, Minimize2, Maximimize2 } from "lucide-react-native";
+import React, { useEffect, useRef, useState } from "react";
 import { Animated, ScrollView, Text, View } from "react-native";
 import { ActivityResultModal } from "../../exercises/components/activity-result-modal";
 import { MabcResultModal } from "../../exercises/components/mabc-result-modal";
@@ -14,6 +14,28 @@ import {
   FinishSessionModal,
 } from "../components/finish-session-modal";
 import { ReorderModal } from "../components/reorder-modal";
+import {
+  useSessionFlow,
+  type ExecutionRecord,
+  type MotivoFinalizacao,
+  type MotivoNaoRealizacao,
+} from "../hooks/use-session-flow";
+
+/** Maps early-finish reason labels to the motivo_finalizacao_enum. */
+const MOTIVO_FINALIZACAO_MAP: Record<string, MotivoFinalizacao> = {
+  "Comportamento disruptivo": "comportamento_disruptivo",
+  "Tempo insuficiente": "tempo_esgotado",
+};
+
+/** Maps the result-modal reason labels to the motivo_nao_realizacao_enum. */
+const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
+  "Recusa do aluno": "recusa_aluno",
+  "Comportamento disruptivo": "comportamento_disruptivo",
+  "Fadiga ou cansaço": "fadiga_cansaco",
+  "Tempo insuficiente": "tempo_insuficiente",
+  "Dificuldade física": "dificuldade_fisica",
+  Outro: "outro",
+};
 
 export type SessionExercise = {
   id: string;
@@ -49,6 +71,7 @@ export type SessionRunningScreenProps = {
   sessionId: string;
   studentId: string;
   studentName: string;
+  circuitId?: string;
   circuitName?: string;
   circuitType?: CircuitType;
   exercises?: SessionExercise[];
@@ -72,6 +95,7 @@ export function SessionRunningScreen({
   sessionId,
   studentId,
   studentName,
+  circuitId,
   circuitName = "Circuito",
   circuitType = "padrao",
   exercises = MOCK_EXERCISES,
@@ -80,6 +104,40 @@ export function SessionRunningScreen({
   onCompleteSession,
 }: SessionRunningScreenProps) {
   const formRef = useRef<any>(null);
+  const { createSession, saveSession } = useSessionFlow();
+
+  // ID efetivo da sessão: usa o recebido por parâmetro ou cria um na montagem.
+  const [effectiveSessionId, setEffectiveSessionId] = useState<string>(
+    sessionId || "",
+  );
+  const effectiveSessionIdRef = useRef<string>(sessionId || "");
+  // Execuções acumuladas (status + dados clínicos) para gravar ao final.
+  const executionsRef = useRef<ExecutionRecord[]>([]);
+  // Segundos do cronômetro capturados na última parada.
+  const lastElapsedSecondsRef = useRef<number | null>(null);
+
+  // Cria a sessão no banco quando ainda não há um id válido.
+  useEffect(() => {
+    if (sessionId || !studentId) return;
+    let active = true;
+    (async () => {
+      try {
+        const id = await createSession({
+          alunoId: studentId,
+          circuitoId: circuitId ?? null,
+        });
+        if (active) {
+          effectiveSessionIdRef.current = id;
+          setEffectiveSessionId(id);
+        }
+      } catch (err) {
+        console.error("Erro ao criar sessão:", err);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [sessionId, studentId, circuitId, createSession]);
   const [order, setOrder] = useState<SessionExercise[]>(exercises);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [stage, setStage] = useState<ExerciseStage>("ready");
@@ -147,34 +205,31 @@ export function SessionRunningScreen({
   };
 
   const handleActivityNotCompleted = (motivo: string, descricao?: string) => {
-    console.log(
-      "[ActivityResult] Não realizada. Motivo:",
-      motivo,
-      "Descrição:",
-      descricao,
-    );
     setIsResultModalOpen(false);
     triggerToast();
-    advanceSession("nao_realizada");
+    advanceSession("nao_realizada", {
+      statusRealizacao: "nao_realizada",
+      motivoNaoRealizacao: MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro",
+      descricaoAdicional: descricao ?? null,
+      duracaoRealSegundos: lastElapsedSecondsRef.current,
+    });
   };
 
   const handleActivityDefer = () => {
-    console.log("[ActivityResult] Resposta adiada.");
-
     setIsResultModalOpen(false);
-
     advanceSession("adiado");
   };
 
-  const handleMabcConfirm = (result: any) => {
-    console.log("[MabcResult] Confirmado:", result);
+  const handleMabcConfirm = (_result: any) => {
     setIsResultModalOpen(false);
     triggerToast();
-    advanceSession("concluido");
+    advanceSession("concluido", {
+      statusRealizacao: "realizada",
+      duracaoRealSegundos: lastElapsedSecondsRef.current,
+    });
   };
 
   const handleMabcDefer = () => {
-    console.log("[MabcResult] Resposta adiada.");
     const updatedDeferred = [...deferredExercises, currentExercise.id];
     setDeferredExercises(updatedDeferred);
     setIsResultModalOpen(false);
@@ -182,19 +237,37 @@ export function SessionRunningScreen({
   };
 
   const handleMabcNotCompleted = (motivo: string, descricao?: string) => {
-    console.log(
-      "[MabcResult] Não realizada. Motivo:",
-      motivo,
-      "Descrição:",
-      descricao,
-    );
     setIsResultModalOpen(false);
     triggerToast();
-    advanceSession("nao_realizada");
+    advanceSession("nao_realizada", {
+      statusRealizacao: "nao_realizada",
+      motivoNaoRealizacao: MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro",
+      descricaoAdicional: descricao ?? null,
+      duracaoRealSegundos: lastElapsedSecondsRef.current,
+    });
+  };
+
+  // Grava as execuções acumuladas e finaliza a sessão no banco.
+  const persistAndFinish = async (
+    motivoFinalizacao: MotivoFinalizacao | null = null,
+    descricaoMotivo: string | null = null,
+  ) => {
+    const sid = effectiveSessionIdRef.current;
+    if (!sid) return;
+    try {
+      await saveSession(sid, executionsRef.current, {
+        status: "concluida",
+        motivoFinalizacao,
+        descricaoMotivo,
+      });
+    } catch (err) {
+      console.error("Erro ao salvar a sessão:", err);
+    }
   };
 
   const advanceSession = (
     statusAtual: "concluido" | "nao_realizada" | "adiado",
+    record?: Omit<ExecutionRecord, "exercicioId" | "ordemExecucao">,
   ) => {
     setStage("ready");
     setHasAdvanced(true);
@@ -205,6 +278,19 @@ export function SessionRunningScreen({
     };
 
     setHistoricoExercicios(historicoAtualizado);
+
+    // Apenas realizada/não realizada viram execução; adiado fica pendente.
+    if (record) {
+      executionsRef.current = [
+        ...executionsRef.current,
+        {
+          exercicioId: currentExercise.id,
+          ordemExecucao: currentIndex + 1,
+          ...record,
+        },
+      ];
+    }
+    lastElapsedSecondsRef.current = null;
 
     if (currentIndex < total - 1) {
       setCurrentIndex(currentIndex + 1);
@@ -219,6 +305,7 @@ export function SessionRunningScreen({
       if (formRef.current) {
         formRef.current.handleSave();
       }
+      void persistAndFinish();
       onCompleteSession?.(temPendencias, pendentes, order);
     }
   };
@@ -250,6 +337,8 @@ export function SessionRunningScreen({
   };
 
   const handleStop = (elapsed: number) => {
+    lastElapsedSecondsRef.current = elapsed;
+
     const minutes = Math.floor(elapsed / 60)
       .toString()
       .padStart(2, "0");
@@ -271,6 +360,10 @@ export function SessionRunningScreen({
     );
     const temPendencias = pendentes.length > 0;
 
+    void persistAndFinish(
+      MOTIVO_FINALIZACAO_MAP[motivo] ?? "outro",
+      motivo,
+    );
     onFinishSession?.(motivo);
     onCompleteSession?.(temPendencias, pendentes, order);
     setIsFinishOpen(false);
@@ -336,7 +429,7 @@ export function SessionRunningScreen({
             <FormComponent
               ref={formRef}
               formularioId={"00000000-0000-4000-0000-0000000000fc"}
-              sessaoId={sessionId}
+              sessaoId={effectiveSessionId}
               alunoId={studentId}
             />
           </View>
@@ -381,10 +474,15 @@ export function SessionRunningScreen({
             onDefer={handleActivityDefer}
             onNotCompleted={handleActivityNotCompleted}
             onConfirm={(result) => {
-              console.log("[ActivityResult]", result);
               setIsResultModalOpen(false);
               triggerToast();
-              advanceSession("concluido");
+              advanceSession("concluido", {
+                statusRealizacao: "realizada",
+                nivelDesenvolvimento: result?.nivelDesenvolvimento ?? null,
+                registroAjuda: result?.registroAjuda ?? null,
+                complementosAjuda: result?.subCategorias ?? null,
+                duracaoRealSegundos: lastElapsedSecondsRef.current,
+              });
             }}
           />
         )}

@@ -444,7 +444,7 @@ export function ActivityResultModal({
                     borderRadius: 15,
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: "#1F2933",
+                    backgroundColor: colors.primary,
                     borderWidth: 1,
                     borderColor: "#2F3A46",
                   }}
