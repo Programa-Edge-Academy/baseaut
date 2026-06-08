@@ -121,8 +121,8 @@ export function NewExercise({
     }
 
     if (durationInput.trim()) {
-      if (Number.isNaN(parsed) || seconds < 60 || seconds > 300) {
-        newErrors.duration = "A duração deve estar entre 60 e 300 segundos";
+      if (Number.isNaN(parsed) || seconds < 0 || seconds > 300) {
+        newErrors.duration = "A duração deve ser menor que 300 segundos";
         isValid = false;
       }
     }
