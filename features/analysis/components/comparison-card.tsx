@@ -29,6 +29,8 @@ export type ComparisonCardProps = {
     textColor?: string;
   };
   className?: string;
+  hasError?: boolean;
+  hasInsufficientData?: boolean;
 };
 
 const statusToStyles = {
@@ -58,29 +60,37 @@ function parseNumber(value: string | number): number | null {
     String(value).replace(/,/g, ".")
   );
 
-  return Number.isFinite(parsed)
-    ? parsed
-    : null;
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
-function getVariationText(
-  period1Value: number,
-  period2Value: number
-) {
+function getVariationText(period1Value: number, period2Value: number): string {
   const diff = period2Value - period1Value;
 
-  const sign = diff > 0 ? "+" : "";
+  if (diff === 0) {
+    return "0 (0%)";
+  }
 
-  const percentage =
-    period1Value !== 0
-      ? Math.round(
-        ((period2Value - period1Value) /
-          period1Value) *
-        100
-      )
-      : 0;
+  let relPercentage: number;
 
-  return `${diff} (${sign}${percentage}%)`;
+  // Intercepta divisões por zero e formata de acordo com a direção do fluxo
+  if (period1Value === 0 && period2Value === 0) {
+    relPercentage = 0;
+  } else if (period1Value === 0 && period2Value > 0) {
+    relPercentage = 100;
+  } else if (period1Value === 0 && period2Value < 0) {
+    relPercentage = -100;
+  } else {
+    relPercentage = Math.round((diff / period1Value) * 100);
+  }
+
+  const absDiff = Math.abs(diff);
+  const absRel = Math.abs(relPercentage);
+
+  if (diff > 0) {
+    return `+${absDiff} (+${absRel}%)`;
+  } else {
+    return `-${absDiff} (-${absRel}%)`;
+  }
 }
 
 export function ComparisonCard({
@@ -89,48 +99,57 @@ export function ComparisonCard({
   period2,
   variation,
   className,
+  hasError,
+  hasInsufficientData,
 }: ComparisonCardProps) {
   const { width } = useWindowDimensions();
-
   const isMobile = width < 480;
+
+  // 1. Trata estado de Erro crítico solicitado pelo QA
+  if (hasError) {
+    return (
+      <View
+        className={`rounded-xl border border-outline bg-level2 justify-center items-center ${isMobile ? "px-3 py-4" : "px-4 py-5"
+          } ${className ?? ""}`}
+      >
+        <Text className="text-xs font-medium text-error text-center">
+          Não foi possível carregar esta comparação. Tente novamente.
+        </Text>
+      </View>
+    );
+  }
 
   const numericPeriod1 = parseNumber(period1.value);
   const numericPeriod2 = parseNumber(period2.value);
 
+  // 2. Trata estado de Dados Insuficientes solicitado pelo QA (via prop ou falha de parse)
+  if (hasInsufficientData || numericPeriod1 === null || numericPeriod2 === null) {
+    return (
+      <View
+        className={`rounded-xl border border-outline bg-level2 justify-center items-center ${isMobile ? "px-3 py-4" : "px-4 py-5"
+          } ${className ?? ""}`}
+      >
+        <Text className="text-xs font-medium text-muted text-center">
+          Dados insuficientes para comparação.
+        </Text>
+      </View>
+    );
+  }
+
   const derivedStatus =
-    numericPeriod1 !== null &&
-      numericPeriod2 !== null
-      ? numericPeriod2 > numericPeriod1
-        ? "positive"
-        : numericPeriod2 < numericPeriod1
-          ? "negative"
-          : "neutral"
-      : "neutral";
+    numericPeriod2 > numericPeriod1
+      ? "positive"
+      : numericPeriod2 < numericPeriod1
+        ? "negative"
+        : "neutral";
 
-  const status =
-    variation?.status || derivedStatus;
-
-  const statusStyle =
-    statusToStyles[status];
-
+  const status = variation?.status || derivedStatus;
+  const statusStyle = statusToStyles[status];
   const Icon = statusStyle.Icon;
+  const iconColor = variation?.iconColor || statusStyle.iconColor;
+  const textColor = variation?.textColor || statusStyle.textColor;
 
-  const iconColor =
-    variation?.iconColor ||
-    statusStyle.iconColor;
-
-  const textColor =
-    variation?.textColor ||
-    statusStyle.textColor;
-
-  const variationValue =
-    numericPeriod1 !== null &&
-      numericPeriod2 !== null
-      ? getVariationText(
-        numericPeriod1,
-        numericPeriod2
-      )
-      : variation?.value || "-";
+  const variationValue = variation?.value || getVariationText(numericPeriod1, numericPeriod2);
 
   return (
     <View
@@ -138,14 +157,8 @@ export function ComparisonCard({
         } ${className ?? ""}`}
     >
       <View className="flex-row items-center">
-
         {/* Title */}
-        <View
-          style={{
-            flex: 2.2,
-            minWidth: 0,
-          }}
-        >
+        <View style={{ flex: 2.2, minWidth: 0 }}>
           <Text
             numberOfLines={1}
             ellipsizeMode="tail"
@@ -159,12 +172,7 @@ export function ComparisonCard({
         </View>
 
         {/* Period 1 */}
-        <View
-          style={{
-            flex: 0.8,
-            alignItems: "center",
-          }}
-        >
+        <View style={{ flex: 0.8, alignItems: "center" }}>
           <Text
             style={{
               color: "white",
@@ -186,12 +194,7 @@ export function ComparisonCard({
         />
 
         {/* Period 2 */}
-        <View
-          style={{
-            flex: 0.8,
-            alignItems: "center",
-          }}
-        >
+        <View style={{ flex: 0.8, alignItems: "center" }}>
           <Text
             style={{
               color: "white",
@@ -239,7 +242,6 @@ export function ComparisonCard({
             {variationValue}
           </Text>
         </View>
-
       </View>
     </View>
   );
