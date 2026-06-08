@@ -1,7 +1,7 @@
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { FormComponent } from "@/features/forms/components/form-component";
-import { Check, Minimize2, Maximimize2 } from "lucide-react-native";
+import { Check, Minimize2, Maximize2 } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, ScrollView, Text, View } from "react-native";
 import { ActivityResultModal } from "../../exercises/components/activity-result-modal";
