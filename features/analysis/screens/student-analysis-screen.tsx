@@ -136,7 +136,7 @@ export function StudentAnalysisScreen() {
                   title="Comparar desempenho"
                   description="Compare dois períodos e acompanhe diferenças no desempenho do aluno."
                   onPress={() => {
-                    console.log("Comparar desempenho selecionado");
+                    router.push(`/analysis/compare/${studentId}` as any);
                   }}
                 />
 
