@@ -1,13 +1,12 @@
 import { colors } from "@/assets/colors";
-import { Header } from "@/components/header";
 import { DefaultButton } from "@/components/default-button";
+import { Header } from "@/components/header";
+import RangeCalendar from "@/components/range-calendar";
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
-import RangeCalendar from "@/components/range-calendar";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { X } from "lucide-react-native";
 import React, { useState } from "react";
-import { ActivityIndicator, ScrollView, Text, View, Modal, Pressable } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from "react-native";
 
 const monthsPt = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -100,20 +99,20 @@ export function PerformanceComparisonScreen() {
         ) : (
           <View className="mt-5">
             {/* Título com nome do aluno */}
-            <Text 
-              className="text-xl font-bold text-white" 
+            <Text
+              className="text-xl font-bold text-white"
               style={{ marginHorizontal: 22, marginBottom: 16, fontFamily: "Inter-Bold" }}
             >
               Comparar desempenho - {profile?.name || "Aluno"}
             </Text>
 
             {/* Seletores de Período */}
-            <PeriodSelector 
+            <PeriodSelector
               label={getLabel(1, period1Range)}
               onPress={() => handlePeriodPress(1)}
             />
 
-            <PeriodSelector 
+            <PeriodSelector
               label={getLabel(2, period2Range)}
               onPress={() => handlePeriodPress(2)}
             />
@@ -139,28 +138,21 @@ export function PerformanceComparisonScreen() {
         animationType="fade"
         onRequestClose={() => setIsModalVisible(false)}
       >
-        <Pressable 
+        {/* Fade-out: Clicar aqui fecha o modal */}
+        <Pressable
           className="flex-1 bg-black/60 justify-center items-center px-6"
           onPress={() => setIsModalVisible(false)}
         >
-          <Pressable 
-            className="bg-level2 border border-outline rounded-[15px] w-full max-w-[380px] p-[25px]"
+          {/* Container Flutuante Invisível: Clicar aqui NÃO fecha o modal */}
+          <Pressable
+            className="w-full max-w-[380px]"
             onPress={(e) => e.stopPropagation()}
           >
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-header-2 text-white">
-                Período {activePeriod}
-              </Text>
-              <Pressable onPress={() => setIsModalVisible(false)} className="p-1 active:opacity-70">
-                <X color={colors.muted} size={24} />
-              </Pressable>
-            </View>
-
             {/* Calendário de Seleção de Range */}
             <View className="w-full mb-4">
-              <RangeCalendar 
+              <RangeCalendar
                 key={`${activePeriod}-${isModalVisible}`}
-                onRangeSelected={handleRangeSelected} 
+                onRangeSelected={handleRangeSelected}
               />
             </View>
 
