@@ -66,31 +66,48 @@ export function ExerciseSelectionCard({ onSelect, className }: ExerciseSelection
         <View style={{ paddingHorizontal: PADDING_HORIZONTAL, paddingVertical: 10, backgroundColor: colors.level2 }}>
           {OPTIONS.map((exercise, index) => {
             const isSelected = index === selectedIndex;
+
             return (
               <Pressable
                 key={exercise}
                 onPress={() => {
                   setSelectedIndex(index);
                   onSelect?.(index);
+                  setIsOpen(false); // Optional: close dropdown after selection
                 }}
-                style={({ pressed }) => ({
+                style={{
                   marginBottom: 0,
                   minHeight: OPTION_HEIGHT,
                   justifyContent: "center",
                   paddingHorizontal: 0,
                   borderRadius: 0,
-                  backgroundColor: isSelected ? colors.primary : pressed ? colors.level1 : colors.level2,
+                  backgroundColor: isSelected
+                    ? colors.primary
+                    : colors.level2,
                   borderWidth: 1,
                   borderColor: "transparent",
-                })}
+                }}
               >
                 <View className="flex-row items-center">
                   {isSelected ? (
-                    <Check size={20} color="#FFFFFF" strokeWidth={2} style={{ marginRight: 12 }} />
+                    <Check
+                      size={20}
+                      color="#FFFFFF"
+                      strokeWidth={2}
+                      style={{ marginRight: 12 }}
+                    />
                   ) : (
                     <View style={{ width: 24, marginRight: 12 }} />
                   )}
-                  <Text className="text-[14px] font-medium" style={{ color: isSelected ? "#ffffff" : "#e2e8f0" }}>
+
+                  <Text
+                    className="text-[14px] font-medium"
+                    style={{
+                      color: isSelected
+                        ? "#FFFFFF"
+                        : "#e2e8f0",
+                    }}
+                  >
                     {exercise}
                   </Text>
                 </View>
