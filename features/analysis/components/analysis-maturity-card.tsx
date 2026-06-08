@@ -1,9 +1,16 @@
 import { colors } from "@/assets/colors";
-import { ArrowDownCircle, ArrowUpCircle, MinusCircle } from "lucide-react-native";
+import {
+    ArrowDownCircle,
+    ArrowUpCircle,
+    MinusCircle,
+} from "lucide-react-native";
 import React from "react";
-import { Text, useWindowDimensions, View } from "react-native";
+import { Text, View } from "react-native";
 
-export type DevelopmentLevel = "maduro" | "intermediario" | "inicial";
+export type DevelopmentLevel =
+    | "maduro"
+    | "intermediario"
+    | "inicial";
 
 export type AnalysisMaturityCardProps = {
     exercise: string;
@@ -18,7 +25,13 @@ export type AnalysisMaturityCardProps = {
     className?: string;
 };
 
-const levelStyles: Record<DevelopmentLevel, { backgroundColor: string; borderColor: string }> = {
+const levelStyles: Record<
+    DevelopmentLevel,
+    {
+        backgroundColor: string;
+        borderColor: string;
+    }
+> = {
     maduro: {
         backgroundColor: "#153615",
         borderColor: "#34C759",
@@ -39,16 +52,27 @@ const statusOrder: Record<DevelopmentLevel, number> = {
     maduro: 3,
 };
 
-function getBadgeLabel(label: string | undefined, status: DevelopmentLevel) {
-    return label ?? (status === "maduro"
-        ? "Maduro"
-        : status === "intermediario"
-            ? "Intermediário"
-            : "Inicial");
+function getBadgeLabel(
+    label: string | undefined,
+    status: DevelopmentLevel
+) {
+    return (
+        label ??
+        (status === "maduro"
+            ? "Maduro"
+            : status === "intermediario"
+                ? "Intermediário"
+                : "Inicial")
+    );
 }
 
-function getChangeData(previousStatus: DevelopmentLevel, currentStatus: DevelopmentLevel) {
-    const delta = statusOrder[currentStatus] - statusOrder[previousStatus];
+function getChangeData(
+    previousStatus: DevelopmentLevel,
+    currentStatus: DevelopmentLevel
+) {
+    const delta =
+        statusOrder[currentStatus] -
+        statusOrder[previousStatus];
 
     if (delta > 0) {
         return {
@@ -76,65 +100,124 @@ function getChangeData(previousStatus: DevelopmentLevel, currentStatus: Developm
     };
 }
 
-const SIDE_MARGIN = 16;
-const TOP_MARGIN = 16;
-
 export function AnalysisMaturityCard({
     exercise,
     previous,
     current,
     className,
 }: AnalysisMaturityCardProps) {
-    const { width: windowWidth } = useWindowDimensions();
-    const changeData = getChangeData(previous.status, current.status);
+    const changeData = getChangeData(
+        previous.status,
+        current.status
+    );
+
     const ChangeIcon = changeData.Icon;
-    const width = Math.max(0, windowWidth - SIDE_MARGIN * 2);
 
     return (
         <View
-            className={`h-12 rounded-lg border border-outline bg-level2 ${className ?? ""}`}
-            style={{
-                width,
-                marginHorizontal: SIDE_MARGIN,
-                marginTop: TOP_MARGIN,
-                alignSelf: "center",
-            }}
+            className={`w-full rounded-xl border border-outline bg-level2 py-4 px-3 mt-3 ${className ?? ""}`}
         >
-            <View className="flex-row items-center justify-between h-full px-4">
-                <Text className="text-[12px] font-normal text-white">{exercise}</Text>
+            <View className="flex-row items-center">
 
-
+                {/* Exercício */}
                 <View
-                    className="rounded-sm border px-2 py-1"
                     style={{
-                        backgroundColor: levelStyles[previous.status].backgroundColor,
-                        borderColor: levelStyles[previous.status].borderColor,
+                        flex: 2.2,
+                        paddingRight: 8,
                     }}
                 >
-                    <Text className="text-[10px] font-normal text-white text-center">
-                        {getBadgeLabel(previous.label, previous.status)}
-                    </Text>
-                </View>
-                <View
-                    className="rounded-sm border px-2 py-1"
-                    style={{
-                        backgroundColor: levelStyles[current.status].backgroundColor,
-                        borderColor: levelStyles[current.status].borderColor,
-                    }}
-                >
-                    <Text className="text-[10px] font-normal text-white text-center">
-                        {getBadgeLabel(current.label, current.status)}
+                    <Text
+                        numberOfLines={2}
+                        className="text-white text-xs font-medium"
+                    >
+                        {exercise}
                     </Text>
                 </View>
 
-                <View className="flex-row items-center gap-2">
-                    <View className="w-8 h-8 items-center justify-center" style={{ borderColor: changeData.iconColor }}>
-                        <ChangeIcon size={16} color={changeData.iconColor} strokeWidth={2} />
+                {/* Período 1 */}
+                <View
+                    style={{
+                        flex: 1.4,
+                        alignItems: "center",
+                    }}
+                >
+                    <View
+                        className="rounded-sm border px-2 py-1"
+                        style={{
+                            backgroundColor:
+                                levelStyles[previous.status]
+                                    .backgroundColor,
+                            borderColor:
+                                levelStyles[previous.status]
+                                    .borderColor,
+                        }}
+                    >
+                        <Text
+                            numberOfLines={1}
+                            className="text-[10px] text-white"
+                        >
+                            {getBadgeLabel(
+                                previous.label,
+                                previous.status
+                            )}
+                        </Text>
                     </View>
-                    <Text className="text-sm font-medium" style={{ color: changeData.textColor }}>
-                        {changeData.value}
-                    </Text>
                 </View>
+
+                {/* Período 2 */}
+                <View
+                    style={{
+                        flex: 1.4,
+                        alignItems: "center",
+                    }}
+                >
+                    <View
+                        className="rounded-sm border px-2 py-1"
+                        style={{
+                            backgroundColor:
+                                levelStyles[current.status]
+                                    .backgroundColor,
+                            borderColor:
+                                levelStyles[current.status]
+                                    .borderColor,
+                        }}
+                    >
+                        <Text
+                            numberOfLines={1}
+                            className="text-[10px] text-white"
+                        >
+                            {getBadgeLabel(
+                                current.label,
+                                current.status
+                            )}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Variação */}
+                <View
+                    style={{
+                        flex: 0.8,
+                        alignItems: "flex-end",
+                    }}
+                >
+                    <View className="flex-row items-center">
+                        <ChangeIcon
+                            size={18}
+                            color={changeData.iconColor}
+                        />
+
+                        <Text
+                            className="ml-1 text-sm font-medium"
+                            style={{
+                                color: changeData.textColor,
+                            }}
+                        >
+                            {changeData.value}
+                        </Text>
+                    </View>
+                </View>
+
             </View>
         </View>
     );
