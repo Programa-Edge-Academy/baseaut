@@ -21,6 +21,8 @@ export type AnalysisSummaryCardProps = {
     textColor?: string;
   };
   className?: string;
+  hasError?: boolean;
+  hasInsufficientData?: boolean;
 };
 
 const statusToStyles = {
@@ -50,17 +52,33 @@ function parseNumber(value: string | number): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function getVariationText(period1Value: number, period2Value: number) {
+function getVariationText(period1Value: number, period2Value: number): string {
   const diff = period2Value - period1Value;
-  const sign = diff > 0 ? "+" : diff < 0 ? "-" : "";
-  const absDiff = Math.abs(diff);
-  const percentage =
-    period1Value !== 0
-      ? Math.round(((period2Value - period1Value) / period1Value) * 100)
-      : 0;
-  const percentageText = ` (${sign}${Math.abs(percentage)}%)`;
 
-  return `${sign}${absDiff}${percentageText}`;
+  if (diff === 0) {
+    return "0 (0%)";
+  }
+
+  let relPercentage: number;
+
+  if (period1Value === 0 && period2Value === 0) {
+    relPercentage = 0;
+  } else if (period1Value === 0 && period2Value > 0) {
+    relPercentage = 100;
+  } else if (period1Value > 0 && period2Value === 0) {
+    relPercentage = -100;
+  } else {
+    relPercentage = Math.round((diff / period1Value) * 100);
+  }
+
+  const absDiff = Math.abs(diff);
+  const absRel = Math.abs(relPercentage);
+
+  if (diff > 0) {
+    return `+${absDiff} (+${absRel}%)`;
+  } else {
+    return `-${absDiff} (-${absRel}%)`;
+  }
 }
 
 export function AnalysisSummaryCard({
@@ -69,18 +87,40 @@ export function AnalysisSummaryCard({
   period2,
   variation,
   className,
+  hasError,
+  hasInsufficientData,
 }: AnalysisSummaryCardProps) {
+  // Trata estado de Erro crítico solicitado pelo QA
+  if (hasError) {
+    return (
+      <View className={`rounded-2xl border border-outline bg-level2 p-4 justify-center items-center ${className ?? ""}`}>
+        <Text className="text-sm font-medium text-error text-center">
+          Não foi possível carregar o resumo da comparação. Tente novamente.
+        </Text>
+      </View>
+    );
+  }
+
   const numericPeriod1 = parseNumber(period1.value);
   const numericPeriod2 = parseNumber(period2.value);
 
+  // Trata estado de Dados Insuficientes solicitado pelo QA (via prop ou fallback de parse falho)
+  if (hasInsufficientData || numericPeriod1 === null || numericPeriod2 === null) {
+    return (
+      <View className={`rounded-2xl border border-outline bg-level2 p-4 justify-center items-center ${className ?? ""}`}>
+        <Text className="text-sm font-medium text-muted text-center">
+          Não há dados suficientes para comparar os períodos selecionados.
+        </Text>
+      </View>
+    );
+  }
+
   const derivedStatus =
-    numericPeriod1 !== null && numericPeriod2 !== null
-      ? numericPeriod2 > numericPeriod1
-        ? "positive"
-        : numericPeriod2 < numericPeriod1
+    numericPeriod2 > numericPeriod1
+      ? "positive"
+      : numericPeriod2 < numericPeriod1
         ? "negative"
-        : "neutral"
-      : "neutral";
+        : "neutral";
 
   const status = variation?.status || derivedStatus;
   const statusStyle = statusToStyles[status];
@@ -88,10 +128,7 @@ export function AnalysisSummaryCard({
   const iconColor = variation?.iconColor || statusStyle.iconColor;
   const textColor = variation?.textColor || statusStyle.textColor;
   const variationLabel = variation?.label || "Variação";
-  const variationValue =
-    numericPeriod1 !== null && numericPeriod2 !== null
-      ? getVariationText(numericPeriod1, numericPeriod2)
-      : variation?.value || "-";
+  const variationValue = variation?.value || getVariationText(numericPeriod1, numericPeriod2);
 
   return (
     <View className={`rounded-2xl border border-outline bg-level2 p-4 ${className ?? ""}`}>
