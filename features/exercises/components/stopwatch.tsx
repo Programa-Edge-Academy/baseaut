@@ -33,6 +33,7 @@ export type StopwatchProps = {
   /** Fired when the user taps the bottom-right corner action. */
   onPressCorner?: () => void;
   className?: string;
+  isFormVisible?: boolean;
 };
 
 function formatTime(seconds: number): string {
@@ -60,6 +61,7 @@ export function Stopwatch({
   variant = "minimize",
   onPressCorner,
   className,
+  isFormVisible = true,
 }: StopwatchProps) {
   const [isRunning, setIsRunning] = useState(autoStart);
   const [seconds, setSeconds] = useState(initialSeconds);
@@ -152,8 +154,12 @@ export function Stopwatch({
           hitSlop={8}
           className="active:opacity-70"
         >
-          {variant === "form" ? (
-            <ClipboardEdit size={20} color={colors.muted} />
+        {variant === "form" ? (
+            isFormVisible ? (
+              <Minimize2 size={20} color={colors.muted} />
+            ) : (
+              <ClipboardEdit size={20} color={colors.muted} />
+            )
           ) : (
             <Minimize2 size={20} color={colors.muted} />
           )}

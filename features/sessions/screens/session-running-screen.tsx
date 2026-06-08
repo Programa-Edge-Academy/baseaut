@@ -1,7 +1,7 @@
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { FormComponent } from "@/features/forms/components/form-component";
-import { Check } from "lucide-react-native";
+import { Check, Minimize2, Maximize2 } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, ScrollView, Text, View } from "react-native";
 import { ActivityResultModal } from "../../exercises/components/activity-result-modal";
@@ -162,6 +162,12 @@ export function SessionRunningScreen({
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTranslateY = useRef(new Animated.Value(20)).current;
 
+  // State for onPressCorner
+  const [isFormVisible, setIsFormVisible] = useState(true);
+
+  const toggleFormVisibility = () => {
+    setIsFormVisible(!isFormVisible);
+  };
   const triggerToast = () => {
     setShowSuccessToast(true);
     toastOpacity.setValue(0);
@@ -408,12 +414,9 @@ export function SessionRunningScreen({
                   /* TODO: register a "crise" event tied to the current exercise. */
                 }}
                 onStop={handleStop}
-                onPressCorner={() => {
-                  // Error text
-                  throw new Error(
-                    "Módulo de formulários (ATA/CARS) pendente de implementação!",
-                  );
-                }}
+                isFormVisible={isFormVisible} // Nova prop
+                  onPressCorner={() => setIsFormVisible(!isFormVisible)} // Alterna o estado
+                
               />
             )}
 
@@ -422,12 +425,14 @@ export function SessionRunningScreen({
             is out of scope here — wire to features/forms once available.
             Placeholder block kept so the layout reflects the design intent.
           */}
+          <View style={{ display: isFormVisible ? 'flex' : 'none' }}>
             <FormComponent
               ref={formRef}
               formularioId={"00000000-0000-4000-0000-0000000000fc"}
               sessaoId={effectiveSessionId}
               alunoId={studentId}
             />
+          </View>
           </ScrollView>
         </View>
 
