@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
-import { View } from "react-native";
-import { DefaultButton } from "../../../components/default-button";
+import { Pressable, Text, View } from "react-native";
 import { YesNoQuestion } from "../types";
 
 /**
@@ -41,25 +40,23 @@ export function YesNoQuestionUI({
   return (
     <View className="self-stretch flex flex-col mt-2">
       <View className="flex flex-row gap-4">
-        <DefaultButton
-          label="Não"
+        <Pressable
           onPress={() => handleSelect("nao")}
-          bgColorClass={selected === "nao" ? "bg-error" : "bg-level1"}
-          shadowClass={selected === "nao" ? "shadow-errorShadow" : ""}
-          sizeClass="flex-1 h-[44px]"
-          className="rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline"
-          textClassName="text-header-3 text-white"
-        />
+          className={`flex-1 h-[44px] items-center justify-center rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline active:opacity-80 ${
+            selected === "nao" ? "bg-error shadow-errorShadow" : "bg-level1"
+          }`}
+        >
+          <Text className="text-header-3 text-white">Não</Text>
+        </Pressable>
 
-        <DefaultButton
-          label="Sim"
+        <Pressable
           onPress={() => handleSelect("sim")}
-          bgColorClass={selected === "sim" ? "bg-primary" : "bg-level1"}
-          shadowClass={selected === "sim" ? "shadow-primaryShadow" : ""}
-          sizeClass="flex-1 h-[44px]"
-          className="rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline"
-          textClassName="text-header-3 text-white"
-        />
+          className={`flex-1 h-[44px] items-center justify-center rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline active:opacity-80 ${
+            selected === "sim" ? "bg-primary shadow-primaryShadow" : "bg-level1"
+          }`}
+        >
+          <Text className="text-header-3 text-white">Sim</Text>
+        </Pressable>
       </View>
 
       {showSubQuestion &&

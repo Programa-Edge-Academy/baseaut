@@ -64,9 +64,8 @@ export function Toast({
 
   const isSuccess = mode === "success";
 
-  const backgroundColor = isSuccess
-    ? "rgba(52, 199, 89, 0.15)"
-    : "rgba(190, 34, 35, 0.15)";
+  // Fundo opaco (surface escura) com borda/ícone coloridos indicando sucesso/erro.
+  const backgroundColor = colors.level2;
   const borderColor = isSuccess ? colors.secondary : colors.error;
   const titleColor = isSuccess ? colors.secondary : colors.error;
 

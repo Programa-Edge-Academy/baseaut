@@ -1,3 +1,4 @@
+import { colors } from "@/assets/colors";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { FormComponent } from "@/features/forms/components/form-component";
@@ -494,7 +495,7 @@ export function SessionRunningScreen({
               bottom: 100,
               left: 20,
               right: 20,
-              backgroundColor: "rgba(52, 199, 89, 0.25)",
+              backgroundColor: colors.level2,
               borderColor: "#34C759",
               borderWidth: 1,
               borderRadius: 15,
