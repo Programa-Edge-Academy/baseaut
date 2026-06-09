@@ -13,6 +13,13 @@ export interface SessionItem {
 
 export interface StudentProfile {
   name: string;
+  avatarUrl: string | null;
+  height: number | null;
+  weight: number | null;
+  waist: number | null;
+  birthDate: string | null;
+  supportLevel: string | null;
+  observations: string | null;
 }
 
 export function useStudentSessions(studentId?: string) {
@@ -29,12 +36,31 @@ export function useStudentSessions(studentId?: string) {
       // 1. Busca o perfil do aluno
       const { data: studentData, error: studentError } = await supabase
         .from("alunos")
-        .select("nome_completo")
+        .select("nome_completo, avatar_url, altura, peso, cintura, data_nascimento, nivel_suporte, observacoes_clinicas")
         .eq("id", studentId)
         .single();
 
       if (studentError) throw studentError;
-      if (studentData) setProfile({ name: studentData.nome_completo });
+      if (studentData) {
+        const formatSupportLevel = (level: string | null) => {
+          if (!level) return null;
+          if (level === "nivel_1") return "Nível 1";
+          if (level === "nivel_2") return "Nível 2";
+          if (level === "nivel_3") return "Nível 3";
+          return level;
+        };
+
+        setProfile({
+          name: studentData.nome_completo,
+          avatarUrl: studentData.avatar_url,
+          height: studentData.altura ? Number(studentData.altura) : null,
+          weight: studentData.peso ? Number(studentData.peso) : null,
+          waist: studentData.cintura ? Number(studentData.cintura) : null,
+          birthDate: studentData.data_nascimento ?? null,
+          supportLevel: formatSupportLevel(studentData.nivel_suporte),
+          observations: studentData.observacoes_clinicas ?? null,
+        });
+      }
 
       // 2. Busca as Sessões
       const { data: sessionsData, error: sessionsError } = await supabase

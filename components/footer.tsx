@@ -10,7 +10,7 @@ export function Footer() {
   const pathname = usePathname();
   const isActivityActive = (pathname === "/exercises" || pathname === "/circuits");
   const isStartActive = pathname === "/students";
-  const isAnalysisActive = (pathname === "/analysis" || pathname === "/reports");
+  const isAnalysisActive = (pathname.startsWith("/analysis") || pathname.startsWith("/reports"));
 
   const handleNavigate = (route: "/exercises" | "/students" | "/analysis") => {
     if (pathname !== route) {

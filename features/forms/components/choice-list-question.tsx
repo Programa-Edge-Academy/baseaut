@@ -48,11 +48,11 @@ export function ChoiceListQuestionUI({ question, value, onChange }: Props) {
               className="flex flex-row items-center gap-3"
             >
               <View
-                className={`w-8 h-8 rounded-full outline outline-1 outline-offset-[-1px] justify-center items-center ${isSelected ? "bg-primary outline-transparent" : "bg-level1 outline-outline"}`}
+                className={`w-8 h-8 rounded-xl outline outline-1 outline-offset-[-1px] justify-center items-center ${isSelected ? "bg-primary outline-transparent" : "bg-level1 outline-outline"}`}
               >
                 {isSelected && <Check color="#fff" size={18} />}
               </View>
-              <View className="flex-1 min-h-[44px] px-3.5 py-2.5 bg-level1 rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline justify-center">
+              <View className="flex-1 min-h-[44px] px-3.5 py-2.5 bg-level1 rounded-xl outline outline-1 outline-offset-[-1px] outline-outline justify-center">
                 <Text className="text-white text-default-2">{opt}</Text>
               </View>
             </Pressable>

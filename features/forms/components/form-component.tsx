@@ -80,11 +80,54 @@ export const FormComponent = forwardRef(function FormComponent(
       });
 
       setQuestions(mappedQuestions);
+
+      // Modo edição: pré-carrega as respostas já salvas deste formulário no
+      // contexto atual (sessão ou aluno), parseando os tipos que guardam
+      // objeto. Sem vínculo de sessão/aluno, mantém o formulário em branco.
+      if (sessaoId || alunoId) {
+        let answersQuery = supabase
+          .from("respostas_formulario")
+          .select("pergunta_id, valor_preenchido")
+          .eq("formulario_id", formularioId);
+
+        if (sessaoId) {
+          answersQuery = answersQuery.eq("sessao_id", sessaoId);
+        } else if (alunoId) {
+          answersQuery = answersQuery.eq("aluno_id", alunoId);
+        }
+
+        const { data: respostas } = await answersQuery;
+
+        if (respostas && respostas.length > 0) {
+          const objectTypes = new Set(["dropdown", "choice_list", "matrix"]);
+          const typeById = new Map<string, string>(
+            mappedQuestions.map((q) => [q.id, q.type]),
+          );
+          const loadedAnswers: Record<string, any> = {};
+
+          for (const r of respostas) {
+            if (r.valor_preenchido == null) continue;
+            const qType = typeById.get(r.pergunta_id);
+            if (qType && objectTypes.has(qType)) {
+              try {
+                loadedAnswers[r.pergunta_id] = JSON.parse(r.valor_preenchido);
+              } catch {
+                loadedAnswers[r.pergunta_id] = r.valor_preenchido;
+              }
+            } else {
+              loadedAnswers[r.pergunta_id] = r.valor_preenchido;
+            }
+          }
+
+          setAnswers(loadedAnswers);
+        }
+      }
+
       setLoading(false);
     }
 
     loadQuestions();
-  }, [formularioId]);
+  }, [formularioId, sessaoId, alunoId]);
 
   const handleSave = async (silent = true) => {
     setSaving(true);

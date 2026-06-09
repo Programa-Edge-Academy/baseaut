@@ -1,6 +1,6 @@
 import { colors } from "@/assets/colors";
 import { HelpCircle, Mic, X } from "lucide-react-native";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { FormQuestionProps } from "../types";
@@ -24,9 +24,18 @@ interface Props {
 /**
  * Renders a question title, the corresponding UI, and optional help/observations.
  */
-export function FormQuestion({ question, isSubQuestion = false, value, onChange }: Props) {
+export function FormQuestion({
+  question,
+  isSubQuestion = false,
+  value,
+  onChange,
+}: Props) {
   const [isHelpModalVisible, setIsHelpModalVisible] = useState(false);
   const [observationText, setObservationText] = useState("");
+
+  const renderSubQuestion = (subQuestion: FormQuestionProps): ReactNode => (
+    <FormQuestion question={subQuestion} isSubQuestion={true} />
+  );
 
   /**
    * Selects the appropriate question UI based on type.
@@ -35,17 +44,54 @@ export function FormQuestion({ question, isSubQuestion = false, value, onChange 
   const renderQuestionUI = () => {
     switch (question.type) {
       case "open":
-        return <OpenQuestionUI question={question} value={value} onChange={onChange} />;
+        return (
+          <OpenQuestionUI
+            question={question}
+            value={value}
+            onChange={onChange}
+          />
+        );
       case "yes_no":
-        return <YesNoQuestionUI question={question} value={value} onChange={onChange} />;
+        return (
+          <YesNoQuestionUI
+            question={question}
+            value={value}
+            onChange={onChange}
+            renderSubQuestion={renderSubQuestion}
+          />
+        );
       case "choice_list":
-        return <ChoiceListQuestionUI question={question} value={value} onChange={onChange} />;
+        return (
+          <ChoiceListQuestionUI
+            question={question}
+            value={value}
+            onChange={onChange}
+          />
+        );
       case "dropdown":
-        return <DropdownQuestionUI question={question} value={value} onChange={onChange} />;
+        return (
+          <DropdownQuestionUI
+            question={question}
+            value={value}
+            onChange={onChange}
+          />
+        );
       case "linear_scale":
-        return <LinearScaleQuestionUI question={question} value={value} onChange={onChange} />;
+        return (
+          <LinearScaleQuestionUI
+            question={question}
+            value={value}
+            onChange={onChange}
+          />
+        );
       case "matrix":
-        return <MatrixQuestionUI question={question} value={value} onChange={onChange} />;
+        return (
+          <MatrixQuestionUI
+            question={question}
+            value={value}
+            onChange={onChange}
+          />
+        );
       default:
         return null;
     }
@@ -53,26 +99,32 @@ export function FormQuestion({ question, isSubQuestion = false, value, onChange 
 
   const content = (
     <>
-      <View className="self-stretch px-3.5 py-2.5 rounded-[10px] flex flex-row justify-between items-center gap-2.5">
-        <Text className="flex-1 text-white text-default-2">
+    <View className="self-stretch px-0.7 py-2.5 rounded-[10px] flex flex-row items-center gap-2.5">
+      {/* Container do título com alinhamento centralizado */}
+      <View className="flex-1 min-h-[44px] px-3.5 py-2.5 bg-level1 rounded-xl outline outline-1 outline-offset-[-1px] outline-outline justify-center">
+        <Text className="text-white text-default-2">
           {question.title}
         </Text>
-
-        {question.helpText && (
-          <Pressable
-            onPress={() => setIsHelpModalVisible(true)}
-            className="w-8 h-8 rounded-full items-center justify-center bg-secondary/15 active:opacity-60"
-          >
-            <HelpCircle color={colors.secondary} size={20} />
-          </Pressable>
-        )}
       </View>
-      
+
+      {/* Ícone de ajuda com tamanho fixo para não distorcer o layout */}
+      {question.helpText && (
+        <Pressable
+          onPress={() => setIsHelpModalVisible(true)}
+          className="w-11 h-11 rounded-full items-center justify-center bg-secondary/15 active:opacity-60 shrink-0"
+        >
+          <HelpCircle color={colors.secondary} size={20} />
+        </Pressable>
+      )}
+    </View>
+
       {renderQuestionUI()}
 
       {question.allowObservation && (
         <View className="self-stretch mt-4 border-t border-outline pt-4">
-          <Text className="text-default-3 text-muted mb-2">Observações (opcional)</Text>
+          <Text className="text-default-3 text-muted mb-2">
+            Observações (opcional)
+          </Text>
           <View className="flex flex-row items-end gap-3">
             <DefaultTextInput
               multiline
@@ -112,8 +164,13 @@ export function FormQuestion({ question, isSubQuestion = false, value, onChange 
         <View className="flex-1 bg-black/60 justify-center p-6">
           <View className="bg-level2 border border-outline rounded-2xl max-h-[80%] overflow-hidden">
             <View className="flex-row items-center justify-between p-5 border-b border-outline">
-              <Text className="text-header-3 text-white flex-1 pr-4">{question.title}</Text>
-              <Pressable onPress={() => setIsHelpModalVisible(false)} className="p-1 active:opacity-60">
+              <Text className="text-header-3 text-white flex-1 pr-4">
+                {question.title}
+              </Text>
+              <Pressable
+                onPress={() => setIsHelpModalVisible(false)}
+                className="p-1 active:opacity-60"
+              >
                 <X color={colors.muted} size={24} />
               </Pressable>
             </View>

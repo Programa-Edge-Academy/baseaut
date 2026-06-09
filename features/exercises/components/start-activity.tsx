@@ -12,7 +12,7 @@ export type StartActivityProps = {
   title: string;
   subtitle: string;
   onStart: () => void;
-  onStartAndRecord: () => void;
+  onStartAndRecord: (() => void) | null;
   onPressInfo?: () => void;
   /**
    * Ordered list of media URLs (images) shown inside the preview carousel.

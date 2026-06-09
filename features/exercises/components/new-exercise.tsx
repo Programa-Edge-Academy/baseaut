@@ -34,10 +34,7 @@ export type NewExerciseProps = {
   borderRadius?: number;
   onClose: () => void;
   availableTags?: string[];
-  onSave: (
-    exercise: NewExerciseData,
-    photoUri: string | null,
-  ) => void;
+  onSave: (exercise: NewExerciseData, photoUri: string | null) => void;
   title?: string;
   initialData?: NewExerciseData & {
     iconUrl?: string | null;
@@ -64,14 +61,14 @@ export function NewExercise({
   const [deletePhotoModalVisible, setDeletePhotoModalVisible] = useState(false);
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [errors, setErrors] = useState({ name: "", tag: "" });
+  const [errors, setErrors] = useState({ name: "", tag: "", duration: "" });
 
   useEffect(() => {
     if (!visible) return;
     setDeletePhotoModalVisible(false);
     setIsPreviewVisible(false);
     setIsSaving(false);
-    setErrors({ name: "", tag: "" });
+    setErrors({ name: "", tag: "", duration: "" });
     setName(initialData?.name ?? "");
     setDescription(initialData?.description ?? "");
     setDurationInput(
@@ -87,7 +84,7 @@ export function NewExercise({
   const handlePhotoPress = async () => {
     const ImagePicker = require("expo-image-picker");
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: [ImagePicker.MediaType.Images],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
@@ -103,7 +100,10 @@ export function NewExercise({
    */
   const handleSave = () => {
     let isValid = true;
-    const newErrors = { name: "", tag: "" };
+    const newErrors = { name: "", tag: "", duration: "" };
+
+    const parsed = parseInt(durationInput, 10);
+    const seconds = Number.isNaN(parsed) ? 0 : parsed;
 
     if (!name.trim()) {
       newErrors.name = "Este campo é obrigatório";
@@ -115,11 +115,22 @@ export function NewExercise({
       isValid = false;
     }
 
+    if (name.trim().length > 100) {
+      newErrors.name = "O nome deve ter no máximo 100 caracteres";
+      isValid = false;
+    }
+
+    if (durationInput.trim()) {
+      if (Number.isNaN(parsed) || seconds < 0 || seconds > 300) {
+        newErrors.duration = "A duração deve ser menor que 300 segundos";
+        isValid = false;
+      }
+    }
+
     setErrors(newErrors);
 
     if (!isValid || isSaving) return;
     setIsSaving(true);
-    const seconds = parseInt(durationInput, 10) || 0;
 
     onSave(
       {
@@ -159,10 +170,7 @@ export function NewExercise({
             <View className="p-[25px] gap-[25px]">
               <View className="flex-row items-center justify-between">
                 <Text className="text-header-2 text-white">{title}</Text>
-                <Pressable
-                  onPress={onClose}
-                  className="p-1 active:opacity-70"
-                >
+                <Pressable onPress={onClose} className="p-1 active:opacity-70">
                   <X color={colors.muted} size={28} />
                 </Pressable>
               </View>
@@ -174,7 +182,11 @@ export function NewExercise({
                 <View className="items-center">
                   <View className="relative">
                     <Pressable
-                      onPress={photoUri ? () => setIsPreviewVisible(true) : handlePhotoPress}
+                      onPress={
+                        photoUri
+                          ? () => setIsPreviewVisible(true)
+                          : handlePhotoPress
+                      }
                       className="w-24 h-24 bg-level1 border border-outline items-center justify-center rounded-2xl overflow-hidden active:opacity-80"
                     >
                       {photoUri ? (
@@ -189,7 +201,7 @@ export function NewExercise({
 
                     {photoUri && (
                       <View>
-                        <View className="absolute -bottom-0 -left-0" >
+                        <View className="absolute -bottom-0 -left-0">
                           <Pressable
                             onPress={handlePhotoPress}
                             className="bg-primary p-1.5 rounded-full border-2 border-level2 active:opacity-70 -bottom-0 -left-0"
@@ -221,14 +233,18 @@ export function NewExercise({
                     onChangeText={(val) => {
                       const cleanVal = val.replace(/\d/g, "");
                       setName(cleanVal);
-                      if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
+                      if (errors.name)
+                        setErrors((prev) => ({ ...prev, name: "" }));
                     }}
                     placeholder="Ex: Girar bambolê"
                     className="h-[44px]"
-                    outLineBorderClass={errors.name ? "border-error" : ""} 
+                    outLineBorderClass={errors.name ? "border-error" : ""}
+                    maxLength={100}
                   />
                   {errors.name ? (
-                    <Text className="text-error text-default-3 mt-1 ml-1">{errors.name}</Text>
+                    <Text className="text-error text-default-3 mt-1 ml-1">
+                      {errors.name}
+                    </Text>
                   ) : null}
                 </View>
 
@@ -253,14 +269,22 @@ export function NewExercise({
                     keyboardType="numeric"
                     placeholder="Ex: 120"
                     className="h-[44px]"
+                    maxLength={3}
                   />
+                  {errors.duration ? (
+                    <Text className="text-error text-default-3 mt-1 ml-1">
+                      {errors.duration}
+                    </Text>
+                  ) : null}
                 </View>
 
                 <View className="gap-[2px]">
                   <Text className="text-muted text-default-1">Tags*</Text>
                   <TagGroup tags={tags} onAddTag={() => {}} />
                   {errors.tag ? (
-                    <Text className="text-error text-default-3 mt-1 ml-1">{errors.tag}</Text>
+                    <Text className="text-error text-default-3 mt-1 ml-1">
+                      {errors.tag}
+                    </Text>
                   ) : null}
                 </View>
 
@@ -289,7 +313,7 @@ export function NewExercise({
         title="Remover ícone?"
         mode="delete"
       />
-      
+
       <Modal
         visible={isPreviewVisible}
         transparent

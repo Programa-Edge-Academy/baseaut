@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { DefaultButton } from "@/components/default-button";
 import { Calendar, ChevronDown, ImageUp, Pencil, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Image, Modal, Pressable, Text, View } from "react-native";
@@ -8,7 +9,6 @@ import { ConfirmationModal } from "../../../components/confirmation-modal";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { DropdownModal } from "../../../components/dropdown-modal";
 import { StudentData } from "../../teams/hooks/use-team-data";
-import { DefaultButton } from "@/components/default-button";
 
 /**
  * Props for the create/edit student modal.
@@ -103,7 +103,7 @@ export function NewStudent({
     const ImagePicker = require("expo-image-picker");
 
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: [ImagePicker.MediaType.Images],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
@@ -220,6 +220,8 @@ export function NewStudent({
       newErrors.fullName = "Nome é obrigatório";
     } else if (nameTrimmed.length < 3) {
       newErrors.fullName = "No mínimo 3 caracteres";
+    } else if (nameTrimmed.length > 100) {
+      newErrors.fullName = "O nome deve ter no máximo 100 caracteres";
     } else if (!nameTrimmed.includes(" ")) {
       newErrors.fullName = "Informe nome e sobrenome";
     }
@@ -246,6 +248,10 @@ export function NewStudent({
           dateObj > today
         ) {
           newErrors.birthDate = "Data irreal ou no futuro";
+        }
+
+        if (observations.length > 250) {
+          newErrors.observations = "O campo deve ter no máximo 250 caracteres";
         }
       }
     }
@@ -333,7 +339,11 @@ export function NewStudent({
               <View className="items-center">
                 <View className="relative">
                   <Pressable
-                    onPress={photoUri ? () => setIsPreviewVisible(true) : handlePhotoPress}
+                    onPress={
+                      photoUri
+                        ? () => setIsPreviewVisible(true)
+                        : handlePhotoPress
+                    }
                     className="w-24 h-24 bg-level1 border border-outline items-center justify-center rounded-2xl overflow-hidden active:opacity-80"
                   >
                     {photoUri ? (
@@ -348,7 +358,7 @@ export function NewStudent({
 
                   {photoUri && (
                     <View>
-                      <View className="absolute -bottom-0 -left-0" >
+                      <View className="absolute -bottom-0 -left-0">
                         <Pressable
                           onPress={handlePhotoPress}
                           className="bg-primary p-1.5 rounded-full border-2 border-level2 active:opacity-70 -bottom-0 -left-0"
@@ -442,7 +452,9 @@ export function NewStudent({
                     placeholder="Ex: 30.5"
                     value={weight}
                     onChangeText={(text) => {
-                      let valStr = text.replace(/,/g, ".").replace(/[^\d.]/g, "");
+                      let valStr = text
+                        .replace(/,/g, ".")
+                        .replace(/[^\d.]/g, "");
                       if (valStr) {
                         const numericVal = parseFloat(valStr);
                         if (numericVal > 1000) valStr = "1000";
@@ -470,7 +482,9 @@ export function NewStudent({
                     placeholder="Ex: 120"
                     value={height}
                     onChangeText={(text) => {
-                      let valStr = text.replace(/,/g, ".").replace(/[^\d.]/g, "");
+                      let valStr = text
+                        .replace(/,/g, ".")
+                        .replace(/[^\d.]/g, "");
                       if (valStr) {
                         const numericVal = parseFloat(valStr);
                         if (numericVal > 300) valStr = "300";
@@ -498,7 +512,9 @@ export function NewStudent({
                     placeholder="Ex: 50"
                     value={waist}
                     onChangeText={(text) => {
-                      let valStr = text.replace(/,/g, ".").replace(/[^\d.]/g, "");
+                      let valStr = text
+                        .replace(/,/g, ".")
+                        .replace(/[^\d.]/g, "");
                       if (valStr) {
                         const numericVal = parseFloat(valStr);
                         if (numericVal > 350) valStr = "350";
@@ -577,13 +593,24 @@ export function NewStudent({
 
               <View className="w-full gap-1">
                 <Text className="text-default-2 text-muted">Observações</Text>
-                <DefaultTextInput
-                  placeholder="Observações adicionais (opcionais)"
-                  className="h-11 rounded-[15px]"
-                  maxLength={100}
-                  value={observations}
-                  onChangeText={setObservations}
-                />
+                  <DefaultTextInput
+                    placeholder="Observações adicionais (opcionais)"
+                    className="h-11 rounded-[15px]"
+                    maxLength={250} // Garante o limite no componente
+                    value={observations}
+                    onChangeText={setObservations} // Adicione aqui a limpeza do erro se necessário
+                    outLineBorderClass={errors.observations ? "border-error" : "border-outline"} // Adicione borda de erro
+                  />
+                  {/* Contador visual abaixo do input */}
+                  <Text className="text-muted text-default-3 text-right">
+                    {observations.length}/250
+                  </Text>
+                  {/* Exibição da mensagem de erro se houver */}
+                  {errors.observations && (
+                    <Text className="mt-1 text-default-3 text-error">
+                      {errors.observations}
+                    </Text>
+                  )}
               </View>
 
               <ActionButtons
