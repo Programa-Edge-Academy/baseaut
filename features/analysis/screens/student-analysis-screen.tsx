@@ -1,17 +1,16 @@
 import { colors } from "@/assets/colors";
-import { DropdownModal } from "@/components/dropdown-modal";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { AnalysisOptionCard } from "@/features/analysis/components/analysis-option-card";
 import { AppliedProtocolsCard } from "@/features/analysis/components/applied-protocols-card";
 import { StudentInfoCard } from "@/features/analysis/components/student-info-card";
-import { useProtocolStatuses } from "@/features/analysis/hooks/use-protocol-statuses";
 import type { ProtocolTipo } from "@/features/analysis/hooks/use-protocol-records";
+import { useProtocolStatuses } from "@/features/analysis/hooks/use-protocol-statuses";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronDown, User } from "lucide-react-native";
-import React, { useRef, useState } from "react";
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from "react-native";
+import { User } from "lucide-react-native";
+import React from "react";
+import { ActivityIndicator, Image, ScrollView, Text, View } from "react-native";
 
 export function StudentAnalysisScreen() {
   const router = useRouter();
@@ -30,24 +29,6 @@ export function StudentAnalysisScreen() {
       },
     });
 
-  const [selectedClassificacao, setSelectedClassificacao] = useState<string | null>(null);
-  const [dropdownVisible, setDropdownVisible] = useState(false);
-  const [dropdownLayout, setDropdownLayout] = useState({ top: 0, left: 0, width: 0 });
-  const buttonRef = useRef<View>(null);
-
-  const dropdownOptions = ["Fase 1", "Fase 2", "Fase 3", "Concluído"];
-
-  const handleDropdownPress = () => {
-    buttonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setDropdownLayout({
-        top: pageY + height,
-        left: pageX,
-        width: Math.max(width, 140),
-      });
-      setDropdownVisible(true);
-    });
-  };
-
   return (
     <View className="flex-1 bg-level1">
       {/* Cabeçalho de navegação */}
@@ -61,7 +42,7 @@ export function StudentAnalysisScreen() {
             </View>
           ) : (
             <>
-              {/* Seção superior de Perfil do Aluno e Classificação */}
+              {/* Seção superior de Perfil do Aluno */}
               <View className="flex-row items-center justify-between pb-5 mb-5">
                 <View className="flex-row items-center flex-1 mr-4">
                   <View className="h-11 w-11 items-center justify-center rounded-2xl bg-level2 mr-3 overflow-hidden">
@@ -84,23 +65,6 @@ export function StudentAnalysisScreen() {
                       {sessions.length} {sessions.length === 1 ? "sessão registrada" : "sessões registradas"}
                     </Text>
                   </View>
-                </View>
-
-                {/* Seletor de Classificação */}
-                <View className="items-end">
-                  <Text className="text-[12px] font-medium text-muted mb-1" style={{ fontFamily: "Inter-Medium" }}>
-                    Classificação
-                  </Text>
-                  <Pressable
-                    ref={buttonRef}
-                    onPress={handleDropdownPress}
-                    className="flex-row items-center justify-between bg-level2 border border-outline px-3 py-1.5 rounded-lg min-w-[120px] h-[32px] active:opacity-80"
-                  >
-                    <Text className="text-xs text-muted font-medium mr-2" numberOfLines={1}>
-                      {selectedClassificacao || "Selecionar"}
-                    </Text>
-                    <ChevronDown size={14} color={colors.muted} />
-                  </Pressable>
                 </View>
               </View>
 
@@ -177,16 +141,6 @@ export function StudentAnalysisScreen() {
           )}
         </View>
       </ScrollView>
-
-      {/* Modal dropdown de classificação */}
-      <DropdownModal
-        visible={dropdownVisible}
-        onClose={() => setDropdownVisible(false)}
-        onSelect={(option) => setSelectedClassificacao(option)}
-        options={dropdownOptions}
-        selectedValue={selectedClassificacao}
-        layout={dropdownLayout}
-      />
 
       {/* Footer */}
       <Footer />
