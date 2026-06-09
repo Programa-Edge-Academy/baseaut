@@ -35,6 +35,9 @@ export function TeamScreen() {
   const [companionToDelete, setCompanionToDelete] = useState<string | null>(
     null,
   );
+  const [companionToReject, setCompanionToReject] = useState<string | null>(
+    null,
+  );
 
   /**
    * Selects a student for editing and opens the modal.
@@ -82,7 +85,7 @@ export function TeamScreen() {
               className="max-w-none"
               companions={companions}
               onAcceptCompanion={acceptCompanion}
-              onRejectCompanion={rejectCompanion}
+              onRejectCompanion={(id) => setCompanionToReject(id)}
               onRemoveCompanion={(id) => setCompanionToDelete(id)}
             />
           </View>
@@ -125,11 +128,23 @@ export function TeamScreen() {
 
       <ConfirmationModal
         visible={!!companionToDelete}
-        title="Excluir monitor?"
+        title="Remover monitor?"
+        message="Tem certeza que deseja remover este monitor da equipe? Esta ação não poderá ser desfeita."
         onClose={() => setCompanionToDelete(null)}
         onConfirm={() => {
           if (companionToDelete) removeCompanion(companionToDelete);
           setCompanionToDelete(null);
+        }}
+      />
+
+      <ConfirmationModal
+        visible={!!companionToReject}
+        title="Rejeitar monitor?"
+        message="Tem certeza que deseja rejeitar este monitor? Esta ação não poderá ser desfeita."
+        onClose={() => setCompanionToReject(null)}
+        onConfirm={() => {
+          if (companionToReject) rejectCompanion(companionToReject);
+          setCompanionToReject(null);
         }}
       />
     </View>
