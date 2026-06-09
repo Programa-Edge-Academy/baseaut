@@ -131,8 +131,8 @@ export function LoginForm() {
           disabled={isButtonDisabled}
           bgColorClass={isButtonDisabled ? "bg-muted" : "bg-primary"}
           shadowClass={isButtonDisabled ? "shadow-none" : "shadow-primaryShadow"}
-          className={`rounded-[15px] ${isButtonDisabled ? "border border-outline" : ""}`}
-        />
+          textClassName="text-white"
+          />
       </View>
 
       <View className="mt-7 items-center gap-3">
