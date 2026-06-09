@@ -1,7 +1,7 @@
 import { colors } from "@/assets/colors";
+import { User } from "lucide-react-native";
 import React from "react";
 import { Image, Text, View } from "react-native";
-import { User } from "lucide-react-native";
 
 type InfoChipProps = {
   label: string;
@@ -9,7 +9,6 @@ type InfoChipProps = {
 };
 
 function InfoChip({ label, value }: InfoChipProps) {
-  if (!value) return null;
   return (
     <View className="flex-1 bg-level1 border border-outline rounded-[10px] px-[10px] py-[5px]">
       <Text
@@ -23,7 +22,7 @@ function InfoChip({ label, value }: InfoChipProps) {
         className="text-[12px] text-white font-bold mt-0.5"
         style={{ fontFamily: "Inter-Bold" }}
       >
-        {value}
+        {value ? value : "—"}
       </Text>
     </View>
   );
