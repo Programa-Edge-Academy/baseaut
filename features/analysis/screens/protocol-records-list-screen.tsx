@@ -42,45 +42,46 @@ export function ProtocolRecordsListScreen({
     <View className="flex-1 bg-level1">
       <Header variant="back" onPressBack={onPressBack} />
 
-      <View className="mx-8 mt-5">
-        <PageHeader
-          title={`${protocolLabel} - ${studentName}`}
-          subtitle={
-            records.length > 0
-              ? `${records.length} ${records.length === 1 ? "registro" : "registros"}`
-              : "Visualização de registros"
-          }
-        />
+      <View className="flex-1">
+        <View className="mx-8 mt-5">
+          <PageHeader
+            title={`${protocolLabel} - ${studentName}`}
+            subtitle={
+              records.length > 0
+                ? `${records.length} ${records.length === 1 ? "registro" : "registros"}`
+                : "Visualização de registros"
+            }
+          />
+        </View>
+
+        {isLoading ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : error ? (
+          <View className="mt-16 items-center px-8">
+            <Text className="text-center text-default-2 text-extra">
+              {error.message || "Erro ao carregar os registros."}
+            </Text>
+          </View>
+        ) : records.length === 0 ? (
+          <ProtocolEmptyState />
+        ) : (
+          <DataList
+            className="mx-8 mt-5"
+            data={records}
+            keyExtractor={(item) => item.id}
+            emptyMessage="Nenhum registro encontrado."
+            renderItem={({ item }) => (
+              <ProtocolRecordCard
+                record={item}
+                showAgeGroup={tipo === "mabc2"}
+                onPress={() => onPressRecord?.(item)}
+              />
+            )}
+          />
+        )}
       </View>
-
-      {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      ) : error ? (
-        <View className="mt-16 items-center px-8">
-          <Text className="text-center text-default-2 text-extra">
-            {error.message || "Erro ao carregar os registros."}
-          </Text>
-        </View>
-      ) : records.length === 0 ? (
-        <ProtocolEmptyState />
-      ) : (
-        <DataList
-          className="mx-8 mt-5"
-          data={records}
-          keyExtractor={(item) => item.id}
-          emptyMessage="Nenhum registro encontrado."
-          renderItem={({ item }) => (
-            <ProtocolRecordCard
-              record={item}
-              showAgeGroup={tipo === "mabc2"}
-              onPress={() => onPressRecord?.(item)}
-            />
-          )}
-        />
-      )}
-
       <Footer />
     </View>
   );
