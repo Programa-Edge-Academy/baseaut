@@ -1,8 +1,12 @@
 import { colors } from "@/assets/colors";
 import { AlertCircle } from "lucide-react-native";
 import React from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Text, useWindowDimensions, View } from "react-native";
 import { AnalysisSummaryCard, AnalysisSummaryCardProps } from "./analysis-summary-card";
+
+// Constantes de alinhamento idênticas ao molde padrão
+const SIDE_MARGIN = 16;
+const MAX_WIDTH = 600;
 
 const defaultCards: AnalysisSummaryCardProps[] = [
   {
@@ -18,7 +22,7 @@ const defaultCards: AnalysisSummaryCardProps[] = [
   {
     title: "Comportamentos observados",
     period1: { label: "Período 1", value: 7 },
-    period2: { label: "Período 2", value: 7 },
+    period2: { label: "Período 7", value: 7 },
   },
   {
     title: "Sessões registradas",
@@ -31,40 +35,66 @@ export type AnalysisSummaryProps = {
   title?: string;
   cards?: AnalysisSummaryCardProps[];
   showNote?: boolean;
-  className?: string;
 };
 
 export function AnalysisSummary({
   title = "Resumo da comparação",
   cards = defaultCards,
   showNote = true,
-  className,
 }: AnalysisSummaryProps) {
-  return (
-    <ScrollView
-      className={`flex-1 ${className ?? ""}`}
-      contentContainerStyle={{ paddingHorizontal: 22, paddingVertical: 16, gap: 12 }}
-      showsVerticalScrollIndicator={false}
-    >
-      <View className="container bg-level2 border border-outline rounded-2xl p-4">
-        <View className="container__conteudo flex-col gap-2">
-          <Text className="container__titulo text-lg font-bold text-white">{title}</Text>
+  const { width: screenWidth } = useWindowDimensions();
 
+  // Cálculo de largura responsiva idêntico ao ExerciseComparisonCard
+  const width = Math.min(
+    screenWidth - SIDE_MARGIN * 2,
+    MAX_WIDTH
+  );
+
+  return (
+    <View
+      style={{
+        width,
+        alignSelf: "center",
+        backgroundColor: colors.level2,
+        borderWidth: 1,
+        borderColor: colors.outline,
+      }}
+      className="rounded-2xl p-6"
+    >
+      <View className="flex-col gap-3">
+        {/* Title */}
+        <Text className="text-white text-[20px] font-bold mb-1">
+          {title}
+        </Text>
+
+        {/* Rows */}
+        <View className="gap-3">
           {cards.map((card, index) => (
             <AnalysisSummaryCard key={index} {...card} />
           ))}
-
-          {showNote && (
-            <View className="flex-row gap-3 rounded-xl bg-level2 border border-outline p-3 mt-2">
-              <AlertCircle size={20} color={colors.muted} strokeWidth={2} />
-              <Text className="flex-1 text-xs font-medium text-muted leading-5">
-                Os valores exibem a diferença absoluta e percentual entre os dois períodos selecionados.
-              </Text>
-            </View>
-          )}
         </View>
+
+        {/* Footer Note */}
+        {showNote && (
+          <View className="mt-2 flex-row items-start">
+            <AlertCircle
+              size={22}
+              color={colors.muted}
+              strokeWidth={2}
+            />
+            <Text
+              className="text-muted text-xs ml-3"
+              style={{
+                flex: 1,
+                lineHeight: 20,
+              }}
+            >
+              Os valores exibem a diferença absoluta e percentual entre os dois períodos selecionados.
+            </Text>
+          </View>
+        )}
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
