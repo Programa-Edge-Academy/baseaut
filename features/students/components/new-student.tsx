@@ -103,7 +103,7 @@ export function NewStudent({
     const ImagePicker = require("expo-image-picker");
 
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: [ImagePicker.MediaType.Images],
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,

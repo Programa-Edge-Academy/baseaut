@@ -7,10 +7,19 @@ LocaleConfig.locales['pt-br'] = {
     monthNames: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'],
     monthNamesShort: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
     dayNames: ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'],
-    dayNamesShort: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+    dayNamesShort: ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'],
     today: 'Hoje'
 };
 LocaleConfig.defaultLocale = 'pt-br';
+
+// Figma design tokens
+const CALENDAR_BG = '#464646';
+const ACCENT_COLOR = '#F04D23';
+const ACCENT_RANGE_BG = 'rgba(240, 77, 35, 0.25)';
+const DAY_TEXT = '#FFFFFF';
+const HEADER_TEXT = '#B5BEC6';
+const MONTH_TEXT = '#FFFFFF';
+const ARROW_COLOR = '#B5BEC6';
 
 interface RangeCalendarProps {
     onRangeSelected: (start: string, end: string | null) => void;
@@ -27,7 +36,7 @@ const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected }) => {
             setStartDate(dateString);
 
             const newMarked: MarkedDates = {
-                [dateString]: { startingDay: true, color: '#2196F3', textColor: 'white' }
+                [dateString]: { startingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT }
             };
 
             setMarkedDates(newMarked);
@@ -37,14 +46,14 @@ const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected }) => {
             if (new Date(dateString) < new Date(startDate)) {
                 setStartDate(dateString);
                 setMarkedDates({
-                    [dateString]: { startingDay: true, color: '#2196F3', textColor: 'white' }
+                    [dateString]: { startingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT }
                 });
                 onRangeSelected(dateString, null);
                 return;
             }
 
             const newMarked: MarkedDates = {
-                [startDate]: { startingDay: true, color: '#2196F3', textColor: 'white' }
+                [startDate]: { startingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT }
             };
 
             let currentDate = new Date(startDate);
@@ -54,11 +63,11 @@ const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected }) => {
 
             while (currentDate < endDate) {
                 const middleDateString = currentDate.toISOString().split('T')[0];
-                newMarked[middleDateString] = { color: '#BBDEFB', textColor: 'black' };
+                newMarked[middleDateString] = { color: ACCENT_RANGE_BG, textColor: DAY_TEXT };
                 currentDate.setDate(currentDate.getDate() + 1);
             }
 
-            newMarked[dateString] = { endingDay: true, color: '#2196F3', textColor: 'white' };
+            newMarked[dateString] = { endingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT };
 
             setMarkedDates(newMarked);
             onRangeSelected(startDate, dateString);
@@ -72,11 +81,35 @@ const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected }) => {
                 markedDates={markedDates}
                 onDayPress={handleDayPress}
                 theme={{
-                    todayTextColor: '#2196F3',
-                    arrowColor: '#2196F3',
-                    textDayFontFamily: 'System',
-                    textMonthFontWeight: 'bold',
+                    // Calendar container
+                    calendarBackground: CALENDAR_BG,
+
+                    // Month header
+                    monthTextColor: MONTH_TEXT,
+                    textMonthFontSize: 14,
+                    textMonthFontWeight: '600',
+
+                    // Day numbers
+                    dayTextColor: DAY_TEXT,
+                    textDayFontSize: 16,
+                    textDayFontWeight: '600',
+
+                    // Today
+                    todayTextColor: ACCENT_COLOR,
+
+                    // Disabled / other month days
+                    textDisabledColor: '#6B6B6B',
+                    textInactiveColor: '#6B6B6B',
+
+                    // Weekday header (DOM, SEG, TER…)
+                    textSectionTitleColor: HEADER_TEXT,
+                    textDayHeaderFontSize: 10,
+                    textDayHeaderFontWeight: '600',
+
+                    // Navigation arrows
+                    arrowColor: ARROW_COLOR,
                 }}
+                style={styles.calendar}
             />
         </View>
     );
@@ -84,15 +117,19 @@ const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected }) => {
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: 'white',
-        borderRadius: 12,
-        elevation: 4,
+        backgroundColor: CALENDAR_BG,
+        borderRadius: 8,
+        elevation: 6,
         shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        marginVertical: 10,
-        overflow: 'hidden'
-    }
+        shadowOffset: { width: 2, height: 16 },
+        shadowOpacity: 0.09,
+        shadowRadius: 19,
+        overflow: 'hidden',
+    },
+    calendar: {
+        borderRadius: 8,
+        paddingVertical: 4,
+    },
 });
 
 export default RangeCalendar;

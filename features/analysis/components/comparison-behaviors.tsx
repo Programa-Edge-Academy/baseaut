@@ -1,13 +1,33 @@
 import { colors } from "@/assets/colors";
 import { AlertCircle } from "lucide-react-native";
 import React from "react";
-import { Text, View } from "react-native";
+import { Text, useWindowDimensions, View } from "react-native";
 import ComparisonCard from "./comparison-card";
 
-export function ComparisonBehaviors() {
-  return (
-    <View className="w-full max-w-3xl rounded-2xl p-6" style={{ backgroundColor: colors.level2, borderWidth: 1, borderColor: colors.outline }}>
+// Constantes de alinhamento idênticas ao molde padrão
+const SIDE_MARGIN = 16;
+const MAX_WIDTH = 600;
 
+export function ComparisonBehaviors() {
+  const { width: screenWidth } = useWindowDimensions();
+
+  // Cálculo de largura responsiva idêntico ao ExerciseComparisonCard
+  const width = Math.min(
+    screenWidth - SIDE_MARGIN * 2,
+    MAX_WIDTH
+  );
+
+  return (
+    <View 
+      style={{ 
+        width,
+        alignSelf: "center",
+        backgroundColor: colors.level2, 
+        borderWidth: 1, 
+        borderColor: colors.outline 
+      }}
+      className="rounded-2xl p-6"
+    >
       {/* Title */}
       <Text className="text-white text-lg font-bold mb-4" style={{ fontFamily: "Inter" }}>
         Comparação dos comportamentos observados
@@ -16,16 +36,16 @@ export function ComparisonBehaviors() {
       {/* Header labels aligned with ComparisonCard columns */}
       <View className="flex-row items-center px-1 mb-3">
         <View className="flex-[2]">
-          <Text className="text-slate-400 text-xs" style={{ fontFamily: "Inter" }}>Comportamento</Text>
+          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 11 }}>Comportamento</Text>
         </View>
-        <View className="flex-1 items-center">
-          <Text className="text-slate-400 text-xs" style={{ fontFamily: "Inter" }}>Período 1</Text>
+        <View className="flex-[1.2] items-center">
+          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 10 }}>Período 1</Text>
         </View>
-        <View className="flex-1 items-center">
-          <Text className="text-slate-400 text-xs" style={{ fontFamily: "Inter" }}>Período 2</Text>
+        <View className="flex-[1.2] items-center">
+          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 10 }}>Período 2</Text>
         </View>
-        <View className="flex-[2] items-end">
-          <Text className="text-slate-400 text-xs" style={{ fontFamily: "Inter" }}>Variação</Text>
+        <View className="flex-[2] items-end right-2">
+          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 11 }}>Variação</Text>
         </View>
       </View>
 
@@ -68,7 +88,7 @@ export function ComparisonBehaviors() {
           <AlertCircle color={colors.muted} size={18} />
         </View>
         <Text className="text-slate-400 text-[12px]" style={{ flex: 1, fontFamily: "Inter", color: colors.muted }}>
-          Os valores exibem a diferença absoluta e percentual dos comportamentos observados entre os dois periodos selecionados.
+          Os valores exibem a diferença absoluta e percentual dos comportamentos observados entre os dois períodos selecionados.
         </Text>
       </View>
 
