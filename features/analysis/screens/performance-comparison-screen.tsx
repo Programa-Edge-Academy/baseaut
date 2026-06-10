@@ -8,6 +8,12 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from "react-native";
 
+// Importação dos novos componentes de comparação
+import AnalysisSummary from "@/features/analysis/components/analysis-summary";
+import ComparisonBehaviors from "@/features/analysis/components/comparison-behaviors";
+import ComparisonHelp from "@/features/analysis/components/comparison-help";
+import ExerciceComparisonCard from "@/features/analysis/components/exercice-comparison-card";
+
 const monthsPt = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
@@ -38,6 +44,9 @@ export function PerformanceComparisonScreen() {
   const [period1Range, setPeriod1Range] = useState<{ start: Date; end: Date } | null>(null);
   const [period2Range, setPeriod2Range] = useState<{ start: Date; end: Date } | null>(null);
 
+  // Estado para controlar a exibição dos resultados da comparação
+  const [showResults, setShowResults] = useState(false);
+
   // Modal States
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [activePeriod, setActivePeriod] = useState<1 | 2 | null>(null);
@@ -60,6 +69,9 @@ export function PerformanceComparisonScreen() {
     } else {
       setPeriod2Range(range);
     }
+    
+    // Oculta os resultados anteriores se o usuário alterar as datas escolhidas
+    setShowResults(false);
     setIsModalVisible(false);
   };
 
@@ -123,8 +135,21 @@ export function PerformanceComparisonScreen() {
                 <DefaultButton
                   label="Comparar"
                   sizeClass="w-[168px] h-[44px]"
-                  onPress={() => console.log("Botão Comparar pressionado")}
+                  onPress={() => setShowResults(true)}
                 />
+              </View>
+            )}
+
+            {/* Renderização condicional e ordenada dos componentes após clicar em Comparar */}
+            {showResults && (
+              <View className="mt-6 gap-6">
+                <AnalysisSummary />
+                
+                <ExerciceComparisonCard />
+                
+                <ComparisonHelp />
+                
+                <ComparisonBehaviors />
               </View>
             )}
           </View>
