@@ -80,6 +80,7 @@ const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected }) => {
                 markingType={'period'}
                 markedDates={markedDates}
                 onDayPress={handleDayPress}
+                maxDate={new Date().toISOString().split('T')[0]}
                 theme={{
                     // Calendar container
                     calendarBackground: CALENDAR_BG,

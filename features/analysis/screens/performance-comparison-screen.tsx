@@ -6,7 +6,7 @@ import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 
 // Importação dos novos componentes de comparação
 import AnalysisSummary from "@/features/analysis/components/analysis-summary";
@@ -62,15 +62,18 @@ export function PerformanceComparisonScreen() {
   };
 
   const handleSavePeriod = () => {
-    if (!tempStart || !tempEnd) return;
+    if (!tempStart || !tempEnd) {
+      Alert.alert("Erro", "O Período é obrigatório.");
+      return;
+    }
     const range = { start: tempStart, end: tempEnd };
     if (activePeriod === 1) {
       setPeriod1Range(range);
     } else {
       setPeriod2Range(range);
     }
-    
-    // Oculta os resultados anteriores se o usuário alterar as datas escolhidas
+
+    // Oculta os resultados anteriores se o usuário alterar as datas escolhidas para permitir re-execução
     setShowResults(false);
     setIsModalVisible(false);
   };
@@ -89,7 +92,43 @@ export function PerformanceComparisonScreen() {
     }
   };
 
+  const handleComparePress = () => {
+    if (!period1Range || !period2Range) {
+      Alert.alert("Erro", "O Período 1 e o Período 2 são obrigatórios.");
+      return;
+    }
+
+    const now = new Date();
+    // Removemos as horas para evitar falhas em datas iguais ao dia atual
+    now.setHours(23, 59, 59, 999);
+
+    // Regra: Não é possível comparar períodos futuros
+    if (
+      period1Range.start > now || period1Range.end > now ||
+      period2Range.start > now || period2Range.end > now
+    ) {
+      Alert.alert("Erro", "Data inválida. Não é possível comparar períodos futuros");
+      return;
+    }
+
+    // Regra: Período 1 a frente do Período 2 cronologicamente
+    if (period1Range.start > period2Range.start) {
+      Alert.alert("Erro", "Data inválida. Período 1 a frente do Período 2");
+      return;
+    }
+
+    // Regra: Não é possível comparar dois períodos coincidentes (Lógica de interseção)
+    if (period1Range.start <= period2Range.end && period1Range.end >= period2Range.start) {
+      Alert.alert("Erro", "Data inválida. Não é possível comparar dois períodos coincidentes");
+      return;
+    }
+
+    // Se passar por todas as validações, podemos carregar os dados
+    setShowResults(true);
+  };
+
   const isSaveDisabled = !tempStart || !tempEnd;
+  const isCompareDisabled = !period1Range || !period2Range;
 
   const getLabel = (periodNum: 1 | 2, range: { start: Date; end: Date } | null) => {
     if (range) {
@@ -129,26 +168,26 @@ export function PerformanceComparisonScreen() {
               onPress={() => handlePeriodPress(2)}
             />
 
-            {/* Botão Comparar (Aparece quando ambos os períodos estiverem definidos) */}
-            {period1Range && period2Range && (
-              <View className="items-center mt-6">
-                <DefaultButton
-                  label="Comparar"
-                  sizeClass="w-[168px] h-[44px]"
-                  onPress={() => setShowResults(true)}
-                />
-              </View>
-            )}
+            {/* Botão Comparar */}
+            <View className="items-center mt-6">
+              <DefaultButton
+                label="Comparar"
+                sizeClass="w-[168px] h-[44px]"
+                disabled={isCompareDisabled}
+                style={{ opacity: isCompareDisabled ? 0.5 : 1 }}
+                onPress={handleComparePress}
+              />
+            </View>
 
             {/* Renderização condicional e ordenada dos componentes após clicar em Comparar */}
             {showResults && (
               <View className="mt-6 gap-6">
                 <AnalysisSummary />
-                
+
                 <ExerciceComparisonCard />
-                
+
                 <ComparisonHelp />
-                
+
                 <ComparisonBehaviors />
               </View>
             )}
