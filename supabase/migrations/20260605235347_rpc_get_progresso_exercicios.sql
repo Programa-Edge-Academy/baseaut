@@ -10,9 +10,10 @@
 -- antes de qualquer JOIN custoso. A query principal usa três CTEs:
 --
 --   • base        → JOIN execucoes × sessoes × exercicios, com filtro
---                   de aluno, datas opcionais e nivel_desenvolvimento IS
---                   NOT NULL (execuções "nao_realizada" sem nível são
---                   irrelevantes para a série temporal de progresso).
+--                   de aluno, status de sessão concluída, datas opcionais
+--                   e nivel_desenvolvimento IS NOT NULL (execuções
+--                   "nao_realizada" sem nível são irrelevantes para a
+--                   série temporal de progresso).
 --
 --   • ranked      → adiciona Window Functions com ROW_NUMBER ascendente
 --                   e descendente por exercício, conforme exigido pela US,
@@ -93,13 +94,16 @@ BEGIN
     WITH
 
     -- ── CTE 1: base ──────────────────────────────────────────────────
-    -- Conjunto de execuções com nível de desenvolvimento registrado.
-    -- Execuções com status 'nao_realizada' sem nivel_desenvolvimento são
-    -- excluídas — não aportam informação à série temporal de progresso.
+    -- Conjunto de execuções com nível de desenvolvimento registrado,
+    -- vinculadas somente a sessões concluídas. Sessões em andamento ou
+    -- canceladas são ignoradas para não contaminar os gráficos com dados
+    -- parciais ou inválidos. Execuções com status 'nao_realizada' sem
+    -- nivel_desenvolvimento também são excluídas, pois não aportam
+    -- informação à série temporal de progresso.
     --
     -- Otimização importante: o filtro de datas usa range em data_inicio
-    -- sem aplicar cast na coluna. Assim, o índice
-    -- idx_sessoes_aluno_data_inicio continua utilizável pelo planner.
+    -- sem aplicar cast na coluna. Assim, o índice parcial
+    -- idx_sessoes_concluidas_aluno_data_inicio continua utilizável pelo planner.
     -- A regra mantém p_data_fim inclusivo, convertendo-o para o limite
     -- exclusivo do dia seguinte.
     base AS (
@@ -118,6 +122,7 @@ BEGIN
         INNER JOIN public.execucoes_exercicio ee ON ee.sessao_id    = s.id
         INNER JOIN public.exercicios ex          ON ex.id           = ee.exercicio_id
         WHERE s.aluno_id = p_aluno_id
+          AND s.status = 'concluida'
           AND ee.nivel_desenvolvimento IS NOT NULL
           AND (p_data_inicio IS NULL OR s.data_inicio >= p_data_inicio::TIMESTAMPTZ)
           AND (p_data_fim    IS NULL OR s.data_inicio <  (p_data_fim + 1)::TIMESTAMPTZ)
@@ -208,11 +213,13 @@ $$;
 -- ÍNDICES DE APOIO
 -- ════════════════════════════════════════════════════════════════════
 
--- P1: filtragem de sessões por aluno + range de data_inicio.
+-- P1: filtragem de sessões concluídas por aluno + range de data_inicio.
+--     O índice é parcial porque a RPC ignora sessões em andamento/canceladas.
 --     Importante manter o filtro da RPC sem cast em s.data_inicio para
 --     permitir o uso eficiente deste índice.
-CREATE INDEX IF NOT EXISTS idx_sessoes_aluno_data_inicio
-    ON public.sessoes (aluno_id, data_inicio);
+CREATE INDEX IF NOT EXISTS idx_sessoes_concluidas_aluno_data_inicio
+    ON public.sessoes (aluno_id, data_inicio)
+    WHERE status = 'concluida';
 
 -- P2: índice parcial em execucoes_exercicio para o JOIN via sessao_id,
 --     restrito a linhas com nivel_desenvolvimento preenchido.
