@@ -21,6 +21,13 @@ export default function CircuitSelectionRoute() {
 
   const { circuits } = useCircuits();
 
+  // Tipo real do circuito no banco (padrao/mabc_1/mabc_2/mabc_3) por id,
+  // usado para o fluxo de execução distinguir MABC dos demais.
+  const dbTipoById = useMemo(
+    () => new Map(circuits.map((c) => [c.id, c.type])),
+    [circuits],
+  );
+
   // Circuitos reais da equipe + entradas de formulário (ATA/CARS).
   const items: CircuitItem[] = useMemo(() => {
     const real: CircuitItem[] = circuits.map((c) => ({
@@ -52,6 +59,7 @@ export default function CircuitSelectionRoute() {
           studentId: studentId ?? "",
           circuitId: circuit.id,
           circuitName: circuit.name,
+          circuitType: dbTipoById.get(circuit.id) ?? "padrao",
           exercises: exercisesParam,
         };
 
