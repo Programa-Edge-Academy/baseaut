@@ -12,116 +12,123 @@ DECLARE
   v_resultado JSONB;
 BEGIN
 
-  -- Validação inicial e resolução de equipe_id
+  -- 1. Validação inicial e Segurança
   SELECT equipe_id INTO v_equipe_id FROM public.alunos WHERE id = p_aluno_id;
+  
   IF v_equipe_id IS NULL THEN
-    RAISE EXCEPTION 'Aluno % não encontrado.', p_aluno_id;
+    RAISE EXCEPTION 'Aluno não encontrado.';
   END IF;
 
-  -- Verificação de acesso
   IF NOT public.can_access_team(v_equipe_id) THEN
-    RAISE EXCEPTION 'Acesso negado: usuário % não possui permissão para este aluno.', auth.uid();
+    RAISE EXCEPTION 'Acesso negado: você não possui permissão para visualizar os dados deste aluno.';
   END IF;
 
-  -- PASSO 1: Cabeçalho/Perfil
-  -- Campos: nome, data_nascimento, idade, altura, peso, cintura, nível de suporte, diagnóstico e observações clínicas.
-  -- PASSO 2: Registros de Controle (RC)
-  -- Campos: data da sessão, nome do monitor e respostas individuais.
-  SELECT jsonb_build_object(
-    'perfil_aluno', (
-      SELECT jsonb_build_object(
-        'nome_completo',         a.nome_completo,
-        'data_nascimento',       a.data_nascimento,
-        'idade',                 EXTRACT(YEAR FROM age(CURRENT_DATE, a.data_nascimento)),
-        'altura',                a.altura,
-        'peso',                  a.peso,
-        'cintura',               a.cintura,
-        'nivel_suporte',         a.nivel_suporte,
-        'diagnostico_detalhado', a.diagnostico_detalhado,
-        'observacoes_clinicas',  a.observacoes_clinicas
-      )
-      FROM public.alunos a
-      WHERE a.id = p_aluno_id
+  -- 2. Processamento em Lote (Single-Scan Equivalents)
+  WITH
+    -- Perfil do Aluno (Cast para INT na idade)
+    perfil AS (
+      SELECT
+        nome_completo,
+        data_nascimento,
+        EXTRACT(YEAR FROM age(CURRENT_DATE, data_nascimento))::INT AS idade,
+        altura,
+        peso,
+        cintura,
+        nivel_suporte,
+        diagnostico_detalhado,
+        observacoes_clinicas
+      FROM public.alunos
+      WHERE id = p_aluno_id
     ),
-    'registros_controle', COALESCE((
-      SELECT jsonb_agg(
-        jsonb_build_object(
-          'id',          s.id,
-          'data_sessao', COALESCE(s.data_inicio, s.data_agendada),
-          'monitor',     m.nome_completo,
-          'respostas', (
-            SELECT jsonb_agg(
-              jsonb_build_object(
-                'pergunta', p.texto_pergunta,
-                'valor',    rf.valor_preenchido
-              )
-              ORDER BY p.ordem
-            )
-            FROM public.respostas_formulario rf
-            INNER JOIN public.perguntas p ON p.id = rf.pergunta_id
-            WHERE rf.formulario_id = s.formulario_id
-              AND rf.aluno_id = p_aluno_id
-              AND rf.sessao_id = s.id
-          )
-        )
-        ORDER BY s.data_inicio DESC
-      )
+
+    -- Agrupamento Massivo de Respostas do Registro de Controle
+    respostas_rc AS (
+      SELECT
+        rf.sessao_id,
+        jsonb_agg(
+          jsonb_build_object(
+            'pergunta', p.texto_pergunta,
+            'valor',    rf.valor_preenchido
+          ) ORDER BY p.ordem
+        ) AS respostas_json
+      FROM public.respostas_formulario rf
+      INNER JOIN public.perguntas p ON p.id = rf.pergunta_id
+      WHERE rf.aluno_id = p_aluno_id
+      GROUP BY rf.sessao_id
+    ),
+
+    -- Sessões Formatadas com suas Respostas
+    sessoes_rc AS (
+      SELECT
+        s.id,
+        COALESCE(s.data_inicio, s.data_agendada) AS data_sessao,
+        m.nome_completo AS monitor,
+        COALESCE(rrc.respostas_json, '[]'::jsonb) AS respostas
       FROM public.sessoes s
       INNER JOIN public.formularios f ON f.id = s.formulario_id
       LEFT JOIN public.profiles m ON m.id = s.monitor_id
+      LEFT JOIN respostas_rc rrc ON rrc.sessao_id = s.id
       WHERE s.aluno_id = p_aluno_id
         AND f.tipo = 'registro_controle'
         AND f.protegido = FALSE
-    ), '[]'::jsonb),
+      ORDER BY COALESCE(s.data_inicio, s.data_agendada) DESC
+    ),
 
-    -- PASSO 3: Bateria de Protocolos (Arrays distintos no nó raiz)
-    -- PASSO 4: Filtro de Exportação (protegido = FALSE)
+    -- Soma Massiva das Pontuações de Protocolos (Evita Null e faz Cast)
+    pontuacoes_form AS (
+      SELECT
+        formulario_id,
+        COALESCE(SUM(valor_preenchido::NUMERIC), 0)::INT AS pontuacao_total
+      FROM public.respostas_formulario
+      WHERE aluno_id = p_aluno_id
+      GROUP BY formulario_id
+    )
+
+  -- 3. Montagem do Payload Final
+  SELECT jsonb_build_object(
     
-    -- Histórico CARS
+    'perfil_aluno', (
+      SELECT to_jsonb(p.*) FROM perfil p
+    ),
+    
+    'registros_controle', COALESCE((
+      SELECT jsonb_agg(to_jsonb(src.*)) FROM sessoes_rc src
+    ), '[]'::jsonb),
+    
     'historico_cars', COALESCE((
       SELECT jsonb_agg(
         jsonb_build_object(
           'id',          f.id,
           'data',        COALESCE(f.data_avaliacao, f.created_at::DATE),
           'responsavel', pr.nome_completo,
-          'pontuacao', (
-            SELECT SUM(rf.valor_preenchido::NUMERIC)
-            FROM public.respostas_formulario rf
-            WHERE rf.formulario_id = f.id
-          )
-        )
-        ORDER BY f.data_avaliacao DESC, f.created_at DESC
+          'pontuacao',   pf.pontuacao_total
+        ) ORDER BY COALESCE(f.data_avaliacao, f.created_at::DATE) DESC
       )
       FROM public.formularios f
       LEFT JOIN public.profiles pr ON pr.id = f.avaliador_id
-      WHERE f.aluno_id = p_aluno_id
-        AND f.tipo = 'cars'
+      LEFT JOIN pontuacoes_form pf ON pf.formulario_id = f.id
+      WHERE f.aluno_id = p_aluno_id 
+        AND f.tipo = 'cars' 
         AND f.protegido = FALSE
     ), '[]'::jsonb),
-
-    -- Histórico ATA
+    
     'historico_ata', COALESCE((
       SELECT jsonb_agg(
         jsonb_build_object(
           'id',          f.id,
           'data',        COALESCE(f.data_avaliacao, f.created_at::DATE),
           'responsavel', pr.nome_completo,
-          'pontuacao', (
-            SELECT SUM(rf.valor_preenchido::NUMERIC)
-            FROM public.respostas_formulario rf
-            WHERE rf.formulario_id = f.id
-          )
-        )
-        ORDER BY f.data_avaliacao DESC, f.created_at DESC
+          'pontuacao',   pf.pontuacao_total
+        ) ORDER BY COALESCE(f.data_avaliacao, f.created_at::DATE) DESC
       )
       FROM public.formularios f
       LEFT JOIN public.profiles pr ON pr.id = f.avaliador_id
-      WHERE f.aluno_id = p_aluno_id
-        AND f.tipo = 'ata'
+      LEFT JOIN pontuacoes_form pf ON pf.formulario_id = f.id
+      WHERE f.aluno_id = p_aluno_id 
+        AND f.tipo = 'ata' 
         AND f.protegido = FALSE
     ), '[]'::jsonb),
-
-    -- Histórico MABC-2
+    
     'historico_mabc2', COALESCE((
       SELECT jsonb_agg(
         jsonb_build_object(
@@ -130,13 +137,12 @@ BEGIN
           'responsavel', pr.nome_completo,
           'pontuacao',   COALESCE(f.metadados->>'escore_total', f.metadados->>'escore_total_teste'),
           'percentil',   f.metadados->>'percentil'
-        )
-        ORDER BY f.data_avaliacao DESC, f.created_at DESC
+        ) ORDER BY COALESCE(f.data_avaliacao, f.created_at::DATE) DESC
       )
       FROM public.formularios f
       LEFT JOIN public.profiles pr ON pr.id = f.avaliador_id
-      WHERE f.aluno_id = p_aluno_id
-        AND f.tipo = 'mabc2'
+      WHERE f.aluno_id = p_aluno_id 
+        AND f.tipo = 'mabc2' 
         AND f.protegido = FALSE
     ), '[]'::jsonb)
 
