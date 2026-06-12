@@ -25,8 +25,8 @@ export type RegistroAjuda = "autonomo" | "ajuda_intrusiva";
 export type SubCategoria = "verbal" | "modelo";
 
 export type MabcResultData = {
-  registroAjuda: RegistroAjuda;
-  subCategorias: SubCategoria[];
+  registroAjuda?: RegistroAjuda;
+  subCategorias?: SubCategoria[];
   scores: Record<string, string>;
 };
 
@@ -153,27 +153,13 @@ export function MabcResultModal({
       }
     }
 
-    // 2. Validate standard fields
-    const ajudaOk = ajuda !== null;
-    const subOk = ajuda !== "autonomo" || subCategorias.length > 0;
-
-    if (!ajudaOk) {
-      newErrors["ajuda"] = "Requerido";
-      hasValidationError = true;
-    }
-    if (!subOk) {
-      newErrors["subCategorias"] = "Requerido";
-      hasValidationError = true;
-    }
-
     if (hasValidationError) {
       setErrors(newErrors);
       return;
     }
 
+    // MABC (US16): apenas os escores brutos; sem registro de ajuda.
     onConfirm({
-      registroAjuda: ajuda!,
-      subCategorias,
       scores: values,
     });
   };
@@ -425,71 +411,6 @@ export function MabcResultModal({
                         </View>
                       </View>
                     ))}
-                  </View>
-
-                  {/* Separator */}
-                  <View
-                    style={{
-                      height: 1,
-                      backgroundColor: colors.outline,
-                      marginVertical: 12,
-                    }}
-                  />
-
-                  {/* 2. Registro de ajuda Section */}
-                  <View style={{ gap: 8, marginBottom: 8 }}>
-                    <Text
-                      style={{
-                        fontFamily: "Inter-Medium",
-                        fontSize: 14,
-                        color: colors.muted,
-                      }}
-                    >
-                      Registro de ajuda
-                    </Text>
-
-                    <View style={{ gap: 5 }}>
-                      <SelectableChip
-                        label="Autônomo"
-                        type="nivelAjuda"
-                        isSelected={ajuda === "autonomo"}
-                        onToggle={() => handleSelectAjuda("autonomo")}
-                        selectedSubOptions={subCategorias}
-                        onSelectSubOption={toggleSubCategoria}
-                        hasError={ajudaError && ajuda !== "autonomo"}
-                        subOptionsHasError={subError}
-                      />
-
-                      <SelectableChip
-                        label="Ajuda intrusiva"
-                        isSelected={ajuda === "ajuda_intrusiva"}
-                        onToggle={() => handleSelectAjuda("ajuda_intrusiva")}
-                        hasError={ajudaError && ajuda !== "ajuda_intrusiva"}
-                      />
-                    </View>
-
-                    {ajudaError && (
-                      <Text
-                        style={{
-                          fontFamily: "Inter-Medium",
-                          fontSize: 12,
-                          color: colors.error,
-                        }}
-                      >
-                        Selecione um registro de ajuda.
-                      </Text>
-                    )}
-                    {subError && (
-                      <Text
-                        style={{
-                          fontFamily: "Inter-Medium",
-                          fontSize: 12,
-                          color: colors.error,
-                        }}
-                      >
-                        Selecione ao menos uma categoria (Verbal ou Modelo).
-                      </Text>
-                    )}
                   </View>
                 </ScrollView>
 
