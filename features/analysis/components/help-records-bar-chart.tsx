@@ -73,6 +73,9 @@ const SESSION_SLOT_WIDTH = GROUP_WIDTH + GROUP_SPACING;
 /** Padding horizontal inicial antes do primeiro grupo */
 const X_START_PADDING = 15;
 
+/** Padding interno do card (corresponde ao p-[15px] do contêiner) */
+const CARD_PADDING = 15;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -148,10 +151,17 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
   const yMax = calcYMax(sessions);
   const yTicks = calcYTicks(yMax);
 
+  // Largura disponível para a área de barras (descontando eixo Y e padding do card)
+  const availableWidth = containerWidth - Y_AXIS_WIDTH - CARD_PADDING * 2;
+  const N = sessions.length;
+  const dynamicSlotWidth = N > 0
+    ? Math.max(SESSION_SLOT_WIDTH, (availableWidth - X_START_PADDING) / N)
+    : SESSION_SLOT_WIDTH;
+
   // Largura total do SVG rolável
   const svgScrollWidth =
     X_START_PADDING +
-    sessions.length * SESSION_SLOT_WIDTH +
+    N * dynamicSlotWidth +
     GROUP_SPACING;
 
   // Coordenada Y de um tick no SVG
@@ -250,7 +260,7 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
 
               {/* Barras agrupadas + rótulo de sessão */}
               {sessions.map((session, index) => {
-                const groupX = X_START_PADDING + index * SESSION_SLOT_WIDTH;
+                const groupX = X_START_PADDING + index * dynamicSlotWidth;
                 const xIntrusive = groupX;
                 const xAutonomous = groupX + BAR_WIDTH + BAR_GAP;
                 const groupCenterX = groupX + GROUP_WIDTH / 2;
