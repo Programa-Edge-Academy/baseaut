@@ -14,59 +14,12 @@
 --   ajuda          → distribuição de registro_ajuda e variação percentual (Passo 2)
 --   exercicios     → último nível por exercício e variação numérica (Passo 3)
 --   comportamentos → contagem absoluta por tipo nos dois períodos (Passo 4)
--- =============================================================================
-
-
-
--- =============================================================================
--- OTIMIZAÇÕES DE LEITURA / CUSTO
--- -----------------------------------------------------------------------------
--- As otimizações abaixo não alteram o contrato JSON, a regra de segurança,
--- a matemática anti-crash ou a lógica funcional da RPC.
 --
--- O ganho esperado vem de alinhar os índices ao padrão real de acesso da função:
---   1. localizar rapidamente as sessões concluídas do aluno dentro dos períodos;
---   2. ler execuções por sessão cobrindo as colunas usadas em ajuda/evolução.
+-- NOTA: P1 e P2 são tratados como flags booleanas independentes 
+-- (is_p1 / is_p2), e não como um CASE excludente. Isso permite
+-- que os períodos se sobreponham (ex: P1 = ano inteiro, P2 = mês atual)
+-- sem que uma sessão "perca" sua contagem em um dos lados.
 -- =============================================================================
-
--- -----------------------------------------------------------------------------
--- 1) Sessões concluídas por aluno e período
--- -----------------------------------------------------------------------------
--- A RPC sempre filtra:
---   s.aluno_id = p_aluno_id
---   s.status = 'concluida'
---   s.data_inicio dentro de P1 ou P2
---
--- Este índice parcial reduz o volume lido para o subconjunto elegível da US:
--- apenas sessões concluídas. Isso reforça o critério de aceite de considerar
--- somente sessões concluídas nos cálculos de resumo, ajuda, exercícios e
--- comportamentos.
--- -----------------------------------------------------------------------------
-CREATE INDEX IF NOT EXISTS idx_sessoes_comparativo_aluno_concluida_data
-  ON public.sessoes (aluno_id, data_inicio DESC, id)
-  WHERE status = 'concluida';
-
--- -----------------------------------------------------------------------------
--- 2) Execuções por sessão com cobertura das colunas usadas pela RPC
--- -----------------------------------------------------------------------------
--- A RPC junta execucoes_exercicio por sessao_id e lê, no mesmo fluxo:
---   - exercicio_id              -> agrupamento/evolução por exercício
---   - created_at                -> desempate cronológico do último nível
---   - nivel_desenvolvimento     -> Passo 3
---   - registro_ajuda            -> Passo 2 / ajuda
---
--- O índice abaixo reduz leituras de heap no caminho crítico da comparação,
--- mantendo a lógica single-scan e sem criar consultas separadas para P1/P2.
--- -----------------------------------------------------------------------------
-CREATE INDEX IF NOT EXISTS idx_execucoes_comparativo_sessao_exercicio_created
-  ON public.execucoes_exercicio (sessao_id, exercicio_id, created_at DESC)
-  INCLUDE (nivel_desenvolvimento, registro_ajuda);
-
--- -----------------------------------------------------------------------------
--- Não foi criado novo índice para comportamentos_sessao.
--- Motivo: o schema já possui índice por (sessao_id, tipo), que atende ao JOIN por
--- sessao_id e à agregação por tipo usada no Passo 4.
--- -----------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.rpc_comparar_desempenho_periodos(
   p_aluno_id  UUID,
@@ -115,16 +68,15 @@ BEGIN
 
     -- -----------------------------------------------------------------------
     -- BASE: Sessões concluídas do aluno nos dois períodos.
-    -- Classificadas com o flag periodo (1 ou 2) para pivô posterior.
+    -- Flags booleanas independentes (is_p1 / is_p2) permitem sobreposição
+    -- entre os períodos sem perda de contagem em nenhum dos lados.
     -- -----------------------------------------------------------------------
     sessoes_periodos AS (
       SELECT
-        s.id                AS sessao_id,
+        s.id        AS sessao_id,
         s.data_inicio,
-        CASE
-          WHEN s.data_inicio BETWEEN p_p1_inicio AND p_p1_fim THEN 1
-          WHEN s.data_inicio BETWEEN p_p2_inicio AND p_p2_fim THEN 2
-        END                 AS periodo
+        (s.data_inicio BETWEEN p_p1_inicio AND p_p1_fim) AS is_p1,
+        (s.data_inicio BETWEEN p_p2_inicio AND p_p2_fim) AS is_p2
       FROM public.sessoes s
       WHERE s.aluno_id  = p_aluno_id
         AND s.status    = 'concluida'
@@ -139,8 +91,8 @@ BEGIN
     -- -----------------------------------------------------------------------
     resumo_sessoes AS (
       SELECT
-        COUNT(*) FILTER (WHERE periodo = 1)  AS total_p1,
-        COUNT(*) FILTER (WHERE periodo = 2)  AS total_p2
+        COUNT(*) FILTER (WHERE is_p1) AS total_p1,
+        COUNT(*) FILTER (WHERE is_p2) AS total_p2
       FROM sessoes_periodos
     ),
 
@@ -154,7 +106,8 @@ BEGIN
         ee.nivel_desenvolvimento,
         ee.registro_ajuda,
         ee.created_at,
-        sp.periodo,
+        sp.is_p1,
+        sp.is_p2,
         sp.data_inicio
       FROM public.execucoes_exercicio ee
       INNER JOIN sessoes_periodos sp ON sp.sessao_id = ee.sessao_id
@@ -165,92 +118,81 @@ BEGIN
     -- -----------------------------------------------------------------------
     resumo_ajuda AS (
       SELECT
-        COUNT(*) FILTER (WHERE periodo = 1 AND registro_ajuda = 'autonomo')        AS autonomo_p1,
-        COUNT(*) FILTER (WHERE periodo = 2 AND registro_ajuda = 'autonomo')        AS autonomo_p2,
-        COUNT(*) FILTER (WHERE periodo = 1 AND registro_ajuda = 'ajuda_intrusiva') AS intrusiva_p1,
-        COUNT(*) FILTER (WHERE periodo = 2 AND registro_ajuda = 'ajuda_intrusiva') AS intrusiva_p2
+        COUNT(*) FILTER (WHERE is_p1 AND registro_ajuda = 'autonomo'::registro_ajuda_enum)        AS autonomo_p1,
+        COUNT(*) FILTER (WHERE is_p2 AND registro_ajuda = 'autonomo'::registro_ajuda_enum)        AS autonomo_p2,
+        COUNT(*) FILTER (WHERE is_p1 AND registro_ajuda = 'ajuda_intrusiva'::registro_ajuda_enum) AS intrusiva_p1,
+        COUNT(*) FILTER (WHERE is_p2 AND registro_ajuda = 'ajuda_intrusiva'::registro_ajuda_enum) AS intrusiva_p2
       FROM execucoes_base
     ),
 
     -- -----------------------------------------------------------------------
-    -- PASSO 3A – Último nível de desenvolvimento por (exercicio, periodo).
-    -- DISTINCT ON garante exatamente 1 linha por combinação usando o índice
-    -- idx_execucoes_sessao_nivel.
+    -- PASSO 3A (P1) – Último nível de desenvolvimento por exercício em P1.
+    -- Isolado em CTE própria para evitar conflito no DISTINCT ON quando
+    -- os períodos se sobrepõem (uma mesma execução pode pertencer a P1 e P2
+    -- simultaneamente).
     -- -----------------------------------------------------------------------
-    ultimo_nivel_por_exercicio AS (
-      SELECT DISTINCT ON (exercicio_id, periodo)
+    nivel_p1 AS (
+      SELECT DISTINCT ON (exercicio_id)
         exercicio_id,
-        periodo,
-        nivel_desenvolvimento
+        nivel_desenvolvimento::text AS nivel,
+        CASE nivel_desenvolvimento
+          WHEN 'inicial'       THEN 1
+          WHEN 'intermediario' THEN 2
+          WHEN 'maduro'        THEN 3
+        END AS peso
       FROM execucoes_base
-      WHERE nivel_desenvolvimento IS NOT NULL
-      -- Ordena pela execução mais recente do período: data da sessão como
-      -- critério principal e created_at da execução como desempate fino,
-      -- garantindo que uma regressão (ex: maduro → inicial) seja capturada.
-      ORDER BY exercicio_id, periodo, data_inicio DESC, created_at DESC
+      WHERE is_p1 AND nivel_desenvolvimento IS NOT NULL
+      ORDER BY exercicio_id, data_inicio DESC, created_at DESC
     ),
 
     -- -----------------------------------------------------------------------
-    -- PASSO 3B – Converte enum → peso numérico e pivota P1/P2 por exercício.
+    -- PASSO 3A (P2) – Último nível de desenvolvimento por exercício em P2.
     -- -----------------------------------------------------------------------
-    nivel_pivotado AS (
-      SELECT
+    nivel_p2 AS (
+      SELECT DISTINCT ON (exercicio_id)
         exercicio_id,
-        MAX(CASE WHEN periodo = 1 THEN
-              CASE nivel_desenvolvimento
-                WHEN 'inicial'       THEN 1
-                WHEN 'intermediario' THEN 2
-                WHEN 'maduro'        THEN 3
-              END
-        END) AS peso_p1,
-        MAX(CASE WHEN periodo = 2 THEN
-              CASE nivel_desenvolvimento
-                WHEN 'inicial'       THEN 1
-                WHEN 'intermediario' THEN 2
-                WHEN 'maduro'        THEN 3
-              END
-        END) AS peso_p2,
-        MAX(nivel_desenvolvimento::text) FILTER (WHERE periodo = 1) AS nivel_texto_p1,
-        MAX(nivel_desenvolvimento::text) FILTER (WHERE periodo = 2) AS nivel_texto_p2
-      FROM ultimo_nivel_por_exercicio
-      GROUP BY exercicio_id
+        nivel_desenvolvimento::text AS nivel,
+        CASE nivel_desenvolvimento
+          WHEN 'inicial'       THEN 1
+          WHEN 'intermediario' THEN 2
+          WHEN 'maduro'        THEN 3
+        END AS peso
+      FROM execucoes_base
+      WHERE is_p2 AND nivel_desenvolvimento IS NOT NULL
+      ORDER BY exercicio_id, data_inicio DESC, created_at DESC
     ),
 
     -- -----------------------------------------------------------------------
-    -- PASSO 3C – Enriquece com título do exercício e calcula variação.
+    -- PASSO 3B – Pivota P1/P2 por exercício via FULL OUTER JOIN e enriquece
+    -- com o título do exercício. COALESCE garante que exercícios presentes
+    -- em apenas um dos períodos também apareçam no resultado.
     -- -----------------------------------------------------------------------
     exercicios_evolucao AS (
       SELECT
-        np.exercicio_id,
+        COALESCE(p1.exercicio_id, p2.exercicio_id) AS exercicio_id,
         ex.titulo,
-        np.nivel_texto_p1   AS nivel_p1,
-        np.nivel_texto_p2   AS nivel_p2,
-        np.peso_p1,
-        np.peso_p2,
-        -- Variação numérica P2 - P1 (NULL quando o exercício só existe em um período)
-        (np.peso_p2 - np.peso_p1) AS variacao_nivel
-      FROM nivel_pivotado np
-      INNER JOIN public.exercicios ex ON ex.id = np.exercicio_id
+        p1.nivel AS nivel_p1,
+        p2.nivel AS nivel_p2,
+        p1.peso  AS peso_p1,
+        p2.peso  AS peso_p2,
+        (p2.peso - p1.peso) AS variacao_nivel
+      FROM nivel_p1 p1
+      FULL OUTER JOIN nivel_p2 p2 ON p1.exercicio_id = p2.exercicio_id
+      INNER JOIN public.exercicios ex ON ex.id = COALESCE(p1.exercicio_id, p2.exercicio_id)
     ),
 
     -- -----------------------------------------------------------------------
     -- PASSO 4 – Comportamentos (Single-Scan via JOIN com sessoes_periodos).
+    -- Mantém apenas tipo + flags de período; a pivotagem por tipo é feita
+    -- diretamente na montagem do JSONB final.
     -- -----------------------------------------------------------------------
     comportamentos_base AS (
       SELECT
         cs.tipo,
-        sp.periodo
+        sp.is_p1,
+        sp.is_p2
       FROM public.comportamentos_sessao cs
       INNER JOIN sessoes_periodos sp ON sp.sessao_id = cs.sessao_id
-    ),
-
-    comportamentos_por_tipo AS (
-      SELECT
-        tipo,
-        COUNT(*) FILTER (WHERE periodo = 1) AS total_p1,
-        COUNT(*) FILTER (WHERE periodo = 2) AS total_p2
-      FROM comportamentos_base
-      GROUP BY tipo
     )
 
   -- ==========================================================================
@@ -341,29 +283,53 @@ BEGIN
 
     -- -------------------------------------------------------------------------
     -- Nó: comportamentos | Passo 4 – volumetria absoluta por tipo
+    -- Estrutura fixa (chaves conhecidas pelo dashboard), pivotada
+    -- diretamente sobre comportamentos_base com FILTER (Single-Scan).
     -- -------------------------------------------------------------------------
-    'comportamentos', COALESCE(
-      (
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'tipo',    cp.tipo,
-            'total_p1', cp.total_p1,
-            'total_p2', cp.total_p2,
-            'diferenca_absoluta', ABS(cp.total_p2 - cp.total_p1),
-            'variacao_percentual',
-              CASE
-                WHEN cp.total_p1 = 0 AND cp.total_p2 = 0  THEN 0.00
-                WHEN cp.total_p1 = 0 AND cp.total_p2 > 0  THEN 100.00
-                ELSE ROUND(
-                  ((cp.total_p2 - cp.total_p1)::NUMERIC / cp.total_p1::NUMERIC) * 100,
-                2)
-              END
+    'comportamentos', (
+      SELECT jsonb_build_object(
+        'estereotipia', jsonb_build_object(
+          'p1', COUNT(*) FILTER (WHERE is_p1 AND tipo = 'estereotipia'),
+          'p2', COUNT(*) FILTER (WHERE is_p2 AND tipo = 'estereotipia'),
+          'diferenca_absoluta', ABS(
+            COUNT(*) FILTER (WHERE is_p2 AND tipo = 'estereotipia')
+            - COUNT(*) FILTER (WHERE is_p1 AND tipo = 'estereotipia')
           )
-          ORDER BY cp.tipo
+        ),
+        'contato_visual', jsonb_build_object(
+          'p1', COUNT(*) FILTER (WHERE is_p1 AND tipo = 'contato_visual'),
+          'p2', COUNT(*) FILTER (WHERE is_p2 AND tipo = 'contato_visual'),
+          'diferenca_absoluta', ABS(
+            COUNT(*) FILTER (WHERE is_p2 AND tipo = 'contato_visual')
+            - COUNT(*) FILTER (WHERE is_p1 AND tipo = 'contato_visual')
+          )
+        ),
+        'engajamento', jsonb_build_object(
+          'p1', COUNT(*) FILTER (WHERE is_p1 AND tipo = 'engajamento'),
+          'p2', COUNT(*) FILTER (WHERE is_p2 AND tipo = 'engajamento'),
+          'diferenca_absoluta', ABS(
+            COUNT(*) FILTER (WHERE is_p2 AND tipo = 'engajamento')
+            - COUNT(*) FILTER (WHERE is_p1 AND tipo = 'engajamento')
+          )
+        ),
+        'fuga', jsonb_build_object(
+          'p1', COUNT(*) FILTER (WHERE is_p1 AND tipo = 'fuga'),
+          'p2', COUNT(*) FILTER (WHERE is_p2 AND tipo = 'fuga'),
+          'diferenca_absoluta', ABS(
+            COUNT(*) FILTER (WHERE is_p2 AND tipo = 'fuga')
+            - COUNT(*) FILTER (WHERE is_p1 AND tipo = 'fuga')
+          )
+        ),
+        'crise', jsonb_build_object(
+          'p1', COUNT(*) FILTER (WHERE is_p1 AND tipo = 'crise'),
+          'p2', COUNT(*) FILTER (WHERE is_p2 AND tipo = 'crise'),
+          'diferenca_absoluta', ABS(
+            COUNT(*) FILTER (WHERE is_p2 AND tipo = 'crise')
+            - COUNT(*) FILTER (WHERE is_p1 AND tipo = 'crise')
+          )
         )
-        FROM comportamentos_por_tipo cp
-      ),
-      '[]'::jsonb
+      )
+      FROM comportamentos_base
     )
 
   ) INTO v_resultado;
