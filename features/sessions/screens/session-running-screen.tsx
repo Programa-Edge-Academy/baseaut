@@ -114,6 +114,9 @@ export function SessionRunningScreen({
     sessionId || "",
   );
   const effectiveSessionIdRef = useRef<string>(sessionId || "");
+  // Promise da criação da sessão — usada por persistAndFinish para aguardar
+  // o insert caso o usuário finalize antes de ele resolver.
+  const createSessionPromiseRef = useRef<Promise<string> | null>(null);
   // Execuções acumuladas (status + dados clínicos) para gravar ao final.
   const executionsRef = useRef<ExecutionRecord[]>([]);
   // Segundos do cronômetro capturados na última parada.
@@ -150,20 +153,21 @@ export function SessionRunningScreen({
   useEffect(() => {
     if (sessionId || !studentId) return;
     let active = true;
-    (async () => {
-      try {
-        const id = await createSession({
-          alunoId: studentId,
-          circuitoId: circuitId ?? null,
-        });
-        if (active) {
-          effectiveSessionIdRef.current = id;
-          setEffectiveSessionId(id);
-        }
-      } catch (err) {
-        console.error("Erro ao criar sessão:", err);
-      }
+    const promise = (async () => {
+      const id = await createSession({
+        alunoId: studentId,
+        circuitoId: circuitId ?? null,
+      });
+      // Sempre grava no ref (não depende de active) para que persistAndFinish
+      // possa usar o id mesmo que o componente já tenha desmontado.
+      effectiveSessionIdRef.current = id;
+      if (active) setEffectiveSessionId(id);
+      return id;
     })();
+    createSessionPromiseRef.current = promise.catch((err) => {
+      console.error("Erro ao criar sessão:", err);
+      throw err;
+    });
     return () => {
       active = false;
     };
@@ -304,12 +308,20 @@ export function SessionRunningScreen({
   };
 
   // Grava as execuções acumuladas e finaliza a sessão no banco.
+  // Se createSession ainda estiver em-flight, aguarda seu resultado antes de prosseguir.
   const persistAndFinish = async (
     motivoFinalizacao: MotivoFinalizacao | null = null,
     descricaoMotivo: string | null = null,
   ) => {
-    const sid = effectiveSessionIdRef.current;
-    if (!sid) return;
+    let sid = effectiveSessionIdRef.current;
+    if (!sid) {
+      if (!createSessionPromiseRef.current) return;
+      try {
+        sid = await createSessionPromiseRef.current;
+      } catch {
+        return;
+      }
+    }
     try {
       await saveSession(sid, executionsRef.current, crisesRef.current, {
         status: "concluida",
@@ -319,6 +331,20 @@ export function SessionRunningScreen({
     } catch (err) {
       console.error("Erro ao salvar a sessão:", err);
     }
+  };
+
+  // Tenta salvar o formulário sem bloquear a persistência da sessão.
+  // Notifica o usuário se houver campos obrigatórios pendentes.
+  const trySaveForm = () => {
+    if (!formRef.current) return;
+    void (formRef.current.handleSave() as Promise<any>).then((result: any) => {
+      if (result && !result.success) {
+        Alert.alert(
+          "Atenção",
+          "O registro de controle ficou pendente pois há campos obrigatórios não preenchidos.",
+        );
+      }
+    });
   };
 
   const advanceSession = (
@@ -364,9 +390,7 @@ export function SessionRunningScreen({
       );
       const temPendencias = pendentes.length > 0;
 
-      if (formRef.current) {
-        formRef.current.handleSave();
-      }
+      trySaveForm();
       void persistAndFinish();
       onCompleteSession?.(temPendencias, pendentes, order);
     }

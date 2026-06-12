@@ -5,6 +5,12 @@ import { supabase } from "@/lib/supabase";
 import { forwardRef, useImperativeHandle, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, Text, View } from "react-native";
 
+// Returns the value the UI already displays as default, or undefined if there is no default.
+function getDefaultAnswer(question: { type: string; min?: number }): any {
+  if (question.type === "linear_scale") return question.min ?? null;
+  return undefined;
+}
+
 export interface FormComponentProps {
   formularioId: string;
   sessaoId?: string;
@@ -81,9 +87,17 @@ export const FormComponent = forwardRef(function FormComponent(
 
       setQuestions(mappedQuestions);
 
+      // Seed visual defaults so untouched questions are saved as answered.
+      const defaultAnswers: Record<string, any> = {};
+      for (const q of mappedQuestions) {
+        const def = getDefaultAnswer(q);
+        if (def !== undefined) defaultAnswers[q.id] = def;
+      }
+
       // Modo edição: pré-carrega as respostas já salvas deste formulário no
       // contexto atual (sessão ou aluno), parseando os tipos que guardam
-      // objeto. Sem vínculo de sessão/aluno, mantém o formulário em branco.
+      // objeto. Loaded answers override defaults to preserve edit-mode state.
+      let loadedAnswers: Record<string, any> = {};
       if (sessaoId || alunoId) {
         let answersQuery = supabase
           .from("respostas_formulario")
@@ -103,7 +117,6 @@ export const FormComponent = forwardRef(function FormComponent(
           const typeById = new Map<string, string>(
             mappedQuestions.map((q) => [q.id, q.type]),
           );
-          const loadedAnswers: Record<string, any> = {};
 
           for (const r of respostas) {
             if (r.valor_preenchido == null) continue;
@@ -118,11 +131,10 @@ export const FormComponent = forwardRef(function FormComponent(
               loadedAnswers[r.pergunta_id] = r.valor_preenchido;
             }
           }
-
-          setAnswers(loadedAnswers);
         }
       }
 
+      setAnswers({ ...defaultAnswers, ...loadedAnswers });
       setLoading(false);
     }
 

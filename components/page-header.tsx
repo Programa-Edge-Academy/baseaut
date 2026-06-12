@@ -1,6 +1,6 @@
 import { colors } from "@/assets/colors";
 import { withOpacity } from "@/components/color-opacity";
-import { Calendar, Check, ClipboardEdit, Edit2, History, Trash2 } from "lucide-react-native";
+import { Calendar, Check, ClipboardEdit, Edit2, History, Trash2, Share2 } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 
@@ -14,7 +14,8 @@ export type HeaderMode =
   | "sessoes"
   | "sessao-historico"
   | "sessao-historico-pendente"
-  | "execucao";
+  | "execucao"
+  | "historico-estudante";
 
 export type PageHeaderProps = {
   containerClassName?: string;
@@ -28,6 +29,7 @@ export type PageHeaderProps = {
   onDeletePress?: () => void;
   onCheckPress?: () => void;
   onFormPress?: () => void;
+  onSharePress?: () => void; 
   totalExercises?: number;
   completedExercises?: number;
   isExecuting?: boolean;
@@ -45,6 +47,7 @@ export function PageHeader({
   onDeletePress,
   onCheckPress,
   onFormPress,
+  onSharePress,
   totalExercises = 1,
   completedExercises = 0,
   isExecuting = false,
@@ -208,6 +211,35 @@ export function PageHeader({
           </View>
         );
       }
+
+      case "historico-estudante":
+        return (
+          <View className="flex-row items-center gap-3">
+            {/* Botão Share (Borda Verde) */}
+            <Pressable
+              onPress={onSharePress} // Certifique-se de adicionar onSharePress nos props
+              className="items-center justify-center rounded-[10px] border p-2.5 active:opacity-70"
+              style={{
+                borderColor: colors.secondary, // Assumindo que você tenha 'success' no seu arquivo de cores
+                backgroundColor: withOpacity(colors.secondary, 0.1),
+              }}
+            >
+              <Share2 size={16} color={colors.secondary} />
+            </Pressable>
+
+            {/* Botão Trash (Borda Vermelha) */}
+            <Pressable
+              onPress={onDeletePress}
+              className="items-center justify-center rounded-[10px] border p-2.5 active:opacity-70"
+              style={{
+                borderColor: colors.error,
+                backgroundColor: withOpacity(colors.error, 0.1),
+              }}
+            >
+              <Trash2 size={16} color={colors.error} />
+            </Pressable>
+          </View>
+        );
 
       default:
         return null;
