@@ -53,6 +53,9 @@ export function ObservedBehaviorsScreen() {
   const [tempStart, setTempStart] = useState<Date | null>(null);
   const [tempEnd, setTempEnd] = useState<Date | null>(null);
 
+  // Estado de erro simulado/de conexão
+  const [hasError, setHasError] = useState(false);
+
   const handlePeriodPress = () => {
     setTempStart(startDate);
     setTempEnd(endDate);
@@ -78,6 +81,8 @@ export function ObservedBehaviorsScreen() {
       Alert.alert("Erro", "O período é obrigatório.");
       return;
     }
+
+    setHasError(false);
     setStartDate(tempStart);
     setEndDate(tempEnd);
     setIsModalVisible(false);
@@ -87,14 +92,14 @@ export function ObservedBehaviorsScreen() {
 
   const periodLabel = useMemo(() => {
     if (startDate && endDate) {
-      return `Período: ${formatDateRange(startDate, endDate)}`;
+      return formatDateRange(startDate, endDate);
     }
-    return "Período: selecionar intervalo de datas";
+    return "Selecione o período para visualizar os comportamentos";
   }, [startDate, endDate]);
 
   // Filtragem dos registros baseada no intervalo de datas selecionado
   const filteredRecords = useMemo(() => {
-    if (!startDate || !endDate) return [];
+    if (!startDate || !endDate || hasError) return [];
 
     const compStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
     const compEnd = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
@@ -104,7 +109,7 @@ export function ObservedBehaviorsScreen() {
       const compDate = new Date(recDate.getFullYear(), recDate.getMonth(), recDate.getDate());
       return compDate >= compStart && compDate <= compEnd;
     });
-  }, [startDate, endDate]);
+  }, [startDate, endDate, hasError]);
 
   // Agrega dados filtrados para gerar a lista de detalhamento de comportamentos
   const aggregatedBehaviors = useMemo(() => {
@@ -140,11 +145,12 @@ export function ObservedBehaviorsScreen() {
           (a, b) => new Date(b).getTime() - new Date(a).getTime()
         );
 
-        const formattedSessions = uniqueDates.map((dateStr) => {
+        // Formato de lista numerada para as sessões (ex: "1. Sessão de 12/06", "2. Sessão de 10/06")
+        const formattedSessions = uniqueDates.map((dateStr, index) => {
           const [year, month, day] = dateStr.split("-").map(Number);
           const formattedMonth = String(month).padStart(2, "0");
           const formattedDay = String(day).padStart(2, "0");
-          return `Sessão de ${formattedDay}/${formattedMonth}`;
+          return `${index + 1}. Sessão de ${formattedDay}/${formattedMonth}`;
         });
 
         // Formata a última ocorrência no padrão DD/MM/AAAA
@@ -172,19 +178,77 @@ export function ObservedBehaviorsScreen() {
 
   const showResults = startDate && endDate;
 
-  // Renderiza tela de estado vazio nativa se houver filtro sem registros
+  // Cenario: Erro de conexão ou erro desconhecido
+  if (showResults && hasError) {
+    return (
+      <View className="flex-1 bg-level1">
+        <NoRecordsScreen
+          variant="loadRecords"
+          title="Não foi possível carregar os comportamentos observados. Tente novamente."
+          message="Verifique sua conexão ou tente acessar os dados novamente mais tarde."
+          onPressBack={() => router.back()}
+          onPrimaryAction={() => {
+            setHasError(false);
+            handlePeriodPress();
+          }}
+          primaryActionLabel="Tentar novamente"
+        />
+
+        {/* Modal Overlay do Calendário (acessível no estado de erro) */}
+        <Modal
+          visible={isModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsModalVisible(false)}
+        >
+          <Pressable
+            className="flex-1 bg-black/60 justify-center items-center px-6"
+            onPress={() => setIsModalVisible(false)}
+          >
+            <Pressable
+              className="w-full max-w-[380px]"
+              onPress={(e) => e.stopPropagation()}
+            >
+              {/* Calendário */}
+              <View className="w-full mb-4">
+                <RangeCalendar
+                  key={`${isModalVisible}`}
+                  onRangeSelected={handleRangeSelected}
+                />
+              </View>
+
+              {/* Botão de Salvar */}
+              <View className="items-center">
+                <DefaultButton
+                  label="Salvar"
+                  sizeClass="w-[168px] h-[44px]"
+                  disabled={isSaveDisabled}
+                  style={{ opacity: isSaveDisabled ? 0.5 : 1 }}
+                  onPress={handleSavePeriod}
+                />
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
+      </View>
+    );
+  }
+
+  // Cenario: Sem comportamentos observados no período
   if (showResults && filteredRecords.length === 0) {
     return (
       <View className="flex-1 bg-level1">
         <NoRecordsScreen
           variant="behavior"
+          title="Ainda não há comportamentos observados para o período selecionado."
+          message="Ainda não há comportamentos observados registrados para o período selecionado."
           studentName={profile?.name || "Aluno"}
           onPressBack={() => router.back()}
           onPrimaryAction={handlePeriodPress}
           primaryActionLabel="Alterar Período"
         />
 
-        {/* Modal Overlay do Calendário (acessível a partir do estado vazio) */}
+        {/* Modal Overlay do Calendário (acessível no estado vazio) */}
         <Modal
           visible={isModalVisible}
           transparent
@@ -235,12 +299,12 @@ export function ObservedBehaviorsScreen() {
           </View>
         ) : (
           <View className="mt-5">
-            {/* Nome do Aluno */}
+            {/* Nome do Aluno no Header da Página */}
             <Text
               className="text-xl font-bold text-white"
               style={{ marginHorizontal: 22, marginBottom: 16, fontFamily: "Inter-Bold" }}
             >
-              Comportamentos observados - {profile?.name || "Aluno"}
+              Comportamentos Observados - {profile?.name || "Aluno"}
             </Text>
 
             {/* Seletor de Período */}
@@ -290,7 +354,7 @@ export function ObservedBehaviorsScreen() {
                   className="text-muted text-center text-sm font-medium leading-[22px]"
                   style={{ fontFamily: "Inter-Medium" }}
                 >
-                  Selecione um intervalo de datas acima para visualizar o gráfico e o detalhamento de comportamentos do aluno.
+                  Selecione o período para visualizar os comportamentos
                 </Text>
               </View>
             )}
