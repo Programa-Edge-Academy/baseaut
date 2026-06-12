@@ -8,6 +8,7 @@ import { DefaultButton } from "@/components/default-button";
 import { DefaultTextInput } from "@/components/default-text-input";
 import { SelectableChip } from "@/components/selectable-chip";
 import { useExercises, Exercise } from "../hooks/use-exercises";
+import { CircuitType } from "../hooks/use-circuits";
 
 type ExecutionMode = "estruturado" | "livre";
 
@@ -18,13 +19,16 @@ interface NewCircuitProps {
   initialData?: {
     name: string;
     executionMode: ExecutionMode;
+    type?: CircuitType;
+    form?: string | null;
     exercises: Exercise[];
   };
-  onSave: (data: { 
-    name: string; 
-    type: "padrao" | "mabc_1" | "mabc_2" | "mabc_3"; 
-    executionMode: ExecutionMode; 
-    exercises: Exercise[] 
+  onSave: (data: {
+    name: string;
+    type: CircuitType;
+    executionMode: ExecutionMode;
+    form: string | null;
+    exercises: Exercise[]
   }) => Promise<void>;
 }
 
@@ -110,6 +114,8 @@ export function NewCircuit({
   const [name, setName] = useState("");
   const [executionMode, setExecutionMode] = useState<ExecutionMode>("estruturado");
   const [orderedExercises, setOrderedExercises] = useState<Exercise[]>([]);
+  const [type, setType] = useState<CircuitType>("padrao");
+  const [form, setForm] = useState<string | null>(null);
 
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
 
@@ -133,10 +139,14 @@ export function NewCircuit({
         setName(initialData.name);
         setExecutionMode(initialData.executionMode);
         setOrderedExercises(initialData.exercises || []);
+        setType(initialData.type ?? "padrao");
+        setForm(initialData.form ?? null);
       } else {
         setName("");
         setExecutionMode("estruturado");
         setOrderedExercises([]);
+        setType("padrao");
+        setForm(null);
       }
       setErrors({ name: "", exercises: "" });
       setSwapIndex(null);
@@ -198,11 +208,12 @@ const handleSwapClick = React.useCallback((index: number) => {
 
     setIsSaving(true);
     try {
-      await onSave({ 
-        name: trimmedName, 
-        type: "padrao", 
-        executionMode: executionMode, 
-        exercises: orderedExercises 
+      await onSave({
+        name: trimmedName,
+        type,
+        executionMode,
+        form,
+        exercises: orderedExercises,
       });
       setShowToast(true);
       setTimeout(() => setShowToast(false), 1500);

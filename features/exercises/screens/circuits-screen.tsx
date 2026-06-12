@@ -31,7 +31,8 @@ export interface SaveCircuitPayload {
 function circuitToFormData(circuit: Circuit) {
   return {
     name: circuit.name,
-    executionMode: circuit.executionMode, 
+    executionMode: circuit.executionMode,
+    type: circuit.type,
     form: circuit.formId,
     exercises: circuit.exercises,
   };
