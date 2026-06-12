@@ -15,26 +15,39 @@ ALTER TABLE public.comportamentos_sessao
 -- o responsável operacional da sessão (monitor membro OU coordenador) pode
 -- registrar comportamentos. Substitui a policy restrita a is_team_member.
 DROP POLICY IF EXISTS "comportamentos_equipe" ON public.comportamentos_sessao;
+DROP POLICY IF EXISTS "comportamentos_sessao: select team" ON public.comportamentos_sessao;
+DROP POLICY IF EXISTS "comportamentos_sessao: write session owner" ON public.comportamentos_sessao;]
 
-CREATE POLICY "comportamentos_sessao: select team"
+ALTER TABLE public.comportamentos_sessao ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "comportamentos_sessao: select_equipe"
   ON public.comportamentos_sessao
   FOR SELECT
   USING (
-    public.can_access_team(
-      (SELECT equipe_id FROM public.sessoes WHERE id = sessao_id)
+    EXISTS (
+      SELECT 1 FROM public.sessoes s
+      JOIN public.alunos a ON a.id = s.aluno_id
+      WHERE s.id = sessao_id
+        AND public.can_access_team(a.equipe_id)
     )
   );
 
-CREATE POLICY "comportamentos_sessao: write session owner"
+CREATE POLICY "comportamentos_sessao: modificacao_autorizada"
   ON public.comportamentos_sessao
-  FOR INSERT
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.sessoes s
+      JOIN public.alunos a ON a.id = s.aluno_id
+      WHERE s.id = sessao_id
+        AND (s.monitor_id = auth.uid() OR public.can_access_team(a.equipe_id))
+    )
+  )
   WITH CHECK (
     EXISTS (
-      SELECT 1
-      FROM public.sessoes s
+      SELECT 1 FROM public.sessoes s
       JOIN public.alunos a ON a.id = s.aluno_id
-      WHERE s.id = comportamentos_sessao.sessao_id
-        AND s.monitor_id = auth.uid()
-        AND public.can_access_team(a.equipe_id)
+      WHERE s.id = sessao_id
+        AND (s.monitor_id = auth.uid() OR public.can_access_team(a.equipe_id))
     )
   );
