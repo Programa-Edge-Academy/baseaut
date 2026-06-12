@@ -16,6 +16,13 @@ export type Mabc2ExerciseItemProps = {
   accessibilityLabel?: string;
 };
 
+function formatMeasuredUnit(unit: string) {
+  if (unit === "tentativas") return "Medido em sucessos";
+  if (unit === "seg") return "Medido em segundos";
+
+  return unit;
+}
+
 export function Mabc2ExerciseItem({
   name,
   unit,
@@ -46,7 +53,9 @@ export function Mabc2ExerciseItem({
         {name}
       </Text>
 
-      <Text className="mb-2 text-xs font-medium text-muted">{unit}</Text>
+      <Text className="mb-2 text-xs font-medium text-muted">
+        {formatMeasuredUnit(unit)}
+      </Text>
 
       <View className="flex-row items-center gap-2.5">
         <View className="min-w-[60px] items-center justify-center rounded-xl border border-outline bg-level2 px-4 py-1">
