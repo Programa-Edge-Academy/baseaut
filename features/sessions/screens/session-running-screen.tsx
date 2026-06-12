@@ -21,6 +21,7 @@ import {
   type MotivoFinalizacao,
   type MotivoNaoRealizacao,
 } from "../hooks/use-session-flow";
+import { useResumeSession } from "../hooks/use-resume-session";
 
 /** Maps early-finish reason labels to the motivo_finalizacao_enum. */
 const MOTIVO_FINALIZACAO_MAP: Record<string, MotivoFinalizacao> = {
@@ -105,7 +106,7 @@ export function SessionRunningScreen({
   onCompleteSession,
 }: SessionRunningScreenProps) {
   const formRef = useRef<any>(null);
-  const { createSession, saveSession } = useSessionFlow();
+  const { createSession, persistExecutions, saveSession } = useSessionFlow();
 
   // ID efetivo da sessão: usa o recebido por parâmetro ou cria um na montagem.
   const [effectiveSessionId, setEffectiveSessionId] = useState<string>(
@@ -139,6 +140,10 @@ export function SessionRunningScreen({
       active = false;
     };
   }, [sessionId, studentId, circuitId, createSession]);
+
+  // Ao retomar (sessionId não vazio), carrega as execuções já gravadas.
+  const { data: resumeData } = useResumeSession(sessionId || null);
+
   const [order, setOrder] = useState<SessionExercise[]>(exercises);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [stage, setStage] = useState<ExerciseStage>("ready");
@@ -152,6 +157,28 @@ export function SessionRunningScreen({
     Record<string, "concluido" | "nao_realizada" | "adiado">
   >({});
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
+
+  // Reconstrói o estado ao retomar uma sessão em_andamento.
+  useEffect(() => {
+    if (!resumeData || resumeData.executions.length === 0) return;
+
+    const executed = new Set(resumeData.executions.map((e) => e.exercicioId));
+
+    executionsRef.current = resumeData.executions;
+
+    const histrico: Record<string, "concluido" | "nao_realizada"> = {};
+    for (const exec of resumeData.executions) {
+      histrico[exec.exercicioId] =
+        exec.statusRealizacao === "realizada" ? "concluido" : "nao_realizada";
+    }
+    setHistoricoExercicios(histrico);
+    setHasAdvanced(true);
+
+    // Retoma no primeiro exercício da ordem original que ainda não tem execução.
+    const resumeIndex = exercises.findIndex((ex) => !executed.has(ex.id));
+    setCurrentIndex(resumeIndex === -1 ? exercises.length - 1 : resumeIndex);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeData]);
 
   const isMabc =
     circuitType === "mabc_1" ||
@@ -282,14 +309,16 @@ export function SessionRunningScreen({
 
     // Apenas realizada/não realizada viram execução; adiado fica pendente.
     if (record) {
-      executionsRef.current = [
-        ...executionsRef.current,
-        {
-          exercicioId: currentExercise.id,
-          ordemExecucao: currentIndex + 1,
-          ...record,
-        },
-      ];
+      const newRecord: ExecutionRecord = {
+        exercicioId: currentExercise.id,
+        ordemExecucao: currentIndex + 1,
+        ...record,
+      };
+      executionsRef.current = [...executionsRef.current, newRecord];
+
+      // Persiste incrementalmente para que a sessão possa ser retomada.
+      const sid = effectiveSessionIdRef.current;
+      if (sid) void persistExecutions(sid, [newRecord]);
     }
     lastElapsedSecondsRef.current = null;
 

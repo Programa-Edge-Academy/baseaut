@@ -108,7 +108,7 @@ export function useSessionFlow() {
 
       const { error: insertError } = await supabase
         .from("execucoes_exercicio")
-        .insert(payload);
+        .upsert(payload, { onConflict: "sessao_id, exercicio_id" });
 
       if (insertError) throw insertError;
     },

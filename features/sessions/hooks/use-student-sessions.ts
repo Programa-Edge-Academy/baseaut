@@ -1,6 +1,12 @@
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 
+export type ResumeExercise = {
+  id: string;
+  name: string;
+  description: string;
+};
+
 export interface SessionItem {
   id: string;
   title: string;
@@ -9,6 +15,10 @@ export interface SessionItem {
   hasPendency: boolean;
   type: "session" | "form";
   rawDate: string | null;
+  isResumable: boolean;
+  circuitId: string | null;
+  circuitType: string | null;
+  resumeExercises: ResumeExercise[] | null;
 }
 
 export interface StudentProfile {
@@ -62,14 +72,14 @@ export function useStudentSessions(studentId?: string) {
         });
       }
 
-      // 2. Busca as Sessões
+      // 2. Busca as Sessões (inclui exercícios do circuito para retomada)
       const { data: sessionsData, error: sessionsError } = await supabase
         .from("sessoes")
         .select(`
           id,
           status,
           data_inicio,
-          circuito_id (titulo),
+          circuito_id (id, titulo, tipo, itens_circuito (ordem, exercicios (id, titulo, descricao))),
           formulario_id (titulo)
         `)
         .eq("aluno_id", studentId);
@@ -89,19 +99,40 @@ export function useStudentSessions(studentId?: string) {
       if (formsError) throw formsError;
 
       // 4. Formata as Sessões
-      const mappedSessions: SessionItem[] = (sessionsData || []).map((item: any) => ({
-        id: item.id,
-        title: item.circuito_id?.titulo || item.formulario_id?.titulo || "Sessão sem título",
-        date: item.data_inicio
-          ? new Date(item.data_inicio).toLocaleDateString("pt-BR")
-          : "Data não definida",
-        status: item.status
-          ? String(item.status).replace(/_/g, " ")
-          : "Status não definido",
-        hasPendency: false,
-        type: "session",
-        rawDate: item.data_inicio,
-      }));
+      const mappedSessions: SessionItem[] = (sessionsData || []).map((item: any) => {
+        const circuit = item.circuito_id;
+        const sortedItems = (circuit?.itens_circuito ?? []).sort(
+          (a: any, b: any) => a.ordem - b.ordem,
+        );
+        const resumeExercises: ResumeExercise[] | null =
+          circuit && sortedItems.length > 0
+            ? sortedItems
+                .map((ci: any) => ({
+                  id: ci.exercicios?.id,
+                  name: ci.exercicios?.titulo,
+                  description: ci.exercicios?.descricao ?? "",
+                }))
+                .filter((e: any) => e.id)
+            : null;
+
+        return {
+          id: item.id,
+          title: circuit?.titulo || item.formulario_id?.titulo || "Sessão sem título",
+          date: item.data_inicio
+            ? new Date(item.data_inicio).toLocaleDateString("pt-BR")
+            : "Data não definida",
+          status: item.status
+            ? String(item.status).replace(/_/g, " ")
+            : "Status não definido",
+          hasPendency: false,
+          type: "session",
+          rawDate: item.data_inicio,
+          isResumable: item.status === "em_andamento" && circuit != null,
+          circuitId: circuit?.id ?? null,
+          circuitType: circuit?.tipo ?? null,
+          resumeExercises,
+        };
+      });
 
       // 5. Formata os Formulários
       const mappedForms: SessionItem[] = (formsData || []).map((item: any) => ({
@@ -110,10 +141,14 @@ export function useStudentSessions(studentId?: string) {
         date: item.created_at
           ? new Date(item.created_at).toLocaleDateString("pt-BR")
           : "Data não definida",
-        status: "Formulário preenchido", // Status genérico para formulários
+        status: "Formulário preenchido",
         hasPendency: false,
         type: "form",
         rawDate: item.created_at,
+        isResumable: false,
+        circuitId: null,
+        circuitType: null,
+        resumeExercises: null,
       }));
 
       // 6. Une as duas listas e ordena da mais recente para a mais antiga

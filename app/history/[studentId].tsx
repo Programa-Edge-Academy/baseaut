@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { ClipboardList, Route, X } from "lucide-react-native"; 
 import React, { useState, useMemo } from "react"; 
 import { ActivityIndicator, Pressable, Text, View } from "react-native"; 
@@ -108,7 +108,26 @@ export default function HistoryDetailsScreen() {
                   isForm ? `${colors.primary}26` : `${colors.secondary}26`
                 }
                 onPress={() => {
-                  console.log(`Abrindo detalhes do ${item.type}: ${item.id}`);
+                  if (item.isResumable) {
+                    router.push({
+                      pathname: "/session/structured",
+                      params: {
+                        sessionId: item.id,
+                        studentId: studentId as string,
+                        studentName: profile?.name ?? "Aluno",
+                        circuitId: item.circuitId ?? "",
+                        circuitType: item.circuitType ?? "padrao",
+                        circuitName: item.title,
+                        exercises: JSON.stringify(
+                          (item.resumeExercises ?? []).map((e) => ({
+                            id: e.id,
+                            name: e.name,
+                            description: e.description,
+                          })),
+                        ),
+                      },
+                    });
+                  }
                 }}
                 enableRipple={true}
                 rightAction="chevron"
