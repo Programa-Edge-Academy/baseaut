@@ -1,0 +1,40 @@
+-- ================================================================
+-- Botão de crise: duração do episódio em comportamentos_sessao
+-- ================================================================
+-- A US do botão de crise exige registrar a DURAÇÃO de cada episódio de
+-- crise, vinculada ao exercício (execucao_id) e à sessão, para alimentar a
+-- US10.5.5 (comparar comportamentos observados). A tabela comportamentos_sessao
+-- ainda não possuía coluna de duração.
+-- ================================================================
+
+ALTER TABLE public.comportamentos_sessao
+  ADD COLUMN IF NOT EXISTS duracao_segundos INTEGER
+    CHECK (duracao_segundos IS NULL OR duracao_segundos >= 0);
+
+-- Alinha a escrita com as demais tabelas da sessão (execucoes/respostas):
+-- o responsável operacional da sessão (monitor membro OU coordenador) pode
+-- registrar comportamentos. Substitui a policy restrita a is_team_member.
+DROP POLICY IF EXISTS "comportamentos_equipe" ON public.comportamentos_sessao;
+
+CREATE POLICY "comportamentos_sessao: select team"
+  ON public.comportamentos_sessao
+  FOR SELECT
+  USING (
+    public.can_access_team(
+      (SELECT equipe_id FROM public.sessoes WHERE id = sessao_id)
+    )
+  );
+
+CREATE POLICY "comportamentos_sessao: write session owner"
+  ON public.comportamentos_sessao
+  FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.sessoes s
+      JOIN public.alunos a ON a.id = s.aluno_id
+      WHERE s.id = comportamentos_sessao.sessao_id
+        AND s.monitor_id = auth.uid()
+        AND public.can_access_team(a.equipe_id)
+    )
+  );
