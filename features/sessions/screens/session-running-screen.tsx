@@ -49,27 +49,6 @@ export type SessionExercise = {
 
 type ExerciseStage = "ready" | "running";
 
-const MOCK_EXERCISES: SessionExercise[] = [
-  {
-    id: "1",
-    name: "Girar bambolê",
-    description: "Rotacionar bambolê com o braço",
-    mediaUrls: [],
-  },
-  {
-    id: "2",
-    name: "Equilíbrio na tábua",
-    description: "Caminhar sobre tábua em linha reta",
-    mediaUrls: [],
-  },
-  {
-    id: "3",
-    name: "Escalada",
-    description: "Escalar parede",
-    mediaUrls: [],
-  },
-];
-
 export type SessionRunningScreenProps = {
   sessionId: string;
   studentId: string;
@@ -101,7 +80,7 @@ export function SessionRunningScreen({
   circuitId,
   circuitName = "Circuito",
   circuitType = "padrao",
-  exercises = MOCK_EXERCISES,
+  exercises = [],
   onPressBack,
   onFinishSession,
   onCompleteSession,
@@ -151,7 +130,7 @@ export function SessionRunningScreen({
 
   // Cria a sessão no banco quando ainda não há um id válido.
   useEffect(() => {
-    if (sessionId || !studentId) return;
+    if (!order.length || sessionId || !studentId) return;
     let active = true;
     const promise = (async () => {
       const id = await createSession({
@@ -413,6 +392,20 @@ export function SessionRunningScreen({
     }
   };
   const total = order.length;
+
+  if (total === 0) {
+    return (
+      <View className="flex-1 bg-level1">
+        <Header variant="back" onPressBack={onPressBack} />
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="text-white text-base text-center font-medium">
+            Não foi possível carregar os exercícios do circuito.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   const currentExercise = order[currentIndex];
   const subtitle = `${circuitName} - ${currentIndex + 1}/${total}`;
 
