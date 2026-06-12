@@ -56,7 +56,7 @@ export default function HistoryDetailsScreen() {
         };
       case "mabc": {
         const age = item.ageAtEvent || 0;
-        let mabcColor = "#A179FF"; // Roxo padrão (11-16 anos)
+        let mabcColor = colors.mabc2; // Roxo padrão (11-16 anos)
         if (age >= 3 && age <= 6) {
           mabcColor = "#f97316"; // Laranja
         } else if (age >= 7 && age <= 10) {
@@ -65,7 +65,7 @@ export default function HistoryDetailsScreen() {
 
         return {
           iconColor: mabcColor,
-          bgColor: `${mabcColor}26`, // Cor com 15% de opacidade em hex
+          bgColor: withOpacity(mabcColor, 0.15),
           IconComponent: Route,
           subtitle: `${item.date} · Idade: ${age} anos`,
         };
@@ -73,7 +73,7 @@ export default function HistoryDetailsScreen() {
       default:
         return {
           iconColor: colors.primary,
-          bgColor: `${colors.primary}26`,
+          bgColor: withOpacity(colors.primary, 0.15),
           IconComponent: ClipboardList,
           subtitle: item.date,
         };
