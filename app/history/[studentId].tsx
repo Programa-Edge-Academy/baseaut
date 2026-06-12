@@ -11,6 +11,7 @@ import { Header } from "@/components/header";
 import { ListCard } from "@/components/list-card";
 import { PageHeader } from "@/components/page-header";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
+import { withOpacity } from "@/components/color-opacity";
 
 export default function HistoryDetailsScreen() {
   const { studentId } = useLocalSearchParams();
@@ -18,25 +19,66 @@ export default function HistoryDetailsScreen() {
     studentId as string,
   );
 
-  // Estados para controle do filtro por data
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Manipulador de evento quando o usuário escolhe uma data no calendário
+  // Filtro de data única e fechamento do modal
   const onChangeDate = (event: DateTimePickerEvent, date?: Date) => {
-    setShowDatePicker(false); // Fecha o calendário
+    setShowDatePicker(false);
     if (event.type === "set" && date) {
-      setSelectedDate(date); // Aplica a data selecionada
+      setSelectedDate(date); 
     }
   };
 
-  // Filtra a lista localmente de forma rápida por string (DD/MM/AAAA)
   const filteredSessions = useMemo(() => {
     if (!selectedDate) return sessions;
 
     const formattedFilterDate = selectedDate.toLocaleDateString("pt-BR");
     return sessions.filter((item) => item.date === formattedFilterDate);
   }, [selectedDate, sessions]);
+
+  // Auxiliar para definir propriedades visuais do card
+  const getCardVisuals = (item: any) => {
+    switch (item.type) {
+      case "form":
+        return {
+          iconColor: colors.primary, // Azul
+          bgColor: withOpacity(colors.primary, 0.15),
+          IconComponent: ClipboardList,
+          subtitle: item.date,
+        };
+      case "session":
+        return {
+          iconColor: colors.secondary, // Verde
+          bgColor: withOpacity(colors.secondary, 0.15),
+          IconComponent: Route,
+          subtitle: `${item.date} · ${item.status}`,
+        };
+      case "mabc": {
+        const age = item.ageAtEvent || 0;
+        let mabcColor = "#A179FF"; // Roxo padrão (11-16 anos)
+        if (age >= 3 && age <= 6) {
+          mabcColor = "#f97316"; // Laranja
+        } else if (age >= 7 && age <= 10) {
+          mabcColor = colors.secondary; // Verde Claro
+        }
+
+        return {
+          iconColor: mabcColor,
+          bgColor: `${mabcColor}26`, // Cor com 15% de opacidade em hex
+          IconComponent: Route,
+          subtitle: `${item.date} · Idade: ${age} anos`,
+        };
+      }
+      default:
+        return {
+          iconColor: colors.primary,
+          bgColor: `${colors.primary}26`,
+          IconComponent: ClipboardList,
+          subtitle: item.date,
+        };
+    }
+  };
 
   return (
     <View className="flex-1 bg-level1">
@@ -45,15 +87,12 @@ export default function HistoryDetailsScreen() {
       <View className="mx-8 mt-5">
         <PageHeader
           title={profile ? `Histórico - ${profile.name}` : "Carregando..."}
-          // Atualiza dinamicamente a contagem com base nos registros filtrados
           subtitle={`${filteredSessions.length} registros`}
           mode={"sessoes"}
-          // 💡 Conecta o clique do botão de calendário do PageHeader ao estado
           onCalendarPress={() => setShowDatePicker(true)}
         />
       </View>
 
-      {/* Badge visual indicando que há um filtro de data ativo + Botão para limpar */}
       {selectedDate && (
         <View className="mx-8 mt-3 flex-row items-center justify-between bg-level2 p-3 rounded-xl border border-outline">
           <Text className="text-default-2 text-muted">
@@ -81,32 +120,23 @@ export default function HistoryDetailsScreen() {
       ) : (
         <DataList
           className="mx-8 mt-5"
-          data={filteredSessions} // Agora consome os dados filtrados
+          data={filteredSessions}
           keyExtractor={(item) => item.id}
-          // Mensagem adaptável se o filtro não encontrar nada
           emptyMessage={
             selectedDate
               ? "Nenhum registro encontrado nesta data."
               : "Nenhum registro encontrado para este aluno."
           }
           renderItem={({ item }) => {
-            const isForm = item.type === "form";
+            const { iconColor, bgColor, IconComponent, subtitle } = getCardVisuals(item);
 
             return (
               <ListCard
                 title={item.title}
-                subtitle={isForm ? item.date : `${item.date} · ${item.status}`}
+                subtitle={subtitle}
                 className={item.hasPendency ? "border-2 border-extra" : ""}
-                icon={
-                  isForm ? (
-                    <ClipboardList size={22} color={colors.primary} />
-                  ) : (
-                    <Route size={20} color={colors.secondary} />
-                  )
-                }
-                iconBgColor={
-                  isForm ? `${colors.primary}26` : `${colors.secondary}26`
-                }
+                icon={<IconComponent size={22} color={iconColor} />}
+                iconBgColor={bgColor}
                 onPress={() => {
                   console.log(`Abrindo detalhes do ${item.type}: ${item.id}`);
                 }}
@@ -118,14 +148,13 @@ export default function HistoryDetailsScreen() {
         />
       )}
 
-      {/* Componente nativo do Calendário do Sistema (iOS/Android) */}
       {showDatePicker && (
         <DateTimePicker
           value={selectedDate || new Date()}
           mode="date"
           display="default"
           onChange={onChangeDate}
-          maximumDate={new Date()} // Impede selecionar datas futuras
+          maximumDate={new Date()} 
         />
       )}
 
