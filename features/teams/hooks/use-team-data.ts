@@ -1,11 +1,7 @@
+import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import { Alert, Platform } from "react-native";
-
-/**
- * Fallback team id used for team management flows.
- */
-const EQUIPE_ID = "33af53f5-113c-42c4-aa46-6faa6cfdd5e7";
 
 /**
  * Student data used in team management screens.
@@ -42,6 +38,7 @@ export function useTeamData() {
   const [students, setStudents] = useState<StudentData[]>([]);
   const [companions, setCompanions] = useState<CompanionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [equipeId, setEquipeId] = useState<string | null>(null);
 
   /**
    * Calculates age in years from a birth date string.
@@ -63,6 +60,15 @@ export function useTeamData() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
+      const resolvedId = await resolveEquipeId();
+      if (!resolvedId) {
+        setStudents([]);
+        setCompanions([]);
+        setIsLoading(false);
+        return;
+      }
+      setEquipeId(resolvedId);
+
       const { data: authData } = await supabase.auth.getUser();
       const currentUserId = authData.user?.id;
       const { data: alunosData, error: alunosError } = await supabase
@@ -70,6 +76,7 @@ export function useTeamData() {
         .select(
           "id, nome_completo, data_nascimento, peso, altura, cintura, nivel_suporte, diagnostico_detalhado, observacoes_clinicas, avatar_url",
         )
+        .eq("equipe_id", resolvedId)
         .eq("ativo", true);
 
       if (!alunosError && alunosData) {
@@ -95,13 +102,15 @@ export function useTeamData() {
         .select(
           `id, status, usuario_id, profiles:usuario_id (nome_completo, email)`,
         )
-        .eq("equipe_id", EQUIPE_ID)
+        .eq("equipe_id", resolvedId)
         .neq("status", "removido");
 
       if (membrosError) {
         console.error("Erro ao buscar membros_equipe:", membrosError);
       }
 
+      // Scoping relies on RLS. Ideally this would be filtered by a
+      // team-join request table when one exists.
       const { data: pendentesData, error: pendentesError } = await supabase
         .from("profiles")
         .select("id, nome_completo, email, status_conta")
@@ -168,7 +177,7 @@ export function useTeamData() {
 
     const { error } = await supabase.rpc('aprovar_monitor', {
       p_monitor_id: comp.profileId,
-      p_equipe_id: EQUIPE_ID
+      p_equipe_id: equipeId
     });
 
     if (error) {
@@ -302,7 +311,7 @@ export function useTeamData() {
         nivelSuporteDb = "nivel_3";
       }
 
-      const payload = {
+      const basePayload = {
         nome_completo: data.name,
         data_nascimento: formattedDate,
         peso: data.weight || null,
@@ -312,18 +321,19 @@ export function useTeamData() {
         diagnostico_detalhado: data.healthConditions || null,
         observacoes_clinicas: data.observations || null,
         avatar_url: finalAvatarUrl,
-        equipe_id: EQUIPE_ID,
         ativo: true,
       };
 
       if (data.id) {
         const { error } = await supabase
           .from("alunos")
-          .update(payload)
+          .update(basePayload)
           .eq("id", data.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("alunos").insert([payload]);
+        const { error } = await supabase
+          .from("alunos")
+          .insert([{ ...basePayload, equipe_id: equipeId }]);
         if (error) throw error;
       }
 
