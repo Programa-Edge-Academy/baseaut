@@ -173,7 +173,13 @@ async function seedMabcCircuits(teamId: string): Promise<void> {
         .single();
 
       if (circError) {
-        console.error(`[Seeding] Error inserting MABC circuit ${band.tipo}:`, circError);
+        if (circError.code === "23505") {
+          // Another client seeded this circuit concurrently; clean up orphaned exercises.
+          const orphanIds = insertedExercises.map((ex) => ex.id);
+          await supabase.from("exercicios").delete().in("id", orphanIds);
+        } else {
+          console.error(`[Seeding] Error inserting MABC circuit ${band.tipo}:`, circError);
+        }
         continue;
       }
 
@@ -382,26 +388,17 @@ export function useCircuits() {
 
       if (updateError) throw updateError;
 
-      const { error: deleteItemsError } = await supabase
-        .from("itens_circuito")
-        .delete()
-        .eq("circuito_id", id);
+      const itemsPayload = data.exercises.map((ex, index) => ({
+        exercicio_id: ex.id,
+        ordem: index + 1,
+      }));
 
-      if (deleteItemsError) throw deleteItemsError;
+      const { error: rpcError } = await supabase.rpc("substituir_itens_circuito", {
+        p_circuito_id: id,
+        p_itens: itemsPayload,
+      });
 
-      if (data.exercises.length > 0) {
-        const itemsPayload = data.exercises.map((ex, index) => ({
-          circuito_id: id,
-          exercicio_id: ex.id,
-          ordem: index + 1,
-        }));
-
-        const { error: itemsError } = await supabase
-          .from("itens_circuito")
-          .insert(itemsPayload);
-
-        if (itemsError) throw itemsError;
-      }
+      if (rpcError) throw rpcError;
 
       await loadCircuits();
     } catch (err: any) {
