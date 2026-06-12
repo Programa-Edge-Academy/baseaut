@@ -2,9 +2,9 @@ import { colors } from "@/assets/colors";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { FormComponent } from "@/features/forms/components/form-component";
-import { Check, Minimize2, Maximize2 } from "lucide-react-native";
+import { Check } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, ScrollView, Text, View } from "react-native";
+import { Alert, Animated, ScrollView, Text, View } from "react-native";
 import { ActivityResultModal } from "../../exercises/components/activity-result-modal";
 import { MabcResultModal } from "../../exercises/components/mabc-result-modal";
 import { StartActivity } from "../../exercises/components/start-activity";
@@ -15,6 +15,7 @@ import {
   FinishSessionModal,
 } from "../components/finish-session-modal";
 import { ReorderModal } from "../components/reorder-modal";
+import { useResumeSession } from "../hooks/use-resume-session";
 import {
   useSessionFlow,
   type CrisisRecord,
@@ -22,7 +23,6 @@ import {
   type MotivoFinalizacao,
   type MotivoNaoRealizacao,
 } from "../hooks/use-session-flow";
-import { useResumeSession } from "../hooks/use-resume-session";
 
 /** Maps early-finish reason labels to the motivo_finalizacao_enum. */
 const MOTIVO_FINALIZACAO_MAP: Record<string, MotivoFinalizacao> = {
@@ -209,7 +209,7 @@ export function SessionRunningScreen({
     // Retoma no primeiro exercício da ordem original que ainda não tem execução.
     const resumeIndex = exercises.findIndex((ex) => !executed.has(ex.id));
     setCurrentIndex(resumeIndex === -1 ? exercises.length - 1 : resumeIndex);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeData]);
 
   const isMabc =
@@ -449,10 +449,7 @@ export function SessionRunningScreen({
     );
     const temPendencias = pendentes.length > 0;
 
-    void persistAndFinish(
-      MOTIVO_FINALIZACAO_MAP[motivo] ?? "outro",
-      motivo,
-    );
+    void persistAndFinish(MOTIVO_FINALIZACAO_MAP[motivo] ?? "outro", motivo);
     onFinishSession?.(motivo);
     onCompleteSession?.(temPendencias, pendentes, order);
     setIsFinishOpen(false);
@@ -503,8 +500,7 @@ export function SessionRunningScreen({
                 isCriseActive={isCriseActive}
                 onStop={handleStop}
                 isFormVisible={isFormVisible} // Nova prop
-                  onPressCorner={() => setIsFormVisible(!isFormVisible)} // Alterna o estado
-                
+                onPressCorner={() => setIsFormVisible(!isFormVisible)} // Alterna o estado
               />
             )}
 
@@ -513,17 +509,17 @@ export function SessionRunningScreen({
             is out of scope here — wire to features/forms once available.
             Placeholder block kept so the layout reflects the design intent.
           */}
-          {/* Circuitos MABC não usam o Registro de Controle dentro da sessão. */}
-          {!isMabc && (
-            <View style={{ display: isFormVisible ? 'flex' : 'none' }}>
-              <FormComponent
-                ref={formRef}
-                formularioId={"00000000-0000-4000-0000-0000000000fc"}
-                sessaoId={effectiveSessionId}
-                alunoId={studentId}
-              />
-            </View>
-          )}
+            {/* Circuitos MABC não usam o Registro de Controle dentro da sessão. */}
+            {!isMabc && (
+              <View style={{ display: isFormVisible ? "flex" : "none" }}>
+                <FormComponent
+                  ref={formRef}
+                  formularioId={"00000000-0000-4000-0000-0000000000fc"}
+                  sessaoId={effectiveSessionId}
+                  alunoId={studentId}
+                />
+              </View>
+            )}
           </ScrollView>
         </View>
 
@@ -616,8 +612,6 @@ export function SessionRunningScreen({
             </Text>
           </Animated.View>
         )}
-
-        
       </View>
     </>
   );
