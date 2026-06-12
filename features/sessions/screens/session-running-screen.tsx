@@ -17,6 +17,7 @@ import {
 import { ReorderModal } from "../components/reorder-modal";
 import {
   useSessionFlow,
+  type CrisisRecord,
   type ExecutionRecord,
   type MotivoFinalizacao,
   type MotivoNaoRealizacao,
@@ -117,6 +118,33 @@ export function SessionRunningScreen({
   const executionsRef = useRef<ExecutionRecord[]>([]);
   // Segundos do cronômetro capturados na última parada.
   const lastElapsedSecondsRef = useRef<number | null>(null);
+
+  // Botão de crise: episódios cronometrados de forma oculta, por exercício.
+  const [isCriseActive, setIsCriseActive] = useState(false);
+  const criseStartRef = useRef<number | null>(null);
+  const crisesRef = useRef<CrisisRecord[]>([]);
+
+  // Encerra a crise em andamento (se houver), retendo a duração para o exercício atual.
+  const finalizeActiveCrise = () => {
+    if (criseStartRef.current == null) return;
+    const durationSeconds = (Date.now() - criseStartRef.current) / 1000;
+    crisesRef.current = [
+      ...crisesRef.current,
+      { exercicioId: currentExercise.id, durationSeconds },
+    ];
+    criseStartRef.current = null;
+    setIsCriseActive(false);
+  };
+
+  // Alterna o botão de crise: inicia uma nova contagem ou pausa a atual.
+  const handleCrisePress = () => {
+    if (criseStartRef.current == null) {
+      criseStartRef.current = Date.now();
+      setIsCriseActive(true);
+    } else {
+      finalizeActiveCrise();
+    }
+  };
 
   // Cria a sessão no banco quando ainda não há um id válido.
   useEffect(() => {
@@ -283,7 +311,7 @@ export function SessionRunningScreen({
     const sid = effectiveSessionIdRef.current;
     if (!sid) return;
     try {
-      await saveSession(sid, executionsRef.current, {
+      await saveSession(sid, executionsRef.current, crisesRef.current, {
         status: "concluida",
         motivoFinalizacao,
         descricaoMotivo,
@@ -297,6 +325,10 @@ export function SessionRunningScreen({
     statusAtual: "concluido" | "nao_realizada" | "adiado",
     record?: Omit<ExecutionRecord, "exercicioId" | "ordemExecucao">,
   ) => {
+    // Garante que qualquer crise em andamento seja atribuída a este exercício
+    // antes de trocar de atividade.
+    finalizeActiveCrise();
+
     setStage("ready");
     setHasAdvanced(true);
 
@@ -379,6 +411,9 @@ export function SessionRunningScreen({
   };
 
   const handleConfirmFinish = (motivo: string) => {
+    // Encerra uma crise eventualmente ativa antes de finalizar a sessão.
+    finalizeActiveCrise();
+
     if (formRef.current) {
       formRef.current.handleSave();
     }
@@ -440,9 +475,8 @@ export function SessionRunningScreen({
                 subtitle={currentExercise.description}
                 autoStart
                 variant="form"
-                onPressCrise={() => {
-                  /* TODO: register a "crise" event tied to the current exercise. */
-                }}
+                onPressCrise={handleCrisePress}
+                isCriseActive={isCriseActive}
                 onStop={handleStop}
                 isFormVisible={isFormVisible} // Nova prop
                   onPressCorner={() => setIsFormVisible(!isFormVisible)} // Alterna o estado
