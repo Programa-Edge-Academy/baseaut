@@ -4,8 +4,15 @@ import { SessionRunningScreen } from "../../features/sessions/screens/session-ru
 import type { SessionExercise } from "../../features/sessions/screens/session-running-screen";
 
 export default function SessionEstruturadoRoute() {
-  const { studentName, circuitName, circuitId, sessionId, studentId, exercises } =
-    useLocalSearchParams<any>();
+  const {
+    studentName,
+    circuitName,
+    circuitId,
+    circuitType,
+    sessionId,
+    studentId,
+    exercises,
+  } = useLocalSearchParams<any>();
 
   // Exercícios reais do circuito selecionado (serializados no parâmetro).
   const sessionExercises = useMemo<SessionExercise[] | undefined>(() => {
@@ -34,7 +41,7 @@ export default function SessionEstruturadoRoute() {
       circuitId={circuitId || ""}
       studentName={studentName || "Aluno"}
       circuitName={circuitName || "Circuito"}
-      circuitType={"estruturado" as any}
+      circuitType={(circuitType as any) || "padrao"}
       exercises={sessionExercises}
       onPressBack={() => router.back()}
       onCompleteSession={(hasWarnings, pendentes, todos) => {

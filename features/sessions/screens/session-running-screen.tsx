@@ -426,14 +426,17 @@ export function SessionRunningScreen({
             is out of scope here — wire to features/forms once available.
             Placeholder block kept so the layout reflects the design intent.
           */}
-          <View style={{ display: isFormVisible ? 'flex' : 'none' }}>
-            <FormComponent
-              ref={formRef}
-              formularioId={"00000000-0000-4000-0000-0000000000fc"}
-              sessaoId={effectiveSessionId}
-              alunoId={studentId}
-            />
-          </View>
+          {/* Circuitos MABC não usam o Registro de Controle dentro da sessão. */}
+          {!isMabc && (
+            <View style={{ display: isFormVisible ? 'flex' : 'none' }}>
+              <FormComponent
+                ref={formRef}
+                formularioId={"00000000-0000-4000-0000-0000000000fc"}
+                sessaoId={effectiveSessionId}
+                alunoId={studentId}
+              />
+            </View>
+          )}
           </ScrollView>
         </View>
 
