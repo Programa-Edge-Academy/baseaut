@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabase";
+import { resolveEquipeId } from "@/lib/resolve-equipe-id";
+import { calculateAge } from "@/lib/date-utils";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Platform } from "react-native";
 
@@ -21,36 +23,6 @@ export type Student = {
 };
 
 /**
- * Resolves the active team id for the current user.
- */
-async function resolveEquipeId(): Promise<string | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: membro } = await supabase
-    .from("membros_equipe")
-    .select("equipe_id")
-    .eq("usuario_id", user.id)
-    .eq("status", "ativo")
-    .limit(1)
-    .maybeSingle();
-
-  if (membro?.equipe_id) return membro.equipe_id;
-
-  const { data: equipe } = await supabase
-    .from("equipes")
-    .select("id")
-    .eq("coordenador_id", user.id)
-    .eq("ativa", true)
-    .limit(1)
-    .maybeSingle();
-
-  return equipe?.id ?? null;
-}
-
-/**
  * Provides CRUD operations and state for students.
  */
 export function useStudents() {
@@ -58,21 +30,6 @@ export function useStudents() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
-
-  /**
-   * Calculates age in years from a birth date string.
-   */
-  const calculateAge = (birthDateString: string) => {
-    if (!birthDateString) return 0;
-    const birthDate = new Date(birthDateString);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
 
   /**
    * Uploads a local avatar image and returns its public URL.
