@@ -3,14 +3,98 @@ import { DefaultButton } from "@/components/default-button";
 import { Header } from "@/components/header";
 import RangeCalendar from "@/components/range-calendar";
 import { BehaviorDetailCard } from "@/features/analysis/components/behavior-detail-card";
-import { ObservedBehaviorsChart, BehaviorType } from "@/features/analysis/components/observed-behaviors-chart";
+import { ObservedBehaviorsChart, BehaviorType, BehaviorRecord } from "@/features/analysis/components/observed-behaviors-chart";
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
-import { MOCK_BEHAVIOR_RECORDS, BEHAVIOR_EXERCISES_MAP } from "@/features/analysis/mocks/behavior-data";
 import { NoRecordsScreen } from "@/features/analysis/screens/no-records-screen";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
+
+/**
+ * Mapeamento simulado de quais exercícios estavam sendo realizados 
+ * quando determinados comportamentos ocorreram.
+ */
+const BEHAVIOR_EXERCISES_MAP: Record<BehaviorType, string[]> = {
+  stereotypy: ["Equilíbrio na prancha", "Andar na linha", "Pular corda"],
+  eye_contact: ["Pega-pega", "Jogo da memória", "Montar blocos"],
+  engagement: ["Circuito motor", "Arremesso de bola"],
+  escape: ["Girar bambolê", "Passar por baixo da mesa"],
+  crisis: ["Atividade não estruturada", "Espera na fila"],
+};
+
+/**
+ * Histórico simulado de registros de comportamentos em sessões passadas.
+ * Utilizamos datas recentes e antigas para testar a filtragem do calendário.
+ */
+const MOCK_BEHAVIOR_RECORDS: BehaviorRecord[] = [
+  {
+    id: "rec-1",
+    behaviorType: "stereotypy",
+    date: "2026-06-10",
+    frequency: 3,
+  },
+  {
+    id: "rec-2",
+    behaviorType: "eye_contact",
+    date: "2026-06-10",
+    frequency: 2,
+  },
+  {
+    id: "rec-3",
+    behaviorType: "engagement",
+    date: "2026-06-11",
+    frequency: 5,
+  },
+  {
+    id: "rec-4",
+    behaviorType: "escape",
+    date: "2026-06-12",
+    frequency: 1,
+  },
+  {
+    id: "rec-5",
+    behaviorType: "crisis",
+    date: "2026-06-08",
+    frequency: 1,
+  },
+  {
+    id: "rec-6",
+    behaviorType: "stereotypy",
+    date: "2026-06-05",
+    frequency: 4,
+  },
+  {
+    id: "rec-7",
+    behaviorType: "engagement",
+    date: "2026-06-05",
+    frequency: 3,
+  },
+  {
+    id: "rec-8",
+    behaviorType: "eye_contact",
+    date: "2026-06-02",
+    frequency: 1,
+  },
+    {
+    id: "rec-9",
+    behaviorType: "escape",
+    date: "2026-05-28",
+    frequency: 2,
+  },
+  {
+    id: "rec-10",
+    behaviorType: "stereotypy",
+    date: "2026-05-20",
+    frequency: 5,
+  },
+  {
+    id: "rec-11",
+    behaviorType: "crisis",
+    date: "2026-05-15",
+    frequency: 2,
+  },
+];
 
 const monthsPt = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
