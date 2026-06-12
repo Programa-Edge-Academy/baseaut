@@ -133,7 +133,13 @@ export function StudentAnalysisScreen() {
                   title="Registros de desenvolvimento motor"
                   description="Visualize e registre avaliações motoras do aluno."
                   onPress={() => {
-                    console.log("Registros de desenvolvimento motor selecionado");
+                    router.push({
+                      pathname: "/mabc2-records",
+                      params: {
+                        studentId: String(studentId ?? ""),
+                        studentName: profile?.name ?? "Aluno",
+                      },
+                    } as any);
                   }}
                 />
               </View>
