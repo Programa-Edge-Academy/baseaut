@@ -29,7 +29,6 @@ BEGIN
           FROM public.vw_linha_do_tempo_aluno v
           WHERE v.aluno_id = a.id
             AND v.status_evento ILIKE '%pendente%'
-            AND (p_data IS NULL OR v.data_evento::date = p_data)
         ),
         false
       ),
@@ -42,13 +41,15 @@ BEGIN
         ),
         0
       ),
-      'ultimo_evento', (
-        SELECT to_jsonb(v) || jsonb_build_object(
-          'tem_pendencia', COALESCE(v.status_evento ILIKE '%pendente%', false)
+        'ultimo_evento', (
+          SELECT jsonb_build_object(
+          'tipo', v.tipo_evento,
+          'data', v.data_evento,
+          'status', v.status_evento
         )
         FROM public.vw_linha_do_tempo_aluno v
         WHERE v.aluno_id = a.id
-          AND (p_data IS NULL OR v.data_evento::date = p_data)
+        AND (p_data IS NULL OR v.data_evento::date = p_data)
         ORDER BY v.data_evento DESC
         LIMIT 1
       )
