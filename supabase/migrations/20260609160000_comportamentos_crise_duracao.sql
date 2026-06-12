@@ -16,7 +16,7 @@ ALTER TABLE public.comportamentos_sessao
 -- registrar comportamentos. Substitui a policy restrita a is_team_member.
 DROP POLICY IF EXISTS "comportamentos_equipe" ON public.comportamentos_sessao;
 DROP POLICY IF EXISTS "comportamentos_sessao: select team" ON public.comportamentos_sessao;
-DROP POLICY IF EXISTS "comportamentos_sessao: write session owner" ON public.comportamentos_sessao;]
+DROP POLICY IF EXISTS "comportamentos_sessao: write session owner" ON public.comportamentos_sessao;
 
 ALTER TABLE public.comportamentos_sessao ENABLE ROW LEVEL SECURITY;
 
