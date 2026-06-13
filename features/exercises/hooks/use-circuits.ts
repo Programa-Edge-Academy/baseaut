@@ -244,7 +244,10 @@ export function useCircuits() {
             exercicios (
               id,
               titulo,
-              descricao
+              descricao,
+              duracao_segundos,
+              tag,
+              icone_url
             )
           )
         `)
@@ -269,8 +272,9 @@ export function useCircuits() {
                 id: item.exercicios?.id,
                 name: item.exercicios?.titulo,
                 description: item.exercicios?.descricao || "",
-                durationSeconds: 120,
-                tag: "Locomotor",
+                durationSeconds: item.exercicios?.duracao_segundos ?? undefined,
+                tag: item.exercicios?.tag || "Locomotor",
+                iconUrl: item.exercicios?.icone_url ?? null,
               }))
               .filter((ex: any) => ex.id);
 
