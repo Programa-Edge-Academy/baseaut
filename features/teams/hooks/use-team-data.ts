@@ -1,5 +1,6 @@
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { supabase } from "@/lib/supabase";
+import { calculateAge } from "@/lib/date-utils";
 import { useEffect, useState } from "react";
 import { Alert, Platform } from "react-native";
 
@@ -39,20 +40,6 @@ export function useTeamData() {
   const [companions, setCompanions] = useState<CompanionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [equipeId, setEquipeId] = useState<string | null>(null);
-
-  /**
-   * Calculates age in years from a birth date string.
-   */
-  const calculateAge = (birthDateString: string) => {
-    const birthDate = new Date(birthDateString);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
 
   /**
    * Loads students and companions for the team.

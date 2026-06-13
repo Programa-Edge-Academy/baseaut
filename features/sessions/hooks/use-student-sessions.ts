@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { calculateAge } from "@/lib/date-utils";
 import { useEffect, useState } from "react";
 
 export type ResumeExercise = {
@@ -33,18 +34,6 @@ export interface StudentProfile {
   observations: string | null;
 }
 
-// Função auxiliar para calcular a idade com base na data de nascimento e do evento
-const calculateAgeAtEvent = (birthDate: string | null, eventDate: string | null): number => {
-  if (!birthDate || !eventDate) return 0;
-  const birth = new Date(birthDate);
-  const event = new Date(eventDate);
-  let age = event.getFullYear() - birth.getFullYear();
-  const m = event.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && event.getDate() < birth.getDate())) {
-    age--;
-  }
-  return age;
-};
 
 export function useStudentSessions(studentId?: string) {
   const [sessions, setSessions] = useState<SessionItem[]>([]);
@@ -179,7 +168,7 @@ export function useStudentSessions(studentId?: string) {
           hasPendency: item.tem_pendencia === true,
           type: "mabc",
           rawDate: eventDate,
-          ageAtEvent: calculateAgeAtEvent(birthDate, eventDate),
+          ageAtEvent: calculateAge(birthDate, eventDate),
         };
       });
 

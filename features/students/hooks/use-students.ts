@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { calculateAge } from "@/lib/date-utils";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Platform } from "react-native";
@@ -29,21 +30,6 @@ export function useStudents() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
-
-  /**
-   * Calculates age in years from a birth date string.
-   */
-  const calculateAge = (birthDateString: string) => {
-    if (!birthDateString) return 0;
-    const birthDate = new Date(birthDateString);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
 
   /**
    * Uploads a local avatar image and returns its public URL.
