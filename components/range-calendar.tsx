@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { DateData, MarkedDates } from 'react-native-calendars/src/types';
 
@@ -23,91 +23,120 @@ const ARROW_COLOR = '#B5BEC6';
 
 interface RangeCalendarProps {
     onRangeSelected: (start: string, end: string | null) => void;
+    style?: StyleProp<ViewStyle>;
 }
 
-const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected }) => {
+const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected, style }) => {
     const [markedDates, setMarkedDates] = useState<MarkedDates>({});
     const [startDate, setStartDate] = useState<string | null>(null);
 
     const handleDayPress = (day: DateData) => {
         const dateString = day.dateString;
 
-        if (!startDate || (startDate && Object.keys(markedDates).length > 1)) {
+        // Detecta se atualmente temos apenas UM único dia selecionado no calendário
+        const keys = Object.keys(markedDates);
+        const hasSingleDateSelected = keys.length === 1 && markedDates[keys[0]]?.startingDay && markedDates[keys[0]]?.endingDay;
+
+        // Caso 1: Primeiro clique absoluto OU reset (se já havia um intervalo real com dias diferentes selecionados)
+        if (!startDate && !hasSingleDateSelected) {
             setStartDate(dateString);
 
             const newMarked: MarkedDates = {
-                [dateString]: { startingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT }
+                [dateString]: { 
+                    startingDay: true, 
+                    endingDay: true, 
+                    color: ACCENT_COLOR, 
+                    textColor: DAY_TEXT 
+                }
             };
 
             setMarkedDates(newMarked);
             onRangeSelected(dateString, null);
         }
+        // Caso 2: Segundo clique (ou continuação a partir de uma data isolada)
         else {
-            if (new Date(dateString) < new Date(startDate)) {
-                setStartDate(dateString);
-                setMarkedDates({
-                    [dateString]: { startingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT }
-                });
-                onRangeSelected(dateString, null);
+            // Se tiver o startDate na memória, usa-o. Se não tiver (pós duplo clique), pega a chave que já estava marcada
+            let start = startDate || keys[0];
+            let end = dateString;
+
+            // Se clicar exatamente no mesmo dia de novo, apenas mantém o círculo perfeito isolado e não faz nada
+            if (dateString === start) {
+                const newMarked: MarkedDates = {
+                    [dateString]: { 
+                        startingDay: true, 
+                        endingDay: true, 
+                        color: ACCENT_COLOR, 
+                        textColor: DAY_TEXT 
+                    }
+                };
+                setStartDate(null); // Remove do estado para indicar que está fixado como data única por enquanto
+                setMarkedDates(newMarked);
+                onRangeSelected(dateString, dateString);
                 return;
             }
 
-            const newMarked: MarkedDates = {
-                [startDate]: { startingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT }
-            };
-
-            let currentDate = new Date(startDate);
-            const endDate = new Date(dateString);
-
-            currentDate.setDate(currentDate.getDate() + 1);
-
-            while (currentDate < endDate) {
-                const middleDateString = currentDate.toISOString().split('T')[0];
-                newMarked[middleDateString] = { color: ACCENT_RANGE_BG, textColor: DAY_TEXT };
-                currentDate.setDate(currentDate.getDate() + 1);
+            // Seleção independente: se clicar numa data anterior, rearranja os ponteiros automaticamente
+            if (dateString < start) {
+                end = start;
+                start = dateString;
             }
 
-            newMarked[dateString] = { endingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT };
+            // Inicializa o objeto de marcação com o dia de início do período
+            const newMarked: MarkedDates = {
+                [start]: { startingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT }
+            };
 
+            // Evita problemas de fuso horário local quebrando as strings manualmente
+            const [startYear, startMonth, startDay] = start.split('-').map(Number);
+            const [endYear, endMonth, endDay] = end.split('-').map(Number);
+
+            const current = new Date(startYear, startMonth - 1, startDay);
+            const targetEnd = new Date(endYear, endMonth - 1, endDay);
+
+            // Avança um dia para aplicar o fundo translúcido apenas nos blocos do meio
+            current.setDate(current.getDate() + 1);
+
+            while (current < targetEnd) {
+                const yyyy = current.getFullYear();
+                const mm = String(current.getMonth() + 1).padStart(2, '0');
+                const dd = String(current.getDate()).padStart(2, '0');
+                
+                const middleDateString = `${yyyy}-${mm}-${dd}`;
+                newMarked[middleDateString] = { color: ACCENT_RANGE_BG, textColor: DAY_TEXT };
+                
+                current.setDate(current.getDate() + 1);
+            }
+
+            // Aplica a marcação final de fechamento do período
+            newMarked[end] = { endingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT };
+
+            setStartDate(null); // Libera o estado temporário para a próxima seleção começar do zero
             setMarkedDates(newMarked);
-            onRangeSelected(startDate, dateString);
+            onRangeSelected(start, end);
         }
     };
 
     return (
-        <View style={styles.card}>
+        <View style={[styles.card, style]}>
             <Calendar
                 markingType={'period'}
                 markedDates={markedDates}
                 onDayPress={handleDayPress}
                 maxDate={new Date().toISOString().split('T')[0]}
                 theme={{
-                    // Calendar container
                     calendarBackground: CALENDAR_BG,
-
-                    // Month header
                     monthTextColor: MONTH_TEXT,
                     textMonthFontSize: 14,
                     textMonthFontWeight: '600',
-
-                    // Day numbers
                     dayTextColor: DAY_TEXT,
                     textDayFontSize: 16,
                     textDayFontWeight: '600',
-
-                    // Today
                     todayTextColor: ACCENT_COLOR,
-
-                    // Disabled / other month days
                     textDisabledColor: '#6B6B6B',
                     textInactiveColor: '#6B6B6B',
-
-                    // Weekday header (DOM, SEG, TER…)
                     textSectionTitleColor: HEADER_TEXT,
                     textDayHeaderFontSize: 10,
                     textDayHeaderFontWeight: '600',
-
-                    // Navigation arrows
                     arrowColor: ARROW_COLOR,
                 }}
                 style={styles.calendar}
@@ -130,6 +159,7 @@ const styles = StyleSheet.create({
     calendar: {
         borderRadius: 8,
         paddingVertical: 4,
+        width: '100%',
     },
 });
 
