@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Platform } from "react-native";
 import { NewExerciseData } from "../components/new-exercise";
@@ -14,36 +15,6 @@ export type Exercise = {
   tag: string;
   iconUrl?: string | null;
 };
-
-/**
- * Resolves the active team id for the current user.
- */
-async function resolveEquipeId(): Promise<string | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: membro } = await supabase
-    .from("membros_equipe")
-    .select("equipe_id")
-    .eq("usuario_id", user.id)
-    .eq("status", "ativo")
-    .limit(1)
-    .maybeSingle();
-
-  if (membro?.equipe_id) return membro.equipe_id;
-
-  const { data: equipe } = await supabase
-    .from("equipes")
-    .select("id")
-    .eq("coordenador_id", user.id)
-    .eq("ativa", true)
-    .limit(1)
-    .maybeSingle();
-
-  return equipe?.id ?? null;
-}
 
 /**
  * Provides CRUD operations and state for exercises.
