@@ -7,94 +7,10 @@ import { ObservedBehaviorsChart, BehaviorType, BehaviorRecord } from "@/features
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { NoRecordsScreen } from "@/features/analysis/screens/no-records-screen";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
+import { useObservedBehaviors } from "@/features/analysis/hooks/use-observed-behaviors";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
-
-/**
- * Mapeamento simulado de quais exercícios estavam sendo realizados 
- * quando determinados comportamentos ocorreram.
- */
-const BEHAVIOR_EXERCISES_MAP: Record<BehaviorType, string[]> = {
-  stereotypy: ["Equilíbrio na prancha", "Andar na linha", "Pular corda"],
-  eye_contact: ["Pega-pega", "Jogo da memória", "Montar blocos"],
-  engagement: ["Circuito motor", "Arremesso de bola"],
-  escape: ["Girar bambolê", "Passar por baixo da mesa"],
-  crisis: ["Atividade não estruturada", "Espera na fila"],
-};
-
-/**
- * Histórico simulado de registros de comportamentos em sessões passadas.
- * Utilizamos datas recentes e antigas para testar a filtragem do calendário.
- */
-const MOCK_BEHAVIOR_RECORDS: BehaviorRecord[] = [
-  {
-    id: "rec-1",
-    behaviorType: "stereotypy",
-    date: "2026-06-10",
-    frequency: 3,
-  },
-  {
-    id: "rec-2",
-    behaviorType: "eye_contact",
-    date: "2026-06-10",
-    frequency: 2,
-  },
-  {
-    id: "rec-3",
-    behaviorType: "engagement",
-    date: "2026-06-11",
-    frequency: 5,
-  },
-  {
-    id: "rec-4",
-    behaviorType: "escape",
-    date: "2026-06-12",
-    frequency: 1,
-  },
-  {
-    id: "rec-5",
-    behaviorType: "crisis",
-    date: "2026-06-08",
-    frequency: 1,
-  },
-  {
-    id: "rec-6",
-    behaviorType: "stereotypy",
-    date: "2026-06-05",
-    frequency: 4,
-  },
-  {
-    id: "rec-7",
-    behaviorType: "engagement",
-    date: "2026-06-05",
-    frequency: 3,
-  },
-  {
-    id: "rec-8",
-    behaviorType: "eye_contact",
-    date: "2026-06-02",
-    frequency: 1,
-  },
-    {
-    id: "rec-9",
-    behaviorType: "escape",
-    date: "2026-05-28",
-    frequency: 2,
-  },
-  {
-    id: "rec-10",
-    behaviorType: "stereotypy",
-    date: "2026-05-20",
-    frequency: 5,
-  },
-  {
-    id: "rec-11",
-    behaviorType: "crisis",
-    date: "2026-05-15",
-    frequency: 2,
-  },
-];
 
 const monthsPt = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -124,21 +40,26 @@ export function ObservedBehaviorsScreen() {
   // Busca dados reais do banco, se disponíveis
   const { profile: dbProfile, isLoading: isDbLoading } = useStudentSessions(studentId as string);
 
-  // Fallbacks de carregamento e perfil para modo de desenvolvimento/mock local
-  const profile = studentId ? dbProfile : { name: "Gabriel (Mock)" };
-  const isLoading = studentId ? isDbLoading : false;
-
   // Estados de data selecionados (Período)
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+
+  const {
+    records,
+    exercises,
+    isLoading: isBehaviorsLoading,
+    error: behaviorsError,
+    refetch,
+  } = useObservedBehaviors(studentId as string, startDate, endDate);
+
+  const profile = dbProfile;
+  const isLoading = isDbLoading || isBehaviorsLoading;
+  const hasError = !!behaviorsError;
 
   // Estados do Modal do Calendário
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [tempStart, setTempStart] = useState<Date | null>(null);
   const [tempEnd, setTempEnd] = useState<Date | null>(null);
-
-  // Estado de erro simulado/de conexão
-  const [hasError, setHasError] = useState(false);
 
   const handlePeriodPress = () => {
     setTempStart(startDate);
@@ -166,7 +87,6 @@ export function ObservedBehaviorsScreen() {
       return;
     }
 
-    setHasError(false);
     setStartDate(tempStart);
     setEndDate(tempEnd);
     setIsModalVisible(false);
@@ -181,19 +101,8 @@ export function ObservedBehaviorsScreen() {
     return "Selecione o período para visualizar os comportamentos";
   }, [startDate, endDate]);
 
-  // Filtragem dos registros baseada no intervalo de datas selecionado
-  const filteredRecords = useMemo(() => {
-    if (!startDate || !endDate || hasError) return [];
-
-    const compStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-    const compEnd = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-
-    return MOCK_BEHAVIOR_RECORDS.filter((rec) => {
-      const recDate = new Date(rec.date);
-      const compDate = new Date(recDate.getFullYear(), recDate.getMonth(), recDate.getDate());
-      return compDate >= compStart && compDate <= compEnd;
-    });
-  }, [startDate, endDate, hasError]);
+  // Filtragem dos registros baseada no intervalo de datas selecionado (agora vindo do hook/banco)
+  const filteredRecords = records;
 
   // Agrega dados filtrados para gerar a lista de detalhamento de comportamentos
   const aggregatedBehaviors = useMemo(() => {
@@ -242,7 +151,7 @@ export function ObservedBehaviorsScreen() {
         const [year, month, day] = lastDateStr.split("-").map(Number);
         const lastOccurrence = `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year}`;
 
-        const exercises = BEHAVIOR_EXERCISES_MAP[key] || [];
+        const behaviorExercises = exercises[key] || [];
 
         result.push({
           type: key,
@@ -250,7 +159,7 @@ export function ObservedBehaviorsScreen() {
           color: config.color,
           occurrences,
           sessions: formattedSessions,
-          exercises,
+          exercises: behaviorExercises,
           lastOccurrence,
         });
       }
@@ -258,7 +167,7 @@ export function ObservedBehaviorsScreen() {
 
     // Ordena por ocorrências decrescente
     return result.sort((a, b) => b.occurrences - a.occurrences);
-  }, [filteredRecords]);
+  }, [filteredRecords, exercises]);
 
   const showResults = startDate && endDate;
 
@@ -271,10 +180,7 @@ export function ObservedBehaviorsScreen() {
           title="Não foi possível carregar os comportamentos observados. Tente novamente."
           message="Verifique sua conexão ou tente acessar os dados novamente mais tarde."
           onPressBack={() => router.back()}
-          onPrimaryAction={() => {
-            setHasError(false);
-            handlePeriodPress();
-          }}
+          onPrimaryAction={refetch}
           primaryActionLabel="Tentar novamente"
         />
 
@@ -403,7 +309,7 @@ export function ObservedBehaviorsScreen() {
                 {/* Gráfico de Barras */}
                 <View style={{ marginHorizontal: 22 }}>
                   <ObservedBehaviorsChart
-                    records={MOCK_BEHAVIOR_RECORDS}
+                    records={records}
                     startDate={startDate}
                     endDate={endDate}
                   />
