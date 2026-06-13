@@ -9,7 +9,7 @@ import {
   FinishSessionModal,
 } from "@/features/sessions/components/finish-session-modal";
 import { SessionExercise } from "@/features/sessions/screens/session-running-screen";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { CheckCircle2, ChevronRight, Split } from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import { Animated, Pressable, ScrollView, Text, View } from "react-native";

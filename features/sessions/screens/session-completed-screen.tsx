@@ -62,10 +62,6 @@ export function SessionCompletedScreen({
   ).length;
   const progressLabel = `${concluidosCount}/${totalExercicios}`;
 
-  const exerciciosRealizados = circuitoCompleto.filter(
-    (ex: any) => !filaDePendentes.some((p: any) => p.id === ex.id),
-  );
-
   const handleToggleRepeat = (id: string) => {
     setSelectedRepeatIds((prev) =>
       prev.includes(id)

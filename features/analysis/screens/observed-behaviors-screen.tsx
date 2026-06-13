@@ -3,7 +3,7 @@ import { DefaultButton } from "@/components/default-button";
 import { Header } from "@/components/header";
 import RangeCalendar from "@/components/range-calendar";
 import { BehaviorDetailCard } from "@/features/analysis/components/behavior-detail-card";
-import { ObservedBehaviorsChart, BehaviorType, BehaviorRecord } from "@/features/analysis/components/observed-behaviors-chart";
+import { ObservedBehaviorsChart, BehaviorType } from "@/features/analysis/components/observed-behaviors-chart";
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { NoRecordsScreen } from "@/features/analysis/screens/no-records-screen";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
@@ -140,7 +140,7 @@ export function ObservedBehaviorsScreen() {
 
         // Formato de lista numerada para as sessões (ex: "1. Sessão de 12/06", "2. Sessão de 10/06")
         const formattedSessions = uniqueDates.map((dateStr, index) => {
-          const [year, month, day] = dateStr.split("-").map(Number);
+          const [, month, day] = dateStr.split("-").map(Number);
           const formattedMonth = String(month).padStart(2, "0");
           const formattedDay = String(day).padStart(2, "0");
           return `${index + 1}. Sessão de ${formattedDay}/${formattedMonth}`;
