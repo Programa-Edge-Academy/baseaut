@@ -1,5 +1,4 @@
 import { colors } from "@/assets/colors";
-import { DefaultButton } from "@/components/default-button";
 import { FormQuestion } from "@/features/forms/components/form-question";
 import { supabase } from "@/lib/supabase";
 import { forwardRef, useImperativeHandle, useEffect, useState } from "react";
@@ -25,7 +24,7 @@ export const FormComponent = forwardRef(function FormComponent(
   const [questions, setQuestions] = useState<any[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [, setSaving] = useState(false);
 
   useEffect(() => {
     async function loadQuestions() {

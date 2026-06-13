@@ -204,9 +204,6 @@ export function SessionRunningScreen({
   // State for onPressCorner
   const [isFormVisible, setIsFormVisible] = useState(true);
 
-  const toggleFormVisibility = () => {
-    setIsFormVisible(!isFormVisible);
-  };
   const triggerToast = () => {
     setShowSuccessToast(true);
     toastOpacity.setValue(0);
@@ -538,10 +535,7 @@ export function SessionRunningScreen({
             exerciseName={currentExercise.name}
             circuitType={circuitType as "mabc_1" | "mabc_2" | "mabc_3"}
             onClose={() => setIsResultModalOpen(false)}
-            onDefer={() => {
-              setIsResultModalOpen(false);
-              advanceSession("adiado");
-            }}
+            onDefer={handleMabcDefer}
             onNotCompleted={handleMabcNotCompleted}
             onConfirm={handleMabcConfirm}
           />

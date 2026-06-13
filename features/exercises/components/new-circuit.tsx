@@ -4,7 +4,6 @@ import { X, CheckCircle2 } from "lucide-react-native";
 import { ActionButtons } from "@/components/action-buttons";
 import { colors } from "@/assets/colors";
 import { withOpacity } from "@/components/color-opacity";
-import { DefaultButton } from "@/components/default-button";
 import { DefaultTextInput } from "@/components/default-text-input";
 import { SelectableChip } from "@/components/selectable-chip";
 import { useExercises, Exercise } from "../hooks/use-exercises";
@@ -217,7 +216,7 @@ const handleSwapClick = React.useCallback((index: number) => {
       });
       setShowToast(true);
       setTimeout(() => setShowToast(false), 1500);
-    } catch (err) {
+    } catch {
     } finally {
       setIsSaving(false);
     }

@@ -2,7 +2,7 @@ import { colors } from "@/assets/colors";
 import { RipplePressable } from "@/components/ripple-pressable";
 import { AlertCircle, User } from "lucide-react-native";
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 /**
  * Props for a student list item with sessions history.

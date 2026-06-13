@@ -65,27 +65,13 @@ export function MabcResultModal({
   const [viewMode, setViewMode] = useState<"result" | "reasons">("result");
   const [values, setValues] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [, setSubmitted] = useState(false);
 
   // Form states
-  const [ajuda, setAjuda] = useState<RegistroAjuda | null>(null);
-  const [subCategorias, setSubCategorias] = useState<SubCategoria[]>([]);
+  const [, setAjuda] = useState<RegistroAjuda | null>(null);
+  const [, setSubCategorias] = useState<SubCategoria[]>([]);
   const [selectedMotivo, setSelectedMotivo] = useState<string | null>(null);
   const [outroDescricao, setOutroDescricao] = useState<string>("");
-
-  const handleSelectAjuda = (value: RegistroAjuda) => {
-    setAjuda(value);
-    // Limpa sub-categorias ao sair de "Autônomo"
-    if (value !== "autonomo") setSubCategorias([]);
-  };
-
-  /** Toggle multi-select: Verbal e Modelo podem coexistir. */
-  const toggleSubCategoria = (id: string) => {
-    const sub = id as SubCategoria;
-    setSubCategorias((prev) =>
-      prev.includes(sub) ? prev.filter((s) => s !== sub) : [...prev, sub]
-    );
-  };
 
   // Get configuration for current exercise
   const config: MabcExerciseConfig | undefined =
@@ -177,10 +163,6 @@ export function MabcResultModal({
       );
     }
   };
-
-  // Standard errors checking
-  const ajudaError = submitted && ajuda === null;
-  const subError = submitted && ajuda === "autonomo" && subCategorias.length === 0;
 
   if (!config) {
     return null;
