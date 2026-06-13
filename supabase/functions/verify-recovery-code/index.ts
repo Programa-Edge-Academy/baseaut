@@ -128,7 +128,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // ── 4. Busca a solicitação mais recente não-validada ────────────────────────
   const { data: solicitacao, error: solicitacaoError } = await supabase
     .from("solicitacoes_recuperacao")
-    .select("id, codigo_hash, expira_em")
+    .select("id, codigo_hash, expira_em, tentativas")
     .eq("usuario_id", profile.id)
     .eq("validada", false)
     .order("created_at", { ascending: false })
@@ -144,6 +144,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
 
   if (!solicitacao) {
+    return json({ error: "Código inválido ou expirado." }, 400);
+  }
+
+  // ── 5a. Verifica limite de tentativas ───────────────────────────────────────
+  if (solicitacao.tentativas >= 5) {
+    // Invalida a solicitação para forçar nova solicitação de código
+    await supabase
+      .from("solicitacoes_recuperacao")
+      .update({ validada: true })
+      .eq("id", solicitacao.id);
+
     return json({ error: "Código inválido ou expirado." }, 400);
   }
 
@@ -166,6 +177,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const isValid = timingSafeEqual(receivedHash, solicitacao.codigo_hash);
 
   if (!isValid) {
+    // Incrementa tentativas antes de retornar para limitar força-bruta
+    await supabase
+      .from("solicitacoes_recuperacao")
+      .update({ tentativas: solicitacao.tentativas + 1 })
+      .eq("id", solicitacao.id);
+
     return json({ error: "Código inválido ou expirado." }, 400);
   }
 
