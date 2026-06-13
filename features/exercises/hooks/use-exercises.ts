@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
+import { uploadImage } from "@/lib/upload-image";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Platform } from "react-native";
+import { Alert } from "react-native";
 import { NewExerciseData } from "../components/new-exercise";
 
 /**
@@ -24,42 +25,6 @@ export function useExercises() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
-
-  const uploadIcon = async (uri: string) => {
-    try {
-      const filePath = `${Date.now()}_icon.jpg`;
-      let fileData: any;
-
-      if (Platform.OS === "web") {
-        const response = await fetch(uri);
-        fileData = await response.blob();
-      } else {
-        const FileSystem = require("expo-file-system/legacy");
-        const { decode } = require("base64-arraybuffer");
-        const base64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: "base64",
-        });
-        fileData = decode(base64);
-      }
-
-      const { data, error: uploadError } = await supabase.storage
-        .from("exercicio-media")
-        .upload(filePath, fileData, { contentType: "image/jpeg" });
-
-      if (uploadError) throw uploadError;
-
-      if (data) {
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("exercicio-media").getPublicUrl(filePath);
-        return publicUrl;
-      }
-      return null;
-    } catch (e) {
-      console.error("Erro no upload do ícone:", e);
-      return null;
-    }
-  };
 
   /**
    * Loads exercises for the active team.
@@ -119,7 +84,7 @@ export function useExercises() {
       if (!equipeId) throw new Error("ID da equipe não identificado.");
       let finalIconUrl = null;
       if (photoUri && !photoUri.startsWith("http")) {
-        finalIconUrl = await uploadIcon(photoUri);
+        finalIconUrl = await uploadImage("exercicio-media", photoUri, "icons");
       }
 
       const payload = {
@@ -167,7 +132,7 @@ export function useExercises() {
       };
 
       if (photoUri && !photoUri.startsWith("http")) {
-        payload.icone_url = await uploadIcon(photoUri);
+        payload.icone_url = await uploadImage("exercicio-media", photoUri, "icons");
       } else if (photoUri === null) {
         payload.icone_url = null;
       }

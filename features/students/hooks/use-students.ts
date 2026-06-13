@@ -1,8 +1,9 @@
 import { supabase } from "@/lib/supabase";
 import { calculateAge } from "@/lib/date-utils";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
+import { uploadImage } from "@/lib/upload-image";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Platform } from "react-native";
+import { Alert } from "react-native";
 
 /**
  * Student domain model used by the UI.
@@ -30,46 +31,6 @@ export function useStudents() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
-
-  /**
-   * Uploads a local avatar image and returns its public URL.
-   */
-  const uploadImage = async (uri: string) => {
-    try {
-      const filePath = `${Date.now()}_avatar.jpg`;
-      let fileData: any;
-
-      if (Platform.OS === "web") {
-        const response = await fetch(uri);
-        fileData = await response.blob();
-      } else {
-        const FileSystem = require("expo-file-system/legacy");
-        const { decode } = require("base64-arraybuffer");
-
-        const base64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: "base64",
-        });
-        fileData = decode(base64);
-      }
-
-      const { data, error: uploadError } = await supabase.storage
-        .from("avatares")
-        .upload(filePath, fileData, { contentType: "image/jpeg" });
-
-      if (uploadError) throw uploadError;
-
-      if (data) {
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("avatares").getPublicUrl(filePath);
-        return publicUrl;
-      }
-      return null;
-    } catch (e) {
-      console.error("Erro no upload do avatar:", e);
-      return null;
-    }
-  };
 
   /**
    * Loads students for the active team.
@@ -153,7 +114,7 @@ const loadStudents = useCallback(async () => {
 
       let finalAvatarUrl = data.avatarUrl;
       if (photoUri && !photoUri.startsWith("http")) {
-        const uploadedUrl = await uploadImage(photoUri);
+        const uploadedUrl = await uploadImage("avatares", photoUri, "alunos");
         if (uploadedUrl) finalAvatarUrl = uploadedUrl;
       }
 
@@ -211,7 +172,7 @@ const loadStudents = useCallback(async () => {
     try {
       let finalAvatarUrl = data.avatarUrl;
       if (photoUri && !photoUri.startsWith("http")) {
-        const uploadedUrl = await uploadImage(photoUri);
+        const uploadedUrl = await uploadImage("avatares", photoUri, "alunos");
         if (uploadedUrl) finalAvatarUrl = uploadedUrl;
       }
 
