@@ -72,16 +72,22 @@ export const FormComponent = forwardRef(function FormComponent(
           multiple = true;
         }
 
+        const [title, ...rest] = q.texto_pergunta.split(/\n(?=\(0=)/);
+        const scoringCriteria = rest.join("\n").trim();
+        const descricao = q.descricao?.replace(/\\n/g, "\n") ?? "";
+        const helpText = [scoringCriteria && `**${scoringCriteria}**`, descricao].filter(Boolean).join("\n\n") || undefined;
+
         return {
           id: q.id,
           type,
-          title: q.texto_pergunta,
+          title: title.trim(),
           min,
           max,
           step,
           options,
           multiple,
           obrigatoria: q.obrigatoria,
+          helpText,
         };
       });
 

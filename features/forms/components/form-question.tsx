@@ -2,6 +2,7 @@ import { colors } from "@/assets/colors";
 import { HelpCircle, Mic, X } from "lucide-react-native";
 import { useState, type ReactNode } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import Markdown from "react-native-markdown-display";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { FormQuestionProps } from "../types";
 import { ChoiceListQuestionUI } from "./choice-list-question";
@@ -101,7 +102,7 @@ export function FormQuestion({
     <>
     <View className="self-stretch px-0.7 py-2.5 rounded-[10px] flex flex-row items-center gap-2.5">
       {/* Container do título com alinhamento centralizado */}
-      <View className="flex-1 min-h-[44px] px-3.5 py-2.5 bg-level1 rounded-xl outline outline-1 outline-offset-[-1px] outline-outline justify-center">
+      <View className="flex-1 min-h-[44px] px-3.5 py-2.5 justify-center">
         <Text className="text-white text-default-2">
           {question.title}
         </Text>
@@ -175,9 +176,9 @@ export function FormQuestion({
               </Pressable>
             </View>
             <ScrollView className="p-5" showsVerticalScrollIndicator={false}>
-              <Text className="text-default-2 text-muted leading-6 pb-6">
+              <Markdown style={helpMarkdownStyles}>
                 {question.helpText}
-              </Text>
+              </Markdown>
             </ScrollView>
           </View>
         </View>
@@ -185,3 +186,42 @@ export function FormQuestion({
     </>
   );
 }
+
+const helpMarkdownStyles = {
+  body: {
+    color: colors.muted,
+    fontFamily: "Inter-Medium",
+    fontSize: 14,
+    lineHeight: 22,
+    paddingBottom: 24,
+  },
+  heading1: { color: "#FFFFFF", fontFamily: "Inter-Bold", fontSize: 20, marginBottom: 8, marginTop: 8 },
+  heading2: { color: "#FFFFFF", fontFamily: "Inter-Bold", fontSize: 18, marginBottom: 8, marginTop: 8 },
+  heading3: { color: "#FFFFFF", fontFamily: "Inter-Bold", fontSize: 16, marginBottom: 6, marginTop: 8 },
+  strong: { color: "#FFFFFF", fontFamily: "Inter-Bold" },
+  em: { fontStyle: "italic" as const },
+  bullet_list: { marginBottom: 4 },
+  ordered_list: { marginBottom: 4 },
+  list_item: { marginBottom: 4 },
+  blockquote: {
+    backgroundColor: colors.level1,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginVertical: 4,
+  },
+  code_inline: {
+    backgroundColor: colors.outline,
+    color: colors.extra,
+    borderRadius: 4,
+    paddingHorizontal: 4,
+  },
+  code_block: {
+    backgroundColor: colors.outline,
+    color: colors.extra,
+    borderRadius: 8,
+    padding: 8,
+  },
+  hr: { backgroundColor: colors.outline, height: 1, marginVertical: 12 },
+};
