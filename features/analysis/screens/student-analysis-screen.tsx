@@ -96,7 +96,13 @@ export function StudentAnalysisScreen() {
                   title="Registros de ajuda por sessão"
                   description="Acompanhe a evolução da autonomia nas sessões."
                   onPress={() => {
-                    router.push(`/analysis/help/${studentId}` as any);
+                    router.push({
+                      pathname: "/analysis/help/[studentId]",
+                      params: {
+                        studentId: String(studentId ?? ""),
+                        studentName: profile?.name ?? "Aluno",
+                      },
+                    } as any);
                   }}
                 />
 
