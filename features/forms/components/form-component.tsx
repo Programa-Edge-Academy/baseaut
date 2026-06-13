@@ -193,7 +193,7 @@ export const FormComponent = forwardRef(function FormComponent(
           aluno_id: alunoId || null,
           pergunta_id: q.id,
           valor_preenchido: stringValue,
-          status_item: isFilled ? "respondido" : "nao_avaliado",
+          status_item: isFilled ? "respondido" : "nao_realizado",
         };
       });
 
