@@ -108,7 +108,14 @@ export function useSessionFlow() {
     ): Promise<InsertedExecution[]> => {
       if (!records.length) return [];
 
-      const payload = records.map((record) => ({
+      // Postgres 21000: a single upsert cannot affect the same conflict-target
+      // row twice. Keep only the last record for each exercicioId.
+      const latestByExercicio = new Map<string, ExecutionRecord>();
+      for (const record of records) {
+        latestByExercicio.set(record.exercicioId, record);
+      }
+
+      const payload = [...latestByExercicio.values()].map((record) => ({
         sessao_id: sessaoId,
         exercicio_id: record.exercicioId,
         ordem_execucao: record.ordemExecucao,

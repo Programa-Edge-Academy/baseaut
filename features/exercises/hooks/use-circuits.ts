@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { Exercise } from "./use-exercises";
@@ -27,35 +28,6 @@ export type Circuit = {
   exercisesSummary: string;
   exercises: Exercise[];
 };
-
-/**
- * Resolves the active team ID for the current authenticated user.
- * @returns A Promise that resolves to the team ID string, or null if not found.
- */
-async function resolveEquipeId(): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: member } = await supabase
-    .from("membros_equipe")
-    .select("equipe_id")
-    .eq("usuario_id", user.id)
-    .eq("status", "ativo")
-    .limit(1)
-    .maybeSingle();
-
-  if (member?.equipe_id) return member.equipe_id;
-
-  const { data: team } = await supabase
-    .from("equipes")
-    .select("id")
-    .eq("coordenador_id", user.id)
-    .eq("ativa", true)
-    .limit(1)
-    .maybeSingle();
-
-  return team?.id ?? null;
-}
 
 /**
  * Seeds fixed MABC-2 circuits and their corresponding exercises for a team.
@@ -244,7 +216,10 @@ export function useCircuits() {
             exercicios (
               id,
               titulo,
-              descricao
+              descricao,
+              duracao_segundos,
+              tag,
+              icone_url
             )
           )
         `)
@@ -269,8 +244,9 @@ export function useCircuits() {
                 id: item.exercicios?.id,
                 name: item.exercicios?.titulo,
                 description: item.exercicios?.descricao || "",
-                durationSeconds: 120,
-                tag: "Locomotor",
+                durationSeconds: item.exercicios?.duracao_segundos ?? undefined,
+                tag: item.exercicios?.tag || "Locomotor",
+                iconUrl: item.exercicios?.icone_url ?? null,
               }))
               .filter((ex: any) => ex.id);
 
