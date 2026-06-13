@@ -42,7 +42,7 @@ export default function SessionEstruturadoRoute() {
       studentName={studentName || "Aluno"}
       circuitName={circuitName || "Circuito"}
       circuitType={(circuitType as any) || "padrao"}
-      exercises={sessionExercises}
+      exercises={sessionExercises ?? []}
       onPressBack={() => router.back()}
       onCompleteSession={(hasWarnings, pendentes, todos) => {
         router.push({

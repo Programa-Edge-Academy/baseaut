@@ -143,6 +143,22 @@ export function SessionRunningSemiStructuredScreen({
     });
   };
 
+  if (exercises.length === 0) {
+    return (
+      <View className="flex-1 bg-level1">
+        <Header
+          variant="back"
+          onPressBack={() => router.replace("/students")}
+        />
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="text-white text-base text-center font-medium">
+            Não foi possível carregar os exercícios do circuito.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   const renderExecutionView = () => {
     if (!activeExercise) return null;
 
