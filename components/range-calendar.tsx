@@ -1,5 +1,7 @@
+import { colors } from '@/assets/colors'
+import { withOpacity } from '@/components/color-opacity';
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { DateData, MarkedDates } from 'react-native-calendars/src/types';
 
@@ -12,102 +14,120 @@ LocaleConfig.locales['pt-br'] = {
 };
 LocaleConfig.defaultLocale = 'pt-br';
 
-// Figma design tokens
-const CALENDAR_BG = '#464646';
-const ACCENT_COLOR = '#F04D23';
-const ACCENT_RANGE_BG = 'rgba(240, 77, 35, 0.25)';
+const CALENDAR_BG = colors.level2;
+const ACCENT_COLOR = colors.primary;
+const ACCENT_RANGE_BG = withOpacity(colors.primary, 0.1);
 const DAY_TEXT = '#FFFFFF';
-const HEADER_TEXT = '#B5BEC6';
+const HEADER_TEXT = colors.muted;
 const MONTH_TEXT = '#FFFFFF';
-const ARROW_COLOR = '#B5BEC6';
+const ARROW_COLOR = colors.muted;
 
 interface RangeCalendarProps {
     onRangeSelected: (start: string, end: string | null) => void;
+    style?: StyleProp<ViewStyle>;
 }
 
-const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected }) => {
+const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected, style }) => {
     const [markedDates, setMarkedDates] = useState<MarkedDates>({});
     const [startDate, setStartDate] = useState<string | null>(null);
 
     const handleDayPress = (day: DateData) => {
         const dateString = day.dateString;
 
-        if (!startDate || (startDate && Object.keys(markedDates).length > 1)) {
+        const keys = Object.keys(markedDates);
+        const hasSingleDateSelected = keys.length === 1 && markedDates[keys[0]]?.startingDay && markedDates[keys[0]]?.endingDay;
+
+        if (!startDate && !hasSingleDateSelected) {
             setStartDate(dateString);
 
             const newMarked: MarkedDates = {
-                [dateString]: { startingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT }
+                [dateString]: { 
+                    startingDay: true, 
+                    endingDay: true, 
+                    color: ACCENT_COLOR, 
+                    textColor: DAY_TEXT 
+                }
             };
 
             setMarkedDates(newMarked);
             onRangeSelected(dateString, null);
         }
         else {
-            if (new Date(dateString) < new Date(startDate)) {
-                setStartDate(dateString);
-                setMarkedDates({
-                    [dateString]: { startingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT }
-                });
-                onRangeSelected(dateString, null);
+            let start = startDate || keys[0];
+            let end = dateString;
+
+            if (dateString === start) {
+                const newMarked: MarkedDates = {
+                    [dateString]: { 
+                        startingDay: true, 
+                        endingDay: true, 
+                        color: ACCENT_COLOR, 
+                        textColor: DAY_TEXT 
+                    }
+                };
+                setStartDate(null);
+                setMarkedDates(newMarked);
+                onRangeSelected(dateString, dateString);
                 return;
             }
 
-            const newMarked: MarkedDates = {
-                [startDate]: { startingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT }
-            };
-
-            let currentDate = new Date(startDate);
-            const endDate = new Date(dateString);
-
-            currentDate.setDate(currentDate.getDate() + 1);
-
-            while (currentDate < endDate) {
-                const middleDateString = currentDate.toISOString().split('T')[0];
-                newMarked[middleDateString] = { color: ACCENT_RANGE_BG, textColor: DAY_TEXT };
-                currentDate.setDate(currentDate.getDate() + 1);
+            if (dateString < start) {
+                end = start;
+                start = dateString;
             }
 
-            newMarked[dateString] = { endingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT };
+            const newMarked: MarkedDates = {
+                [start]: { startingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT }
+            };
 
+            const [startYear, startMonth, startDay] = start.split('-').map(Number);
+            const [endYear, endMonth, endDay] = end.split('-').map(Number);
+
+            const current = new Date(startYear, startMonth - 1, startDay);
+            const targetEnd = new Date(endYear, endMonth - 1, endDay);
+
+            current.setDate(current.getDate() + 1);
+
+            while (current < targetEnd) {
+                const yyyy = current.getFullYear();
+                const mm = String(current.getMonth() + 1).padStart(2, '0');
+                const dd = String(current.getDate()).padStart(2, '0');
+                
+                const middleDateString = `${yyyy}-${mm}-${dd}`;
+                newMarked[middleDateString] = { color: ACCENT_RANGE_BG, textColor: DAY_TEXT };
+                
+                current.setDate(current.getDate() + 1);
+            }
+
+            newMarked[end] = { endingDay: true, color: ACCENT_COLOR, textColor: DAY_TEXT };
+
+            setStartDate(null);
             setMarkedDates(newMarked);
-            onRangeSelected(startDate, dateString);
+            onRangeSelected(start, end);
         }
     };
 
     return (
-        <View style={styles.card}>
+        <View style={[styles.card, style]}>
             <Calendar
                 markingType={'period'}
                 markedDates={markedDates}
                 onDayPress={handleDayPress}
                 maxDate={new Date().toISOString().split('T')[0]}
                 theme={{
-                    // Calendar container
                     calendarBackground: CALENDAR_BG,
-
-                    // Month header
                     monthTextColor: MONTH_TEXT,
                     textMonthFontSize: 14,
-                    textMonthFontWeight: '600',
-
-                    // Day numbers
+                    textMonthFontFamily: 'Inter-Bold',
                     dayTextColor: DAY_TEXT,
                     textDayFontSize: 16,
-                    textDayFontWeight: '600',
-
-                    // Today
+                    textDayFontFamily: 'Inter-Medium',
                     todayTextColor: ACCENT_COLOR,
-
-                    // Disabled / other month days
-                    textDisabledColor: '#6B6B6B',
-                    textInactiveColor: '#6B6B6B',
-
-                    // Weekday header (DOM, SEG, TER…)
+                    textDisabledColor: colors.muted,
+                    textInactiveColor: colors.muted,
                     textSectionTitleColor: HEADER_TEXT,
                     textDayHeaderFontSize: 10,
-                    textDayHeaderFontWeight: '600',
-
-                    // Navigation arrows
+                    textDayHeaderFontFamily: 'Inter-Bold',
                     arrowColor: ARROW_COLOR,
                 }}
                 style={styles.calendar}
@@ -130,6 +150,7 @@ const styles = StyleSheet.create({
     calendar: {
         borderRadius: 8,
         paddingVertical: 4,
+        width: '100%',
     },
 });
 
