@@ -44,12 +44,14 @@ export default function SessionEstruturadoRoute() {
       circuitType={(circuitType as any) || "padrao"}
       exercises={sessionExercises}
       onPressBack={() => router.back()}
-      onCompleteSession={(hasWarnings, pendentes, todos) => {
+      onCompleteSession={(hasWarnings, pendentes, todos, completedSessionId) => {
         router.push({
           pathname: "/session/completed",
           params: {
             type: hasWarnings ? "structured-warnings" : "structured",
             studentName,
+            studentId: studentId || "",
+            sessionId: completedSessionId || sessionId || "",
             queue: JSON.stringify(pendentes || []),
             fullCircuit: JSON.stringify(todos || []),
           },

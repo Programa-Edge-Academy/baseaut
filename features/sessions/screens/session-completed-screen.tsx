@@ -4,10 +4,18 @@ import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { SelectableChip } from "@/components/selectable-chip";
 import { SessionCompletion } from "@/features/exercises/components/session-completion";
+import { useExercises } from "@/features/exercises/hooks/use-exercises";
 import { useRouter } from "expo-router";
 import { ClipboardList, X } from "lucide-react-native";
 import React, { useState } from "react";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 
 interface SessionCompletedScreenProps {
   type: string;
@@ -47,6 +55,43 @@ export function SessionCompletedScreen({
 
   const [isRepeatModalOpen, setIsRepeatModalOpen] = useState(false);
   const [selectedRepeatIds, setSelectedRepeatIds] = useState<string[]>([]);
+
+  // "Realizar outro exercício": escolher qualquer exercício da equipe (US08.9).
+  const { exercises: teamExercises, isLoading: isExercisesLoading } =
+    useExercises();
+  const [isOtherModalOpen, setIsOtherModalOpen] = useState(false);
+  const [selectedOtherIds, setSelectedOtherIds] = useState<string[]>([]);
+
+  const handleToggleOther = (id: string) => {
+    setSelectedOtherIds((prev) =>
+      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id],
+    );
+  };
+
+  // Roda os exercícios escolhidos na MESMA sessão (mesmo sessionId).
+  const handleConfirmOther = () => {
+    const chosen = teamExercises
+      .filter((ex) => selectedOtherIds.includes(ex.id))
+      .map((ex) => ({
+        id: ex.id,
+        name: ex.name,
+        description: ex.description ?? "",
+      }));
+
+    if (chosen.length === 0) return;
+
+    setIsOtherModalOpen(false);
+    router.push({
+      pathname: "/session/structured",
+      params: {
+        studentName,
+        studentId: studentId ?? "",
+        sessionId: sessionId ?? "",
+        circuitName: "Outro exercício",
+        exercises: JSON.stringify(chosen),
+      },
+    });
+  };
 
   const isSemiStructured = type === "semi-structured" || type === "free";
   const temWarnings = filaDePendentes.length > 0;
@@ -134,6 +179,9 @@ export function SessionCompletedScreen({
                   } else if (id === "repeat_exercise") {
                     setSelectedRepeatIds([]);
                     setIsRepeatModalOpen(true);
+                  } else if (id === "do_other") {
+                    setSelectedOtherIds([]);
+                    setIsOtherModalOpen(true);
                   }
                 }}
               />
@@ -192,6 +240,63 @@ export function SessionCompletedScreen({
                   cancelLabel="Cancelar"
                   saveLabel="Iniciar"
                   disabled={selectedRepeatIds.length === 0}
+                />
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Realizar outro exercício: qualquer exercício da equipe (US08.9) */}
+        <Modal visible={isOtherModalOpen} transparent animationType="fade">
+          <View className="flex-1 bg-black/60 justify-center items-center px-4">
+            <View className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[600px] overflow-hidden">
+              <View className="flex-row justify-between items-center p-5 border-b border-outline/30">
+                <Text className="text-white text-header-2">
+                  Realizar outro exercício
+                </Text>
+                <Pressable
+                  onPress={() => setIsOtherModalOpen(false)}
+                  className="p-1 active:opacity-70"
+                >
+                  <X size={24} color={colors.muted} />
+                </Pressable>
+              </View>
+
+              <ScrollView className="max-h-[400px] px-5 py-4">
+                <Text className="text-muted text-default-2 mb-4">
+                  Selecione qualquer exercício da equipe para realizar nesta
+                  sessão:
+                </Text>
+
+                {isExercisesLoading ? (
+                  <View className="py-8 items-center justify-center">
+                    <ActivityIndicator size="large" color={colors.primary} />
+                  </View>
+                ) : teamExercises.length === 0 ? (
+                  <Text className="text-muted text-default-2 py-6 text-center">
+                    Nenhum exercício cadastrado na equipe.
+                  </Text>
+                ) : (
+                  <View className="gap-2.5">
+                    {teamExercises.map((ex) => (
+                      <SelectableChip
+                        key={ex.id}
+                        label={ex.name}
+                        isSelected={selectedOtherIds.includes(ex.id)}
+                        onToggle={() => handleToggleOther(ex.id)}
+                      />
+                    ))}
+                  </View>
+                )}
+              </ScrollView>
+
+              <View className="p-5 border-t border-t-outline/30">
+                <ActionButtons
+                  onCancel={() => setIsOtherModalOpen(false)}
+                  onSave={handleConfirmOther}
+                  cancelLabel="Cancelar"
+                  saveLabel="Iniciar"
+                  disabled={selectedOtherIds.length === 0}
                 />
               </View>
             </View>

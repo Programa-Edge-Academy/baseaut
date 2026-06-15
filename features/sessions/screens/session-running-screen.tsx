@@ -83,6 +83,7 @@ export type SessionRunningScreenProps = {
     hasWarnings: boolean,
     pendentes: SessionExercise[],
     todos: SessionExercise[],
+    sessionId: string,
   ) => void;
 };
 /**
@@ -339,7 +340,12 @@ export function SessionRunningScreen({
         formRef.current.handleSave();
       }
       void persistAndFinish();
-      onCompleteSession?.(temPendencias, pendentes, order);
+      onCompleteSession?.(
+        temPendencias,
+        pendentes,
+        order,
+        effectiveSessionIdRef.current,
+      );
     }
   };
 
@@ -401,7 +407,12 @@ export function SessionRunningScreen({
       motivo,
     );
     onFinishSession?.(motivo);
-    onCompleteSession?.(temPendencias, pendentes, order);
+    onCompleteSession?.(
+      temPendencias,
+      pendentes,
+      order,
+      effectiveSessionIdRef.current,
+    );
     setIsFinishOpen(false);
   };
 
