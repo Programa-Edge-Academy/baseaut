@@ -63,6 +63,7 @@ export type SessionRunningScreenProps = {
     hasWarnings: boolean,
     pendentes: SessionExercise[],
     todos: SessionExercise[],
+    sessionId: string,
   ) => void;
 };
 /**
@@ -368,7 +369,12 @@ export function SessionRunningScreen({
 
       trySaveForm();
       void persistAndFinish();
-      onCompleteSession?.(temPendencias, pendentes, order);
+      onCompleteSession?.(
+        temPendencias,
+        pendentes,
+        order,
+        effectiveSessionIdRef.current,
+      );
     }
   };
 
@@ -441,7 +447,12 @@ export function SessionRunningScreen({
 
     void persistAndFinish(MOTIVO_FINALIZACAO_MAP[motivo] ?? "outro", motivo);
     onFinishSession?.(motivo);
-    onCompleteSession?.(temPendencias, pendentes, order);
+    onCompleteSession?.(
+      temPendencias,
+      pendentes,
+      order,
+      effectiveSessionIdRef.current,
+    );
     setIsFinishOpen(false);
   };
 
