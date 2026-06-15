@@ -43,7 +43,7 @@ export function YesNoQuestionUI({
         <Pressable
           onPress={() => handleSelect("nao")}
           className={`flex-1 h-[44px] items-center justify-center rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline active:opacity-80 ${
-            selected === "nao" ? "bg-error shadow-errorShadow" : "bg-level1"
+            selected === "nao" ? "bg-error shadow-errorShadow" : "bg-level1 shadow-none"
           }`}
         >
           <Text className="text-header-3 text-white">Não</Text>
@@ -52,7 +52,7 @@ export function YesNoQuestionUI({
         <Pressable
           onPress={() => handleSelect("sim")}
           className={`flex-1 h-[44px] items-center justify-center rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline active:opacity-80 ${
-            selected === "sim" ? "bg-primary shadow-primaryShadow" : "bg-level1"
+            selected === "sim" ? "bg-primary shadow-primaryShadow" : "bg-level1 shadow-none"
           }`}
         >
           <Text className="text-header-3 text-white">Sim</Text>
