@@ -100,7 +100,7 @@ export function SessionCompletedScreen({
               onPressBack={() => router.replace("/students")}
             />
 
-            <View className="left-6 top-[2%] w-[264px]">
+            <View className="mx-8 mt-5">
               <PageHeader
                 title={`Sessão de ${studentName}`}
                 subtitle={subtitleLabel}
