@@ -1,9 +1,14 @@
 import { colors } from "@/assets/colors";
-import { DefaultButton } from "@/components/default-button";
 import { FormQuestion } from "@/features/forms/components/form-question";
 import { supabase } from "@/lib/supabase";
 import { forwardRef, useImperativeHandle, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, Text, View } from "react-native";
+
+// Returns the value the UI already displays as default, or undefined if there is no default.
+function getDefaultAnswer(question: { type: string; min?: number }): any {
+  if (question.type === "linear_scale") return question.min ?? null;
+  return undefined;
+}
 
 export interface FormComponentProps {
   formularioId: string;
@@ -19,7 +24,7 @@ export const FormComponent = forwardRef(function FormComponent(
   const [questions, setQuestions] = useState<any[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [, setSaving] = useState(false);
 
   useEffect(() => {
     async function loadQuestions() {
@@ -66,24 +71,38 @@ export const FormComponent = forwardRef(function FormComponent(
           multiple = true;
         }
 
+        const [title, ...rest] = q.texto_pergunta.split(/\n(?=\(0=)/);
+        const scoringCriteria = rest.join("\n").trim();
+        const descricao = q.descricao?.replace(/\\n/g, "\n") ?? "";
+        const helpText = [scoringCriteria && `**${scoringCriteria}**`, descricao].filter(Boolean).join("\n\n") || undefined;
+
         return {
           id: q.id,
           type,
-          title: q.texto_pergunta,
+          title: title.trim(),
           min,
           max,
           step,
           options,
           multiple,
           obrigatoria: q.obrigatoria,
+          helpText,
         };
       });
 
       setQuestions(mappedQuestions);
 
+      // Seed visual defaults so untouched questions are saved as answered.
+      const defaultAnswers: Record<string, any> = {};
+      for (const q of mappedQuestions) {
+        const def = getDefaultAnswer(q);
+        if (def !== undefined) defaultAnswers[q.id] = def;
+      }
+
       // Modo edição: pré-carrega as respostas já salvas deste formulário no
       // contexto atual (sessão ou aluno), parseando os tipos que guardam
-      // objeto. Sem vínculo de sessão/aluno, mantém o formulário em branco.
+      // objeto. Loaded answers override defaults to preserve edit-mode state.
+      let loadedAnswers: Record<string, any> = {};
       if (sessaoId || alunoId) {
         let answersQuery = supabase
           .from("respostas_formulario")
@@ -103,7 +122,6 @@ export const FormComponent = forwardRef(function FormComponent(
           const typeById = new Map<string, string>(
             mappedQuestions.map((q) => [q.id, q.type]),
           );
-          const loadedAnswers: Record<string, any> = {};
 
           for (const r of respostas) {
             if (r.valor_preenchido == null) continue;
@@ -118,11 +136,10 @@ export const FormComponent = forwardRef(function FormComponent(
               loadedAnswers[r.pergunta_id] = r.valor_preenchido;
             }
           }
-
-          setAnswers(loadedAnswers);
         }
       }
 
+      setAnswers({ ...defaultAnswers, ...loadedAnswers });
       setLoading(false);
     }
 
@@ -181,7 +198,7 @@ export const FormComponent = forwardRef(function FormComponent(
           aluno_id: alunoId || null,
           pergunta_id: q.id,
           valor_preenchido: stringValue,
-          status_item: isFilled ? "respondido" : "nao_avaliado",
+          status_item: isFilled ? "respondido" : "nao_realizado",
         };
       });
 

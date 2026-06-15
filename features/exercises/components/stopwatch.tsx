@@ -28,6 +28,8 @@ export type StopwatchProps = {
   onStop?: (elapsedSeconds: number) => void;
   /** Fired when the user taps the "Crise" pill. */
   onPressCrise?: () => void;
+  /** Whether a crisis is currently being timed (turns the pill solid red). */
+  isCriseActive?: boolean;
   /** Visual variant for the bottom-right corner action. Defaults to "minimize". */
   variant?: StopwatchVariant;
   /** Fired when the user taps the bottom-right corner action. */
@@ -58,6 +60,7 @@ export function Stopwatch({
   onToggleRunning,
   onStop,
   onPressCrise,
+  isCriseActive = false,
   variant = "minimize",
   onPressCorner,
   className,
@@ -103,10 +106,18 @@ export function Stopwatch({
         <Pressable
           onPress={onPressCrise}
           hitSlop={6}
-          className="flex-row items-center gap-1.5 rounded-full border border-extra bg-extra/10 px-3 py-1 active:opacity-70"
+          className={`flex-row items-center gap-1.5 rounded-full border px-3 py-1 active:opacity-70 ${
+            isCriseActive
+              ? "border-error bg-error"
+              : "border-extra bg-extra/10"
+          }`}
         >
-          <Siren size={14} color={colors.extra} />
-          <Text className="text-default-2 text-extra">Crise</Text>
+          <Siren size={14} color={isCriseActive ? "#fff" : colors.extra} />
+          <Text
+            className={`text-default-2 ${isCriseActive ? "text-white" : "text-extra"}`}
+          >
+            Crise
+          </Text>
         </Pressable>
       </View>
 

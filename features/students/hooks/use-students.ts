@@ -1,6 +1,9 @@
 import { supabase } from "@/lib/supabase";
+import { calculateAge } from "@/lib/date-utils";
+import { resolveEquipeId } from "@/lib/resolve-equipe-id";
+import { uploadImage } from "@/lib/upload-image";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Platform } from "react-native";
+import { Alert } from "react-native";
 
 /**
  * Student domain model used by the UI.
@@ -21,36 +24,6 @@ export type Student = {
 };
 
 /**
- * Resolves the active team id for the current user.
- */
-async function resolveEquipeId(): Promise<string | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: membro } = await supabase
-    .from("membros_equipe")
-    .select("equipe_id")
-    .eq("usuario_id", user.id)
-    .eq("status", "ativo")
-    .limit(1)
-    .maybeSingle();
-
-  if (membro?.equipe_id) return membro.equipe_id;
-
-  const { data: equipe } = await supabase
-    .from("equipes")
-    .select("id")
-    .eq("coordenador_id", user.id)
-    .eq("ativa", true)
-    .limit(1)
-    .maybeSingle();
-
-  return equipe?.id ?? null;
-}
-
-/**
  * Provides CRUD operations and state for students.
  */
 export function useStudents() {
@@ -58,61 +31,6 @@ export function useStudents() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
-
-  /**
-   * Calculates age in years from a birth date string.
-   */
-  const calculateAge = (birthDateString: string) => {
-    if (!birthDateString) return 0;
-    const birthDate = new Date(birthDateString);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
-
-  /**
-   * Uploads a local avatar image and returns its public URL.
-   */
-  const uploadImage = async (uri: string) => {
-    try {
-      const filePath = `${Date.now()}_avatar.jpg`;
-      let fileData: any;
-
-      if (Platform.OS === "web") {
-        const response = await fetch(uri);
-        fileData = await response.blob();
-      } else {
-        const FileSystem = require("expo-file-system/legacy");
-        const { decode } = require("base64-arraybuffer");
-
-        const base64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: "base64",
-        });
-        fileData = decode(base64);
-      }
-
-      const { data, error: uploadError } = await supabase.storage
-        .from("avatares")
-        .upload(filePath, fileData, { contentType: "image/jpeg" });
-
-      if (uploadError) throw uploadError;
-
-      if (data) {
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("avatares").getPublicUrl(filePath);
-        return publicUrl;
-      }
-      return null;
-    } catch (e) {
-      console.error("Erro no upload do avatar:", e);
-      return null;
-    }
-  };
 
   /**
    * Loads students for the active team.
@@ -196,7 +114,7 @@ const loadStudents = useCallback(async () => {
 
       let finalAvatarUrl = data.avatarUrl;
       if (photoUri && !photoUri.startsWith("http")) {
-        const uploadedUrl = await uploadImage(photoUri);
+        const uploadedUrl = await uploadImage("avatares", photoUri, "alunos");
         if (uploadedUrl) finalAvatarUrl = uploadedUrl;
       }
 
@@ -254,7 +172,7 @@ const loadStudents = useCallback(async () => {
     try {
       let finalAvatarUrl = data.avatarUrl;
       if (photoUri && !photoUri.startsWith("http")) {
-        const uploadedUrl = await uploadImage(photoUri);
+        const uploadedUrl = await uploadImage("avatares", photoUri, "alunos");
         if (uploadedUrl) finalAvatarUrl = uploadedUrl;
       }
 

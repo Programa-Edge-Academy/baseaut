@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { Exercise } from "./use-exercises";
@@ -27,35 +28,6 @@ export type Circuit = {
   exercisesSummary: string;
   exercises: Exercise[];
 };
-
-/**
- * Resolves the active team ID for the current authenticated user.
- * @returns A Promise that resolves to the team ID string, or null if not found.
- */
-async function resolveEquipeId(): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: member } = await supabase
-    .from("membros_equipe")
-    .select("equipe_id")
-    .eq("usuario_id", user.id)
-    .eq("status", "ativo")
-    .limit(1)
-    .maybeSingle();
-
-  if (member?.equipe_id) return member.equipe_id;
-
-  const { data: team } = await supabase
-    .from("equipes")
-    .select("id")
-    .eq("coordenador_id", user.id)
-    .eq("ativa", true)
-    .limit(1)
-    .maybeSingle();
-
-  return team?.id ?? null;
-}
 
 /**
  * Seeds fixed MABC-2 circuits and their corresponding exercises for a team.
@@ -173,7 +145,13 @@ async function seedMabcCircuits(teamId: string): Promise<void> {
         .single();
 
       if (circError) {
-        console.error(`[Seeding] Error inserting MABC circuit ${band.tipo}:`, circError);
+        if (circError.code === "23505") {
+          // Another client seeded this circuit concurrently; clean up orphaned exercises.
+          const orphanIds = insertedExercises.map((ex) => ex.id);
+          await supabase.from("exercicios").delete().in("id", orphanIds);
+        } else {
+          console.error(`[Seeding] Error inserting MABC circuit ${band.tipo}:`, circError);
+        }
         continue;
       }
 
@@ -244,7 +222,10 @@ export function useCircuits() {
             exercicios (
               id,
               titulo,
-              descricao
+              descricao,
+              duracao_segundos,
+              tag,
+              icone_url
             )
           )
         `)
@@ -269,8 +250,9 @@ export function useCircuits() {
                 id: item.exercicios?.id,
                 name: item.exercicios?.titulo,
                 description: item.exercicios?.descricao || "",
-                durationSeconds: 120,
-                tag: "Locomotor",
+                durationSeconds: item.exercicios?.duracao_segundos ?? undefined,
+                tag: item.exercicios?.tag || "Locomotor",
+                iconUrl: item.exercicios?.icone_url ?? null,
               }))
               .filter((ex: any) => ex.id);
 
@@ -382,26 +364,17 @@ export function useCircuits() {
 
       if (updateError) throw updateError;
 
-      const { error: deleteItemsError } = await supabase
-        .from("itens_circuito")
-        .delete()
-        .eq("circuito_id", id);
+      const itemsPayload = data.exercises.map((ex, index) => ({
+        exercicio_id: ex.id,
+        ordem: index + 1,
+      }));
 
-      if (deleteItemsError) throw deleteItemsError;
+      const { error: rpcError } = await supabase.rpc("substituir_itens_circuito", {
+        p_circuito_id: id,
+        p_itens: itemsPayload,
+      });
 
-      if (data.exercises.length > 0) {
-        const itemsPayload = data.exercises.map((ex, index) => ({
-          circuito_id: id,
-          exercicio_id: ex.id,
-          ordem: index + 1,
-        }));
-
-        const { error: itemsError } = await supabase
-          .from("itens_circuito")
-          .insert(itemsPayload);
-
-        if (itemsError) throw itemsError;
-      }
+      if (rpcError) throw rpcError;
 
       await loadCircuits();
     } catch (err: any) {

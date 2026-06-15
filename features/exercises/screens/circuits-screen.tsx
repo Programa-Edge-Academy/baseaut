@@ -31,7 +31,8 @@ export interface SaveCircuitPayload {
 function circuitToFormData(circuit: Circuit) {
   return {
     name: circuit.name,
-    executionMode: circuit.executionMode, 
+    executionMode: circuit.executionMode,
+    type: circuit.type,
     form: circuit.formId,
     exercises: circuit.exercises,
   };
@@ -55,7 +56,6 @@ export function CircuitsScreen() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [circuitToEdit, setCircuitToEdit] = useState<Circuit | null>(null);
   const [circuitToView, setCircuitToView] = useState<Circuit | null>(null);
-  const [circuitToDuplicate, setCircuitToDuplicate] = useState<Circuit | null>(null);
   const [circuitToDelete, setCircuitToDelete] = useState<Circuit | null>(null);
 
   const isModalOpen = isCreateModalOpen || circuitToEdit !== null;

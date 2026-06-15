@@ -1,6 +1,4 @@
-import { colors } from "@/assets/colors";
-import { Mic } from "lucide-react-native";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { OpenQuestion } from "../types";
 

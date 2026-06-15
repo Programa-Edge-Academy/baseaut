@@ -22,7 +22,7 @@ const FORM_SUBTITLES: Record<string, string> = {
 };
 
 export default function FormRoute() {
-  const { studentName, circuitType, circuitName, sessionId, studentId, mode } =
+  const { circuitType, circuitName, sessionId, studentId, mode } =
     useLocalSearchParams<any>();
   const formId = FORM_TEMPLATE_IDS[circuitType] ?? "";
   const sessaoAtualId = sessionId || "";

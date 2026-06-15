@@ -1,11 +1,9 @@
+import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { supabase } from "@/lib/supabase";
+import { calculateAge } from "@/lib/date-utils";
+import { uploadImage } from "@/lib/upload-image";
 import { useEffect, useState } from "react";
-import { Alert, Platform } from "react-native";
-
-/**
- * Fallback team id used for team management flows.
- */
-const EQUIPE_ID = "33af53f5-113c-42c4-aa46-6faa6cfdd5e7";
+import { Alert } from "react-native";
 
 /**
  * Student data used in team management screens.
@@ -42,20 +40,7 @@ export function useTeamData() {
   const [students, setStudents] = useState<StudentData[]>([]);
   const [companions, setCompanions] = useState<CompanionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  /**
-   * Calculates age in years from a birth date string.
-   */
-  const calculateAge = (birthDateString: string) => {
-    const birthDate = new Date(birthDateString);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
+  const [equipeId, setEquipeId] = useState<string | null>(null);
 
   /**
    * Loads students and companions for the team.
@@ -63,6 +48,15 @@ export function useTeamData() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
+      const resolvedId = await resolveEquipeId();
+      if (!resolvedId) {
+        setStudents([]);
+        setCompanions([]);
+        setIsLoading(false);
+        return;
+      }
+      setEquipeId(resolvedId);
+
       const { data: authData } = await supabase.auth.getUser();
       const currentUserId = authData.user?.id;
       const { data: alunosData, error: alunosError } = await supabase
@@ -70,6 +64,7 @@ export function useTeamData() {
         .select(
           "id, nome_completo, data_nascimento, peso, altura, cintura, nivel_suporte, diagnostico_detalhado, observacoes_clinicas, avatar_url",
         )
+        .eq("equipe_id", resolvedId)
         .eq("ativo", true);
 
       if (!alunosError && alunosData) {
@@ -95,13 +90,15 @@ export function useTeamData() {
         .select(
           `id, status, usuario_id, profiles:usuario_id (nome_completo, email)`,
         )
-        .eq("equipe_id", EQUIPE_ID)
+        .eq("equipe_id", resolvedId)
         .neq("status", "removido");
 
       if (membrosError) {
         console.error("Erro ao buscar membros_equipe:", membrosError);
       }
 
+      // Scoping relies on RLS. Ideally this would be filtered by a
+      // team-join request table when one exists.
       const { data: pendentesData, error: pendentesError } = await supabase
         .from("profiles")
         .select("id, nome_completo, email, status_conta")
@@ -168,7 +165,7 @@ export function useTeamData() {
 
     const { error } = await supabase.rpc('aprovar_monitor', {
       p_monitor_id: comp.profileId,
-      p_equipe_id: EQUIPE_ID
+      p_equipe_id: equipeId
     });
 
     if (error) {
@@ -218,46 +215,6 @@ export function useTeamData() {
   };
 
   /**
-   * Uploads a local avatar image and returns its public URL.
-   */
-  const uploadImage = async (uri: string) => {
-    try {
-      const filePath = `${Date.now()}_avatar.jpg`;
-      let fileData: any;
-
-      if (Platform.OS === "web") {
-        const response = await fetch(uri);
-        fileData = await response.blob();
-      } else {
-        const FileSystem = require("expo-file-system/legacy");
-        const { decode } = require("base64-arraybuffer");
-
-        const base64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: "base64",
-        });
-        fileData = decode(base64);
-      }
-
-      const { data, error: uploadError } = await supabase.storage
-        .from("avatares")
-        .upload(filePath, fileData, { contentType: "image/jpeg" });
-
-      if (uploadError) throw uploadError;
-
-      if (data) {
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("avatares").getPublicUrl(filePath);
-        return publicUrl;
-      }
-      return null;
-    } catch (e) {
-      console.error("Erro no upload do avatar:", e);
-      return null;
-    }
-  };
-
-  /**
    * Creates or updates a student within the team.
    */
   const saveStudent = async (
@@ -269,7 +226,7 @@ export function useTeamData() {
       let finalAvatarUrl = data.avatarUrl;
 
       if (photoUri && !photoUri.startsWith("http")) {
-        const uploadedUrl = await uploadImage(photoUri);
+        const uploadedUrl = await uploadImage("avatares", photoUri, "alunos");
         if (uploadedUrl) finalAvatarUrl = uploadedUrl;
       }
 
@@ -302,7 +259,7 @@ export function useTeamData() {
         nivelSuporteDb = "nivel_3";
       }
 
-      const payload = {
+      const basePayload = {
         nome_completo: data.name,
         data_nascimento: formattedDate,
         peso: data.weight || null,
@@ -312,18 +269,19 @@ export function useTeamData() {
         diagnostico_detalhado: data.healthConditions || null,
         observacoes_clinicas: data.observations || null,
         avatar_url: finalAvatarUrl,
-        equipe_id: EQUIPE_ID,
         ativo: true,
       };
 
       if (data.id) {
         const { error } = await supabase
           .from("alunos")
-          .update(payload)
+          .update(basePayload)
           .eq("id", data.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("alunos").insert([payload]);
+        const { error } = await supabase
+          .from("alunos")
+          .insert([{ ...basePayload, equipe_id: equipeId }]);
         if (error) throw error;
       }
 

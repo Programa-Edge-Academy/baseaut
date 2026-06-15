@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { calculateAge } from "@/lib/date-utils";
 import { User } from "lucide-react-native";
 import React from "react";
 import { Image, Text, View } from "react-native";
@@ -39,16 +40,6 @@ export type StudentInfoCardProps = {
   observations: string | null | undefined;
 };
 
-function calculateAge(birthDateStr: string | null | undefined): string | null {
-  if (!birthDateStr) return null;
-  const birth = new Date(birthDateStr);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return `${age} anos`;
-}
-
 export function StudentInfoCard({
   name,
   avatarUrl,
@@ -59,7 +50,7 @@ export function StudentInfoCard({
   supportLevel,
   observations,
 }: StudentInfoCardProps) {
-  const ageStr = calculateAge(birthDate);
+  const ageStr = birthDate ? `${calculateAge(birthDate)} anos` : null;
 
   return (
     <View className="w-full bg-level2 border border-outline rounded-lg p-[15px] mb-4">

@@ -2,9 +2,9 @@ import { colors } from "@/assets/colors";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { FormComponent } from "@/features/forms/components/form-component";
-import { Check, Minimize2, Maximize2 } from "lucide-react-native";
+import { Check } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, ScrollView, Text, View } from "react-native";
+import { Alert, Animated, ScrollView, Text, View } from "react-native";
 import { ActivityResultModal } from "../../exercises/components/activity-result-modal";
 import { MabcResultModal } from "../../exercises/components/mabc-result-modal";
 import { StartActivity } from "../../exercises/components/start-activity";
@@ -15,8 +15,10 @@ import {
   FinishSessionModal,
 } from "../components/finish-session-modal";
 import { ReorderModal } from "../components/reorder-modal";
+import { useResumeSession } from "../hooks/use-resume-session";
 import {
   useSessionFlow,
+  type CrisisRecord,
   type ExecutionRecord,
   type MotivoFinalizacao,
   type MotivoNaoRealizacao,
@@ -47,27 +49,6 @@ export type SessionExercise = {
 
 type ExerciseStage = "ready" | "running";
 
-const MOCK_EXERCISES: SessionExercise[] = [
-  {
-    id: "1",
-    name: "Girar bambolê",
-    description: "Rotacionar bambolê com o braço",
-    mediaUrls: [],
-  },
-  {
-    id: "2",
-    name: "Equilíbrio na tábua",
-    description: "Caminhar sobre tábua em linha reta",
-    mediaUrls: [],
-  },
-  {
-    id: "3",
-    name: "Escalada",
-    description: "Escalar parede",
-    mediaUrls: [],
-  },
-];
-
 export type SessionRunningScreenProps = {
   sessionId: string;
   studentId: string;
@@ -82,6 +63,7 @@ export type SessionRunningScreenProps = {
     hasWarnings: boolean,
     pendentes: SessionExercise[],
     todos: SessionExercise[],
+    sessionId: string,
   ) => void;
 };
 /**
@@ -99,46 +81,81 @@ export function SessionRunningScreen({
   circuitId,
   circuitName = "Circuito",
   circuitType = "padrao",
-  exercises = MOCK_EXERCISES,
+  exercises = [],
   onPressBack,
   onFinishSession,
   onCompleteSession,
 }: SessionRunningScreenProps) {
   const formRef = useRef<any>(null);
-  const { createSession, saveSession } = useSessionFlow();
+  const { createSession, persistExecutions, saveSession } = useSessionFlow();
 
   // ID efetivo da sessão: usa o recebido por parâmetro ou cria um na montagem.
   const [effectiveSessionId, setEffectiveSessionId] = useState<string>(
     sessionId || "",
   );
   const effectiveSessionIdRef = useRef<string>(sessionId || "");
+  // Promise da criação da sessão — usada por persistAndFinish para aguardar
+  // o insert caso o usuário finalize antes de ele resolver.
+  const createSessionPromiseRef = useRef<Promise<string> | null>(null);
   // Execuções acumuladas (status + dados clínicos) para gravar ao final.
   const executionsRef = useRef<ExecutionRecord[]>([]);
   // Segundos do cronômetro capturados na última parada.
   const lastElapsedSecondsRef = useRef<number | null>(null);
 
+  // Botão de crise: episódios cronometrados de forma oculta, por exercício.
+  const [isCriseActive, setIsCriseActive] = useState(false);
+  const criseStartRef = useRef<number | null>(null);
+  const crisesRef = useRef<CrisisRecord[]>([]);
+
+  // Encerra a crise em andamento (se houver), retendo a duração para o exercício atual.
+  const finalizeActiveCrise = () => {
+    if (criseStartRef.current == null) return;
+    const durationSeconds = (Date.now() - criseStartRef.current) / 1000;
+    crisesRef.current = [
+      ...crisesRef.current,
+      { exercicioId: currentExercise.id, durationSeconds },
+    ];
+    criseStartRef.current = null;
+    setIsCriseActive(false);
+  };
+
+  // Alterna o botão de crise: inicia uma nova contagem ou pausa a atual.
+  const handleCrisePress = () => {
+    if (criseStartRef.current == null) {
+      criseStartRef.current = Date.now();
+      setIsCriseActive(true);
+    } else {
+      finalizeActiveCrise();
+    }
+  };
+
   // Cria a sessão no banco quando ainda não há um id válido.
   useEffect(() => {
-    if (sessionId || !studentId) return;
+    if (!order.length || sessionId || !studentId) return;
     let active = true;
-    (async () => {
-      try {
-        const id = await createSession({
-          alunoId: studentId,
-          circuitoId: circuitId ?? null,
-        });
-        if (active) {
-          effectiveSessionIdRef.current = id;
-          setEffectiveSessionId(id);
-        }
-      } catch (err) {
-        console.error("Erro ao criar sessão:", err);
-      }
+    const promise = (async () => {
+      const id = await createSession({
+        alunoId: studentId,
+        circuitoId: circuitId ?? null,
+      });
+      // Sempre grava no ref (não depende de active) para que persistAndFinish
+      // possa usar o id mesmo que o componente já tenha desmontado.
+      effectiveSessionIdRef.current = id;
+      if (active) setEffectiveSessionId(id);
+      return id;
     })();
+    createSessionPromiseRef.current = promise.catch((err) => {
+      console.error("Erro ao criar sessão:", err);
+      throw err;
+    });
     return () => {
       active = false;
     };
   }, [sessionId, studentId, circuitId, createSession]);
+
+  // Ao retomar (sessionId não vazio), carrega as execuções já gravadas.
+  const { data: resumeData } = useResumeSession(sessionId || null);
+
   const [order, setOrder] = useState<SessionExercise[]>(exercises);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [stage, setStage] = useState<ExerciseStage>("ready");
@@ -153,6 +170,28 @@ export function SessionRunningScreen({
   >({});
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
 
+  // Reconstrói o estado ao retomar uma sessão em_andamento.
+  useEffect(() => {
+    if (!resumeData || resumeData.executions.length === 0) return;
+
+    const executed = new Set(resumeData.executions.map((e) => e.exercicioId));
+
+    executionsRef.current = resumeData.executions;
+
+    const histrico: Record<string, "concluido" | "nao_realizada"> = {};
+    for (const exec of resumeData.executions) {
+      histrico[exec.exercicioId] =
+        exec.statusRealizacao === "realizada" ? "concluido" : "nao_realizada";
+    }
+    setHistoricoExercicios(histrico);
+    setHasAdvanced(true);
+
+    // Retoma no primeiro exercício da ordem original que ainda não tem execução.
+    const resumeIndex = exercises.findIndex((ex) => !executed.has(ex.id));
+    setCurrentIndex(resumeIndex === -1 ? exercises.length - 1 : resumeIndex);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeData]);
+
   const isMabc =
     circuitType === "mabc_1" ||
     circuitType === "mabc_2" ||
@@ -166,9 +205,6 @@ export function SessionRunningScreen({
   // State for onPressCorner
   const [isFormVisible, setIsFormVisible] = useState(true);
 
-  const toggleFormVisibility = () => {
-    setIsFormVisible(!isFormVisible);
-  };
   const triggerToast = () => {
     setShowSuccessToast(true);
     toastOpacity.setValue(0);
@@ -249,14 +285,22 @@ export function SessionRunningScreen({
   };
 
   // Grava as execuções acumuladas e finaliza a sessão no banco.
+  // Se createSession ainda estiver em-flight, aguarda seu resultado antes de prosseguir.
   const persistAndFinish = async (
     motivoFinalizacao: MotivoFinalizacao | null = null,
     descricaoMotivo: string | null = null,
   ) => {
-    const sid = effectiveSessionIdRef.current;
-    if (!sid) return;
+    let sid = effectiveSessionIdRef.current;
+    if (!sid) {
+      if (!createSessionPromiseRef.current) return;
+      try {
+        sid = await createSessionPromiseRef.current;
+      } catch {
+        return;
+      }
+    }
     try {
-      await saveSession(sid, executionsRef.current, {
+      await saveSession(sid, executionsRef.current, crisesRef.current, {
         status: "concluida",
         motivoFinalizacao,
         descricaoMotivo,
@@ -266,10 +310,28 @@ export function SessionRunningScreen({
     }
   };
 
+  // Tenta salvar o formulário sem bloquear a persistência da sessão.
+  // Notifica o usuário se houver campos obrigatórios pendentes.
+  const trySaveForm = () => {
+    if (!formRef.current) return;
+    void (formRef.current.handleSave() as Promise<any>).then((result: any) => {
+      if (result && !result.success) {
+        Alert.alert(
+          "Atenção",
+          "O registro de controle ficou pendente pois há campos obrigatórios não preenchidos.",
+        );
+      }
+    });
+  };
+
   const advanceSession = (
     statusAtual: "concluido" | "nao_realizada" | "adiado",
     record?: Omit<ExecutionRecord, "exercicioId" | "ordemExecucao">,
   ) => {
+    // Garante que qualquer crise em andamento seja atribuída a este exercício
+    // antes de trocar de atividade.
+    finalizeActiveCrise();
+
     setStage("ready");
     setHasAdvanced(true);
 
@@ -282,14 +344,16 @@ export function SessionRunningScreen({
 
     // Apenas realizada/não realizada viram execução; adiado fica pendente.
     if (record) {
-      executionsRef.current = [
-        ...executionsRef.current,
-        {
-          exercicioId: currentExercise.id,
-          ordemExecucao: currentIndex + 1,
-          ...record,
-        },
-      ];
+      const newRecord: ExecutionRecord = {
+        exercicioId: currentExercise.id,
+        ordemExecucao: currentIndex + 1,
+        ...record,
+      };
+      executionsRef.current = [...executionsRef.current, newRecord];
+
+      // Persiste incrementalmente para que a sessão possa ser retomada.
+      const sid = effectiveSessionIdRef.current;
+      if (sid) void persistExecutions(sid, [newRecord]);
     }
     lastElapsedSecondsRef.current = null;
 
@@ -303,11 +367,14 @@ export function SessionRunningScreen({
       );
       const temPendencias = pendentes.length > 0;
 
-      if (formRef.current) {
-        formRef.current.handleSave();
-      }
+      trySaveForm();
       void persistAndFinish();
-      onCompleteSession?.(temPendencias, pendentes, order);
+      onCompleteSession?.(
+        temPendencias,
+        pendentes,
+        order,
+        effectiveSessionIdRef.current,
+      );
     }
   };
 
@@ -328,6 +395,20 @@ export function SessionRunningScreen({
     }
   };
   const total = order.length;
+
+  if (total === 0) {
+    return (
+      <View className="flex-1 bg-level1">
+        <Header variant="back" onPressBack={onPressBack} />
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="text-white text-base text-center font-medium">
+            Não foi possível carregar os exercícios do circuito.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   const currentExercise = order[currentIndex];
   const subtitle = `${circuitName} - ${currentIndex + 1}/${total}`;
 
@@ -350,6 +431,9 @@ export function SessionRunningScreen({
   };
 
   const handleConfirmFinish = (motivo: string) => {
+    // Encerra uma crise eventualmente ativa antes de finalizar a sessão.
+    finalizeActiveCrise();
+
     if (formRef.current) {
       formRef.current.handleSave();
     }
@@ -361,12 +445,14 @@ export function SessionRunningScreen({
     );
     const temPendencias = pendentes.length > 0;
 
-    void persistAndFinish(
-      MOTIVO_FINALIZACAO_MAP[motivo] ?? "outro",
-      motivo,
-    );
+    void persistAndFinish(MOTIVO_FINALIZACAO_MAP[motivo] ?? "outro", motivo);
     onFinishSession?.(motivo);
-    onCompleteSession?.(temPendencias, pendentes, order);
+    onCompleteSession?.(
+      temPendencias,
+      pendentes,
+      order,
+      effectiveSessionIdRef.current,
+    );
     setIsFinishOpen(false);
   };
 
@@ -411,13 +497,11 @@ export function SessionRunningScreen({
                 subtitle={currentExercise.description}
                 autoStart
                 variant="form"
-                onPressCrise={() => {
-                  /* TODO: register a "crise" event tied to the current exercise. */
-                }}
+                onPressCrise={handleCrisePress}
+                isCriseActive={isCriseActive}
                 onStop={handleStop}
                 isFormVisible={isFormVisible} // Nova prop
-                  onPressCorner={() => setIsFormVisible(!isFormVisible)} // Alterna o estado
-                
+                onPressCorner={() => setIsFormVisible(!isFormVisible)} // Alterna o estado
               />
             )}
 
@@ -426,14 +510,17 @@ export function SessionRunningScreen({
             is out of scope here — wire to features/forms once available.
             Placeholder block kept so the layout reflects the design intent.
           */}
-          <View style={{ display: isFormVisible ? 'flex' : 'none' }}>
-            <FormComponent
-              ref={formRef}
-              formularioId={"00000000-0000-4000-0000-0000000000fc"}
-              sessaoId={effectiveSessionId}
-              alunoId={studentId}
-            />
-          </View>
+            {/* Circuitos MABC não usam o Registro de Controle dentro da sessão. */}
+            {!isMabc && (
+              <View style={{ display: isFormVisible ? "flex" : "none" }}>
+                <FormComponent
+                  ref={formRef}
+                  formularioId={"00000000-0000-4000-0000-0000000000fc"}
+                  sessaoId={effectiveSessionId}
+                  alunoId={studentId}
+                />
+              </View>
+            )}
           </ScrollView>
         </View>
 
@@ -459,10 +546,7 @@ export function SessionRunningScreen({
             exerciseName={currentExercise.name}
             circuitType={circuitType as "mabc_1" | "mabc_2" | "mabc_3"}
             onClose={() => setIsResultModalOpen(false)}
-            onDefer={() => {
-              setIsResultModalOpen(false);
-              advanceSession("adiado");
-            }}
+            onDefer={handleMabcDefer}
             onNotCompleted={handleMabcNotCompleted}
             onConfirm={handleMabcConfirm}
           />
@@ -526,8 +610,6 @@ export function SessionRunningScreen({
             </Text>
           </Animated.View>
         )}
-
-        
       </View>
     </>
   );

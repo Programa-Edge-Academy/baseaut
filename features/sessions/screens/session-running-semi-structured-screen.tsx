@@ -9,7 +9,7 @@ import {
   FinishSessionModal,
 } from "@/features/sessions/components/finish-session-modal";
 import { SessionExercise } from "@/features/sessions/screens/session-running-screen";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { CheckCircle2, ChevronRight, Split } from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import { Animated, Pressable, ScrollView, Text, View } from "react-native";
@@ -142,6 +142,22 @@ export function SessionRunningSemiStructuredScreen({
       },
     });
   };
+
+  if (exercises.length === 0) {
+    return (
+      <View className="flex-1 bg-level1">
+        <Header
+          variant="back"
+          onPressBack={() => router.replace("/students")}
+        />
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="text-white text-base text-center font-medium">
+            Não foi possível carregar os exercícios do circuito.
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   const renderExecutionView = () => {
     if (!activeExercise) return null;

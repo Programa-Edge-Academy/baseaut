@@ -16,6 +16,7 @@ export type Mabc2MotorDevelopmentCardProps = {
   onViewRecords?: () => void;
   onViewExercises?: () => void;
   readOnly?: boolean;
+  submitLabel?: string;
   className?: string;
   testID?: string;
   accessibilityLabel?: string;
@@ -32,6 +33,7 @@ export function Mabc2MotorDevelopmentCard({
   onViewRecords,
   onViewExercises,
   readOnly = false,
+  submitLabel = "Registrar",
   className,
   testID,
   accessibilityLabel = "Desenvolvimento motor",
@@ -79,7 +81,7 @@ export function Mabc2MotorDevelopmentCard({
           </Text>
           {readOnly ? (
             <Text className="text-xl font-bold text-white">
-              {totalScore !== null ? String(totalScore) : "—"}
+              {totalScore !== null ? String(totalScore) : "-"}
             </Text>
           ) : (
             <TextInput
@@ -88,7 +90,7 @@ export function Mabc2MotorDevelopmentCard({
               value={totalScore !== null ? String(totalScore) : ""}
               onChangeText={onChangeTotalScore}
               keyboardType="numeric"
-              placeholder="—"
+              placeholder="-"
               placeholderTextColor={colors.muted}
             />
           )}
@@ -100,7 +102,7 @@ export function Mabc2MotorDevelopmentCard({
           </Text>
           {readOnly ? (
             <Text className="text-xl font-bold text-white">
-              {totalPercentile ?? "—"}
+              {totalPercentile ?? "-"}
             </Text>
           ) : (
             <TextInput
@@ -109,7 +111,7 @@ export function Mabc2MotorDevelopmentCard({
               value={totalPercentile !== null ? String(totalPercentile) : ""}
               onChangeText={onChangeTotalPercentile}
               keyboardType="numeric"
-              placeholder="—"
+              placeholder="-"
               placeholderTextColor={colors.muted}
             />
           )}
@@ -133,7 +135,7 @@ export function Mabc2MotorDevelopmentCard({
 
       {!readOnly ? (
         <DefaultButton
-          label="Registrar"
+          label={submitLabel}
           onPress={onRegister}
           bgColorClass="bg-primary"
           shadowClass="shadow-primaryShadow"

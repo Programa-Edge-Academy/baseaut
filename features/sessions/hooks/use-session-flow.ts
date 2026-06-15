@@ -33,6 +33,18 @@ export type ExecutionRecord = {
   duracaoRealSegundos?: number | null;
 };
 
+/** One crisis episode timed during an exercise (stored in comportamentos_sessao). */
+export type CrisisRecord = {
+  exercicioId: string;
+  durationSeconds: number;
+};
+
+/** Inserted execution row, used to link crises to the matching execution. */
+export type InsertedExecution = {
+  id: string;
+  exercicio_id: string;
+};
+
 type CreateSessionInput = {
   alunoId: string;
   circuitoId?: string | null;
@@ -90,10 +102,20 @@ export function useSessionFlow() {
   );
 
   const persistExecutions = useCallback(
-    async (sessaoId: string, records: ExecutionRecord[]): Promise<void> => {
-      if (!records.length) return;
+    async (
+      sessaoId: string,
+      records: ExecutionRecord[],
+    ): Promise<InsertedExecution[]> => {
+      if (!records.length) return [];
 
-      const payload = records.map((record) => ({
+      // Postgres 21000: a single upsert cannot affect the same conflict-target
+      // row twice. Keep only the last record for each exercicioId.
+      const latestByExercicio = new Map<string, ExecutionRecord>();
+      for (const record of records) {
+        latestByExercicio.set(record.exercicioId, record);
+      }
+
+      const payload = [...latestByExercicio.values()].map((record) => ({
         sessao_id: sessaoId,
         exercicio_id: record.exercicioId,
         ordem_execucao: record.ordemExecucao,
@@ -106,8 +128,38 @@ export function useSessionFlow() {
         duracao_real_segundos: record.duracaoRealSegundos ?? null,
       }));
 
-      const { error: insertError } = await supabase
+      const { data, error: insertError } = await supabase
         .from("execucoes_exercicio")
+        .upsert(payload, { onConflict: "sessao_id,exercicio_id" })
+        .select("id, exercicio_id");
+
+      if (insertError) throw insertError;
+      return (data ?? []) as InsertedExecution[];
+    },
+    [],
+  );
+
+  /**
+   * Saves crisis episodes into comportamentos_sessao, linking each one to the
+   * execution of the exercise it happened in (when available).
+   */
+  const persistCrises = useCallback(
+    async (
+      sessaoId: string,
+      crises: CrisisRecord[],
+      execucaoIdByExercicio: Map<string, string>,
+    ): Promise<void> => {
+      if (!crises.length) return;
+
+      const payload = crises.map((crise) => ({
+        sessao_id: sessaoId,
+        execucao_id: execucaoIdByExercicio.get(crise.exercicioId) ?? null,
+        tipo: "crise",
+        duracao_segundos: Math.round(crise.durationSeconds),
+      }));
+
+      const { error: insertError } = await supabase
+        .from("comportamentos_sessao")
         .insert(payload);
 
       if (insertError) throw insertError;
@@ -139,11 +191,15 @@ export function useSessionFlow() {
     [],
   );
 
-  /** Persists executions and closes the session under a single guard. */
+  /**
+   * Persists executions and crises, then closes the session under a single
+   * guard. Crises are linked to the execution of their exercise.
+   */
   const saveSession = useCallback(
     async (
       sessaoId: string,
       records: ExecutionRecord[],
+      crises: CrisisRecord[] = [],
       finishInput: FinishSessionInput = {},
     ): Promise<void> => {
       if (savingRef.current) return;
@@ -151,7 +207,11 @@ export function useSessionFlow() {
       setIsSaving(true);
       setError(null);
       try {
-        await persistExecutions(sessaoId, records);
+        const inserted = await persistExecutions(sessaoId, records);
+        const execucaoIdByExercicio = new Map(
+          inserted.map((row) => [row.exercicio_id, row.id]),
+        );
+        await persistCrises(sessaoId, crises, execucaoIdByExercicio);
         await finishSession(sessaoId, finishInput);
       } catch (caught: any) {
         setError(caught instanceof Error ? caught : new Error(String(caught)));
@@ -161,7 +221,7 @@ export function useSessionFlow() {
         setIsSaving(false);
       }
     },
-    [persistExecutions, finishSession],
+    [persistExecutions, persistCrises, finishSession],
   );
 
   return {
@@ -169,6 +229,7 @@ export function useSessionFlow() {
     error,
     createSession,
     persistExecutions,
+    persistCrises,
     finishSession,
     saveSession,
   };

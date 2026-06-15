@@ -1,5 +1,4 @@
 import { Check } from "lucide-react-native";
-import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { ChoiceListQuestion } from "../types";

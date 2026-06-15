@@ -8,7 +8,7 @@ export type PeriodSelectorProps = {
   onPress?: () => void;
 };
 
-export function PeriodSelector({ label = "Período 1: selecionar intervalo de datas", onPress, }: PeriodSelectorProps) {
+export function PeriodSelector({ label = "Selecione o período para visualizar o progresso", onPress, }: PeriodSelectorProps) {
   const Container: any = onPress ? Pressable : View;
 
   return (

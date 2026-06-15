@@ -3,7 +3,6 @@ import { Modal, Text, View, Pressable, useWindowDimensions, ScrollView, StyleShe
 import { X } from "lucide-react-native";
 
 import { colors } from "@/assets/colors";
-import { withOpacity } from "@/components/color-opacity";
 import { Exercise } from "../hooks/use-exercises";
 
 type ExecutionMode = "estruturado" | "livre";

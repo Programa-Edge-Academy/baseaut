@@ -1,4 +1,3 @@
-import { colors } from "@/assets/colors";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { StartActivity } from "@/features/exercises/components/start-activity";

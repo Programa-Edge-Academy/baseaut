@@ -1,5 +1,12 @@
 import { supabase } from "@/lib/supabase";
+import { calculateAge } from "@/lib/date-utils";
 import { useEffect, useState } from "react";
+
+export type ResumeExercise = {
+  id: string;
+  name: string;
+  description: string;
+};
 
 export interface SessionItem {
   id: string;
@@ -7,8 +14,13 @@ export interface SessionItem {
   date: string;
   status: string;
   hasPendency: boolean;
-  type: "session" | "form";
+  type: "session" | "form" | "mabc";
   rawDate: string | null;
+  isResumable: boolean;
+  circuitId: string | null;
+  circuitType: string | null;
+  resumeExercises: ResumeExercise[] | null;
+  ageAtEvent?: number;
 }
 
 export interface StudentProfile {
@@ -21,6 +33,7 @@ export interface StudentProfile {
   supportLevel: string | null;
   observations: string | null;
 }
+
 
 export function useStudentSessions(studentId?: string) {
   const [sessions, setSessions] = useState<SessionItem[]>([]);
@@ -41,6 +54,7 @@ export function useStudentSessions(studentId?: string) {
         .single();
 
       if (studentError) throw studentError;
+      
       if (studentData) {
         const formatSupportLevel = (level: string | null) => {
           if (!level) return null;
@@ -62,62 +76,104 @@ export function useStudentSessions(studentId?: string) {
         });
       }
 
-      // 2. Busca as Sessões
+      const birthDate = studentData?.data_nascimento || null;
+
+      // 2. Busca as Sessões (direto na tabela)
       const { data: sessionsData, error: sessionsError } = await supabase
         .from("sessoes")
         .select(`
           id,
           status,
           data_inicio,
-          circuito_id (titulo),
+          circuito_id (id, titulo, tipo, itens_circuito (ordem, exercicios (id, titulo, descricao))),
           formulario_id (titulo)
         `)
         .eq("aluno_id", studentId);
 
-      if (sessionsError) throw sessionsError;
+      if (sessionsError) console.error("Erro ao buscar sessões", sessionsError);
 
-      // 3. Busca os Formulários vinculados ao aluno
+      // 3. Busca Formulários (via RPC disponível)
       const { data: formsData, error: formsError } = await supabase
-        .from("formularios")
-        .select(`
-          id,
-          titulo,
-          created_at
-        `)
-        .eq("aluno_id", studentId);
+        .rpc("listar_formularios_aluno", { p_aluno_id: studentId });
 
-      if (formsError) throw formsError;
+      if (formsError) console.error("Erro ao buscar formulários", formsError);
 
       // 4. Formata as Sessões
-      const mappedSessions: SessionItem[] = (sessionsData || []).map((item: any) => ({
-        id: item.id,
-        title: item.circuito_id?.titulo || item.formulario_id?.titulo || "Sessão sem título",
-        date: item.data_inicio
-          ? new Date(item.data_inicio).toLocaleDateString("pt-BR")
-          : "Data não definida",
-        status: item.status
-          ? String(item.status).replace(/_/g, " ")
-          : "Status não definido",
-        hasPendency: false,
-        type: "session",
-        rawDate: item.data_inicio,
-      }));
+      const mappedSessions: SessionItem[] = (sessionsData || []).map((item: any) => {
+        const circuit = item.circuito_id;
+        const sortedItems = (circuit?.itens_circuito ?? []).sort(
+          (a: any, b: any) => a.ordem - b.ordem,
+        );
+        const resumeExercises: ResumeExercise[] | null =
+          circuit && sortedItems.length > 0
+            ? sortedItems
+                .map((ci: any) => ({
+                  id: ci.exercicios?.id,
+                  name: ci.exercicios?.titulo,
+                  description: ci.exercicios?.descricao ?? "",
+                }))
+                .filter((e: any) => e.id)
+            : null;
 
-      // 5. Formata os Formulários
+        return {
+          id: item.id,
+          title: circuit?.titulo || item.formulario_id?.titulo || "Sessão sem título",
+          date: item.data_inicio
+            ? new Date(item.data_inicio).toLocaleDateString("pt-BR")
+            : "Data não definida",
+          status: item.status
+            ? String(item.status).replace(/_/g, " ")
+            : "Status não definido",
+          hasPendency: false,
+          type: "session",
+          rawDate: item.data_inicio,
+          isResumable: item.status === "em_andamento" && circuit != null,
+          circuitId: circuit?.id ?? null,
+          circuitType: circuit?.tipo ?? null,
+          resumeExercises,
+        };
+      });
+      // 4. Busca Histórico MABC-2 (via RPC disponível)
+      const { data: mabcData, error: mabcError } = await supabase
+        .rpc("rpc_get_historico_mabc2_aluno", { p_aluno_id: studentId });
+
+      if (mabcError) console.error("Erro ao buscar histórico MABC", mabcError);
+
+      // 6. Formata os Formulários
       const mappedForms: SessionItem[] = (formsData || []).map((item: any) => ({
         id: item.id,
-        title: item.titulo || "Formulário sem título",
+        title: item.titulo || "Formulário",
         date: item.created_at
           ? new Date(item.created_at).toLocaleDateString("pt-BR")
           : "Data não definida",
-        status: "Formulário preenchido", // Status genérico para formulários
-        hasPendency: false,
+        status: item.tem_respostas ? "Preenchido" : "Pendente",
+        hasPendency: !item.tem_respostas,
         type: "form",
         rawDate: item.created_at,
+        isResumable: false,
+        circuitId: null,
+        circuitType: null,
+        resumeExercises: null,
       }));
 
-      // 6. Une as duas listas e ordena da mais recente para a mais antiga
-      const combinedHistory = [...mappedSessions, ...mappedForms].sort((a, b) => {
+      // 7. Formata o MABC-2 (calculando a idade no momento da avaliação para a cor)
+      const parsedMabcData = typeof mabcData === "string" ? JSON.parse(mabcData) : (mabcData || []);
+      const mappedMabc: SessionItem[] = (parsedMabcData || []).map((item: any) => {
+        const eventDate = item.data_avaliacao || item.created_at || new Date().toISOString();
+        return {
+          id: item.id || item.formulario_id,
+          title: item.titulo || "Avaliação MABC-2",
+          date: new Date(eventDate).toLocaleDateString("pt-BR"),
+          status: item.status || "Finalizado",
+          hasPendency: item.tem_pendencia === true,
+          type: "mabc",
+          rawDate: eventDate,
+          ageAtEvent: calculateAge(birthDate, eventDate),
+        };
+      });
+
+      // 8. Une todas as listas e ordena da mais recente para a mais antiga
+      const combinedHistory = [...mappedSessions, ...mappedForms, ...mappedMabc].sort((a, b) => {
         const dateA = a.rawDate ? new Date(a.rawDate).getTime() : 0;
         const dateB = b.rawDate ? new Date(b.rawDate).getTime() : 0;
         return dateB - dateA;
@@ -126,7 +182,7 @@ export function useStudentSessions(studentId?: string) {
       setSessions(combinedHistory);
 
     } catch (error) {
-      console.error("Error fetching student history:", error);
+      console.error("Erro na estruturação do histórico do aluno:", error);
     } finally {
       setIsLoading(false);
     }

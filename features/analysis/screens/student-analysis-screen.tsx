@@ -87,7 +87,7 @@ export function StudentAnalysisScreen() {
                   title="Progresso por exercício"
                   description="Acompanhe a evolução de cada exercício nas sessões."
                   onPress={() => {
-                    console.log("Progresso por exercício selecionado");
+                    router.push(`/analysis/progress/${studentId}` as any);
                   }}
                 />
 
@@ -96,7 +96,13 @@ export function StudentAnalysisScreen() {
                   title="Registros de ajuda por sessão"
                   description="Acompanhe a evolução da autonomia nas sessões."
                   onPress={() => {
-                    console.log("Registros de ajuda por sessão selecionado");
+                    router.push({
+                      pathname: "/analysis/help/[studentId]",
+                      params: {
+                        studentId: String(studentId ?? ""),
+                        studentName: profile?.name ?? "Aluno",
+                      },
+                    } as any);
                   }}
                 />
 
@@ -105,7 +111,7 @@ export function StudentAnalysisScreen() {
                   title="Comportamentos observados"
                   description="Visualize a frequência dos comportamentos observados"
                   onPress={() => {
-                    console.log("Comportamentos observados selecionado");
+                    router.push(`/analysis/behaviors/${studentId}` as any);
                   }}
                 />
 
@@ -133,7 +139,13 @@ export function StudentAnalysisScreen() {
                   title="Registros de desenvolvimento motor"
                   description="Visualize e registre avaliações motoras do aluno."
                   onPress={() => {
-                    console.log("Registros de desenvolvimento motor selecionado");
+                    router.push({
+                      pathname: "/mabc2-records",
+                      params: {
+                        studentId: String(studentId ?? ""),
+                        studentName: profile?.name ?? "Aluno",
+                      },
+                    } as any);
                   }}
                 />
               </View>
