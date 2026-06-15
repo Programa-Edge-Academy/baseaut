@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Modal, Text, View, Pressable, useWindowDimensions, ScrollView, StyleSheet } from "react-native";
-import { X, CheckCircle2 } from "lucide-react-native";
+import { X, CheckCircle2, Tags } from "lucide-react-native";
 import { ActionButtons } from "@/components/action-buttons";
 import { colors } from "@/assets/colors";
 import { withOpacity } from "@/components/color-opacity";
@@ -8,6 +8,7 @@ import { DefaultTextInput } from "@/components/default-text-input";
 import { SelectableChip } from "@/components/selectable-chip";
 import { useExercises, Exercise } from "../hooks/use-exercises";
 import { CircuitType } from "../hooks/use-circuits";
+import { TagGroup } from "./tag-group";
 
 type ExecutionMode = "estruturado" | "livre";
 
@@ -118,6 +119,10 @@ export function NewCircuit({
 
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
 
+  const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedSubtags, setSelectedSubtags] = useState<Record<string, string[]>>({});
+
   const [errors, setErrors] = useState({
     name: "",
     exercises: ""
@@ -151,6 +156,9 @@ export function NewCircuit({
       setSwapIndex(null);
       setShowToast(false);
       setIsSaving(false);
+      setIsTagFilterOpen(false);
+      setSelectedTags([]);
+      setSelectedSubtags({});
     }
   }, [visible, initialData]);
 
@@ -167,6 +175,21 @@ export function NewCircuit({
       }
     });
   };
+
+  const availableTags = ["Coordenação", "Força", "Equilíbrio"];
+  const availableSubtags = ["Locomotor", "Manipulativo", "Estabilizador"];
+
+  const filteredExercises = exercises.filter((ex) => {
+    if (selectedTags.length === 0) return true;
+
+    if (!ex.tag || !selectedTags.includes(ex.tag)) return false;
+
+    const subsForTag = selectedSubtags[ex.tag] || [];
+    if (subsForTag.length === 0) return true;
+
+    if (!ex.subtags || ex.subtags.length === 0) return false;
+    return ex.subtags.some((sub) => subsForTag.includes(sub));
+  });
 
 const handleSwapClick = React.useCallback((index: number) => {
   if (swapIndex === null) {
@@ -305,9 +328,33 @@ const handleSwapClick = React.useCallback((index: number) => {
               </View>
 
               <View>
+                <Pressable 
+                  onPress={() => setIsTagFilterOpen((prev) => !prev)}
+                  className="flex-row items-center p-3.5 bg-level1 border border-outline rounded-[15px] mb-4 gap-3"
+                >
+                  <Tags size={24} color={colors.muted} />
+                  <Text className="text-muted text-[14px] leading-[20px] font-medium">
+                    Selecionar exercícios por tag
+                  </Text>
+                </Pressable>
+
+                {isTagFilterOpen && (
+                  <View className="mb-4">
+                    <TagGroup
+                      availableTags={availableTags}
+                      availableSubtags={availableSubtags}
+                      mode="multiple"
+                      selectedTags={selectedTags}
+                      selectedSubtags={selectedSubtags}
+                      onChangeTags={setSelectedTags}
+                      onChangeSubtags={setSelectedSubtags}
+                    />
+                  </View>
+                )}
+
                 <Text className="text-muted text-default-2 mb-2">Selecione os exercícios</Text>
                 <View className="gap-2.5">
-                  {exercises.map((ex: Exercise) => (
+                  {filteredExercises.map((ex: Exercise) => (
                     <SelectableChip
                       key={ex.id}
                       label={ex.name}
