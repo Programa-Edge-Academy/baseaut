@@ -27,7 +27,14 @@ ALTER TABLE public.exercicios
   ADD CONSTRAINT chk_subtags_valores_permitidos 
   CHECK (subtags <@ ARRAY['locomotor', 'estabilizador', 'manipulativo']::text[]);
 
--- 6. (Bônus de Consistência) Trava para a coluna 'tag' que já existia
+-- 6. Limpeza e Trava de Consistência para a coluna 'tag'
+-- Ajusta qualquer lixo antigo ou nulo para um valor seguro
+UPDATE public.exercicios
+SET tag = 'Coordenação'
+WHERE tag NOT IN ('Força', 'Equilíbrio', 'Coordenação') 
+   OR tag IS NULL;
+
+-- Agora aplica a trava com segurança
 ALTER TABLE public.exercicios
   ADD CONSTRAINT chk_tag_valores_permitidos 
   CHECK (tag IN ('Força', 'Equilíbrio', 'Coordenação'));
