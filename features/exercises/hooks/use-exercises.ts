@@ -14,6 +14,7 @@ export type Exercise = {
   description: string;
   durationSeconds?: number;
   tag: string;
+  subtags?: string[];
   iconUrl?: string | null;
 };
 

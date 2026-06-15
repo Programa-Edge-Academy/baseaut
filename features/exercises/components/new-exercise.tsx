@@ -24,6 +24,7 @@ export type NewExerciseData = {
   description: string;
   durationSeconds: number;
   tag: string | null;
+  subtags: string[];
 };
 
 /**
@@ -47,7 +48,7 @@ export type NewExerciseProps = {
 export function NewExercise({
   visible = true,
   onClose,
-  availableTags = ["Locomotor", "Manipulativo", "Estabilizador"],
+  availableTags = ["Coordenação", "Força", "Equilíbrio"],
   onSave,
   title = "Novo exercício",
   initialData,
@@ -57,11 +58,14 @@ export function NewExercise({
   const [description, setDescription] = useState("");
   const [durationInput, setDurationInput] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedSubtags, setSelectedSubtags] = useState<string[]>([]);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [deletePhotoModalVisible, setDeletePhotoModalVisible] = useState(false);
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState({ name: "", tag: "", duration: "" });
+
+  const availableSubtags = ["Locomotor", "Manipulativo", "Estabilizador"];
 
   useEffect(() => {
     if (!visible) return;
@@ -75,6 +79,7 @@ export function NewExercise({
       initialData?.durationSeconds ? String(initialData.durationSeconds) : "",
     );
     setSelectedTag(initialData?.tag ?? null);
+    setSelectedSubtags(initialData?.subtags ?? []);
     setPhotoUri(initialData?.iconUrl ?? null);
   }, [visible, initialData]);
 
@@ -138,6 +143,7 @@ export function NewExercise({
         description: description.trim(),
         durationSeconds: seconds,
         tag: selectedTag,
+        subtags: selectedSubtags,
       },
       photoUri,
     );
@@ -151,10 +157,31 @@ export function NewExercise({
     if (errors.tag) setErrors((prev) => ({ ...prev, tag: "" }));
   };
 
-  const tags: TagProps[] = availableTags.map((label) => ({
+  /**
+   * Toggles the selected subtag.
+   */
+  const toggleSubtag = (subLabel: string, parentTag: string) => {
+    if (selectedTag !== parentTag) {
+      setSelectedTag(parentTag);
+    }
+    
+    setSelectedSubtags((current) =>
+      current.includes(subLabel)
+        ? current.filter((s) => s !== subLabel)
+        : [...current, subLabel]
+    );
+    if (errors.tag) setErrors((prev) => ({ ...prev, tag: "" }));
+  };
+
+  const tags = availableTags.map((label) => ({
     label,
     isActive: selectedTag === label,
     onPress: () => selectTag(label),
+    subtags: availableSubtags.map((subLabel) => ({
+      label: subLabel,
+      isActive: selectedTag === label && selectedSubtags.includes(subLabel),
+      onPress: () => toggleSubtag(subLabel, label),
+    })),
   }));
 
   return (
@@ -280,7 +307,7 @@ export function NewExercise({
 
                 <View className="gap-[2px]">
                   <Text className="text-muted text-default-1">Tags*</Text>
-                  <TagGroup tags={tags} onAddTag={() => {}} />
+                  <TagGroup tags={tags} />
                   {errors.tag ? (
                     <Text className="text-error text-default-3 mt-1 ml-1">
                       {errors.tag}
