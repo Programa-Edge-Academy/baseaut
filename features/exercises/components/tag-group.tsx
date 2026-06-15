@@ -25,16 +25,16 @@ export function TagGroup({ tags }: TagGroupProps) {
         <Pressable
           key={tag.label}
           onPress={tag.onPress}
-          className={`h-[80px] rounded-[15px] border ${
+          className={`min-h-[80px] rounded-[15px] border ${
             tag.isActive
               ? "bg-level2 border-primary"
               : "bg-level1 border-outline"
-          } justify-center pl-4 relative`}
+          } justify-center pl-4 pr-4 py-3 relative`}
         >
           <Text className="text-white text-[14px] leading-[20px] font-medium mb-1.5">
             {tag.label}
           </Text>
-          <View className="flex-row gap-[10px]">
+          <View className="flex-row flex-wrap gap-[10px]">
             {tag.subtags.map((subtag) => (
               <Pressable
                 key={subtag.label}
