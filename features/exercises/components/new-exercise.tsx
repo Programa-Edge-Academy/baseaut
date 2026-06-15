@@ -115,8 +115,14 @@ export function NewExercise({
       isValid = false;
     }
 
-    if (selectedTags.length === 0) {
+    const tag = selectedTags.length > 0 ? selectedTags[0] : null;
+    const subtags = tag ? (selectedSubtags[tag] || []) : [];
+
+    if (!tag) {
       newErrors.tag = "É obrigatória a seleção de uma tag";
+      isValid = false;
+    } else if (subtags.length === 0) {
+      newErrors.tag = "É obrigatória a seleção de pelo menos uma subtag";
       isValid = false;
     }
 
