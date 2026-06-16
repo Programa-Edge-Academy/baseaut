@@ -4,9 +4,10 @@ import RangeCalendar from "@/components/range-calendar";
 import { HelpRecordsBarChart } from "@/features/analysis/components/help-records-bar-chart";
 import PeriodSelector from "@/features/analysis/components/period-selector";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
+import { useHelpRecords } from "../hooks/use-help-records";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { BarChart3 } from "lucide-react-native";
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -15,37 +16,6 @@ import {
   Text,
   View,
 } from "react-native";
-
-const mockHelpRecords = [
-  {
-    sessionId: "1",
-    sessionLabel: "1",
-    sessionDate: "2026-06-01",
-    intrusiveCount: 6,
-    autonomousCount: 2,
-  },
-  {
-    sessionId: "2",
-    sessionLabel: "2",
-    sessionDate: "2026-06-02",
-    intrusiveCount: 4,
-    autonomousCount: 5,
-  },
-  {
-    sessionId: "3",
-    sessionLabel: "3",
-    sessionDate: "2026-06-05",
-    intrusiveCount: 3,
-    autonomousCount: 6,
-  },
-  {
-    sessionId: "4",
-    sessionLabel: "4",
-    sessionDate: "2026-06-08",
-    intrusiveCount: 2,
-    autonomousCount: 8,
-  },
-];
 
 const months = [
   "Janeiro",
@@ -129,7 +99,7 @@ export function HelpRecordsScreen() {
     params.studentName as string | string[] | undefined
   );
 
-  const { profile, isLoading } = useStudentSessions(studentId as string);
+  const { profile, isLoading: isProfileLoading } = useStudentSessions(studentId as string);
 
   const [showCalendar, setShowCalendar] = useState(false);
 
@@ -141,6 +111,14 @@ export function HelpRecordsScreen() {
 
   const hasSelectedPeriod = Boolean(startDate && endDate);
   const canSavePeriod = Boolean(tempStartDate && tempEndDate);
+
+  const {
+    records: helpRecords,
+    isLoading: isHelpLoading,
+    error: helpError,
+  } = useHelpRecords(studentId, startDate, endDate);
+
+  const isLoading = isProfileLoading || isHelpLoading;
 
   const studentName =
     studentNameParam ||
@@ -155,41 +133,7 @@ export function HelpRecordsScreen() {
       ? `${formatDate(startDate)} - ${formatDate(endDate)}`
       : "Selecione o período para visualizar os registros de ajuda";
 
-  /**
-   * Estado de erro preparado para integração futura.
-   *
-   * Quando a tela for integrada ao back-end, troque este valor pelo estado real
-   * da requisição, por exemplo:
-   *
-   * const selectedPeriodHasError = isError;
-   *
-   * ou:
-   *
-   * const selectedPeriodHasError = Boolean(error);
-   */
-  const selectedPeriodHasError = false;
-
-  const helpRecords = useMemo(() => {
-    if (!startDate || !endDate) {
-      return [];
-    }
-
-    const selectedStart = new Date(`${startDate}T00:00:00`);
-    const selectedEnd = new Date(`${endDate}T00:00:00`);
-
-    return mockHelpRecords
-      .filter((record) => {
-        const recordDate = new Date(`${record.sessionDate}T00:00:00`);
-
-        return recordDate >= selectedStart && recordDate <= selectedEnd;
-      })
-      .map((record) => ({
-        sessionId: record.sessionId,
-        sessionLabel: record.sessionLabel,
-        intrusiveCount: record.intrusiveCount,
-        autonomousCount: record.autonomousCount,
-      }));
-  }, [startDate, endDate]);
+  const selectedPeriodHasError = Boolean(helpError);
 
   const hasRecords = helpRecords.length > 0;
 
