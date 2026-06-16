@@ -86,7 +86,7 @@ export function TagGroup({
                     }`}
                   >
                     <Text className="text-white text-[12px] leading-[20px] font-medium">
-                      {subLabel}
+                      {subLabel.charAt(0).toUpperCase() + subLabel.slice(1)}
                     </Text>
                   </Pressable>
                 );

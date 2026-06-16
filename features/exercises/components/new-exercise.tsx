@@ -65,7 +65,7 @@ export function NewExercise({
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState({ name: "", tag: "", duration: "" });
 
-  const availableSubtags = ["Locomotor", "Manipulativo", "Estabilizador"];
+  const availableSubtags = ["locomotor", "manipulativo", "estabilizador"];
 
   useEffect(() => {
     if (!visible) return;

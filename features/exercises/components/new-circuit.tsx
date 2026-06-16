@@ -177,7 +177,7 @@ export function NewCircuit({
   };
 
   const availableTags = ["Coordenação", "Força", "Equilíbrio"];
-  const availableSubtags = ["Locomotor", "Manipulativo", "Estabilizador"];
+  const availableSubtags = ["locomotor", "manipulativo", "estabilizador"];
 
   const filteredExercises = exercises.filter((ex) => {
     if (selectedTags.length === 0) return true;
