@@ -24,6 +24,7 @@ export type NewExerciseData = {
   description: string;
   durationSeconds: number;
   tag: string | null;
+  subtags: string[];
 };
 
 /**
@@ -47,7 +48,7 @@ export type NewExerciseProps = {
 export function NewExercise({
   visible = true,
   onClose,
-  availableTags = ["Locomotor", "Manipulativo", "Estabilizador"],
+  availableTags = ["Coordenação", "Força", "Equilíbrio"],
   onSave,
   title = "Novo exercício",
   initialData,
@@ -56,12 +57,15 @@ export function NewExercise({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [durationInput, setDurationInput] = useState("");
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedSubtags, setSelectedSubtags] = useState<Record<string, string[]>>({});
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [deletePhotoModalVisible, setDeletePhotoModalVisible] = useState(false);
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState({ name: "", tag: "", duration: "" });
+
+  const availableSubtags = ["locomotor", "manipulativo", "estabilizador"];
 
   useEffect(() => {
     if (!visible) return;
@@ -74,7 +78,8 @@ export function NewExercise({
     setDurationInput(
       initialData?.durationSeconds ? String(initialData.durationSeconds) : "",
     );
-    setSelectedTag(initialData?.tag ?? null);
+    setSelectedTags(initialData?.tag ? [initialData.tag] : []);
+    setSelectedSubtags(initialData?.tag ? { [initialData.tag]: initialData.subtags ?? [] } : {});
     setPhotoUri(initialData?.iconUrl ?? null);
   }, [visible, initialData]);
 
@@ -110,8 +115,14 @@ export function NewExercise({
       isValid = false;
     }
 
-    if (!selectedTag) {
+    const tag = selectedTags.length > 0 ? selectedTags[0] : null;
+    const subtags = tag ? (selectedSubtags[tag] || []) : [];
+
+    if (!tag) {
       newErrors.tag = "É obrigatória a seleção de uma tag";
+      isValid = false;
+    } else if (subtags.length === 0) {
+      newErrors.tag = "É obrigatória a seleção de pelo menos uma subtag";
       isValid = false;
     }
 
@@ -137,25 +148,19 @@ export function NewExercise({
         name: name.trim(),
         description: description.trim(),
         durationSeconds: seconds,
-        tag: selectedTag,
+        tag: selectedTags.length > 0 ? selectedTags[0] : null,
+        subtags: selectedTags.length > 0 ? (selectedSubtags[selectedTags[0]] || []) : [],
       },
       photoUri,
     );
   };
 
-  /**
-   * Toggles the selected tag.
-   */
-  const selectTag = (label: string) => {
-    setSelectedTag((current) => (current === label ? null : label));
-    if (errors.tag) setErrors((prev) => ({ ...prev, tag: "" }));
+  const handleChangeTags = (tags: string[]) => {
+    setSelectedTags(tags);
+    if (errors.tag && tags.length > 0) {
+      setErrors((prev) => ({ ...prev, tag: "" }));
+    }
   };
-
-  const tags: TagProps[] = availableTags.map((label) => ({
-    label,
-    isActive: selectedTag === label,
-    onPress: () => selectTag(label),
-  }));
 
   return (
     <>
@@ -280,7 +285,15 @@ export function NewExercise({
 
                 <View className="gap-[2px]">
                   <Text className="text-muted text-default-1">Tags*</Text>
-                  <TagGroup tags={tags} onAddTag={() => {}} />
+                  <TagGroup
+                    availableTags={availableTags}
+                    availableSubtags={availableSubtags}
+                    mode="single"
+                    selectedTags={selectedTags}
+                    selectedSubtags={selectedSubtags}
+                    onChangeTags={handleChangeTags}
+                    onChangeSubtags={setSelectedSubtags}
+                  />
                   {errors.tag ? (
                     <Text className="text-error text-default-3 mt-1 ml-1">
                       {errors.tag}
