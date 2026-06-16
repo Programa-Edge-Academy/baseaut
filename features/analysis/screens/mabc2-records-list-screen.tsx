@@ -2,6 +2,7 @@ import { colors } from "@/assets/colors";
 import { DataList } from "@/components/data-list";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
+import { Toast, type ToastMode } from "@/components/toast";
 import React from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Mabc2Record, Mabc2RecordCard } from "../components/mabc2-record-card";
@@ -10,6 +11,8 @@ export type Mabc2RecordsListScreenProps = {
   studentName: string;
   records: Mabc2Record[];
   isLoading?: boolean;
+  toastConfig?: { visible: boolean; mode: ToastMode; title: string; description?: string };
+  onHideToast?: () => void;
   onPressBack?: () => void;
   onPressNewRecord?: () => void;
   onPressRecord?: (record: Mabc2Record) => void;
@@ -19,6 +22,8 @@ export function Mabc2RecordsListScreen({
   studentName,
   records,
   isLoading = false,
+  toastConfig,
+  onHideToast,
   onPressBack,
   onPressNewRecord,
   onPressRecord,
@@ -52,6 +57,16 @@ export function Mabc2RecordsListScreen({
               onPress={() => onPressRecord?.(item)}
             />
           )}
+        />
+      )}
+
+      {toastConfig && (
+        <Toast
+          visible={toastConfig.visible}
+          mode={toastConfig.mode}
+          title={toastConfig.title}
+          description={toastConfig.description}
+          onHide={onHideToast}
         />
       )}
     </View>

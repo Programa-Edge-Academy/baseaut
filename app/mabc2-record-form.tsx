@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { type ToastMode } from "@/components/toast";
 import type { Mabc2SectionProps } from "@/features/analysis/components/mabc2-section";
 import {
   deleteMabc2Record,
@@ -35,6 +36,17 @@ export default function Mabc2RecordFormRoute() {
 
   const [draft, setDraft] = useState<Mabc2Draft | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toastConfig, setToastConfig] = useState<{
+    visible: boolean;
+    mode: ToastMode;
+    title: string;
+    description?: string;
+  }>({
+    visible: false,
+    mode: "error",
+    title: "",
+  });
   const hasLoaded = useRef(false);
 
   useEffect(() => {
@@ -125,31 +137,59 @@ export default function Mabc2RecordFormRoute() {
   }, [draft]);
 
   async function handleSave() {
-    if (!draft) return;
+    if (!draft || isSubmitting) return;
+    setIsSubmitting(true);
 
-    await saveMabc2Record(draft);
-
-    router.replace({
-      pathname: "/mabc2-records",
-      params: {
-        studentId: currentStudentId,
-        studentName: currentStudentName,
-      },
-    } as any);
+    try {
+      await saveMabc2Record(draft);
+      router.replace({
+        pathname: "/mabc2-records",
+        params: {
+          studentId: currentStudentId,
+          studentName: currentStudentName,
+          toastSuccess:
+            currentMode === "edit"
+              ? "Registro editado com sucesso"
+              : "Registro salvo com sucesso",
+        },
+      } as any);
+    } catch (error) {
+      setIsSubmitting(false);
+      setToastConfig({
+        visible: true,
+        mode: "error",
+        title:
+          currentMode === "edit"
+            ? "Não foi possível editar o registro."
+            : "Não foi possível salvar o registro.",
+        description: "Tente novamente",
+      });
+    }
   }
 
   async function handleDelete() {
-    if (!recordId) return;
+    if (!recordId || isSubmitting) return;
+    setIsSubmitting(true);
 
-    await deleteMabc2Record(recordId);
-
-    router.replace({
-      pathname: "/mabc2-records",
-      params: {
-        studentId: currentStudentId,
-        studentName: currentStudentName,
-      },
-    } as any);
+    try {
+      await deleteMabc2Record(recordId);
+      router.replace({
+        pathname: "/mabc2-records",
+        params: {
+          studentId: currentStudentId,
+          studentName: currentStudentName,
+          toastSuccess: "Registro excluído com sucesso",
+        },
+      } as any);
+    } catch (error) {
+      setIsSubmitting(false);
+      setToastConfig({
+        visible: true,
+        mode: "error",
+        title: "Não foi possível excluir o registro.",
+        description: "Tente novamente",
+      });
+    }
   }
 
   if (isLoading || !draft) {
@@ -169,6 +209,8 @@ export default function Mabc2RecordFormRoute() {
       sections={sections}
       readOnly={currentMode === "view"}
       submitLabel={currentMode === "edit" ? "Salvar" : "Registrar"}
+      toastConfig={toastConfig}
+      onHideToast={() => setToastConfig((prev) => ({ ...prev, visible: false }))}
       onChangeTotalScore={(value) =>
         setDraft((current) =>
           current ? { ...current, totalScore: parseNumber(value) } : current
