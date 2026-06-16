@@ -1,13 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Modal, Text, View, Pressable, useWindowDimensions, ScrollView, StyleSheet } from "react-native";
-import { X, CheckCircle2 } from "lucide-react-native";
-import { ActionButtons } from "@/components/action-buttons";
 import { colors } from "@/assets/colors";
+import { ActionButtons } from "@/components/action-buttons";
 import { withOpacity } from "@/components/color-opacity";
 import { DefaultTextInput } from "@/components/default-text-input";
 import { SelectableChip } from "@/components/selectable-chip";
-import { useExercises, Exercise } from "../hooks/use-exercises";
+import { CheckCircle2, X } from "lucide-react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { CircuitType } from "../hooks/use-circuits";
+import { Exercise, useExercises } from "../hooks/use-exercises";
 
 type ExecutionMode = "estruturado" | "livre";
 
@@ -31,13 +31,13 @@ interface NewCircuitProps {
   }) => Promise<void>;
 }
 
-const SwapItem = React.memo(({ item, index, isSelected, onPress }: { 
-  item: Exercise, 
-  index: number, 
-  isSelected: boolean, 
-  onPress: () => void 
+const SwapItem = React.memo(({ item, index, isSelected, onPress }: {
+  item: Exercise,
+  index: number,
+  isSelected: boolean,
+  onPress: () => void
 }) => (
-  <Pressable 
+  <Pressable
     style={[STYLES.swapItem, isSelected && STYLES.swapItemSelected]}
     onPress={onPress}
   >
@@ -100,9 +100,9 @@ const STYLES = StyleSheet.create({
   }
 });
 
-export function NewCircuit({ 
-  visible, 
-  onClose, 
+export function NewCircuit({
+  visible,
+  onClose,
   onSave,
   title = "Novo circuito",
   initialData
@@ -122,7 +122,7 @@ export function NewCircuit({
     name: "",
     exercises: ""
   });
-  
+
   const [showToast, setShowToast] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -168,22 +168,22 @@ export function NewCircuit({
     });
   };
 
-const handleSwapClick = React.useCallback((index: number) => {
-  if (swapIndex === null) {
-    setSwapIndex(index);
-  } else if (swapIndex === index) {
-    setSwapIndex(null);
-  } else {
-    setOrderedExercises((prev) => {
-      const newList = [...prev];
-      const temp = newList[swapIndex];
-      newList[swapIndex] = newList[index];
-      newList[index] = temp;
-      return newList;
-    });
-    setSwapIndex(null);
-  }
-}, [swapIndex]);
+  const handleSwapClick = React.useCallback((index: number) => {
+    if (swapIndex === null) {
+      setSwapIndex(index);
+    } else if (swapIndex === index) {
+      setSwapIndex(null);
+    } else {
+      setOrderedExercises((prev) => {
+        const newList = [...prev];
+        const temp = newList[swapIndex];
+        newList[swapIndex] = newList[index];
+        newList[index] = temp;
+        return newList;
+      });
+      setSwapIndex(null);
+    }
+  }, [swapIndex]);
 
   const handleValidationAndSave = async () => {
     let isValid = true;
@@ -230,7 +230,7 @@ const handleSwapClick = React.useCallback((index: number) => {
       onRequestClose={onClose}
     >
       <View className="flex-1 bg-black/60 justify-center items-center px-4">
-        <View 
+        <View
           className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[900px] overflow-hidden relative"
           style={{ maxHeight: screenHeight * 0.85 }}
         >
@@ -250,8 +250,8 @@ const handleSwapClick = React.useCallback((index: number) => {
             </Pressable>
           </View>
 
-          <ScrollView 
-            className="flex-shrink" 
+          <ScrollView
+            className="flex-shrink"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ padding: 20 }}
           >
@@ -259,14 +259,14 @@ const handleSwapClick = React.useCallback((index: number) => {
               <View>
                 <DefaultTextInput
                   value={name}
-                  maxLength={20} 
+                  maxLength={20}
                   onChangeText={(val) => {
                     const cleanVal = val.replace(/\d/g, "");
                     setName(cleanVal);
                     if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
                   }}
                   placeholder="Nome do circuito"
-                  outLineBorderClass={errors.name ? "border-error" : ""} 
+                  outLineBorderClass={errors.name ? "border-error" : ""}
                 />
                 {errors.name ? (
                   <Text className="text-error text-default-3 mt-1 ml-1">{errors.name}</Text>
@@ -281,9 +281,8 @@ const handleSwapClick = React.useCallback((index: number) => {
                       setExecutionMode("estruturado");
                       setSwapIndex(null);
                     }}
-                    className={`flex-1 p-3.5 rounded-xl border ${
-                      executionMode === "estruturado" ? "border-primary bg-primary/10" : "border-outline bg-level1"
-                    }`}
+                    className={`flex-1 p-3.5 rounded-xl border ${executionMode === "estruturado" ? "border-primary bg-primary/10" : "border-outline bg-level1"
+                      }`}
                   >
                     <Text className="text-white text-default-1 mb-1 font-bold">Estruturado</Text>
                     <Text className="text-muted text-default-3">Realiza todos os exercícios definidos</Text>
@@ -294,11 +293,10 @@ const handleSwapClick = React.useCallback((index: number) => {
                       setExecutionMode("livre");
                       setSwapIndex(null);
                     }}
-                    className={`flex-1 p-3.5 rounded-xl border ${
-                      executionMode === "livre" ? "border-primary bg-primary/10" : "border-outline bg-level1"
-                    }`}
+                    className={`flex-1 p-3.5 rounded-xl border ${executionMode === "livre" ? "border-primary bg-primary/10" : "border-outline bg-level1"
+                      }`}
                   >
-                    <Text className="text-white text-default-1 mb-1 font-bold">Livre</Text>
+                    <Text className="text-white text-default-1 mb-1 font-bold">Semi-estruturado</Text>
                     <Text className="text-muted text-default-3">Para engajamento e atividades parciais</Text>
                   </Pressable>
                 </View>
@@ -330,7 +328,7 @@ const handleSwapClick = React.useCallback((index: number) => {
                 </Text>
 
                 {orderedExercises.map((item, index) => (
-                  <SwapItem 
+                  <SwapItem
                     key={item.id}
                     item={item}
                     index={index}

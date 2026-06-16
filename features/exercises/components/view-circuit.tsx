@@ -1,6 +1,6 @@
-import React, { useRef } from "react";
-import { Modal, Text, View, Pressable, useWindowDimensions, ScrollView, StyleSheet } from "react-native";
 import { X } from "lucide-react-native";
+import React, { useRef } from "react";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 
 import { colors } from "@/assets/colors";
 import { Exercise } from "../hooks/use-exercises";
@@ -50,13 +50,13 @@ const STYLES = StyleSheet.create({
   }
 });
 
-export function ViewCircuit({ 
-  visible, 
-  onClose, 
+export function ViewCircuit({
+  visible,
+  onClose,
   circuitData
 }: ViewCircuitProps) {
   const { height: screenHeight } = useWindowDimensions();
-  
+
   const frozenTitle = useRef(circuitData?.name || "Detalhes do Circuito");
   if (circuitData?.name) {
     frozenTitle.current = circuitData.name;
@@ -74,7 +74,7 @@ export function ViewCircuit({
       onRequestClose={onClose}
     >
       <View className="flex-1 bg-black/60 justify-center items-center px-4">
-        <View 
+        <View
           className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[900px] overflow-hidden relative"
           style={{ maxHeight: screenHeight * 0.85 }}
         >
@@ -85,8 +85,8 @@ export function ViewCircuit({
             </Pressable>
           </View>
 
-          <ScrollView 
-            className="flex-shrink" 
+          <ScrollView
+            className="flex-shrink"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ padding: 20 }}
           >
@@ -105,7 +105,7 @@ export function ViewCircuit({
                   </View>
                 ) : (
                   <View className="p-3.5 rounded-xl border border-primary bg-primary/10">
-                    <Text className="text-white text-default-1 mb-1 font-bold">Livre</Text>
+                    <Text className="text-white text-default-1 mb-1 font-bold">Semi-estruturado</Text>
                     <Text className="text-muted text-default-3">Para engajamento e atividades parciais</Text>
                   </View>
                 )}
