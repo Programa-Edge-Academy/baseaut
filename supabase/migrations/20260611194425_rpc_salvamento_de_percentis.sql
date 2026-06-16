@@ -20,7 +20,7 @@ BEGIN
     -- 1. Recuperar dados de controle do formulário
     SELECT equipe_id, tipo, protegido 
     INTO v_equipe_id, v_tipo, v_protegido
-    FROM formularios
+    FROM public.formularios
     WHERE id = p_formulario_id;
 
     -- Validações iniciais de existência e tipo
@@ -38,10 +38,11 @@ BEGIN
     END IF;
 
     -- 3. Atualização de Metadados (JSONB Merge), Avaliador e Data
-    UPDATE formularios
+    UPDATE public.formularios
     SET 
         metadados = COALESCE(metadados, '{}'::jsonb) || p_totais_jsonb,
-        avaliador_id = auth.uid(),
+        avaliador_id = COALESCE(avaliador_id, auth.uid()),
+        data_avaliacao = COALESCE(data_avaliacao, CURRENT_DATE),
         updated_at = NOW() 
     WHERE id = p_formulario_id;
 
