@@ -2,8 +2,8 @@ import { colors } from "@/assets/colors";
 import React from "react";
 import { Text, TextInput, View } from "react-native";
 import {
-    Mabc2ExerciseItem,
-    Mabc2ExerciseItemProps,
+  Mabc2ExerciseItem,
+  Mabc2ExerciseItemProps,
 } from "./mabc2-exercise-item";
 
 export type Mabc2SectionProps = {
@@ -15,6 +15,7 @@ export type Mabc2SectionProps = {
   onChangeCategoryPercentile?: (value: string) => void;
   exercises: Mabc2ExerciseItemProps[];
   readOnly?: boolean;
+  showErrors?: boolean;
   className?: string;
   testID?: string;
   accessibilityLabel?: string;
@@ -28,6 +29,7 @@ export function Mabc2Section({
   onChangeCategoryPercentile,
   exercises,
   readOnly = false,
+  showErrors = false,
   className,
   testID,
   accessibilityLabel,
@@ -41,7 +43,13 @@ export function Mabc2Section({
       <Text className="mb-2 text-base font-medium text-white">{title}</Text>
 
       <View className="mb-3 flex-row gap-3">
-        <View className="flex-1 rounded-xl border border-outline bg-level1 px-3 py-1.5">
+        <View
+          className={`flex-1 rounded-xl border ${
+            showErrors && (categoryScore === null || categoryScore as any === "")
+              ? "border-error"
+              : "border-outline"
+          } bg-level1 px-3 py-1.5`}
+        >
           <Text className="text-xs font-medium text-muted">Pontuação</Text>
           {readOnly ? (
             <Text className="text-base font-bold text-white">
@@ -60,7 +68,13 @@ export function Mabc2Section({
           )}
         </View>
 
-        <View className="flex-1 rounded-xl border border-outline bg-level1 px-3 py-1.5">
+        <View
+          className={`flex-1 rounded-xl border ${
+            showErrors && (categoryPercentile === null || categoryPercentile === "")
+              ? "border-error"
+              : "border-outline"
+          } bg-level1 px-3 py-1.5`}
+        >
           <Text className="text-xs font-medium text-muted">Percentil</Text>
           {readOnly ? (
             <Text className="text-base font-bold text-white">
@@ -86,6 +100,7 @@ export function Mabc2Section({
             key={exercise.id ?? `${exercise.name}-${index}`}
             {...exercise}
             readOnly={exercise.readOnly ?? readOnly}
+            showErrors={showErrors}
             testID={
               exercise.testID ??
               (testID ? `${testID}-exercise-${index}` : undefined)
