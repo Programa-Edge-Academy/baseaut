@@ -1,8 +1,9 @@
+import { AppModal } from "@/components/app-modal";
 import { AlertCircle, LogOut, Trash2, X } from "lucide-react-native";
 import React from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { colors } from "@/assets/colors";
-import { DefaultButton } from "@/components/default-button";
+import { ActionButtons } from "./action-buttons";
 
 export interface ConfirmationModalProps {
   visible: boolean;
@@ -49,14 +50,12 @@ export function ConfirmationModal({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <AppModal visible={visible} transparent animationType="fade">
       <View className="flex-1 bg-black/60 justify-center items-center px-4">
-        <View className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[400px] p-6 space-y-4">
+        <View className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[400px] p-6 gap-6">
           <View className="flex-row items-center space-x-4">
             <View 
-              className={`w-14 h-14 rounded-full items-center justify-center ${
-                isLogoutMode || isFinishMode || isFinishEngagementMode ? 'bg-level1 border border-outline' : 'bg-error/10 border border-error'
-              }`}
+              className={`mr-4 rounded-full items-center justify-center`}
             >
               {config.iconType === "trash" ? (
                 <Trash2 size={30} color={colors.error} />
@@ -83,29 +82,15 @@ export function ConfirmationModal({
             {config.message}
           </Text>
 
-          <View className="flex-row justify-center gap-2.5">
-            <DefaultButton
-              label={config.cancelLabel}
-              bgColorClass="bg-level2"
-              hasShadow={false}
-              isOutline
-              outlineBorderClass="border-outline"
-              textClassName="text-muted"
-              sizeClass="w-40 h-11"
-              onPress={onClose}
-            />
-
-            <DefaultButton
-              label={config.confirmLabel}
-              textClassName={isFinishEngagementMode ? "text-level1" : "text-white"}
-              bgColorClass={isFinishEngagementMode ? "bg-extra" : "bg-error"}
-              shadowClass={isFinishEngagementMode ? "shadow-none" : "shadow-errorShadow"}
-              sizeClass="w-40 h-11"
-              onPress={onConfirm}
-            />
-          </View>
+          <ActionButtons
+            onCancel={onClose}
+            onSave={onConfirm}
+            cancelLabel={config.cancelLabel}
+            saveLabel={config.confirmLabel}
+            mode={isFinishEngagementMode ? "warning" : "danger"}
+          />
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
