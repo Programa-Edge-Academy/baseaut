@@ -15,12 +15,13 @@ export default function Mabc2RecordsRoute() {
 
   const currentStudentId = studentId ?? "";
   const currentStudentName = studentName ?? "Aluno";
-  const { records, isLoading, refetch } = useMabc2Records(currentStudentId);
+  const { records, isLoading, refetch, error } = useMabc2Records(currentStudentId);
 
   const [toastConfig, setToastConfig] = useState<{
     visible: boolean;
     mode: ToastMode;
     title: string;
+    description?: string;
   }>({
     visible: false,
     mode: "success",
@@ -42,6 +43,17 @@ export default function Mabc2RecordsRoute() {
       });
     }
   }, [toastSuccess]);
+
+  useEffect(() => {
+    if (error) {
+      setToastConfig({
+        visible: true,
+        mode: "error",
+        title: "Não foi possível carregar os dados de desenvolvimento motor.",
+        description: "Tente novamente",
+      });
+    }
+  }, [error]);
 
   return (
     <Mabc2RecordsListScreen
