@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { supabase } from "@/lib/supabase";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { FormComponent } from "@/features/forms/components/form-component";
@@ -94,6 +95,9 @@ export function SessionRunningScreen({
     sessionId || "",
   );
   const effectiveSessionIdRef = useRef<string>(sessionId || "");
+  // Instância de Registro de Controle desta sessão (sessoes.formulario_id),
+  // criada por trigger. O form inline grava as respostas nela.
+  const [rcFormId, setRcFormId] = useState<string>("");
   // Promise da criação da sessão — usada por persistAndFinish para aguardar
   // o insert caso o usuário finalize antes de ele resolver.
   const createSessionPromiseRef = useRef<Promise<string> | null>(null);
@@ -153,6 +157,23 @@ export function SessionRunningScreen({
     };
   }, [sessionId, studentId, circuitId, createSession]);
 
+  // Resolve a instância de RC da sessão para o formulário inline gravar nela.
+  useEffect(() => {
+    if (!effectiveSessionId) return;
+    let active = true;
+    supabase
+      .from("sessoes")
+      .select("formulario_id")
+      .eq("id", effectiveSessionId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active && data?.formulario_id) setRcFormId(data.formulario_id);
+      });
+    return () => {
+      active = false;
+    };
+  }, [effectiveSessionId]);
+
   // Ao retomar (sessionId não vazio), carrega as execuções já gravadas.
   const { data: resumeData } = useResumeSession(sessionId || null);
 
@@ -168,8 +189,6 @@ export function SessionRunningScreen({
   const [historicoExercicios, setHistoricoExercicios] = useState<
     Record<string, "concluido" | "nao_realizada" | "adiado">
   >({});
-  const [swapIndex, setSwapIndex] = useState<number | null>(null);
-
   // Reconstrói o estado ao retomar uma sessão em_andamento.
   useEffect(() => {
     if (!resumeData || resumeData.executions.length === 0) return;
@@ -178,10 +197,15 @@ export function SessionRunningScreen({
 
     executionsRef.current = resumeData.executions;
 
-    const histrico: Record<string, "concluido" | "nao_realizada"> = {};
+    const histrico: Record<string, "concluido" | "nao_realizada" | "adiado"> =
+      {};
     for (const exec of resumeData.executions) {
       histrico[exec.exercicioId] =
-        exec.statusRealizacao === "realizada" ? "concluido" : "nao_realizada";
+        exec.statusRealizacao === "realizada"
+          ? "concluido"
+          : exec.statusRealizacao === "adiado"
+            ? "adiado"
+            : "nao_realizada";
     }
     setHistoricoExercicios(histrico);
     setHasAdvanced(true);
@@ -254,7 +278,10 @@ export function SessionRunningScreen({
 
   const handleActivityDefer = () => {
     setIsResultModalOpen(false);
-    advanceSession("adiado");
+    advanceSession("adiado", {
+      statusRealizacao: "adiado",
+      duracaoRealSegundos: lastElapsedSecondsRef.current,
+    });
   };
 
   const handleMabcConfirm = (_result: any) => {
@@ -270,7 +297,10 @@ export function SessionRunningScreen({
     const updatedDeferred = [...deferredExercises, currentExercise.id];
     setDeferredExercises(updatedDeferred);
     setIsResultModalOpen(false);
-    advanceSession("adiado");
+    advanceSession("adiado", {
+      statusRealizacao: "adiado",
+      duracaoRealSegundos: lastElapsedSecondsRef.current,
+    });
   };
 
   const handleMabcNotCompleted = (motivo: string, descricao?: string) => {
@@ -378,22 +408,6 @@ export function SessionRunningScreen({
     }
   };
 
-  const handleSwapClick = (indexClicked: number) => {
-    if (swapIndex === null) {
-      setSwapIndex(indexClicked); //
-    } else if (swapIndex === indexClicked) {
-      setSwapIndex(null);
-    } else {
-      setOrder((prev) => {
-        const newList = [...prev];
-        const temp = newList[swapIndex];
-        newList[swapIndex] = newList[indexClicked];
-        newList[indexClicked] = temp;
-        return newList;
-      });
-      setSwapIndex(null);
-    }
-  };
   const total = order.length;
 
   if (total === 0) {
@@ -511,13 +525,13 @@ export function SessionRunningScreen({
             Placeholder block kept so the layout reflects the design intent.
           */}
             {/* Circuitos MABC não usam o Registro de Controle dentro da sessão. */}
-            {!isMabc && (
+            {!isMabc && rcFormId && (
               <View style={{ display: isFormVisible ? "flex" : "none" }}>
                 <FormComponent
                   ref={formRef}
-                  formularioId={"00000000-0000-4000-0000-0000000000fc"}
+                  formularioId={rcFormId}
                   sessaoId={effectiveSessionId}
-                  alunoId={studentId}
+                  alunoId={""}
                 />
               </View>
             )}
@@ -528,9 +542,8 @@ export function SessionRunningScreen({
           visible={isReorderOpen}
           items={order}
           currentIndex={currentIndex}
-          swapIndex={swapIndex}
           onClose={() => setIsReorderOpen(false)}
-          onItemPress={handleSwapClick}
+          onReorder={setOrder}
         />
 
         <FinishSessionModal
