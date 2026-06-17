@@ -1,0 +1,1 @@
+ALTER TYPE status_realizacao_enum ADD VALUE 'adiado';

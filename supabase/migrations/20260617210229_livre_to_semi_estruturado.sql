@@ -1,0 +1,1 @@
+ALTER TYPE modo_execucao_enum RENAME VALUE 'livre' TO 'semi-estruturado';
