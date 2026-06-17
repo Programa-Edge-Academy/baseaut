@@ -6,6 +6,7 @@ import {
   getMabc2Record,
   saveMabc2Record,
   startMabc2Record,
+  useMabc2Records,
   type Mabc2Draft,
 } from "@/features/analysis/hooks/use-mabc2-records";
 import { Mabc2RecordFormScreen } from "@/features/analysis/screens/mabc2-record-form-screen";
@@ -33,9 +34,13 @@ export default function Mabc2RecordFormRoute() {
   const currentMode = mode ?? "create";
   const currentStudentId = studentId ?? "";
   const currentStudentName = studentName ?? "Aluno";
+  const currentRecordId = recordId ?? "";
+
+  const { records } = useMabc2Records(currentStudentId);
 
   const [draft, setDraft] = useState<Mabc2Draft | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastConfig, setToastConfig] = useState<{
     visible: boolean;
@@ -55,22 +60,36 @@ export default function Mabc2RecordFormRoute() {
 
     async function load() {
       setIsLoading(true);
+      setLoadFailed(false);
 
       try {
         if (currentMode === "create") {
           const created = await startMabc2Record(currentStudentId);
           setDraft(created);
-        } else if (recordId) {
-          const existing = await getMabc2Record(recordId);
+        } else if (currentRecordId) {
+          const existing = await getMabc2Record(currentRecordId);
           setDraft(existing);
+        } else {
+          throw new Error("Registro não informado.");
         }
+      } catch {
+        setLoadFailed(true);
+        setToastConfig({
+          visible: true,
+          mode: "error",
+          title:
+            currentMode === "create"
+              ? "Não foi possível iniciar o registro."
+              : "Não foi possível carregar o registro.",
+          description: "Tente novamente",
+        });
       } finally {
         setIsLoading(false);
       }
     }
 
     load();
-  }, [currentMode, currentStudentId, recordId]);
+  }, [currentMode, currentStudentId, currentRecordId]);
 
   const sections: Mabc2SectionProps[] = useMemo(() => {
     if (!draft) return [];
@@ -153,7 +172,7 @@ export default function Mabc2RecordFormRoute() {
               : "Registro salvo com sucesso",
         },
       } as any);
-    } catch (error) {
+    } catch {
       setIsSubmitting(false);
       setToastConfig({
         visible: true,
@@ -168,11 +187,12 @@ export default function Mabc2RecordFormRoute() {
   }
 
   async function handleDelete() {
-    if (!recordId || isSubmitting) return;
+    const targetRecordId = currentRecordId || draft?.formularioId;
+    if (!targetRecordId || isSubmitting) return;
     setIsSubmitting(true);
 
     try {
-      await deleteMabc2Record(recordId);
+      await deleteMabc2Record(targetRecordId);
       router.replace({
         pathname: "/mabc2-records",
         params: {
@@ -181,7 +201,7 @@ export default function Mabc2RecordFormRoute() {
           toastSuccess: "Registro excluído com sucesso",
         },
       } as any);
-    } catch (error) {
+    } catch {
       setIsSubmitting(false);
       setToastConfig({
         visible: true,
@@ -192,7 +212,7 @@ export default function Mabc2RecordFormRoute() {
     }
   }
 
-  if (isLoading || !draft) {
+  if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-level1">
         <ActivityIndicator size="large" color={colors.primary} />
@@ -200,10 +220,31 @@ export default function Mabc2RecordFormRoute() {
     );
   }
 
+  if (loadFailed || !draft) {
+    return (
+      <View className="flex-1 bg-level1">
+        <Mabc2RecordFormScreen
+          studentName={currentStudentName}
+          recordCount={records.length}
+          totalScore={null}
+          totalPercentile={null}
+          sections={[]}
+          readOnly
+          toastConfig={toastConfig}
+          onHideToast={() => {
+            setToastConfig((prev) => ({ ...prev, visible: false }));
+            router.back();
+          }}
+          onPressBack={() => router.back()}
+        />
+      </View>
+    );
+  }
+
   return (
     <Mabc2RecordFormScreen
       studentName={currentStudentName}
-      recordCount={0}
+      recordCount={records.length}
       totalScore={draft.totalScore}
       totalPercentile={draft.totalPercentile}
       sections={sections}
@@ -232,7 +273,7 @@ export default function Mabc2RecordFormRoute() {
             mode: "edit",
             studentId: currentStudentId,
             studentName: currentStudentName,
-            recordId: recordId ?? draft.formularioId,
+            recordId: currentRecordId || draft.formularioId,
           },
         } as any)
       }

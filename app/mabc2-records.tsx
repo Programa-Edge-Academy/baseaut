@@ -1,5 +1,6 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import { type ToastMode } from "@/components/toast";
 import { useMabc2Records } from "@/features/analysis/hooks/use-mabc2-records";
@@ -14,7 +15,7 @@ export default function Mabc2RecordsRoute() {
 
   const currentStudentId = studentId ?? "";
   const currentStudentName = studentName ?? "Aluno";
-  const { records, isLoading } = useMabc2Records(currentStudentId);
+  const { records, isLoading, refetch } = useMabc2Records(currentStudentId);
 
   const [toastConfig, setToastConfig] = useState<{
     visible: boolean;
@@ -25,6 +26,12 @@ export default function Mabc2RecordsRoute() {
     mode: "success",
     title: "",
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
 
   useEffect(() => {
     if (toastSuccess) {
