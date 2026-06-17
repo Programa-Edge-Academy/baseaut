@@ -16,6 +16,7 @@ export type Mabc2MotorDevelopmentCardProps = {
   onViewRecords?: () => void;
   onViewExercises?: () => void;
   readOnly?: boolean;
+  showErrors?: boolean;
   submitLabel?: string;
   className?: string;
   testID?: string;
@@ -33,6 +34,7 @@ export function Mabc2MotorDevelopmentCard({
   onViewRecords,
   onViewExercises,
   readOnly = false,
+  showErrors = false,
   submitLabel = "Registrar",
   className,
   testID,
@@ -75,7 +77,13 @@ export function Mabc2MotorDevelopmentCard({
       </View>
 
       <View className="flex-row gap-3">
-        <View className="flex-1 rounded-xl border border-outline bg-level1 px-3 py-1.5">
+        <View
+          className={`flex-1 rounded-xl border ${
+            showErrors && (totalScore === null || totalScore as any === "")
+              ? "border-error"
+              : "border-outline"
+          } bg-level1 px-3 py-1.5`}
+        >
           <Text className="text-xs font-medium text-muted">
             Pontuação total
           </Text>
@@ -96,7 +104,13 @@ export function Mabc2MotorDevelopmentCard({
           )}
         </View>
 
-        <View className="flex-1 rounded-xl border border-outline bg-level1 px-3 py-1.5">
+        <View
+          className={`flex-1 rounded-xl border ${
+            showErrors && (totalPercentile === null || totalPercentile === "")
+              ? "border-error"
+              : "border-outline"
+          } bg-level1 px-3 py-1.5`}
+        >
           <Text className="text-xs font-medium text-muted">
             Percentil total
           </Text>
@@ -125,6 +139,7 @@ export function Mabc2MotorDevelopmentCard({
           <Mabc2Section
             {...section}
             readOnly={section.readOnly ?? readOnly}
+            showErrors={showErrors}
             testID={
               section.testID ??
               (testID ? `${testID}-section-${index}` : undefined)

@@ -42,6 +42,7 @@ export default function Mabc2RecordFormRoute() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
   const [toastConfig, setToastConfig] = useState<{
     visible: boolean;
     mode: ToastMode;
@@ -77,10 +78,7 @@ export default function Mabc2RecordFormRoute() {
         setToastConfig({
           visible: true,
           mode: "error",
-          title:
-            currentMode === "create"
-              ? "Não foi possível iniciar o registro."
-              : "Não foi possível carregar o registro.",
+          title: "Não foi possível carregar os dados de desenvolvimento motor.",
           description: "Tente novamente",
         });
       } finally {
@@ -126,6 +124,31 @@ export default function Mabc2RecordFormRoute() {
       },
       exercises: section.exercises.map((exercise, exerciseIndex) => ({
         ...exercise,
+        onChangeAttemptCount: (value) => {
+          setDraft((current) =>
+            current
+              ? {
+                  ...current,
+                  sections: current.sections.map((item, index) =>
+                    index === sectionIndex
+                      ? {
+                          ...item,
+                          exercises: item.exercises.map(
+                            (currentExercise, currentExerciseIndex) =>
+                              currentExerciseIndex === exerciseIndex
+                                ? {
+                                    ...currentExercise,
+                                    attemptCount: parseNumber(value),
+                                  }
+                                : currentExercise
+                          ),
+                        }
+                      : item
+                  ),
+                }
+              : current
+          );
+        },
         onChangeScore: (value) => {
           setDraft((current) =>
             current
@@ -155,8 +178,35 @@ export default function Mabc2RecordFormRoute() {
     }));
   }, [draft]);
 
+  function validateDraft(draftData: Mabc2Draft) {
+    if (draftData.totalScore === null || draftData.totalScore as any === "") return false;
+    if (draftData.totalPercentile === null || draftData.totalPercentile.trim() === "") return false;
+    
+    for (const section of draftData.sections) {
+      if (section.categoryScore === null || section.categoryScore as any === "") return false;
+      if (section.categoryPercentile === null || section.categoryPercentile.trim() === "") return false;
+      
+      for (const exercise of section.exercises) {
+        if (exercise.score === null || exercise.score as any === "") return false;
+        if (exercise.attemptCount === null || exercise.attemptCount as any === "") return false;
+      }
+    }
+    return true;
+  }
+
   async function handleSave() {
     if (!draft || isSubmitting) return;
+
+    if (!validateDraft(draft)) {
+      setShowErrors(true);
+      setToastConfig({
+        visible: true,
+        mode: "error",
+        title: `Preencha os campos obrigatórios para ${currentMode === "edit" ? "salvar" : "registrar"} a avaliação`,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -249,6 +299,7 @@ export default function Mabc2RecordFormRoute() {
       totalPercentile={draft.totalPercentile}
       sections={sections}
       readOnly={currentMode === "view"}
+      showErrors={showErrors}
       submitLabel={currentMode === "edit" ? "Salvar" : "Registrar"}
       toastConfig={toastConfig}
       onHideToast={() => setToastConfig((prev) => ({ ...prev, visible: false }))}
