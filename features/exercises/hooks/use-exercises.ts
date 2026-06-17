@@ -14,6 +14,7 @@ export type Exercise = {
   description: string;
   durationSeconds?: number;
   tag: string;
+  subtags?: string[];
   iconUrl?: string | null;
 };
 
@@ -41,7 +42,7 @@ export function useExercises() {
 
       const { data, error: fetchError } = await supabase
         .from("exercicios")
-        .select("id, titulo, descricao, duracao_segundos, tag, icone_url")
+        .select("id, titulo, descricao, duracao_segundos, tag, subtags, icone_url")
         .eq("equipe_id", teamId)
         .eq("ativo", true)
         .order("created_at", { ascending: false });
@@ -55,7 +56,8 @@ export function useExercises() {
             name: row.titulo,
             description: row.descricao || "",
             durationSeconds: row.duracao_segundos,
-            tag: row.tag || "Locomotor",
+            tag: row.tag || "Coordenação",
+            subtags: row.subtags || ["estabilizador"],
             iconUrl: row.icone_url,
           })),
         );
@@ -94,6 +96,7 @@ export function useExercises() {
         ativo: true,
         duracao_segundos: data.durationSeconds || null,
         tag: data.tag || null,
+        subtags: data.subtags,
         icone_url: finalIconUrl,
       };
 
@@ -129,6 +132,7 @@ export function useExercises() {
         descricao: data.description || null,
         duracao_segundos: data.durationSeconds || null,
         tag: data.tag || null,
+        subtags: data.subtags,
       };
 
       if (photoUri && !photoUri.startsWith("http")) {
@@ -191,6 +195,7 @@ export function useExercises() {
         ativo: true,
         duracao_segundos: exercise.durationSeconds || null,
         tag: exercise.tag || null,
+        subtags: exercise.subtags || ["estabilizador"],
         icone_url: exercise.iconUrl || null,
       };
 

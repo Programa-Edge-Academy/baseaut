@@ -17,9 +17,9 @@ import { Exercise, useExercises } from "../hooks/use-exercises";
 
 const TAG_FILTER_OPTIONS: FilterOption[] = [
   { id: "all", label: "Todas" },
-  { id: "locomotor", label: "Locomotor" },
-  { id: "manipulativo", label: "Manipulativo" },
-  { id: "estabilizador", label: "Estabilizador" },
+  { id: "coordenacao", label: "Coordenação" },
+  { id: "forca", label: "Força" },
+  { id: "equilibrio", label: "Equilíbrio" },
 ];
 
 const AVAILABLE_TAGS = TAG_FILTER_OPTIONS.filter(
@@ -47,6 +47,7 @@ function exerciseToFormData(exercise: Exercise): NewExerciseData {
     description: exercise.description,
     durationSeconds: exercise.durationSeconds || 0,
     tag: exercise.tag,
+    subtags: exercise.subtags || [],
   };
 }
 
@@ -285,9 +286,9 @@ export function ExercisesScreen() {
         initialData={
           exerciseToEdit
             ? {
-                ...exerciseToFormData(exerciseToEdit),
-                iconUrl: exerciseToEdit.iconUrl,
-              }
+              ...exerciseToFormData(exerciseToEdit),
+              iconUrl: exerciseToEdit.iconUrl,
+            }
             : undefined
         }
         availableTags={AVAILABLE_TAGS}

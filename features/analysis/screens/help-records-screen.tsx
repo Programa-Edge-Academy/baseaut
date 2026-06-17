@@ -1,51 +1,23 @@
 import { colors } from "@/assets/colors";
+import { DefaultButton } from "@/components/default-button";
 import { Header } from "@/components/header";
 import RangeCalendar from "@/components/range-calendar";
 import { HelpRecordsBarChart } from "@/features/analysis/components/help-records-bar-chart";
 import PeriodSelector from "@/features/analysis/components/period-selector";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
+import { useHelpRecords } from "../hooks/use-help-records";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { BarChart3 } from "lucide-react-native";
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-
-const mockHelpRecords = [
-  {
-    sessionId: "1",
-    sessionLabel: "1",
-    sessionDate: "2026-06-01",
-    intrusiveCount: 6,
-    autonomousCount: 2,
-  },
-  {
-    sessionId: "2",
-    sessionLabel: "2",
-    sessionDate: "2026-06-02",
-    intrusiveCount: 4,
-    autonomousCount: 5,
-  },
-  {
-    sessionId: "3",
-    sessionLabel: "3",
-    sessionDate: "2026-06-05",
-    intrusiveCount: 3,
-    autonomousCount: 6,
-  },
-  {
-    sessionId: "4",
-    sessionLabel: "4",
-    sessionDate: "2026-06-08",
-    intrusiveCount: 2,
-    autonomousCount: 8,
-  },
-];
 
 const months = [
   "Janeiro",
@@ -61,9 +33,6 @@ const months = [
   "Novembro",
   "Dezembro",
 ];
-
-const SAVE_BUTTON_ACTIVE_COLOR = "#1E90FF";
-const SAVE_BUTTON_DISABLED_COLOR = "rgba(30, 144, 255, 0.35)";
 
 function formatDate(date: string) {
   const parsedDate = new Date(`${date}T00:00:00`);
@@ -129,9 +98,9 @@ export function HelpRecordsScreen() {
     params.studentName as string | string[] | undefined
   );
 
-  const { profile, isLoading } = useStudentSessions(studentId as string);
+  const { profile, isLoading: isProfileLoading } = useStudentSessions(studentId as string);
 
-  const [showCalendar, setShowCalendar] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
@@ -141,6 +110,14 @@ export function HelpRecordsScreen() {
 
   const hasSelectedPeriod = Boolean(startDate && endDate);
   const canSavePeriod = Boolean(tempStartDate && tempEndDate);
+
+  const {
+    records: helpRecords,
+    isLoading: isHelpLoading,
+    error: helpError,
+  } = useHelpRecords(studentId, startDate, endDate);
+
+  const isLoading = isProfileLoading || isHelpLoading;
 
   const studentName =
     studentNameParam ||
@@ -155,48 +132,14 @@ export function HelpRecordsScreen() {
       ? `${formatDate(startDate)} - ${formatDate(endDate)}`
       : "Selecione o período para visualizar os registros de ajuda";
 
-  /**
-   * Estado de erro preparado para integração futura.
-   *
-   * Quando a tela for integrada ao back-end, troque este valor pelo estado real
-   * da requisição, por exemplo:
-   *
-   * const selectedPeriodHasError = isError;
-   *
-   * ou:
-   *
-   * const selectedPeriodHasError = Boolean(error);
-   */
-  const selectedPeriodHasError = false;
-
-  const helpRecords = useMemo(() => {
-    if (!startDate || !endDate) {
-      return [];
-    }
-
-    const selectedStart = new Date(`${startDate}T00:00:00`);
-    const selectedEnd = new Date(`${endDate}T00:00:00`);
-
-    return mockHelpRecords
-      .filter((record) => {
-        const recordDate = new Date(`${record.sessionDate}T00:00:00`);
-
-        return recordDate >= selectedStart && recordDate <= selectedEnd;
-      })
-      .map((record) => ({
-        sessionId: record.sessionId,
-        sessionLabel: record.sessionLabel,
-        intrusiveCount: record.intrusiveCount,
-        autonomousCount: record.autonomousCount,
-      }));
-  }, [startDate, endDate]);
+  const selectedPeriodHasError = Boolean(helpError);
 
   const hasRecords = helpRecords.length > 0;
 
   function openCalendar() {
     setTempStartDate(startDate);
     setTempEndDate(endDate);
-    setShowCalendar(true);
+    setIsModalVisible(true);
   }
 
   function savePeriod() {
@@ -206,8 +149,13 @@ export function HelpRecordsScreen() {
 
     setStartDate(tempStartDate);
     setEndDate(tempEndDate);
-    setShowCalendar(false);
+    setIsModalVisible(false);
   }
+
+  const handleRangeSelected = (start: string, end: string | null) => {
+    setTempStartDate(start);
+    setTempEndDate(end);
+  };
 
   return (
     <View className="flex-1 bg-level1">
@@ -257,54 +205,39 @@ export function HelpRecordsScreen() {
         )}
       </ScrollView>
 
-      {showCalendar && (
-        <View style={styles.calendarOverlay}>
+      <Modal
+        visible={isModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <Pressable
+          className="flex-1 bg-black/60 justify-center items-center px-6"
+          onPress={() => setIsModalVisible(false)}
+        >
           <Pressable
-            style={styles.calendarBackdrop}
-            onPress={() => setShowCalendar(false)}
-          />
-
-          <View style={styles.calendarContent}>
-            <View style={styles.calendarBox}>
+            className="w-full max-w-[380px]"
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View className="w-full mb-4">
               <RangeCalendar
-                onRangeSelected={(start, end) => {
-                  setTempStartDate(start);
-                  setTempEndDate(end);
-                }}
+                key={`${isModalVisible}`}
+                onRangeSelected={handleRangeSelected}
               />
             </View>
 
-            <Pressable
-              disabled={!canSavePeriod}
-              onPress={savePeriod}
-              style={({ pressed }) => [
-                styles.saveButtonPressable,
-                pressed && canSavePeriod && styles.saveButtonPressed,
-              ]}
-            >
-              <View
-                style={[
-                  styles.saveButtonBox,
-                  {
-                    backgroundColor: canSavePeriod
-                      ? SAVE_BUTTON_ACTIVE_COLOR
-                      : SAVE_BUTTON_DISABLED_COLOR,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.saveButtonText,
-                    !canSavePeriod && styles.saveButtonTextDisabled,
-                  ]}
-                >
-                  Salvar
-                </Text>
-              </View>
-            </Pressable>
-          </View>
-        </View>
-      )}
+            <View className="items-center">
+              <DefaultButton
+                label="Salvar"
+                sizeClass="w-[168px] h-[44px]"
+                disabled={!canSavePeriod}
+                style={{ opacity: !canSavePeriod ? 0.5 : 1 }}
+                onPress={savePeriod}
+              />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -366,55 +299,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: "Inter-Medium",
     maxWidth: 310,
-  },
-  calendarOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
-  },
-  calendarBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.58)",
-  },
-  calendarContent: {
-    width: 330,
-    maxWidth: "86%",
-    alignItems: "center",
-  },
-  calendarBox: {
-    width: "100%",
-  },
-  saveButtonPressable: {
-    width: 220,
-    height: 54,
-    marginTop: 22,
-    borderRadius: 16,
-  },
-  saveButtonBox: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: SAVE_BUTTON_ACTIVE_COLOR,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.3,
-    shadowRadius: 18,
-    elevation: 6,
-  },
-  saveButtonPressed: {
-    opacity: 0.85,
-  },
-  saveButtonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "700",
-    fontFamily: "Inter-Bold",
-  },
-  saveButtonTextDisabled: {
-    opacity: 0.65,
   },
 });
 

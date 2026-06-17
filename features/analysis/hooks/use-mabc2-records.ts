@@ -208,30 +208,36 @@ export function useMabc2Records(studentId: string) {
   const [isLoading, setIsLoading] = useState(false);
 
   const refetch = useCallback(async () => {
-    if (!studentId) return;
+    if (!studentId) {
+      setRecords([]);
+      return;
+    }
 
     setIsLoading(true);
 
-    const { data, error } = await supabase.rpc("rpc_get_historico_mabc2_aluno", {
-      p_aluno_id: studentId,
-    });
+    try {
+      const { data, error } = await supabase.rpc("rpc_get_historico_mabc2_aluno", {
+        p_aluno_id: studentId,
+      });
 
-    if (error) {
+      if (error) throw error;
+
+      const list = Array.isArray(data) ? data : [];
+
+      setRecords(
+        list.map((item: any, index: number) => ({
+          id: item.id,
+          label: `Formulário MABC-2 ${index + 1}`,
+          date: formatDate(item.created_at),
+          totalScore: item.metadados?.escore_total ?? null,
+          totalPercentile: item.metadados?.percentil ?? null,
+        }))
+      );
+    } catch {
+      setRecords([]);
+    } finally {
       setIsLoading(false);
-      throw error;
     }
-
-    setRecords(
-      (data ?? []).map((item: any, index: number) => ({
-        id: item.id,
-        label: `Formulário MABC-2 ${index + 1}`,
-        date: formatDate(item.created_at),
-        totalScore: item.metadados?.escore_total ?? null,
-        totalPercentile: item.metadados?.percentil ?? null,
-      }))
-    );
-
-    setIsLoading(false);
   }, [studentId]);
 
   useEffect(() => {
@@ -302,20 +308,14 @@ export async function saveMabc2Record(draft: Mabc2Draft) {
     ])
   );
 
-  const { error } = await supabase
-    .from("formularios")
-    .update({
-      metadados: {
-        ...draft.metadados,
-        escore_total: draft.totalScore,
-        percentil: draft.totalPercentile,
-        componentes,
-      },
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", draft.formularioId)
-    .eq("tipo", "mabc2")
-    .eq("protegido", false);
+  const { error } = await supabase.rpc("rpc_salvar_totais_mabc2", {
+    p_formulario_id: draft.formularioId,
+    p_totais_jsonb: {
+      escore_total: draft.totalScore,
+      percentil: draft.totalPercentile,
+      componentes,
+    },
+  });
 
   if (error) throw error;
 }

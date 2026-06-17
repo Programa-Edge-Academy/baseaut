@@ -3,6 +3,7 @@ import { ConfirmationModal } from "@/components/confirmation-modal";
 import { DefaultScrollView } from "@/components/default-scroll-view";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
+import { Toast, type ToastMode } from "@/components/toast";
 import { Edit2, Trash2 } from "lucide-react-native";
 import React, { useState } from "react";
 import { Pressable, View } from "react-native";
@@ -17,6 +18,8 @@ export type Mabc2RecordFormScreenProps = {
   sections: Mabc2SectionProps[];
   readOnly?: boolean;
   submitLabel?: string;
+  toastConfig?: { visible: boolean; mode: ToastMode; title: string; description?: string };
+  onHideToast?: () => void;
   onChangeTotalScore?: (value: string) => void;
   onChangeTotalPercentile?: (value: string) => void;
   onRegister?: () => void;
@@ -35,6 +38,8 @@ export function Mabc2RecordFormScreen({
   sections,
   readOnly = false,
   submitLabel = "Registrar",
+  toastConfig,
+  onHideToast,
   onChangeTotalScore,
   onChangeTotalPercentile,
   onRegister,
@@ -114,6 +119,16 @@ export function Mabc2RecordFormScreen({
         }
         mode="delete"
       />
+
+      {toastConfig && (
+        <Toast
+          visible={toastConfig.visible}
+          mode={toastConfig.mode}
+          title={toastConfig.title}
+          description={toastConfig.description}
+          onHide={onHideToast}
+        />
+      )}
     </View>
   );
 }

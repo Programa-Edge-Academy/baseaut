@@ -94,7 +94,7 @@ export function NoRecordsScreen({
       <View className="mx-5 mt-5">
         <PageHeader
           title={`Sem registros — ${studentName}`}
-          subtitle="Estado vazio para teste"
+          subtitle=""
         />
       </View>
 

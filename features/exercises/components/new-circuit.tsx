@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Modal, Text, View, Pressable, useWindowDimensions, ScrollView, StyleSheet } from "react-native";
-import { X, CheckCircle2 } from "lucide-react-native";
+import { X, CheckCircle2, Tags } from "lucide-react-native";
 import { ActionButtons } from "@/components/action-buttons";
 import { colors } from "@/assets/colors";
 import { withOpacity } from "@/components/color-opacity";
@@ -8,6 +8,7 @@ import { DefaultTextInput } from "@/components/default-text-input";
 import { SelectableChip } from "@/components/selectable-chip";
 import { useExercises, Exercise } from "../hooks/use-exercises";
 import { CircuitType } from "../hooks/use-circuits";
+import { TagGroup } from "./tag-group";
 
 type ExecutionMode = "estruturado" | "livre";
 
@@ -31,13 +32,13 @@ interface NewCircuitProps {
   }) => Promise<void>;
 }
 
-const SwapItem = React.memo(({ item, index, isSelected, onPress }: { 
-  item: Exercise, 
-  index: number, 
-  isSelected: boolean, 
-  onPress: () => void 
+const SwapItem = React.memo(({ item, index, isSelected, onPress }: {
+  item: Exercise,
+  index: number,
+  isSelected: boolean,
+  onPress: () => void
 }) => (
-  <Pressable 
+  <Pressable
     style={[STYLES.swapItem, isSelected && STYLES.swapItemSelected]}
     onPress={onPress}
   >
@@ -100,9 +101,9 @@ const STYLES = StyleSheet.create({
   }
 });
 
-export function NewCircuit({ 
-  visible, 
-  onClose, 
+export function NewCircuit({
+  visible,
+  onClose,
   onSave,
   title = "Novo circuito",
   initialData
@@ -118,11 +119,15 @@ export function NewCircuit({
 
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
 
+  const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedSubtags, setSelectedSubtags] = useState<Record<string, string[]>>({});
+
   const [errors, setErrors] = useState({
     name: "",
     exercises: ""
   });
-  
+
   const [showToast, setShowToast] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -151,6 +156,9 @@ export function NewCircuit({
       setSwapIndex(null);
       setShowToast(false);
       setIsSaving(false);
+      setIsTagFilterOpen(false);
+      setSelectedTags([]);
+      setSelectedSubtags({});
     }
   }, [visible, initialData]);
 
@@ -167,6 +175,21 @@ export function NewCircuit({
       }
     });
   };
+
+  const availableTags = ["Coordenação", "Força", "Equilíbrio"];
+  const availableSubtags = ["locomotor", "manipulativo", "estabilizador"];
+
+  const filteredExercises = exercises.filter((ex) => {
+    if (selectedTags.length === 0) return true;
+
+    if (!ex.tag || !selectedTags.includes(ex.tag)) return false;
+
+    const subsForTag = selectedSubtags[ex.tag] || [];
+    if (subsForTag.length === 0) return true;
+
+    if (!ex.subtags || ex.subtags.length === 0) return false;
+    return ex.subtags.some((sub) => subsForTag.includes(sub));
+  });
 
 const handleSwapClick = React.useCallback((index: number) => {
   if (swapIndex === null) {
@@ -230,7 +253,7 @@ const handleSwapClick = React.useCallback((index: number) => {
       onRequestClose={onClose}
     >
       <View className="flex-1 bg-black/60 justify-center items-center px-4">
-        <View 
+        <View
           className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[900px] overflow-hidden relative"
           style={{ maxHeight: screenHeight * 0.85 }}
         >
@@ -250,8 +273,8 @@ const handleSwapClick = React.useCallback((index: number) => {
             </Pressable>
           </View>
 
-          <ScrollView 
-            className="flex-shrink" 
+          <ScrollView
+            className="flex-shrink"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ padding: 20 }}
           >
@@ -259,14 +282,14 @@ const handleSwapClick = React.useCallback((index: number) => {
               <View>
                 <DefaultTextInput
                   value={name}
-                  maxLength={20} 
+                  maxLength={20}
                   onChangeText={(val) => {
                     const cleanVal = val.replace(/\d/g, "");
                     setName(cleanVal);
                     if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
                   }}
                   placeholder="Nome do circuito"
-                  outLineBorderClass={errors.name ? "border-error" : ""} 
+                  outLineBorderClass={errors.name ? "border-error" : ""}
                 />
                 {errors.name ? (
                   <Text className="text-error text-default-3 mt-1 ml-1">{errors.name}</Text>
@@ -281,9 +304,8 @@ const handleSwapClick = React.useCallback((index: number) => {
                       setExecutionMode("estruturado");
                       setSwapIndex(null);
                     }}
-                    className={`flex-1 p-3.5 rounded-xl border ${
-                      executionMode === "estruturado" ? "border-primary bg-primary/10" : "border-outline bg-level1"
-                    }`}
+                    className={`flex-1 p-3.5 rounded-xl border ${executionMode === "estruturado" ? "border-primary bg-primary/10" : "border-outline bg-level1"
+                      }`}
                   >
                     <Text className="text-white text-default-1 mb-1 font-bold">Estruturado</Text>
                     <Text className="text-muted text-default-3">Realiza todos os exercícios definidos</Text>
@@ -294,20 +316,43 @@ const handleSwapClick = React.useCallback((index: number) => {
                       setExecutionMode("livre");
                       setSwapIndex(null);
                     }}
-                    className={`flex-1 p-3.5 rounded-xl border ${
-                      executionMode === "livre" ? "border-primary bg-primary/10" : "border-outline bg-level1"
-                    }`}
+                    className={`flex-1 p-3.5 rounded-xl border ${executionMode === "livre" ? "border-primary bg-primary/10" : "border-outline bg-level1"
+                      }`}
                   >
-                    <Text className="text-white text-default-1 mb-1 font-bold">Livre</Text>
+                    <Text className="text-white text-default-1 mb-1 font-bold">Semi-estruturado</Text>
                     <Text className="text-muted text-default-3">Para engajamento e atividades parciais</Text>
                   </Pressable>
                 </View>
               </View>
 
               <View>
+                <Pressable 
+                  onPress={() => setIsTagFilterOpen((prev) => !prev)}
+                  className="flex-row items-center p-3.5 bg-level1 border border-outline rounded-[15px] mb-4 gap-3"
+                >
+                  <Tags size={24} color={colors.muted} />
+                  <Text className="text-muted text-[14px] leading-[20px] font-medium">
+                    Selecionar exercícios por tag
+                  </Text>
+                </Pressable>
+
+                {isTagFilterOpen && (
+                  <View className="mb-4">
+                    <TagGroup
+                      availableTags={availableTags}
+                      availableSubtags={availableSubtags}
+                      mode="multiple"
+                      selectedTags={selectedTags}
+                      selectedSubtags={selectedSubtags}
+                      onChangeTags={setSelectedTags}
+                      onChangeSubtags={setSelectedSubtags}
+                    />
+                  </View>
+                )}
+
                 <Text className="text-muted text-default-2 mb-2">Selecione os exercícios</Text>
                 <View className="gap-2.5">
-                  {exercises.map((ex: Exercise) => (
+                  {filteredExercises.map((ex: Exercise) => (
                     <SelectableChip
                       key={ex.id}
                       label={ex.name}
@@ -330,7 +375,7 @@ const handleSwapClick = React.useCallback((index: number) => {
                 </Text>
 
                 {orderedExercises.map((item, index) => (
-                  <SwapItem 
+                  <SwapItem
                     key={item.id}
                     item={item}
                     index={index}
