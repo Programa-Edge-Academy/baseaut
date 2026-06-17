@@ -206,6 +206,7 @@ function mapItemsToDraft(
 export function useMabc2Records(studentId: string) {
   const [records, setRecords] = useState<Mabc2Record[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   const refetch = useCallback(async () => {
     if (!studentId) {
@@ -214,13 +215,14 @@ export function useMabc2Records(studentId: string) {
     }
 
     setIsLoading(true);
+    setError(null);
 
     try {
-      const { data, error } = await supabase.rpc("rpc_get_historico_mabc2_aluno", {
+      const { data, error: rpcError } = await supabase.rpc("rpc_get_historico_mabc2_aluno", {
         p_aluno_id: studentId,
       });
 
-      if (error) throw error;
+      if (rpcError) throw rpcError;
 
       const list = Array.isArray(data) ? data : [];
 
@@ -233,8 +235,9 @@ export function useMabc2Records(studentId: string) {
           totalPercentile: item.metadados?.percentil ?? null,
         }))
       );
-    } catch {
+    } catch (err: any) {
       setRecords([]);
+      setError(err);
     } finally {
       setIsLoading(false);
     }
@@ -244,7 +247,7 @@ export function useMabc2Records(studentId: string) {
     refetch();
   }, [refetch]);
 
-  return { records, isLoading, refetch };
+  return { records, isLoading, refetch, error };
 }
 
 export async function startMabc2Record(studentId: string) {
