@@ -7,9 +7,10 @@ import { StudentInfoCard } from "@/features/analysis/components/student-info-car
 import type { ProtocolTipo } from "@/features/analysis/hooks/use-protocol-records";
 import { useProtocolStatuses } from "@/features/analysis/hooks/use-protocol-statuses";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
+import { supabase } from "@/lib/supabase";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { User } from "lucide-react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, ScrollView, Text, View } from "react-native";
 
 export function StudentAnalysisScreen() {
@@ -18,7 +19,37 @@ export function StudentAnalysisScreen() {
   const { sessions, profile, isLoading } = useStudentSessions(studentId as string);
   const { statuses: protocolStatuses } = useProtocolStatuses(studentId as string);
 
-  // Navega para a lista de registros do protocolo selecionado.
+  const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
+
+  useEffect(() => {
+    async function checkAccess() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setIsAuthorized(false);
+          return;
+        }
+
+        const { data: profileData } = await supabase
+          .from("perfis")
+          .select("perfil")
+          .eq("id", user.id)
+          .single();
+
+        const role = profileData?.perfil || user.user_metadata?.perfil || user.user_metadata?.role;
+
+        if (role === "coordenador" || role === "monitor") {
+          setIsAuthorized(true);
+        } else {
+          setIsAuthorized(false);
+        }
+      } catch {
+        setIsAuthorized(false);
+      }
+    }
+    checkAccess();
+  }, []);
+
   const openProtocol = (tipo: ProtocolTipo) =>
     router.push({
       pathname: "/protocol-records",
@@ -31,7 +62,6 @@ export function StudentAnalysisScreen() {
 
   return (
     <View className="flex-1 bg-level1">
-      {/* Cabeçalho de navegação */}
       <Header variant="back" onPressBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }} className="flex-1">
@@ -42,7 +72,6 @@ export function StudentAnalysisScreen() {
             </View>
           ) : (
             <>
-              {/* Seção superior de Perfil do Aluno */}
               <View className="flex-row items-center justify-between pb-5 mb-5">
                 <View className="flex-row items-center flex-1 mr-4">
                   <View className="h-11 w-11 items-center justify-center rounded-2xl bg-level2 mr-3 overflow-hidden">
@@ -68,7 +97,6 @@ export function StudentAnalysisScreen() {
                 </View>
               </View>
 
-              {/* Informações da criança */}
               <StudentInfoCard
                 name={profile?.name || "Aluno"}
                 avatarUrl={profile?.avatarUrl}
@@ -80,9 +108,7 @@ export function StudentAnalysisScreen() {
                 observations={profile?.observations}
               />
 
-              {/* Lista de Opções de Análise */}
               <View className="flex-col gap-4">
-                {/* Progresso por exercício */}
                 <AnalysisOptionCard
                   title="Progresso por exercício"
                   description="Acompanhe a evolução de cada exercício nas sessões."
@@ -91,7 +117,6 @@ export function StudentAnalysisScreen() {
                   }}
                 />
 
-                {/* Registros de ajuda por sessão */}
                 <AnalysisOptionCard
                   title="Registros de ajuda por sessão"
                   description="Acompanhe a evolução da autonomia nas sessões."
@@ -106,7 +131,6 @@ export function StudentAnalysisScreen() {
                   }}
                 />
 
-                {/* Comportamentos observados */}
                 <AnalysisOptionCard
                   title="Comportamentos observados"
                   description="Visualize a frequência dos comportamentos observados"
@@ -115,7 +139,6 @@ export function StudentAnalysisScreen() {
                   }}
                 />
 
-                {/* Comparar desempenho */}
                 <AnalysisOptionCard
                   title="Comparar desempenho"
                   description="Compare dois períodos e acompanhe diferenças no desempenho do aluno."
@@ -124,7 +147,6 @@ export function StudentAnalysisScreen() {
                   }}
                 />
 
-                {/* Protocolos/Testes aplicados */}
                 <AppliedProtocolsCard
                   carsStatus={protocolStatuses.cars}
                   ataStatus={protocolStatuses.ata}
@@ -134,27 +156,27 @@ export function StudentAnalysisScreen() {
                   onMabcPress={() => openProtocol("mabc2")}
                 />
 
-                {/* Registros de desenvolvimento motor */}
-                <AnalysisOptionCard
-                  title="Registros de desenvolvimento motor"
-                  description="Visualize e registre avaliações motoras do aluno."
-                  onPress={() => {
-                    router.push({
-                      pathname: "/mabc2-records",
-                      params: {
-                        studentId: String(studentId ?? ""),
-                        studentName: profile?.name ?? "Aluno",
-                      },
-                    } as any);
-                  }}
-                />
+                {isAuthorized && (
+                  <AnalysisOptionCard
+                    title="Registros de desenvolvimento motor"
+                    description="Visualize e registre avaliações motoras do aluno."
+                    onPress={() => {
+                      router.push({
+                        pathname: "/mabc2-records",
+                        params: {
+                          studentId: String(studentId ?? ""),
+                          studentName: profile?.name ?? "Aluno",
+                        },
+                      } as any);
+                    }}
+                  />
+                )}
               </View>
             </>
           )}
         </View>
       </ScrollView>
 
-      {/* Footer */}
       <Footer />
     </View>
   );
