@@ -1,3 +1,4 @@
+import { AppModal } from "@/components/app-modal";
 import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import { Header } from "@/components/header";
@@ -10,7 +11,7 @@ import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessio
 import { useObservedBehaviors } from "@/features/analysis/hooks/use-observed-behaviors";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 
 const monthsPt = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -185,7 +186,7 @@ export function ObservedBehaviorsScreen() {
         />
 
         {/* Modal Overlay do Calendário (acessível no estado de erro) */}
-        <Modal
+        <AppModal
           visible={isModalVisible}
           transparent
           animationType="fade"
@@ -219,7 +220,7 @@ export function ObservedBehaviorsScreen() {
               </View>
             </Pressable>
           </Pressable>
-        </Modal>
+        </AppModal>
       </View>
     );
   }
@@ -239,7 +240,7 @@ export function ObservedBehaviorsScreen() {
         />
 
         {/* Modal Overlay do Calendário (acessível no estado vazio) */}
-        <Modal
+        <AppModal
           visible={isModalVisible}
           transparent
           animationType="fade"
@@ -273,7 +274,7 @@ export function ObservedBehaviorsScreen() {
               </View>
             </Pressable>
           </Pressable>
-        </Modal>
+        </AppModal>
       </View>
     );
   }
@@ -353,7 +354,7 @@ export function ObservedBehaviorsScreen() {
       </ScrollView>
 
       {/* Modal Overlay do Calendário */}
-      <Modal
+      <AppModal
         visible={isModalVisible}
         transparent
         animationType="fade"
@@ -387,7 +388,7 @@ export function ObservedBehaviorsScreen() {
             </View>
           </Pressable>
         </Pressable>
-      </Modal>
+      </AppModal>
     </View>
   );
 }

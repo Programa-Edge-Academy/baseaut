@@ -1,7 +1,8 @@
+import { AppModal } from "@/components/app-modal";
 import { colors } from "@/assets/colors";
 import { Copy, Edit2, Trash2 } from "lucide-react-native";
 import React from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 export type CardMenuProps = {
   visible: boolean;
@@ -28,7 +29,7 @@ export function CardMenu({
   const left = layout.left + layout.width - menuWidth;
 
   return (
-    <Modal
+    <AppModal
       visible={visible}
       transparent
       animationType="none"
@@ -78,6 +79,6 @@ export function CardMenu({
           </View>
         </Pressable>
       </Pressable>
-    </Modal>
+    </AppModal>
   );
 }

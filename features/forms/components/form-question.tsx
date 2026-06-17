@@ -1,7 +1,8 @@
+import { AppModal } from "@/components/app-modal";
 import { colors } from "@/assets/colors";
 import { HelpCircle, Mic, X } from "lucide-react-native";
 import { useState, type ReactNode } from "react";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { FormQuestionProps } from "../types";
@@ -156,7 +157,7 @@ export function FormQuestion({
         </View>
       )}
 
-      <Modal
+      <AppModal
         visible={isHelpModalVisible}
         onRequestClose={() => setIsHelpModalVisible(false)}
         transparent
@@ -182,7 +183,7 @@ export function FormQuestion({
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </AppModal>
     </>
   );
 }
