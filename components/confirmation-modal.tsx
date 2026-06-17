@@ -78,7 +78,7 @@ export function ConfirmationModal({
             </View>
           </View>
 
-          <Text className="text-muted px- text-default-1 leading-5">
+          <Text className="text-muted text-default-1 leading-5">
             {config.message}
           </Text>
 
