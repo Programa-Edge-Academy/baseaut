@@ -61,7 +61,7 @@ export function SelectableChip({
   // 1. Setup base colors
   let activeBgBorder = "bg-primary/20 border-primary";
   let iconColor = colors.primary;
-  let rippleInactive = "rgba(14, 137, 229, 0.3)";
+  let rippleInactive = "rgba(255, 255, 255, 0.2)";
 
   // REQUIREMENT: If the "motivos" parameter is passed, the selectable chip gets a red background and red borders.
   if (type === "motivos") {
@@ -78,7 +78,7 @@ export function SelectableChip({
     ? "bg-error/10 border-error"
     : "bg-level2 border-outline";
 
-  const currentRippleColor = isSelected ? "rgba(255, 255, 255, 0.2)" : rippleInactive;
+  const currentRippleColor = isSelected ? "rgba(14, 137, 229, 0.3)" : rippleInactive;
 
   const subOptions = type === "nivelAjuda" ? subOptionsDict.nivelAjuda : null;
 

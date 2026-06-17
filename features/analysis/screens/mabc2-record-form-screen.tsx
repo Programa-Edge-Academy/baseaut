@@ -17,6 +17,7 @@ export type Mabc2RecordFormScreenProps = {
   totalPercentile: string | null;
   sections: Mabc2SectionProps[];
   readOnly?: boolean;
+  showErrors?: boolean;
   submitLabel?: string;
   toastConfig?: { visible: boolean; mode: ToastMode; title: string; description?: string };
   onHideToast?: () => void;
@@ -37,6 +38,7 @@ export function Mabc2RecordFormScreen({
   totalPercentile,
   sections,
   readOnly = false,
+  showErrors = false,
   submitLabel = "Registrar",
   toastConfig,
   onHideToast,
@@ -102,6 +104,7 @@ export function Mabc2RecordFormScreen({
           onViewRecords={onViewRecords}
           onViewExercises={onViewExercises}
           readOnly={readOnly}
+          showErrors={showErrors}
           submitLabel={submitLabel}
         />
       </DefaultScrollView>
