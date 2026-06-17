@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { DefaultButton } from "@/components/default-button";
 import { Header } from "@/components/header";
 import { ExerciseProgressChart } from "@/features/analysis/components/exercise-progress-chart";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -264,30 +265,26 @@ export function ExerciseProgressScreen() {
 
       {/* Modal para seleção do intervalo de datas */}
       <Modal visible={isCalendarOpen} transparent animationType="fade" onRequestClose={() => setIsCalendarOpen(false)}>
-        <TouchableOpacity className="flex-1 bg-black/50 justify-center items-center px-6" activeOpacity={1} onPress={() => setIsCalendarOpen(false)}>
-          <View className="w-full overflow-hidden rounded-xl p-1">
-            <RangeCalendar 
-              onRangeSelected={handleRangeSelected} 
-              {...({ 
-                markedDates: markedDates, 
-                markingType: 'period', 
-                style: { width: '100%', borderRadius: 12 } 
-              } as any)} 
-            />
-          </View>
-          <View className="flex-row gap-3 w-full justify-end mt-2">
-            <TouchableOpacity 
-              className="px-6 py-3 rounded-xl flex-1 items-center justify-center" 
-              style={{ backgroundColor: !tempRange.startDate ? '#E5E7EB' : colors.primary }} 
-              disabled={!tempRange.startDate} 
-              onPress={handleSaveDate}
-            >
-              <Text className="font-semibold" style={{ color: !tempRange.startDate ? '#000000' : '#FFFFFF' }}>
-                Salvar
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
+        <Pressable className="flex-1 bg-black/60 justify-center items-center px-6" onPress={() => setIsCalendarOpen(false)}>
+          <Pressable className="w-full max-w-[380px]" onPress={(e) => e.stopPropagation()}>
+            <View className="w-full mb-4">
+              <RangeCalendar 
+                key={`${isCalendarOpen}`}
+                onRangeSelected={handleRangeSelected} 
+              />
+            </View>
+
+            <View className="items-center">
+              <DefaultButton
+                label="Salvar"
+                sizeClass="w-[168px] h-[44px]"
+                disabled={!tempRange.startDate}
+                style={{ opacity: !tempRange.startDate ? 0.5 : 1 }}
+                onPress={handleSaveDate}
+              />
+            </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );

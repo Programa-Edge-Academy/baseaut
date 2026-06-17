@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { DefaultButton } from "@/components/default-button";
 import { Header } from "@/components/header";
 import RangeCalendar from "@/components/range-calendar";
 import { HelpRecordsBarChart } from "@/features/analysis/components/help-records-bar-chart";
@@ -10,6 +11,7 @@ import { BarChart3 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -31,9 +33,6 @@ const months = [
   "Novembro",
   "Dezembro",
 ];
-
-const SAVE_BUTTON_ACTIVE_COLOR = "#1E90FF";
-const SAVE_BUTTON_DISABLED_COLOR = "rgba(30, 144, 255, 0.35)";
 
 function formatDate(date: string) {
   const parsedDate = new Date(`${date}T00:00:00`);
@@ -101,7 +100,7 @@ export function HelpRecordsScreen() {
 
   const { profile, isLoading: isProfileLoading } = useStudentSessions(studentId as string);
 
-  const [showCalendar, setShowCalendar] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
@@ -140,7 +139,7 @@ export function HelpRecordsScreen() {
   function openCalendar() {
     setTempStartDate(startDate);
     setTempEndDate(endDate);
-    setShowCalendar(true);
+    setIsModalVisible(true);
   }
 
   function savePeriod() {
@@ -150,8 +149,13 @@ export function HelpRecordsScreen() {
 
     setStartDate(tempStartDate);
     setEndDate(tempEndDate);
-    setShowCalendar(false);
+    setIsModalVisible(false);
   }
+
+  const handleRangeSelected = (start: string, end: string | null) => {
+    setTempStartDate(start);
+    setTempEndDate(end);
+  };
 
   return (
     <View className="flex-1 bg-level1">
@@ -201,54 +205,39 @@ export function HelpRecordsScreen() {
         )}
       </ScrollView>
 
-      {showCalendar && (
-        <View style={styles.calendarOverlay}>
+      <Modal
+        visible={isModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <Pressable
+          className="flex-1 bg-black/60 justify-center items-center px-6"
+          onPress={() => setIsModalVisible(false)}
+        >
           <Pressable
-            style={styles.calendarBackdrop}
-            onPress={() => setShowCalendar(false)}
-          />
-
-          <View style={styles.calendarContent}>
-            <View style={styles.calendarBox}>
+            className="w-full max-w-[380px]"
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View className="w-full mb-4">
               <RangeCalendar
-                onRangeSelected={(start, end) => {
-                  setTempStartDate(start);
-                  setTempEndDate(end);
-                }}
+                key={`${isModalVisible}`}
+                onRangeSelected={handleRangeSelected}
               />
             </View>
 
-            <Pressable
-              disabled={!canSavePeriod}
-              onPress={savePeriod}
-              style={({ pressed }) => [
-                styles.saveButtonPressable,
-                pressed && canSavePeriod && styles.saveButtonPressed,
-              ]}
-            >
-              <View
-                style={[
-                  styles.saveButtonBox,
-                  {
-                    backgroundColor: canSavePeriod
-                      ? SAVE_BUTTON_ACTIVE_COLOR
-                      : SAVE_BUTTON_DISABLED_COLOR,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.saveButtonText,
-                    !canSavePeriod && styles.saveButtonTextDisabled,
-                  ]}
-                >
-                  Salvar
-                </Text>
-              </View>
-            </Pressable>
-          </View>
-        </View>
-      )}
+            <View className="items-center">
+              <DefaultButton
+                label="Salvar"
+                sizeClass="w-[168px] h-[44px]"
+                disabled={!canSavePeriod}
+                style={{ opacity: !canSavePeriod ? 0.5 : 1 }}
+                onPress={savePeriod}
+              />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -310,55 +299,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: "Inter-Medium",
     maxWidth: 310,
-  },
-  calendarOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
-  },
-  calendarBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.58)",
-  },
-  calendarContent: {
-    width: 330,
-    maxWidth: "86%",
-    alignItems: "center",
-  },
-  calendarBox: {
-    width: "100%",
-  },
-  saveButtonPressable: {
-    width: 220,
-    height: 54,
-    marginTop: 22,
-    borderRadius: 16,
-  },
-  saveButtonBox: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: SAVE_BUTTON_ACTIVE_COLOR,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.3,
-    shadowRadius: 18,
-    elevation: 6,
-  },
-  saveButtonPressed: {
-    opacity: 0.85,
-  },
-  saveButtonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "700",
-    fontFamily: "Inter-Bold",
-  },
-  saveButtonTextDisabled: {
-    opacity: 0.65,
   },
 });
 
