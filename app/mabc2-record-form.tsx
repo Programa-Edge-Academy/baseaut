@@ -10,6 +10,7 @@ import {
   type Mabc2Draft,
 } from "@/features/analysis/hooks/use-mabc2-records";
 import { Mabc2RecordFormScreen } from "@/features/analysis/screens/mabc2-record-form-screen";
+import { supabase } from "@/lib/supabase";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
@@ -38,6 +39,7 @@ export default function Mabc2RecordFormRoute() {
 
   const { records } = useMabc2Records(currentStudentId);
 
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [draft, setDraft] = useState<Mabc2Draft | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -56,7 +58,42 @@ export default function Mabc2RecordFormRoute() {
   const hasLoaded = useRef(false);
 
   useEffect(() => {
-    if (hasLoaded.current) return;
+    async function checkAccess() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setIsAuthorized(false);
+          return;
+        }
+
+        const { data: profileData } = await supabase
+          .from("perfis")
+          .select("perfil")
+          .eq("id", user.id)
+          .single();
+
+        const role = profileData?.perfil || user.user_metadata?.perfil || user.user_metadata?.role;
+
+        if (role === "coordenador" || role === "monitor") {
+          setIsAuthorized(true);
+        } else {
+          setIsAuthorized(false);
+        }
+      } catch {
+        setIsAuthorized(false);
+      }
+    }
+    checkAccess();
+  }, []);
+
+  useEffect(() => {
+    if (isAuthorized === false) {
+      router.back();
+    }
+  }, [isAuthorized]);
+
+  useEffect(() => {
+    if (!isAuthorized || hasLoaded.current) return;
     hasLoaded.current = true;
 
     async function load() {
@@ -87,7 +124,7 @@ export default function Mabc2RecordFormRoute() {
     }
 
     load();
-  }, [currentMode, currentStudentId, currentRecordId]);
+  }, [currentMode, currentStudentId, currentRecordId, isAuthorized]);
 
   const sections: Mabc2SectionProps[] = useMemo(() => {
     if (!draft) return [];
@@ -262,12 +299,16 @@ export default function Mabc2RecordFormRoute() {
     }
   }
 
-  if (isLoading) {
+  if (isAuthorized === null || (isAuthorized && isLoading)) {
     return (
       <View className="flex-1 items-center justify-center bg-level1">
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  if (isAuthorized === false) {
+    return null;
   }
 
   if (loadFailed || !draft) {
