@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { AppModal } from "@/components/app-modal";
 import { DefaultButton } from "@/components/default-button";
 import { Header } from "@/components/header";
 import RangeCalendar from "@/components/range-calendar";
@@ -6,10 +7,9 @@ import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 
-// Importação dos novos componentes de comparação
-import AnalysisSummary from "@/features/analysis/components/analysis-summary";
+import { AnalysisSummary } from "@/features/analysis/components/analysis-summary";
 import ComparisonBehaviors from "@/features/analysis/components/comparison-behaviors";
 import ComparisonHelp from "@/features/analysis/components/comparison-help";
 import ExerciceComparisonCard from "@/features/analysis/components/exercice-comparison-card";
@@ -35,16 +35,24 @@ function parseDateString(dateStr: string): Date {
   return new Date(year, month - 1, day);
 }
 
+function formatToISODate(date: Date | undefined | null): string | undefined {
+  if (!date) return undefined;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function PerformanceComparisonScreen() {
   const router = useRouter();
-  const { studentId } = useLocalSearchParams();
-  const { profile, isLoading } = useStudentSessions(studentId as string);
+  const { studentId: rawStudentId } = useLocalSearchParams();
+  const studentId = Array.isArray(rawStudentId) ? rawStudentId[0] : rawStudentId ?? "";
+  const { profile, isLoading } = useStudentSessions(studentId);
 
   // Ranges
   const [period1Range, setPeriod1Range] = useState<{ start: Date; end: Date } | null>(null);
   const [period2Range, setPeriod2Range] = useState<{ start: Date; end: Date } | null>(null);
 
-  // Estado para controlar a exibição dos resultados da comparação
   const [showResults, setShowResults] = useState(false);
 
   // Modal States
@@ -73,7 +81,6 @@ export function PerformanceComparisonScreen() {
       setPeriod2Range(range);
     }
 
-    // Oculta os resultados anteriores se o usuário alterar as datas escolhidas para permitir re-execução
     setShowResults(false);
     setIsModalVisible(false);
   };
@@ -99,10 +106,9 @@ export function PerformanceComparisonScreen() {
     }
 
     const now = new Date();
-    // Removemos as horas para evitar falhas em datas iguais ao dia atual
+    
     now.setHours(23, 59, 59, 999);
 
-    // Regra: Não é possível comparar períodos futuros
     if (
       period1Range.start > now || period1Range.end > now ||
       period2Range.start > now || period2Range.end > now
@@ -111,19 +117,16 @@ export function PerformanceComparisonScreen() {
       return;
     }
 
-    // Regra: Período 1 a frente do Período 2 cronologicamente
     if (period1Range.start > period2Range.start) {
       Alert.alert("Erro", "Data inválida. Período 1 a frente do Período 2");
       return;
     }
 
-    // Regra: Não é possível comparar dois períodos coincidentes (Lógica de interseção)
     if (period1Range.start <= period2Range.end && period1Range.end >= period2Range.start) {
       Alert.alert("Erro", "Data inválida. Não é possível comparar dois períodos coincidentes");
       return;
     }
 
-    // Se passar por todas as validações, podemos carregar os dados
     setShowResults(true);
   };
 
@@ -184,7 +187,14 @@ export function PerformanceComparisonScreen() {
               <View className="mt-6 gap-6">
                 <AnalysisSummary />
 
-                <ExerciceComparisonCard />
+                {/* MODIFICAÇÃO AQUI: Agora repassando as propriedades de data formatadas como string */}
+                <ExerciceComparisonCard 
+                  alunoId={studentId}
+                  p1Inicio={formatToISODate(period1Range?.start)}
+                  p1Fim={formatToISODate(period1Range?.end)}
+                  p2Inicio={formatToISODate(period2Range?.start)}
+                  p2Fim={formatToISODate(period2Range?.end)}
+                />
 
                 <ComparisonHelp />
 
@@ -196,7 +206,7 @@ export function PerformanceComparisonScreen() {
       </ScrollView>
 
       {/* Modal Overlay com fade-out (Tela Escurecida) */}
-      <Modal
+      <AppModal
         visible={isModalVisible}
         transparent
         animationType="fade"
@@ -232,7 +242,7 @@ export function PerformanceComparisonScreen() {
             </View>
           </Pressable>
         </Pressable>
-      </Modal>
+      </AppModal>
     </View>
   );
 }
