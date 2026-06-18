@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { ConfirmationModal } from "@/components/confirmation-modal";
 import { type ToastMode } from "@/components/toast";
 import type { Mabc2SectionProps } from "@/features/analysis/components/mabc2-section";
 import {
@@ -11,7 +12,7 @@ import {
 } from "@/features/analysis/hooks/use-mabc2-records";
 import { Mabc2RecordFormScreen } from "@/features/analysis/screens/mabc2-record-form-screen";
 import { supabase } from "@/lib/supabase";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 
@@ -32,6 +33,8 @@ export default function Mabc2RecordFormRoute() {
     recordId?: string;
   }>();
 
+  const navigation = useNavigation();
+
   const currentMode = mode ?? "create";
   const currentStudentId = studentId ?? "";
   const currentStudentName = studentName ?? "Aluno";
@@ -45,6 +48,9 @@ export default function Mabc2RecordFormRoute() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isExitModalVisible, setIsExitModalVisible] = useState(false);
+  const [pendingAction, setPendingAction] = useState<any>(null);
   const [toastConfig, setToastConfig] = useState<{
     visible: boolean;
     mode: ToastMode;
@@ -126,12 +132,49 @@ export default function Mabc2RecordFormRoute() {
     load();
   }, [currentMode, currentStudentId, currentRecordId, isAuthorized]);
 
+  const performExit = async (actionToDispatch?: any) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    if (currentMode === "create" && draft?.formularioId) {
+      try {
+        await deleteMabc2Record(draft.formularioId);
+      } catch (e) {}
+    }
+    
+    const action = actionToDispatch || pendingAction;
+    if (action) {
+      navigation.dispatch(action);
+    } else {
+      router.back();
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+      if (isSubmitting || currentMode === "view") {
+        return;
+      }
+
+      e.preventDefault();
+      setPendingAction(e.data.action);
+
+      if (hasUnsavedChanges) {
+        setIsExitModalVisible(true);
+      } else {
+        performExit(e.data.action);
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, hasUnsavedChanges, isSubmitting, currentMode, draft?.formularioId]);
+
   const sections: Mabc2SectionProps[] = useMemo(() => {
     if (!draft) return [];
 
     return draft.sections.map((section, sectionIndex) => ({
       ...section,
       onChangeCategoryScore: (value) => {
+        setHasUnsavedChanges(true);
         setDraft((current) =>
           current
             ? {
@@ -146,6 +189,7 @@ export default function Mabc2RecordFormRoute() {
         );
       },
       onChangeCategoryPercentile: (value) => {
+        setHasUnsavedChanges(true);
         setDraft((current) =>
           current
             ? {
@@ -162,6 +206,7 @@ export default function Mabc2RecordFormRoute() {
       exercises: section.exercises.map((exercise, exerciseIndex) => ({
         ...exercise,
         onChangeAttemptCount: (value) => {
+          setHasUnsavedChanges(true);
           setDraft((current) =>
             current
               ? {
@@ -187,6 +232,7 @@ export default function Mabc2RecordFormRoute() {
           );
         },
         onChangeScore: (value) => {
+          setHasUnsavedChanges(true);
           setDraft((current) =>
             current
               ? {
@@ -248,6 +294,7 @@ export default function Mabc2RecordFormRoute() {
 
     try {
       await saveMabc2Record(draft);
+      setHasUnsavedChanges(false);
       router.replace({
         pathname: "/mabc2-records",
         params: {
@@ -280,6 +327,7 @@ export default function Mabc2RecordFormRoute() {
 
     try {
       await deleteMabc2Record(targetRecordId);
+      setHasUnsavedChanges(false);
       router.replace({
         pathname: "/mabc2-records",
         params: {
@@ -333,52 +381,70 @@ export default function Mabc2RecordFormRoute() {
   }
 
   return (
-    <Mabc2RecordFormScreen
-      studentName={currentStudentName}
-      recordCount={records.length}
-      totalScore={draft.totalScore}
-      totalPercentile={draft.totalPercentile}
-      sections={sections}
-      readOnly={currentMode === "view"}
-      showErrors={showErrors}
-      submitLabel={currentMode === "edit" ? "Salvar" : "Registrar"}
-      toastConfig={toastConfig}
-      onHideToast={() => setToastConfig((prev) => ({ ...prev, visible: false }))}
-      onChangeTotalScore={(value) =>
-        setDraft((current) =>
-          current ? { ...current, totalScore: parseNumber(value) } : current
-        )
-      }
-      onChangeTotalPercentile={(value) =>
-        setDraft((current) =>
-          current
-            ? { ...current, totalPercentile: value.trim() || null }
-            : current
-        )
-      }
-      onPressBack={() => router.back()}
-      onRegister={handleSave}
-      onEdit={() =>
-        router.replace({
-          pathname: "/mabc2-record-form",
-          params: {
-            mode: "edit",
-            studentId: currentStudentId,
-            studentName: currentStudentName,
-            recordId: currentRecordId || draft.formularioId,
-          },
-        } as any)
-      }
-      onDelete={handleDelete}
-      onViewRecords={() =>
-        router.replace({
-          pathname: "/mabc2-records",
-          params: {
-            studentId: currentStudentId,
-            studentName: currentStudentName,
-          },
-        } as any)
-      }
-    />
+    <>
+      <Mabc2RecordFormScreen
+        studentName={currentStudentName}
+        recordCount={records.length}
+        totalScore={draft.totalScore}
+        totalPercentile={draft.totalPercentile}
+        sections={sections}
+        readOnly={currentMode === "view"}
+        showErrors={showErrors}
+        submitLabel={currentMode === "edit" ? "Salvar" : "Registrar"}
+        toastConfig={toastConfig}
+        onHideToast={() => setToastConfig((prev) => ({ ...prev, visible: false }))}
+        onChangeTotalScore={(value) => {
+          setHasUnsavedChanges(true);
+          setDraft((current) =>
+            current ? { ...current, totalScore: parseNumber(value) } : current
+          );
+        }}
+        onChangeTotalPercentile={(value) => {
+          setHasUnsavedChanges(true);
+          setDraft((current) =>
+            current
+              ? { ...current, totalPercentile: value.trim() || null }
+              : current
+          );
+        }}
+        onPressBack={() => router.back()}
+        onRegister={handleSave}
+        onEdit={() =>
+          router.replace({
+            pathname: "/mabc2-record-form",
+            params: {
+              mode: "edit",
+              studentId: currentStudentId,
+              studentName: currentStudentName,
+              recordId: currentRecordId || draft.formularioId,
+            },
+          } as any)
+        }
+        onDelete={handleDelete}
+        onViewRecords={() =>
+          router.replace({
+            pathname: "/mabc2-records",
+            params: {
+              studentId: currentStudentId,
+              studentName: currentStudentName,
+            },
+          } as any)
+        }
+      />
+      <ConfirmationModal
+        visible={isExitModalVisible}
+        onClose={() => setIsExitModalVisible(false)}
+        onConfirm={() => {
+          setIsExitModalVisible(false);
+          performExit();
+        }}
+        title="Você tem certeza que deseja sair?"
+        message="Os dados preenchidos serão perdidos."
+        confirmLabel="Sair"
+        cancelLabel="Cancelar"
+        iconType="alert"
+        mode="delete"
+      />
+    </>
   );
 }
