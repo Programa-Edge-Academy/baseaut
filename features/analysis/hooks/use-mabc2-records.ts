@@ -206,39 +206,48 @@ function mapItemsToDraft(
 export function useMabc2Records(studentId: string) {
   const [records, setRecords] = useState<Mabc2Record[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   const refetch = useCallback(async () => {
-    if (!studentId) return;
-
-    setIsLoading(true);
-
-    const { data, error } = await supabase.rpc("rpc_get_historico_mabc2_aluno", {
-      p_aluno_id: studentId,
-    });
-
-    if (error) {
-      setIsLoading(false);
-      throw error;
+    if (!studentId) {
+      setRecords([]);
+      return;
     }
 
-    setRecords(
-      (data ?? []).map((item: any, index: number) => ({
-        id: item.id,
-        label: `Formulário MABC-2 ${index + 1}`,
-        date: formatDate(item.created_at),
-        totalScore: item.metadados?.escore_total ?? null,
-        totalPercentile: item.metadados?.percentil ?? null,
-      }))
-    );
+    setIsLoading(true);
+    setError(null);
 
-    setIsLoading(false);
+    try {
+      const { data, error: rpcError } = await supabase.rpc("rpc_get_historico_mabc2_aluno", {
+        p_aluno_id: studentId,
+      });
+
+      if (rpcError) throw rpcError;
+
+      const list = Array.isArray(data) ? data : [];
+
+      setRecords(
+        list.map((item: any, index: number) => ({
+          id: item.id,
+          label: `Formulário MABC-2 ${index + 1}`,
+          date: formatDate(item.created_at),
+          totalScore: item.metadados?.escore_total ?? null,
+          totalPercentile: item.metadados?.percentil ?? null,
+        }))
+      );
+    } catch (err: any) {
+      setRecords([]);
+      setError(err);
+    } finally {
+      setIsLoading(false);
+    }
   }, [studentId]);
 
   useEffect(() => {
     refetch();
   }, [refetch]);
 
-  return { records, isLoading, refetch };
+  return { records, isLoading, refetch, error };
 }
 
 export async function startMabc2Record(studentId: string) {
@@ -302,20 +311,14 @@ export async function saveMabc2Record(draft: Mabc2Draft) {
     ])
   );
 
-  const { error } = await supabase
-    .from("formularios")
-    .update({
-      metadados: {
-        ...draft.metadados,
-        escore_total: draft.totalScore,
-        percentil: draft.totalPercentile,
-        componentes,
-      },
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", draft.formularioId)
-    .eq("tipo", "mabc2")
-    .eq("protegido", false);
+  const { error } = await supabase.rpc("rpc_salvar_totais_mabc2", {
+    p_formulario_id: draft.formularioId,
+    p_totais_jsonb: {
+      escore_total: draft.totalScore,
+      percentil: draft.totalPercentile,
+      componentes,
+    },
+  });
 
   if (error) throw error;
 }

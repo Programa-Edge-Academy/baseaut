@@ -11,6 +11,7 @@ export type Mabc2ExerciseItemProps = {
   onChangeAttemptCount?: (value: string) => void;
   onChangeScore?: (value: string) => void;
   readOnly?: boolean;
+  showErrors?: boolean;
   className?: string;
   testID?: string;
   accessibilityLabel?: string;
@@ -31,6 +32,7 @@ export function Mabc2ExerciseItem({
   onChangeAttemptCount,
   onChangeScore,
   readOnly = false,
+  showErrors = false,
   className,
   testID,
   accessibilityLabel,
@@ -58,7 +60,13 @@ export function Mabc2ExerciseItem({
       </Text>
 
       <View className="flex-row items-center gap-2.5">
-        <View className="min-w-[60px] items-center justify-center rounded-xl border border-outline bg-level2 px-4 py-1">
+        <View
+          className={`min-w-[60px] items-center justify-center rounded-xl border ${
+            showErrors && (attemptCount === null || attemptCount === "")
+              ? "border-error"
+              : "border-outline"
+          } bg-level2 px-4 py-1`}
+        >
           {readOnly ? (
             <Text className="text-sm font-medium text-white">
               {displayAttemptCount}
@@ -82,7 +90,13 @@ export function Mabc2ExerciseItem({
           {readOnly ? (
             <Text className="text-white">{displayScore}</Text>
           ) : (
-            <View className="min-w-[60px] items-center justify-center rounded-xl border border-outline bg-level2 px-4 py-1">
+            <View
+              className={`min-w-[60px] items-center justify-center rounded-xl border ${
+                showErrors && (score === null || score === "")
+                  ? "border-error"
+                  : "border-outline"
+              } bg-level2 px-4 py-1`}
+            >
               <TextInput
                 testID={testID ? `${testID}-score-input` : undefined}
                 accessibilityLabel={`Score de ${name}`}

@@ -69,9 +69,9 @@ export function NewStudent({
       setIsSaving(false);
       if (mode === "edit" && initialData) {
         setFullName(initialData.name);
-        setWeight(`${initialData.weight} Kg`);
-        setHeight(`${initialData.height} cm`);
-        setWaist(`${initialData.waist} cm`);
+        setWeight(initialData.weight ? `${initialData.weight} Kg` : "");
+        setHeight(initialData.height ? `${initialData.height} cm` : "");
+        setWaist(initialData.waist ? `${initialData.waist} cm` : "");
         setSupportLevel(initialData.supportLevel);
         setHealthConditions(initialData.healthConditions || "");
         setObservations(initialData.observations || "");
@@ -256,25 +256,19 @@ export function NewStudent({
       }
     }
 
-    if (!weight.trim()) {
-      newErrors.weight = "Massa é obrigatória";
-    } else {
+    if (weight.trim()) {
       const parsedWeight = Number(weight.replace(/[^\d.]/g, ""));
       if (isNaN(parsedWeight) || parsedWeight <= 0)
         newErrors.weight = "Valor inválido";
     }
 
-    if (!height.trim()) {
-      newErrors.height = "Estatura é obrigatória";
-    } else {
+    if (height.trim()) {
       const parsedHeight = Number(height.replace(/[^\d.]/g, ""));
       if (isNaN(parsedHeight) || parsedHeight <= 0)
         newErrors.height = "Valor inválido";
     }
 
-    if (!waist.trim()) {
-      newErrors.waist = "Cintura é obrigatória";
-    } else {
+    if (waist.trim()) {
       const parsedWaist = Number(waist.replace(/[^\d.]/g, ""));
       if (isNaN(parsedWaist) || parsedWaist <= 0)
         newErrors.waist = "Valor inválido";
@@ -303,9 +297,9 @@ export function NewStudent({
           id: initialData?.id,
           name: cleanName,
           birthDate: dbDate,
-          weight: Number(weight.replace(/[^\d.]/g, "")),
-          height: Number(height.replace(/[^\d.]/g, "")),
-          waist: Number(waist.replace(/[^\d.]/g, "")),
+          weight: weight.trim() ? Number(weight.replace(/[^\d.]/g, "")) : 0,
+          height: height.trim() ? Number(height.replace(/[^\d.]/g, "")) : 0,
+          waist: waist.trim() ? Number(waist.replace(/[^\d.]/g, "")) : 0,
           supportLevel: supportLevel!,
           healthConditions: healthConditions.trim(),
           observations: observations.trim(),
@@ -447,7 +441,7 @@ export function NewStudent({
 
               <View className="flex-row gap-3">
                 <View className="flex-1 gap-1">
-                  <Text className="text-default-2 text-muted">Massa*</Text>
+                  <Text className="text-default-2 text-muted">Massa</Text>
                   <DefaultTextInput
                     placeholder="Ex: 30.5"
                     value={weight}
@@ -477,7 +471,7 @@ export function NewStudent({
                 </View>
 
                 <View className="flex-1 gap-1">
-                  <Text className="text-default-2 text-muted">Estatura*</Text>
+                  <Text className="text-default-2 text-muted">Estatura</Text>
                   <DefaultTextInput
                     placeholder="Ex: 120"
                     value={height}
@@ -507,7 +501,7 @@ export function NewStudent({
                 </View>
 
                 <View className="flex-1 gap-1">
-                  <Text className="text-default-2 text-muted">Cintura*</Text>
+                  <Text className="text-default-2 text-muted">Cintura</Text>
                   <DefaultTextInput
                     placeholder="Ex: 50"
                     value={waist}
@@ -596,16 +590,14 @@ export function NewStudent({
                   <DefaultTextInput
                     placeholder="Observações adicionais (opcionais)"
                     className="h-11 rounded-[15px]"
-                    maxLength={250} // Garante o limite no componente
+                    maxLength={250}
                     value={observations}
-                    onChangeText={setObservations} // Adicione aqui a limpeza do erro se necessário
-                    outLineBorderClass={errors.observations ? "border-error" : "border-outline"} // Adicione borda de erro
+                    onChangeText={setObservations}
+                    outLineBorderClass={errors.observations ? "border-error" : "border-outline"}
                   />
-                  {/* Contador visual abaixo do input */}
                   <Text className="text-muted text-default-3 text-right">
                     {observations.length}/250
                   </Text>
-                  {/* Exibição da mensagem de erro se houver */}
                   {errors.observations && (
                     <Text className="mt-1 text-default-3 text-error">
                       {errors.observations}

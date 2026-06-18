@@ -9,6 +9,8 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import * as Linking from "expo-linking";
 import { supabase } from "@/lib/supabase";
+import { Keyboard, TouchableWithoutFeedback, View, Platform } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "./global.css";
 
 SplashScreen.preventAutoHideAsync();
@@ -63,5 +65,17 @@ export default function RootLayout() {
     return null;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  const stack = <Stack screenOptions={{ headerShown: false }} />;
+
+  return (
+    Platform.OS !== "web" ? (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={{ flex: 1 }}>{stack}</View>
+        </TouchableWithoutFeedback>
+      </GestureHandlerRootView>      
+    ) : (
+      stack
+    )
+  );
 }
