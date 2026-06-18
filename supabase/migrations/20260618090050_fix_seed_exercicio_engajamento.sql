@@ -1,6 +1,10 @@
 -- Hotfix: seed e trigger de engajamento não incluíam subtags (NOT NULL).
 -- Reaplica o INSERT para equipes sem sentinela e recria o trigger com subtags = [].
 
+ALTER TABLE public.exercicios DROP CONSTRAINT IF EXISTS chk_tag_valores_permitidos;
+ALTER TABLE public.exercicios ADD CONSTRAINT chk_tag_valores_permitidos
+  CHECK (tag = ANY (ARRAY['Força'::text, 'Equilíbrio'::text, 'Coordenação'::text, 'engajamento'::text]));
+
 INSERT INTO public.exercicios (titulo, descricao, equipe_id, ativo, tag, subtags)
 SELECT
   'Atividade de Engajamento',
