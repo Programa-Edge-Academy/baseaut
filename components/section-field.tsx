@@ -36,18 +36,21 @@ export function SectionField({ mode, className }: SectionFieldProps) {
     },
   }[mode];
 
-  const handleToggle = () => {
-    const nextRoute = config.isRightActive ? config.left.route : config.right.route;
-    router.replace(nextRoute as any);
+  // Navega para o lado pressionado; tocar no lado já ativo não faz nada.
+  const goToLeft = () => {
+    if (config.isRightActive) router.replace(config.left.route as any);
+  };
+  const goToRight = () => {
+    if (!config.isRightActive) router.replace(config.right.route as any);
   };
 
   return (
-    <Pressable
-      onPress={handleToggle}
+    <View
       className={`h-11 w-full flex-row rounded-2xl ${className ?? ""}`}
       style={{ backgroundColor: colors.outline, padding: 5 }}
     >
-      <View
+      <Pressable
+        onPress={goToLeft}
         className="flex-1 items-center justify-center rounded-[10px]"
         style={{ backgroundColor: !config.isRightActive ? colors.level2 : "transparent" }}
       >
@@ -56,9 +59,10 @@ export function SectionField({ mode, className }: SectionFieldProps) {
         >
           {config.left.label}
         </Text>
-      </View>
+      </Pressable>
 
-      <View
+      <Pressable
+        onPress={goToRight}
         className="flex-1 items-center justify-center rounded-[10px]"
         style={{ backgroundColor: config.isRightActive ? colors.level2 : "transparent" }}
       >
@@ -67,7 +71,7 @@ export function SectionField({ mode, className }: SectionFieldProps) {
         >
           {config.right.label}
         </Text>
-      </View>
-    </Pressable>
+      </Pressable>
+    </View>
   );
 }
