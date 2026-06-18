@@ -70,10 +70,10 @@ export function EngagementActivityScreen() {
       />
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View className="left-6 top-[2%] w-[264px]">
-          <PageHeader 
-            title={`Sessão de ${safeStudentName}`} 
-            subtitle="Circuito Semi-estruturado · Engajamento" 
+        <View className="mx-8 mt-5">
+          <PageHeader
+            title={`Sessão de ${safeStudentName}`}
+            subtitle="Circuito Semi-estruturado · Engajamento"
           />
         </View>
 

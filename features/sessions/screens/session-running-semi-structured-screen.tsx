@@ -198,7 +198,7 @@ export function SessionRunningSemiStructuredScreen({
   const renderListView = () => {
     return (
       <View className="flex-1">
-        <View className="left-6 top-4 w-[264px] mb-8">
+        <View className="mx-8 mt-5 mb-8">
           <PageHeader
             title={`Sessão de ${safeStudentName}`}
             subtitle="Circuito Livre"
