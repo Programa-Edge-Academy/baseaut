@@ -13,7 +13,7 @@ import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
 
 // 🛠️ Corrigido o caminho do hook conforme a versão mais recente
-import { useHistory } from "@/features/history/hooks/use-history";
+import { useHistory } from "@/features/sessions/hooks/use-history";
 
 export default function HistoryScreen() {
   const { studentsHistory, isLoading, error } = useHistory();
