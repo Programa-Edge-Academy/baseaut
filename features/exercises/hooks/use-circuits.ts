@@ -12,7 +12,25 @@ export type CircuitType = "padrao" | "mabc_1" | "mabc_2" | "mabc_3";
 /**
  * Defines the possible execution modes matching the database enum.
  */
-export type ExecutionMode = "estruturado" | "livre";
+export type ExecutionMode = "estruturado" | "semi-estruturado";
+
+/**
+ * Resolve o template global do Registro de Controle pelo tipo (sem ID fixo).
+ * Vinculá-lo ao circuito faz o trigger de sessão criar uma instância de RC por
+ * sessão e preencher sessoes.formulario_id automaticamente.
+ */
+async function resolveRcTemplateId(): Promise<string | null> {
+  const { data } = await supabase
+    .from("formularios")
+    .select("id")
+    .eq("tipo", "registro_controle")
+    .is("aluno_id", null)
+    .order("protegido", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return data?.id ?? null;
+}
 
 /**
  * Represents the Circuit domain model used by the UI.
@@ -296,12 +314,18 @@ export function useCircuits() {
     try {
       if (!equipeId) throw new Error("Team ID not identified.");
 
+      // Circuitos comuns (padrão) recebem o template de RC para o trigger de
+      // sessão gerar a instância do registro de controle. MABC tem fluxo próprio.
+      const formId =
+        data.form ??
+        (data.type === "padrao" ? await resolveRcTemplateId() : null);
+
       const payload = {
         titulo: data.name,
         descricao: null,
         equipe_id: equipeId,
         ativo: true,
-        formulario_id: data.form,
+        formulario_id: formId,
         tipo: data.type,
         modo_execucao: data.executionMode,
       };
@@ -350,11 +374,15 @@ export function useCircuits() {
   }) => {
     setIsLoading(true);
     try {
+      const formId =
+        data.form ??
+        (data.type === "padrao" ? await resolveRcTemplateId() : null);
+
       const payload = {
         titulo: data.name,
         tipo: data.type,
         modo_execucao: data.executionMode,
-        formulario_id: data.form,
+        formulario_id: formId,
       };
 
       const { error: updateError } = await supabase

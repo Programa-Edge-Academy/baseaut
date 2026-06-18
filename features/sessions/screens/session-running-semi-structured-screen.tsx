@@ -1,7 +1,10 @@
 import { colors } from "@/assets/colors";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
-import { ActivityResultModal } from "@/features/exercises/components/activity-result-modal";
+import {
+  ActivityResultModal,
+  ActivityResultData,
+} from "@/features/exercises/components/activity-result-modal";
 import { StartActivity } from "@/features/exercises/components/start-activity";
 import { Stopwatch } from "@/features/exercises/components/stopwatch";
 import {
@@ -11,24 +14,112 @@ import {
 import { SessionExercise } from "@/features/sessions/screens/session-running-screen";
 import { useRouter } from "expo-router";
 import { CheckCircle2, ChevronRight, Split } from "lucide-react-native";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Animated, Pressable, ScrollView, Text, View } from "react-native";
+import {
+  useSessionFlow,
+  type ExecutionRecord,
+  type MotivoFinalizacao,
+  type MotivoNaoRealizacao,
+} from "../hooks/use-session-flow";
 
 type ExerciseStage = "ready" | "running";
+
+/** Mapeia os rótulos do modal de resultado para o motivo_nao_realizacao_enum. */
+const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
+  "Recusa do aluno": "recusa_aluno",
+  "Comportamento disruptivo": "comportamento_disruptivo",
+  "Fadiga ou cansaço": "fadiga_cansaco",
+  "Tempo insuficiente": "tempo_insuficiente",
+  "Dificuldade física": "dificuldade_fisica",
+  Outro: "outro",
+};
+
+/** Mapeia os rótulos de finalização antecipada para o motivo_finalizacao_enum. */
+const MOTIVO_FINALIZACAO_MAP: Record<string, MotivoFinalizacao> = {
+  "Comportamento disruptivo": "comportamento_disruptivo",
+  "Tempo insuficiente": "tempo_esgotado",
+};
 
 export type SessionRunningSemiStructuredProps = {
   studentName: string;
   exercises: SessionExercise[];
+  studentId?: string;
+  sessionId?: string;
+  circuitId?: string;
+  circuitName?: string;
 };
 
 export function SessionRunningSemiStructuredScreen({
   studentName,
   exercises,
+  studentId = "",
+  sessionId = "",
+  circuitId = "",
+  circuitName = "Circuito",
 }: SessionRunningSemiStructuredProps) {
   const router = useRouter();
-  
+
+  const { createSession, persistExecutions, finishSession } = useSessionFlow();
+
+  // ID efetivo da sessão: usa o recebido (retomada) ou cria um na montagem.
+  const effectiveSessionIdRef = useRef<string>(sessionId || "");
+  const createSessionPromiseRef = useRef<Promise<string> | null>(null);
+  // Contador de ordem de execução para gravar cada exercício realizado.
+  const ordemRef = useRef(0);
+  // Segundos do cronômetro capturados na última parada.
+  const lastElapsedSecondsRef = useRef<number | null>(null);
 
   const safeStudentName = studentName || "Aluno";
+
+  // Cria a sessão no banco quando ainda não há um id válido (início semi-estruturado).
+  useEffect(() => {
+    if (sessionId || !studentId || exercises.length === 0) return;
+    if (createSessionPromiseRef.current) return;
+    const promise = (async () => {
+      const id = await createSession({
+        alunoId: studentId,
+        circuitoId: circuitId || null,
+      });
+      effectiveSessionIdRef.current = id;
+      return id;
+    })();
+    createSessionPromiseRef.current = promise.catch((err) => {
+      console.error("Erro ao criar sessão (semi-estruturado):", err);
+      throw err;
+    });
+  }, [sessionId, studentId, circuitId, exercises.length, createSession]);
+
+  // Garante um sessao_id válido antes de gravar (aguarda a criação em-flight).
+  const ensureSessionId = async (): Promise<string | null> => {
+    if (effectiveSessionIdRef.current) return effectiveSessionIdRef.current;
+    if (!createSessionPromiseRef.current) return null;
+    try {
+      return await createSessionPromiseRef.current;
+    } catch {
+      return null;
+    }
+  };
+
+  // Persiste um exercício realizado/não realizado/adiado na sessão atual.
+  const persistResult = async (
+    exercise: SessionExercise,
+    record: Omit<ExecutionRecord, "exercicioId" | "ordemExecucao">,
+  ) => {
+    const sid = await ensureSessionId();
+    if (!sid) return;
+    ordemRef.current += 1;
+    const fullRecord: ExecutionRecord = {
+      exercicioId: exercise.id,
+      ordemExecucao: ordemRef.current,
+      ...record,
+    };
+    try {
+      await persistExecutions(sid, [fullRecord]);
+    } catch (err) {
+      console.error("Erro ao salvar execução (semi-estruturado):", err);
+    }
+  };
 
   const [activeExercise, setActiveExercise] = useState<SessionExercise | null>(null);
   const [stage, setStage] = useState<ExerciseStage>("ready");
@@ -87,6 +178,7 @@ export function SessionRunningSemiStructuredScreen({
   };
 
   const handleStop = (elapsed: number) => {
+    lastElapsedSecondsRef.current = elapsed;
     const minutes = Math.floor(elapsed / 60)
       .toString()
       .padStart(2, "0");
@@ -95,12 +187,45 @@ export function SessionRunningSemiStructuredScreen({
     setIsResultModalOpen(true);
   };
 
-  const handleResult = (status: "concluido" | "nao_realizada" | "adiado") => {
+  const handleResult = (
+    status: "concluido" | "nao_realizada" | "adiado",
+    options?: { motivo?: string; descricao?: string; result?: ActivityResultData },
+  ) => {
     if (!activeExercise) return;
+
+    const exercise = activeExercise;
+    const duracao = lastElapsedSecondsRef.current;
+
+    // Cada exercício resolvido vira uma execução gravada na mesma sessão.
+    if (status === "concluido") {
+      // Dados clínicos coletados no modal (nível, ajuda e complementos).
+      void persistResult(exercise, {
+        statusRealizacao: "realizada",
+        nivelDesenvolvimento: options?.result?.nivelDesenvolvimento ?? null,
+        registroAjuda: options?.result?.registroAjuda ?? null,
+        complementosAjuda: options?.result?.subCategorias ?? null,
+        duracaoRealSegundos: duracao,
+      });
+    } else if (status === "nao_realizada") {
+      void persistResult(exercise, {
+        statusRealizacao: "nao_realizada",
+        motivoNaoRealizacao:
+          MOTIVO_NAO_REALIZACAO_MAP[options?.motivo ?? ""] ?? "outro",
+        descricaoAdicional: options?.descricao ?? null,
+        duracaoRealSegundos: duracao,
+      });
+    } else {
+      void persistResult(exercise, {
+        statusRealizacao: "adiado",
+        duracaoRealSegundos: duracao,
+      });
+    }
+
+    lastElapsedSecondsRef.current = null;
 
     const novoHistorico = {
       ...historicoExercicios,
-      [activeExercise.id]: status,
+      [exercise.id]: status,
     };
     setHistoricoExercicios(novoHistorico);
 
@@ -110,11 +235,15 @@ export function SessionRunningSemiStructuredScreen({
     const pendentes = exercises.filter((ex) => !novoHistorico[ex.id]);
 
     if (pendentes.length === 0) {
+      const sid = effectiveSessionIdRef.current;
+      if (sid) void finishSession(sid, { status: "concluida" });
       router.replace({
         pathname: "/session/completed",
         params: {
           type: "semi-structured",
           studentName: safeStudentName,
+          studentId,
+          sessionId: sid,
           fullCircuit: JSON.stringify(exercises),
           queue: JSON.stringify([]),
         },
@@ -132,11 +261,22 @@ export function SessionRunningSemiStructuredScreen({
       return status !== "concluido" && status !== "adiado";
     });
 
+    const sid = effectiveSessionIdRef.current;
+    if (sid) {
+      void finishSession(sid, {
+        status: "concluida",
+        motivoFinalizacao: MOTIVO_FINALIZACAO_MAP[motivo] ?? "outro",
+        descricaoMotivo: motivo,
+      });
+    }
+
     router.push({
       pathname: "/session/completed",
       params: {
         type: "semi-structured",
         studentName: safeStudentName,
+        studentId,
+        sessionId: sid,
         fullCircuit: JSON.stringify(exercises),
         queue: JSON.stringify(filaDePendentes),
       },
@@ -167,7 +307,7 @@ export function SessionRunningSemiStructuredScreen({
         <PageHeader
           mode="execucao"
           title={`Sessão de ${safeStudentName}`}
-          subtitle={`Exercício Livre`}
+          subtitle={`Exercício Semi-estruturado`}
           totalExercises={1}
           completedExercises={0}
           isExecuting={stage === "running"}
@@ -201,7 +341,7 @@ export function SessionRunningSemiStructuredScreen({
         <View className="left-6 top-4 w-[264px] mb-8">
           <PageHeader
             title={`Sessão de ${safeStudentName}`}
-            subtitle="Circuito Livre"
+            subtitle="Circuito Semi-estruturado"
           />
         </View>
 
@@ -218,10 +358,15 @@ export function SessionRunningSemiStructuredScreen({
             
             <Pressable 
               className="w-10 h-10 rounded-full bg-extra/10 border border-extra justify-center items-center flex-shrink-0 active:opacity-70"
-              onPress={() => {
+              onPress={async () => {
+                const sid = await ensureSessionId();
                 router.push({
-                  pathname: "/session/engagement", 
-                  params: { studentName: safeStudentName }
+                  pathname: "/session/engagement",
+                  params: {
+                    studentName: safeStudentName,
+                    studentId,
+                    sessionId: sid ?? "",
+                  },
                 });
               }}
             >
@@ -308,8 +453,10 @@ export function SessionRunningSemiStructuredScreen({
             elapsedTime={elapsedTimeStr}
             onClose={() => setIsResultModalOpen(false)}
             onDefer={() => handleResult("adiado")}
-            onNotCompleted={(motivo, desc) => handleResult("nao_realizada")}
-            onConfirm={() => handleResult("concluido")}
+            onNotCompleted={(motivo, desc) =>
+              handleResult("nao_realizada", { motivo, descricao: desc })
+            }
+            onConfirm={(result) => handleResult("concluido", { result })}
           />
         )}
 

@@ -13,12 +13,6 @@ import {
   CircuitSelectionScreen,
 } from "../features/sessions/screens/circuit-selection-screen";
 
-// Entradas fixas de formulário, mantidas junto dos circuitos reais.
-const FORM_ITEMS: CircuitItem[] = [
-  { id: "ata", name: "Formulário ATA", description: "", type: "ata" },
-  { id: "cars", name: "Formulário CARS", description: "", type: "cars" },
-];
-
 type MabcCircuitType = "mabc_1" | "mabc_2" | "mabc_3";
 
 const MABC_AGE_RANGES: Record<
@@ -130,7 +124,10 @@ export default function CircuitSelectionRoute() {
       id: circuit.id,
       name: circuit.name,
       description: getCircuitDescription(circuit),
-      type: circuit.executionMode === "livre" ? "livre" : "estruturado",
+      type:
+        circuit.executionMode === "semi-estruturado"
+          ? "semi-estruturado"
+          : "estruturado",
       exercises: circuit.exercises.map((exercise) => ({
         id: exercise.id,
         name: exercise.name,
@@ -138,7 +135,23 @@ export default function CircuitSelectionRoute() {
       })),
     }));
 
-    return [...real, ...FORM_ITEMS];
+    // Registros padronizados — sempre disponíveis para iniciar uma nova avaliação.
+    const formularios: CircuitItem[] = [
+      {
+        id: "formulario-ata",
+        name: "ATA",
+        description: "Iniciar um novo registro ATA",
+        type: "ata",
+      },
+      {
+        id: "formulario-cars",
+        name: "CARS",
+        description: "Iniciar um novo registro CARS",
+        type: "cars",
+      },
+    ];
+
+    return [...real, ...formularios];
   }, [circuits, studentAge]);
 
   return (
@@ -158,7 +171,7 @@ export default function CircuitSelectionRoute() {
           exercises: exercisesParam,
         };
 
-        if (circuit.type === "livre") {
+        if (circuit.type === "semi-estruturado") {
           router.push({
             pathname: "/session/semi-structured",
             params: baseParams,
