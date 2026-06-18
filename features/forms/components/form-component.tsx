@@ -43,7 +43,7 @@ export const FormComponent = forwardRef(function FormComponent(
         .maybeSingle();
 
       const questionSourceId = formulario?.template_origem_id ?? formularioId;
-
+      
       const { data, error } = await supabase
         .from("perguntas")
         .select("*")
