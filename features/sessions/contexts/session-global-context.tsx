@@ -7,15 +7,29 @@ export interface ActiveSessionInfo {
   studentId: string;
   studentName: string;
   type: SessionType;
-  timeElapsed: number; // in seconds
+  timeElapsed: number;
   isRunning: boolean;
-  exerciseProgress: string; // e.g. "Exercício 1/3" ou "Tempo Livre"
+  exerciseProgress: string;
+  exercisesJson?: string;
+  circuitId?: string;
+  circuitName?: string;
+  /** Histórico de execuções (exercicioId -> status) — persiste ao sair da tela */
+  historico?: Record<string, "concluido" | "nao_realizada" | "adiado">;
+  /** ID do exercício ativo ao sair da tela */
+  activeExerciseId?: string;
 }
 
 interface SessionGlobalContextData {
   activeSessions: Record<string, ActiveSessionInfo>;
   registerSession: (session: ActiveSessionInfo) => void;
   updateSessionProgress: (sessionId: string, progress: string) => void;
+  updateSessionState: (
+    sessionId: string,
+    state: {
+      historico?: Record<string, "concluido" | "nao_realizada" | "adiado">;
+      activeExerciseId?: string | null;
+    }
+  ) => void;
   toggleTimer: (sessionId: string, isRunning?: boolean) => void;
   closeSession: (sessionId: string) => void;
   updateTimeElapsed: (sessionId: string, seconds: number) => void;
@@ -49,9 +63,11 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
       ...prev,
       [session.sessionId]: {
         ...session,
-        // Preserve previous time and running state if it already existed (e.g. strict re-renders)
+        // Preserve runtime state if session already existed (navigation round-trip)
         timeElapsed: prev[session.sessionId]?.timeElapsed ?? session.timeElapsed ?? 0,
         isRunning: prev[session.sessionId]?.isRunning ?? session.isRunning ?? true,
+        historico: prev[session.sessionId]?.historico ?? session.historico,
+        activeExerciseId: prev[session.sessionId]?.activeExerciseId ?? session.activeExerciseId,
       },
     }));
   };
@@ -59,9 +75,26 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
   const updateSessionProgress = (sessionId: string, progress: string) => {
     setActiveSessions((prev) => {
       if (!prev[sessionId]) return prev;
+      return { ...prev, [sessionId]: { ...prev[sessionId], exerciseProgress: progress } };
+    });
+  };
+
+  const updateSessionState = (
+    sessionId: string,
+    state: {
+      historico?: Record<string, "concluido" | "nao_realizada" | "adiado">;
+      activeExerciseId?: string | null;
+    }
+  ) => {
+    setActiveSessions((prev) => {
+      if (!prev[sessionId]) return prev;
       return {
         ...prev,
-        [sessionId]: { ...prev[sessionId], exerciseProgress: progress },
+        [sessionId]: {
+          ...prev[sessionId],
+          ...(state.historico !== undefined ? { historico: state.historico } : {}),
+          ...(state.activeExerciseId !== undefined ? { activeExerciseId: state.activeExerciseId ?? undefined } : {}),
+        },
       };
     });
   };
@@ -101,6 +134,7 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
         activeSessions,
         registerSession,
         updateSessionProgress,
+        updateSessionState,
         toggleTimer,
         closeSession,
         updateTimeElapsed,

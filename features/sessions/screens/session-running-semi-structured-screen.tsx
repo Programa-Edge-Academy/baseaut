@@ -62,7 +62,7 @@ export function SessionRunningSemiStructuredScreen({
   const router = useRouter();
 
   const { createSession, persistExecutions, finishSession } = useSessionFlow();
-  const { registerSession, updateSessionProgress, toggleTimer, closeSession, activeSessions } = useSessionGlobalContext();
+  const { registerSession, updateSessionProgress, updateSessionState, toggleTimer, closeSession, activeSessions } = useSessionGlobalContext();
 
   // ID efetivo da sessão: usa o recebido (retomada) ou cria um na montagem.
   const effectiveSessionIdRef = useRef<string>(sessionId || "");
@@ -71,6 +71,9 @@ export function SessionRunningSemiStructuredScreen({
   const ordemRef = useRef(0);
   // Segundos do cronômetro capturados na última parada.
   const lastElapsedSecondsRef = useRef<number | null>(null);
+
+  // ID da sessão resolvido de forma síncrona (para inicializar estado local).
+  const sid = sessionId || effectiveSessionIdRef.current || "";
 
   const safeStudentName = studentName || "Aluno";
 
@@ -92,6 +95,9 @@ export function SessionRunningSemiStructuredScreen({
         timeElapsed: 0,
         isRunning: true,
         exerciseProgress: "Iniciando...",
+        exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description }))),
+        circuitId: circuitId || undefined,
+        circuitName: circuitName || undefined,
       });
       return id;
     })();
@@ -112,6 +118,9 @@ export function SessionRunningSemiStructuredScreen({
         timeElapsed: 0,
         isRunning: true,
         exerciseProgress: "Retomando...",
+        exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description }))),
+        circuitId: circuitId || undefined,
+        circuitName: circuitName || undefined,
       });
     }
   }, [sessionId, studentId, safeStudentName, registerSession]);
@@ -132,8 +141,8 @@ export function SessionRunningSemiStructuredScreen({
     exercise: SessionExercise,
     record: Omit<ExecutionRecord, "exercicioId" | "ordemExecucao">,
   ) => {
-    const sid = await ensureSessionId();
-    if (!sid) return;
+    const resolvedSid = await ensureSessionId();
+    if (!resolvedSid) return;
     ordemRef.current += 1;
     const fullRecord: ExecutionRecord = {
       exercicioId: exercise.id,
@@ -141,30 +150,39 @@ export function SessionRunningSemiStructuredScreen({
       ...record,
     };
     try {
-      await persistExecutions(sid, [fullRecord]);
+      await persistExecutions(resolvedSid, [fullRecord]);
     } catch (err) {
       console.error("Erro ao salvar execução (semi-estruturado):", err);
     }
   };
 
-  const [activeExercise, setActiveExercise] = useState<SessionExercise | null>(null);
+  // Inicializa o histórico e o exercício ativo restaurando do contexto global (retomada)
+  const currentSessionData = activeSessions[sid];
+  const [activeExercise, setActiveExercise] = useState<SessionExercise | null>(() => {
+    if (!currentSessionData?.activeExerciseId) return null;
+    return exercises.find((e) => e.id === currentSessionData.activeExerciseId) ?? null;
+  });
   const [stage, setStage] = useState<ExerciseStage>("ready");
-  
-  
 
   const [historicoExercicios, setHistoricoExercicios] = useState<
     Record<string, "concluido" | "nao_realizada" | "adiado">
-  >({});
+  >(() => currentSessionData?.historico ?? {});
+
+  const controlledSeconds = currentSessionData?.timeElapsed ?? 0;
+  const controlledIsRunning = currentSessionData?.isRunning ?? false;
 
   const [elapsedTimeStr, setElapsedTimeStr] = useState<string | undefined>();
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
   const [isFinishOpen, setIsFinishOpen] = useState(false);
 
-  // Lê do contexto global
-  const sid = effectiveSessionIdRef.current || sessionId || "";
-  const currentSessionData = activeSessions[sid];
-  const controlledSeconds = currentSessionData?.timeElapsed ?? 0;
-  const controlledIsRunning = currentSessionData?.isRunning ?? false;
+  // Sincroniza o histórico e exercício ativo de volta ao contexto global ao mudar
+  useEffect(() => {
+    if (!sid) return;
+    updateSessionState(sid, {
+      historico: historicoExercicios,
+      activeExerciseId: activeExercise?.id ?? null,
+    });
+  }, [historicoExercicios, activeExercise, sid]);
 
   // Atualiza o progresso globalmente quando o histórico muda
   useEffect(() => {

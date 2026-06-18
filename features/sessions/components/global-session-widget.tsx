@@ -4,10 +4,14 @@ import { useSessionGlobalContext } from "../contexts/session-global-context";
 import { SessionResumeWidget } from "@/components/session-resume-widget";
 
 export function GlobalSessionWidget() {
-  const { activeSessions, toggleTimer } = useSessionGlobalContext();
+  const { activeSessions, toggleTimer, closeSession } = useSessionGlobalContext();
   const pathname = usePathname();
   const router = useRouter();
-  
+
+  // Usar estado local para navegar entre as sessões múltiplas
+  // MUST be before any conditional returns (Rules of Hooks)
+  const [currentIndex, setCurrentIndex] = useState(0);
+
   // Do not show if we are on a session running screen
   if (pathname.includes("/session/semi-structured") || pathname.includes("/session/structured")) {
     return null;
@@ -19,8 +23,6 @@ export function GlobalSessionWidget() {
   }
 
   const mode = sessionIds.length > 1 ? "multiple" : "single";
-  // Usar estado local para navegar entre as sessões múltiplas
-  const [currentIndex, setCurrentIndex] = useState(0);
 
   // Garantir que o index é válido caso uma sessão seja fechada
   const safeIndex = currentIndex >= sessionIds.length ? 0 : currentIndex;
@@ -45,7 +47,6 @@ export function GlobalSessionWidget() {
   };
 
   const handlePress = () => {
-    // Redireciona para a tela da sessão
     if (sessionData.type === "semi-structured") {
       router.push({
         pathname: "/session/semi-structured",
@@ -53,6 +54,9 @@ export function GlobalSessionWidget() {
           sessionId: sessionData.sessionId,
           studentId: sessionData.studentId,
           studentName: sessionData.studentName,
+          exercises: sessionData.exercisesJson ?? "[]",
+          circuitId: sessionData.circuitId ?? "",
+          circuitName: sessionData.circuitName ?? "Circuito",
         },
       });
     } else {
@@ -67,6 +71,10 @@ export function GlobalSessionWidget() {
     }
   };
 
+  const handleClose = () => {
+    closeSession(sessionData.sessionId);
+  };
+
   return (
     <SessionResumeWidget
       mode={mode}
@@ -76,6 +84,7 @@ export function GlobalSessionWidget() {
       isPlaying={sessionData.isRunning}
       onTogglePlay={() => toggleTimer(sessionData.sessionId)}
       onPress={handlePress}
+      onClose={handleClose}
       onNext={handleNext}
       onPrev={handlePrev}
     />
