@@ -149,7 +149,7 @@ export function CircuitsScreen() {
             ? <Shuffle size={20} color={iconColor} /> 
             : <Share2 size={20} color={iconColor} />;
             
-          let badgeLabel = isStructured ? "Estruturado" : "Livre";
+          let badgeLabel = isStructured ? "Estruturado" : "Semi-estruturado";
 
           if (isMabc) {
             if (item.type === "mabc_1") {
@@ -173,11 +173,11 @@ export function CircuitsScreen() {
               iconBgColor={withOpacity(iconColor, 0.15)}
               badge={{ label: badgeLabel, color: iconColor }}
               showDuplicate={!isMabc}
-              onPress={!isMabc ? () => setCircuitToEdit(item) : undefined}
+              onPress={isMabc ? () => setCircuitToView(item) : () => setCircuitToEdit(item)}
               onEdit={isMabc ? undefined : () => setCircuitToEdit(item)}
               onDuplicate={isMabc ? undefined : () => handleDuplicate(item)}
               onDelete={isMabc ? undefined : () => setCircuitToDelete(item)}
-              enableRipple={!isMabc}
+              enableRipple={true}
             />
           );
         }}

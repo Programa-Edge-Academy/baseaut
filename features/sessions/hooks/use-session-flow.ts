@@ -3,7 +3,8 @@ import { useCallback, useRef, useState } from "react";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { supabase } from "@/lib/supabase";
 
-export type StatusRealizacao = "realizada" | "nao_realizada";
+// "adiado" depende da adição do valor ao enum status_realizacao_enum no backend.
+export type StatusRealizacao = "realizada" | "nao_realizada" | "adiado";
 export type NivelDesenvolvimento = "inicial" | "intermediario" | "maduro";
 export type RegistroAjuda = "autonomo" | "ajuda_intrusiva" | "nao_se_aplica";
 export type MotivoNaoRealizacao =
@@ -108,14 +109,9 @@ export function useSessionFlow() {
     ): Promise<InsertedExecution[]> => {
       if (!records.length) return [];
 
-      // Postgres 21000: a single upsert cannot affect the same conflict-target
-      // row twice. Keep only the last record for each exercicioId.
-      const latestByExercicio = new Map<string, ExecutionRecord>();
-      for (const record of records) {
-        latestByExercicio.set(record.exercicioId, record);
-      }
-
-      const payload = [...latestByExercicio.values()].map((record) => ({
+      // Cada execução vira uma linha nova (INSERT). Permite repetir o mesmo
+      // exercício na sessão e registrar várias atividades de engajamento.
+      const payload = records.map((record) => ({
         sessao_id: sessaoId,
         exercicio_id: record.exercicioId,
         ordem_execucao: record.ordemExecucao,
@@ -130,7 +126,7 @@ export function useSessionFlow() {
 
       const { data, error: insertError } = await supabase
         .from("execucoes_exercicio")
-        .upsert(payload, { onConflict: "sessao_id,exercicio_id" })
+        .insert(payload)
         .select("id, exercicio_id");
 
       if (insertError) throw insertError;
@@ -192,13 +188,14 @@ export function useSessionFlow() {
   );
 
   /**
-   * Persists executions and crises, then closes the session under a single
-   * guard. Crises are linked to the execution of their exercise.
+   * Closes the session and links crises. As execuções já foram persistidas
+   * incrementalmente durante a sessão, então aqui apenas vinculamos as crises
+   * (buscando os ids das execuções já gravadas) e finalizamos.
    */
   const saveSession = useCallback(
     async (
       sessaoId: string,
-      records: ExecutionRecord[],
+      _records: ExecutionRecord[],
       crises: CrisisRecord[] = [],
       finishInput: FinishSessionInput = {},
     ): Promise<void> => {
@@ -207,10 +204,16 @@ export function useSessionFlow() {
       setIsSaving(true);
       setError(null);
       try {
-        const inserted = await persistExecutions(sessaoId, records);
-        const execucaoIdByExercicio = new Map(
-          inserted.map((row) => [row.exercicio_id, row.id]),
-        );
+        let execucaoIdByExercicio = new Map<string, string>();
+        if (crises.length) {
+          const { data } = await supabase
+            .from("execucoes_exercicio")
+            .select("id, exercicio_id")
+            .eq("sessao_id", sessaoId);
+          for (const row of data ?? []) {
+            execucaoIdByExercicio.set(row.exercicio_id, row.id);
+          }
+        }
         await persistCrises(sessaoId, crises, execucaoIdByExercicio);
         await finishSession(sessaoId, finishInput);
       } catch (caught: any) {
@@ -221,7 +224,7 @@ export function useSessionFlow() {
         setIsSaving(false);
       }
     },
-    [persistExecutions, persistCrises, finishSession],
+    [persistCrises, finishSession],
   );
 
   return {

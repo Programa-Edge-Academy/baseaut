@@ -33,10 +33,21 @@ export const FormComponent = forwardRef(function FormComponent(
         return;
       }
 
+      // Instâncias de formulário (RC/ATA/CARS criadas por sessão/avaliação) não
+      // copiam as perguntas: elas apontam para o template via template_origem_id.
+      // As perguntas vivem no template; as respostas, na instância.
+      const { data: formulario } = await supabase
+        .from("formularios")
+        .select("template_origem_id")
+        .eq("id", formularioId)
+        .maybeSingle();
+
+      const questionSourceId = formulario?.template_origem_id ?? formularioId;
+
       const { data, error } = await supabase
         .from("perguntas")
         .select("*")
-        .eq("formulario_id", formularioId)
+        .eq("formulario_id", questionSourceId)
         .order("ordem", { ascending: true });
 
       if (error) {
@@ -202,11 +213,30 @@ export const FormComponent = forwardRef(function FormComponent(
         };
       });
 
-      const { error } = await supabase
-        .from("respostas_formulario")
-        .upsert(payloadRespostas, { onConflict: "sessao_id, pergunta_id" });
+      if (sessaoId) {
+        // Registro de Controle: a constraint UNIQUE (sessao_id, pergunta_id)
+        // permite upsert idempotente por sessão.
+        const { error } = await supabase
+          .from("respostas_formulario")
+          .upsert(payloadRespostas, { onConflict: "sessao_id, pergunta_id" });
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // ATA/CARS (vinculados só ao aluno): sessao_id é nulo, então a constraint
+        // acima não deduplica. Substituímos todas as respostas da instância.
+        const { error: deleteError } = await supabase
+          .from("respostas_formulario")
+          .delete()
+          .eq("formulario_id", formularioId);
+
+        if (deleteError) throw deleteError;
+
+        const { error: insertError } = await supabase
+          .from("respostas_formulario")
+          .insert(payloadRespostas);
+
+        if (insertError) throw insertError;
+      }
 
       if (!silent) Alert.alert("Sucesso", "Avaliação salva com sucesso!");
       if (onSuccess) onSuccess();

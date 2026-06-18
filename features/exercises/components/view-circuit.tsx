@@ -5,7 +5,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, Vi
 import { colors } from "@/assets/colors";
 import { Exercise } from "../hooks/use-exercises";
 
-type ExecutionMode = "estruturado" | "livre";
+type ExecutionMode = "estruturado" | "semi-estruturado";
 
 interface ViewCircuitProps {
   visible: boolean;

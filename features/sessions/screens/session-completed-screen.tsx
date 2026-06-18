@@ -1,3 +1,4 @@
+import { AppModal } from "@/components/app-modal";
 import { colors } from "@/assets/colors";
 import { ActionButtons } from "@/components/action-buttons";
 import { Header } from "@/components/header";
@@ -35,20 +36,6 @@ export function SessionCompletedScreen({
   sessionId,
 }: SessionCompletedScreenProps) {
   const router = useRouter();
-
-  // Abre o Registro de Controle da sessão, reaproveitando a rota de formulário.
-  const handleOpenRegistroControle = () => {
-    router.push({
-      pathname: "/form",
-      params: {
-        circuitType: "registro_controle",
-        circuitName: "Registro de Controle",
-        studentName,
-        studentId: studentId ?? "",
-        sessionId: sessionId ?? "",
-      },
-    });
-  };
 
   const filaDePendentes = queue ? JSON.parse(queue) : [];
   const circuitoCompleto = fullCircuit ? JSON.parse(fullCircuit) : [];
@@ -116,12 +103,11 @@ export function SessionCompletedScreen({
   };
 
   const handleConfirmRepeat = () => {
-    const exercisesToRepeat = circuitoCompleto
-      .filter((ex: any) => selectedRepeatIds.includes(ex.id))
-      .map((ex: any) => ({
-        ...ex,
-        id: `repeated-${ex.id}-${Date.now()}`,
-      }));
+    // Mantém o exercicio_id real para que a execução seja gravada na sessão
+    // (o id mascarado quebraria a FK em execucoes_exercicio).
+    const exercisesToRepeat = circuitoCompleto.filter((ex: any) =>
+      selectedRepeatIds.includes(ex.id),
+    );
 
     if (exercisesToRepeat.length > 0) {
       setIsRepeatModalOpen(false);
@@ -130,6 +116,8 @@ export function SessionCompletedScreen({
         params: {
           queue: JSON.stringify(exercisesToRepeat),
           studentName,
+          studentId: studentId ?? "",
+          sessionId: sessionId ?? "",
         },
       });
     }
@@ -170,6 +158,8 @@ export function SessionCompletedScreen({
                       params: {
                         queue: JSON.stringify(filaDePendentes),
                         studentName,
+                        studentId: studentId ?? "",
+                        sessionId: sessionId ?? "",
                       },
                     });
                   } else if (id === "repeat_exercise") {
@@ -182,23 +172,10 @@ export function SessionCompletedScreen({
                 }}
               />
             </View>
-
-            {/* Registro de Controle da sessão */}
-            <View className="mx-5 mt-2">
-              <Pressable
-                onPress={handleOpenRegistroControle}
-                className="flex-row items-center justify-center gap-2 rounded-2xl border border-outline bg-level2 py-4 active:opacity-70"
-              >
-                <ClipboardList size={20} color={colors.primary} />
-                <Text className="text-default-2 font-semibold text-white">
-                  Registro de Controle
-                </Text>
-              </Pressable>
-            </View>
           </View>
         </ScrollView>
 
-        <Modal visible={isRepeatModalOpen} transparent animationType="fade">
+        <AppModal visible={isRepeatModalOpen} transparent animationType="fade">
           <View className="flex-1 bg-black/60 justify-center items-center px-4">
             <View className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[600px] overflow-hidden">
               <View className="flex-row justify-between items-center p-5 border-b border-outline/30">
@@ -240,10 +217,10 @@ export function SessionCompletedScreen({
               </View>
             </View>
           </View>
-        </Modal>
+        </AppModal>
 
         {/* Realizar outro exercício: qualquer exercício da equipe (US08.9) */}
-        <Modal visible={isOtherModalOpen} transparent animationType="fade">
+        <AppModal visible={isOtherModalOpen} transparent animationType="fade">
           <View className="flex-1 bg-black/60 justify-center items-center px-4">
             <View className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[600px] overflow-hidden">
               <View className="flex-row justify-between items-center p-5 border-b border-outline/30">
@@ -297,7 +274,7 @@ export function SessionCompletedScreen({
               </View>
             </View>
           </View>
-        </Modal>
+        </AppModal>
       </View>
     </>
   );
