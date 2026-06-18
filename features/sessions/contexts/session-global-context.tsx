@@ -17,6 +17,8 @@ export interface ActiveSessionInfo {
   historico?: Record<string, "concluido" | "nao_realizada" | "adiado">;
   /** ID do exercício ativo ao sair da tela */
   activeExerciseId?: string;
+  /** Flag para evitar conflito visual entre widget e cronômetro da tela */
+  isTimerVisibleOnScreen?: boolean;
 }
 
 interface SessionGlobalContextData {
@@ -31,6 +33,7 @@ interface SessionGlobalContextData {
     }
   ) => void;
   toggleTimer: (sessionId: string, isRunning?: boolean) => void;
+  setTimerVisible: (sessionId: string, isVisible: boolean) => void;
   closeSession: (sessionId: string) => void;
   updateTimeElapsed: (sessionId: string, seconds: number) => void;
 }
@@ -110,6 +113,17 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const setTimerVisible = (sessionId: string, isVisible: boolean) => {
+    setActiveSessions((prev) => {
+      if (!prev[sessionId]) return prev;
+      if (prev[sessionId].isTimerVisibleOnScreen === isVisible) return prev;
+      return {
+        ...prev,
+        [sessionId]: { ...prev[sessionId], isTimerVisibleOnScreen: isVisible },
+      };
+    });
+  };
+
   const updateTimeElapsed = (sessionId: string, seconds: number) => {
     setActiveSessions((prev) => {
       if (!prev[sessionId]) return prev;
@@ -136,6 +150,7 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
         updateSessionProgress,
         updateSessionState,
         toggleTimer,
+        setTimerVisible,
         closeSession,
         updateTimeElapsed,
       }}

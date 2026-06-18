@@ -93,8 +93,8 @@ export function SessionRunningSemiStructuredScreen({
         studentName: safeStudentName,
         type: "semi-structured",
         timeElapsed: 0,
-        isRunning: true,
-        exerciseProgress: "Iniciando...",
+        isRunning: false,
+        exerciseProgress: "Aguardando início...",
         exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description }))),
         circuitId: circuitId || undefined,
         circuitName: circuitName || undefined,
@@ -116,7 +116,7 @@ export function SessionRunningSemiStructuredScreen({
         studentName: safeStudentName,
         type: "semi-structured",
         timeElapsed: 0,
-        isRunning: true,
+        isRunning: false,
         exerciseProgress: "Retomando...",
         exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description }))),
         circuitId: circuitId || undefined,
@@ -175,14 +175,22 @@ export function SessionRunningSemiStructuredScreen({
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
   const [isFinishOpen, setIsFinishOpen] = useState(false);
 
-  // Sincroniza o histórico e exercício ativo de volta ao contexto global ao mudar
+  const { setTimerVisible } = useSessionGlobalContext();
+
+  // Sincroniza a visibilidade do widget: oculta se a tela estiver exibindo a execução do exercício
+  useEffect(() => {
+    if (!sid) return;
+    const isVisibleOnScreen = !!activeExercise;
+    setTimerVisible(sid, isVisibleOnScreen);
+  }, [activeExercise, sid, setTimerVisible]);
+
+  // Sincroniza o histórico de volta ao contexto global ao mudar
   useEffect(() => {
     if (!sid) return;
     updateSessionState(sid, {
       historico: historicoExercicios,
-      activeExerciseId: activeExercise?.id ?? null,
     });
-  }, [historicoExercicios, activeExercise, sid]);
+  }, [historicoExercicios, sid]);
 
   // Atualiza o progresso globalmente quando o histórico muda
   useEffect(() => {
@@ -288,6 +296,9 @@ export function SessionRunningSemiStructuredScreen({
       [exercise.id]: status,
     };
     setHistoricoExercicios(novoHistorico);
+    if (sid) {
+      updateSessionState(sid, { activeExerciseId: null });
+    }
 
     setIsResultModalOpen(false);
     triggerToast();
@@ -380,7 +391,13 @@ export function SessionRunningSemiStructuredScreen({
               title={activeExercise.name}
               subtitle={activeExercise.description}
               mediaUrls={activeExercise.mediaUrls ?? []}
-              onStart={() => setStage("running")}
+              onStart={() => {
+                setStage("running");
+                if (sid) {
+                  toggleTimer(sid, true);
+                  updateSessionState(sid, { activeExerciseId: activeExercise.id });
+                }
+              }}
               onStartAndRecord={null}
             />
           ) : (
@@ -445,14 +462,24 @@ export function SessionRunningSemiStructuredScreen({
             {exercises.map((exercise) => {
               const status = historicoExercicios[exercise.id];
               const isConcluido = status === "concluido" || status === "adiado";
+              
+              // Bloqueia outros exercícios se um já estiver rodando
+              const hasActiveExercise = !!currentSessionData?.activeExerciseId;
+              const isRunningThis = exercise.id === currentSessionData?.activeExerciseId;
+              const isBlocked = hasActiveExercise && !isRunningThis;
+              
+              const disabled = isConcluido || isBlocked;
+
               return (
                 <Pressable
                   key={exercise.id}
-                  disabled={isConcluido}
+                  disabled={disabled}
                   className={`flex-row items-center justify-between rounded-2xl border px-5 py-4 ${
                     isConcluido
                       ? "bg-[#34C759]/10 border-[#34C759] opacity-70"
-                      : "bg-level2 border-outline"
+                      : isBlocked 
+                        ? "bg-level2 border-outline opacity-40" 
+                        : "bg-level2 border-outline"
                   }`}
                   onPress={() => handleSelectExercise(exercise)}
                 >

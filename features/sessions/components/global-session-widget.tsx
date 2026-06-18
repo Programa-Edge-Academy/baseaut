@@ -5,19 +5,15 @@ import { SessionResumeWidget } from "@/components/session-resume-widget";
 
 export function GlobalSessionWidget() {
   const { activeSessions, toggleTimer, closeSession } = useSessionGlobalContext();
-  const pathname = usePathname();
   const router = useRouter();
 
   // Usar estado local para navegar entre as sessões múltiplas
   // MUST be before any conditional returns (Rules of Hooks)
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Do not show if we are on a session running screen
-  if (pathname.includes("/session/semi-structured") || pathname.includes("/session/structured")) {
-    return null;
-  }
-
-  const sessionIds = Object.keys(activeSessions);
+  // Consider only sessions where the timer is NOT visible natively on screen
+  const sessionIds = Object.keys(activeSessions).filter((id) => !activeSessions[id].isTimerVisibleOnScreen);
+  
   if (sessionIds.length === 0) {
     return null;
   }
