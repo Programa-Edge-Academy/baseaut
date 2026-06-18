@@ -14,7 +14,8 @@ export type CircuitType =
   | "semi-estruturado"
   | "ata"
   | "cars"
-  | "mabc";
+  | "mabc"
+  | "mabc2";
 
 export type CircuitSelectionExercise = {
   id: string;

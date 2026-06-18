@@ -151,7 +151,23 @@ export default function CircuitSelectionRoute() {
       },
     ];
 
-    return [...real, ...formularios];
+    // MABC-2 como formulário: disponível apenas para alunos na faixa 3–16 anos.
+    const mabcForms: CircuitItem[] = [];
+    if (studentAge !== null && studentAge >= 3 && studentAge <= 16) {
+      let faixaLabel = "";
+      if (studentAge <= 6) faixaLabel = "3 a 6 anos";
+      else if (studentAge <= 10) faixaLabel = "7 a 10 anos";
+      else faixaLabel = "11 a 16 anos";
+
+      mabcForms.push({
+        id: "formulario-mabc2",
+        name: "MABC-2",
+        description: `Iniciar uma nova avaliação MABC-2 — Faixa ${faixaLabel}`,
+        type: "mabc2",
+      });
+    }
+
+    return [...real, ...formularios, ...mabcForms];
   }, [circuits, studentAge]);
 
   return (
@@ -181,7 +197,7 @@ export default function CircuitSelectionRoute() {
             pathname: "/session/structured",
             params: baseParams,
           });
-        } else if (circuit.type === "ata" || circuit.type === "cars") {
+        } else if (circuit.type === "ata" || circuit.type === "cars" || circuit.type === "mabc2") {
           router.push({
             pathname: "/form",
             params: {
