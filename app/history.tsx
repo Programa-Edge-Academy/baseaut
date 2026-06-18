@@ -89,9 +89,6 @@ export default function HistoryScreen() {
       <Header variant="back" onPressBack={() => router.back()} />
 
       <View className="mx-8 mt-5">
-        <PageHeader
-          title="Histórico de registros"
-          subtitle="Selecione um aluno para acessar registros passados"
         <PageHeader 
           title="Histórico de Alunos" 
           subtitle="Busque e gerencie os registros"
