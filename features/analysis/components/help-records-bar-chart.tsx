@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { LayoutChangeEvent, ScrollView, Text, View } from "react-native";
+import { LayoutChangeEvent, Text, View } from "react-native";
 import Svg, {
   Line,
   Rect,
@@ -154,15 +154,18 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
   // Largura disponível para a área de barras (descontando eixo Y e padding do card)
   const availableWidth = containerWidth - Y_AXIS_WIDTH - CARD_PADDING * 2;
   const N = sessions.length;
-  const dynamicSlotWidth = N > 0
-    ? Math.max(SESSION_SLOT_WIDTH, (availableWidth - X_START_PADDING) / N)
-    : SESSION_SLOT_WIDTH;
 
-  // Largura total do SVG rolável
-  const svgScrollWidth =
-    X_START_PADDING +
-    N * dynamicSlotWidth +
-    GROUP_SPACING;
+  // Padding simétrico: reserva espaço no início e no fim para que o primeiro e
+  // último grupo de barras não sejam cortados pela borda do SVG
+  const X_END_PADDING = X_START_PADDING;
+  // Largura de slot adaptativa: distribui N grupos no espaço entre os dois paddings
+  const minSlotWidth = GROUP_WIDTH + 8; // mínimo 8px de espaço entre grupos
+  const adaptiveSlotWidth = N > 0
+    ? Math.max(minSlotWidth, (availableWidth - X_START_PADDING - X_END_PADDING) / N)
+    : minSlotWidth;
+
+  // Largura total do SVG — fixada na largura disponível do container
+  const svgWidth = availableWidth;
 
   // Coordenada Y de um tick no SVG
   const tickToSvgY = (tick: number) =>
@@ -236,10 +239,9 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
           </Svg>
         </View>
 
-        {/* Área rolável com barras + grade */}
+        {/* Área adaptativa com barras + grade (sem scroll) */}
         <View className="flex-1" style={{ height: CHART_HEIGHT }}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <Svg width={svgScrollWidth} height={CHART_HEIGHT}>
+          <Svg width={svgWidth} height={CHART_HEIGHT}>
 
               {/* Linhas de grade horizontais (dashed) */}
               {yTicks.map((tick) => {
@@ -249,7 +251,7 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
                     key={`grid-${tick}`}
                     x1={0}
                     y1={y}
-                    x2={svgScrollWidth}
+                    x2={svgWidth}
                     y2={y}
                     stroke={colors.outline}
                     strokeWidth={1}
@@ -260,7 +262,7 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
 
               {/* Barras agrupadas + rótulo de sessão */}
               {sessions.map((session, index) => {
-                const groupX = X_START_PADDING + index * dynamicSlotWidth;
+                const groupX = X_START_PADDING + index * adaptiveSlotWidth;
                 const xIntrusive = groupX;
                 const xAutonomous = groupX + BAR_WIDTH + BAR_GAP;
                 const groupCenterX = groupX + GROUP_WIDTH / 2;
@@ -314,8 +316,7 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
               })}
 
             </Svg>
-          </ScrollView>
-        </View>
+          </View>
       </View>
 
       {/* Label "Sessão" centralizado abaixo da área rolável */}

@@ -1,16 +1,17 @@
+import { AppModal } from "@/components/app-modal";
 import React, { useEffect, useRef, useState } from "react";
-import { Modal, Text, View, Pressable, useWindowDimensions, ScrollView, StyleSheet } from "react-native";
+import { Text, View, Pressable, useWindowDimensions, ScrollView } from "react-native";
 import { X, CheckCircle2, Tags } from "lucide-react-native";
 import { ActionButtons } from "@/components/action-buttons";
 import { colors } from "@/assets/colors";
-import { withOpacity } from "@/components/color-opacity";
 import { DefaultTextInput } from "@/components/default-text-input";
+import { DraggableList } from "@/components/draggable-list";
 import { SelectableChip } from "@/components/selectable-chip";
 import { useExercises, Exercise } from "../hooks/use-exercises";
 import { CircuitType } from "../hooks/use-circuits";
 import { TagGroup } from "./tag-group";
 
-type ExecutionMode = "estruturado" | "livre";
+type ExecutionMode = "estruturado" | "semi-estruturado";
 
 interface NewCircuitProps {
   visible: boolean;
@@ -32,74 +33,6 @@ interface NewCircuitProps {
   }) => Promise<void>;
 }
 
-const SwapItem = React.memo(({ item, index, isSelected, onPress }: {
-  item: Exercise,
-  index: number,
-  isSelected: boolean,
-  onPress: () => void
-}) => (
-  <Pressable
-    style={[STYLES.swapItem, isSelected && STYLES.swapItemSelected]}
-    onPress={onPress}
-  >
-    <View style={[STYLES.swapNumberBox, isSelected && STYLES.swapNumberBoxSelected]}>
-      <Text style={STYLES.swapNumberText}>{index + 1}</Text>
-    </View>
-    <Text style={[STYLES.swapItemName, isSelected && STYLES.swapItemNameSelected]} numberOfLines={2}>
-      {item.name}
-    </Text>
-    {isSelected && <Text style={STYLES.swapHelperText}>Trocar com...</Text>}
-  </Pressable>
-));
-
-const STYLES = StyleSheet.create({
-  swapItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.level1,
-    borderColor: colors.outline,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 10,
-  },
-  swapItemSelected: {
-    borderColor: colors.primary,
-    backgroundColor: withOpacity(colors.primary, 0.15),
-  },
-  swapNumberBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.outline,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  swapNumberBoxSelected: {
-    backgroundColor: colors.primary,
-  },
-  swapNumberText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  swapItemName: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    flex: 1,
-  },
-  swapItemNameSelected: {
-    color: colors.primary,
-    fontWeight: 'bold',
-  },
-  swapHelperText: {
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: 'bold',
-  }
-});
 
 export function NewCircuit({
   visible,
@@ -117,8 +50,6 @@ export function NewCircuit({
   const [type, setType] = useState<CircuitType>("padrao");
   const [form, setForm] = useState<string | null>(null);
 
-  const [swapIndex, setSwapIndex] = useState<number | null>(null);
-
   const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedSubtags, setSelectedSubtags] = useState<Record<string, string[]>>({});
@@ -130,6 +61,7 @@ export function NewCircuit({
 
   const [showToast, setShowToast] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const frozenTitle = useRef(title);
 
@@ -153,7 +85,6 @@ export function NewCircuit({
         setForm(null);
       }
       setErrors({ name: "", exercises: "" });
-      setSwapIndex(null);
       setShowToast(false);
       setIsSaving(false);
       setIsTagFilterOpen(false);
@@ -164,8 +95,6 @@ export function NewCircuit({
 
   const handleToggleExercise = (exercise: Exercise) => {
     if (errors.exercises) setErrors(prev => ({ ...prev, exercises: "" }));
-    setSwapIndex(null);
-
     setOrderedExercises((prev) => {
       const isAlreadySelected = prev.some((e) => e.id === exercise.id);
       if (isAlreadySelected) {
@@ -191,22 +120,6 @@ export function NewCircuit({
     return ex.subtags.some((sub) => subsForTag.includes(sub));
   });
 
-const handleSwapClick = React.useCallback((index: number) => {
-  if (swapIndex === null) {
-    setSwapIndex(index);
-  } else if (swapIndex === index) {
-    setSwapIndex(null);
-  } else {
-    setOrderedExercises((prev) => {
-      const newList = [...prev];
-      const temp = newList[swapIndex];
-      newList[swapIndex] = newList[index];
-      newList[index] = temp;
-      return newList;
-    });
-    setSwapIndex(null);
-  }
-}, [swapIndex]);
 
   const handleValidationAndSave = async () => {
     let isValid = true;
@@ -246,7 +159,7 @@ const handleSwapClick = React.useCallback((index: number) => {
   };
 
   return (
-    <Modal
+    <AppModal
       visible={visible}
       transparent
       animationType="fade"
@@ -276,52 +189,50 @@ const handleSwapClick = React.useCallback((index: number) => {
           <ScrollView
             className="flex-shrink"
             showsVerticalScrollIndicator={false}
+            scrollEnabled={!isDragging}
             contentContainerStyle={{ padding: 20 }}
           >
             <View className="gap-5 mb-5">
-              <View>
-                <DefaultTextInput
-                  value={name}
-                  maxLength={20}
-                  onChangeText={(val) => {
-                    const cleanVal = val.replace(/\d/g, "");
-                    setName(cleanVal);
-                    if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
-                  }}
-                  placeholder="Nome do circuito"
-                  outLineBorderClass={errors.name ? "border-error" : ""}
-                />
-                {errors.name ? (
-                  <Text className="text-error text-default-3 mt-1 ml-1">{errors.name}</Text>
-                ) : null}
-              </View>
+              <View className="gap-2">
+                  <Text className="text-muted text-default-1">Nome do circuito*</Text>
+                  <DefaultTextInput
+                    value={name}
+                    maxLength={20}
+                    onChangeText={(val) => {
+                      setName(val);
+                      if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
+                    }}
+                    placeholder="Ex: Circuito 1"
+                    className="h-[44px]"
+                    outLineBorderClass={errors.name ? "border-error" : "border-outline"}
+                  />
+                  {errors.name ? (
+                    <Text className="text-error text-default-3 mt-1 ml-1">{errors.name}</Text>
+                  ) : null}
+                </View>
 
               <View>
-                <Text className="text-muted text-default-2 mb-2">Tipo do circuito</Text>
-                <View className="flex-row gap-3">
-                  <Pressable
-                    onPress={() => {
-                      setExecutionMode("estruturado");
-                      setSwapIndex(null);
-                    }}
-                    className={`flex-1 p-3.5 rounded-xl border ${executionMode === "estruturado" ? "border-primary bg-primary/10" : "border-outline bg-level1"
-                      }`}
-                  >
-                    <Text className="text-white text-default-1 mb-1 font-bold">Estruturado</Text>
-                    <Text className="text-muted text-default-3">Realiza todos os exercícios definidos</Text>
-                  </Pressable>
+                <View className="gap-2">
+                  <Text className="text-muted text-default-1">Tipo do circuito*</Text>
+                  <View className="flex-row gap-3">
+                    <Pressable
+                      onPress={() => setExecutionMode("estruturado")}
+                      className={`flex-1 p-3.5 rounded-xl border ${executionMode === "estruturado" ? "border-primary bg-primary/10" : "border-outline bg-level1"
+                        }`}
+                    >
+                      <Text className="text-white text-default-1 mb-1 font-bold">Estruturado</Text>
+                      <Text className="text-muted text-default-3">Realiza todos os exercícios definidos</Text>
+                    </Pressable>
 
-                  <Pressable
-                    onPress={() => {
-                      setExecutionMode("livre");
-                      setSwapIndex(null);
-                    }}
-                    className={`flex-1 p-3.5 rounded-xl border ${executionMode === "livre" ? "border-primary bg-primary/10" : "border-outline bg-level1"
-                      }`}
-                  >
-                    <Text className="text-white text-default-1 mb-1 font-bold">Semi-estruturado</Text>
-                    <Text className="text-muted text-default-3">Para engajamento e atividades parciais</Text>
-                  </Pressable>
+                    <Pressable
+                      onPress={() => setExecutionMode("semi-estruturado")}
+                      className={`flex-1 p-3.5 rounded-xl border ${executionMode === "semi-estruturado" ? "border-primary bg-primary/10" : "border-outline bg-level1"
+                        }`}
+                    >
+                      <Text className="text-white text-default-1 mb-1 font-bold">Semi-estruturado</Text>
+                      <Text className="text-muted text-default-3">Para engajamento e atividades parciais</Text>
+                    </Pressable>
+                  </View>
                 </View>
               </View>
 
@@ -350,16 +261,18 @@ const handleSwapClick = React.useCallback((index: number) => {
                   </View>
                 )}
 
-                <Text className="text-muted text-default-2 mb-2">Selecione os exercícios</Text>
-                <View className="gap-2.5">
-                  {filteredExercises.map((ex: Exercise) => (
-                    <SelectableChip
-                      key={ex.id}
-                      label={ex.name}
-                      isSelected={orderedExercises.some((o) => o.id === ex.id)}
-                      onToggle={() => handleToggleExercise(ex)}
-                    />
-                  ))}
+                <View className="gap-2">
+                  <Text className="text-muted text-default-1">Selecione os exercícios</Text>
+                  <View className="gap-2.5">
+                    {filteredExercises.map((ex: Exercise) => (
+                      <SelectableChip
+                        key={ex.id}
+                        label={ex.name}
+                        isSelected={orderedExercises.some((o) => o.id === ex.id)}
+                        onToggle={() => handleToggleExercise(ex)}
+                      />
+                    ))}
+                  </View>
                 </View>
                 {errors.exercises ? (
                   <Text className="text-error text-default-3 mt-1 ml-1">{errors.exercises}</Text>
@@ -371,18 +284,17 @@ const handleSwapClick = React.useCallback((index: number) => {
               <View className="mt-2">
                 <Text className="text-white text-default-1 mb-1 font-bold">Ordem do Circuito</Text>
                 <Text className="text-muted text-default-3 mb-4">
-                  Toque em um exercício e depois em outro para trocar suas posições.
+                  Segure e arraste pelo ícone de alça para reordenar.
                 </Text>
-
-                {orderedExercises.map((item, index) => (
-                  <SwapItem
-                    key={item.id}
-                    item={item}
-                    index={index}
-                    isSelected={swapIndex === index}
-                    onPress={() => handleSwapClick(index)}
-                  />
-                ))}
+                <DraggableList
+                  items={orderedExercises.map((ex) => ({ id: ex.id, name: ex.name }))}
+                  onReorder={(sorted) =>
+                    setOrderedExercises(
+                      sorted.map((s) => orderedExercises.find((ex) => ex.id === s.id)!),
+                    )
+                  }
+                  onDragActiveChange={setIsDragging}
+                />
               </View>
             )}
           </ScrollView>
@@ -399,6 +311,6 @@ const handleSwapClick = React.useCallback((index: number) => {
           </View>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }

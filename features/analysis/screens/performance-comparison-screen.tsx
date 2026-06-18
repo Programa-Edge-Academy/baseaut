@@ -1,18 +1,19 @@
 import { colors } from "@/assets/colors";
+import { AppModal } from "@/components/app-modal";
 import { DefaultButton } from "@/components/default-button";
 import { Header } from "@/components/header";
 import RangeCalendar from "@/components/range-calendar";
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import React, { useState, useMemo } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 
-// Importação dos novos componentes de comparação
-import AnalysisSummary from "@/features/analysis/components/analysis-summary";
+import { AnalysisSummary } from "@/features/analysis/components/analysis-summary";
 import ComparisonBehaviors from "@/features/analysis/components/comparison-behaviors";
 import ComparisonHelp from "@/features/analysis/components/comparison-help";
 import ExerciceComparisonCard from "@/features/analysis/components/exercice-comparison-card";
+import { usePerformanceComparison } from "@/features/analysis/hooks/use-performance-comparison";
 
 const monthsPt = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -26,25 +27,35 @@ function formatSingleDate(date: Date): string {
   return `${day} ${month} ${year}`;
 }
 
+// Formatação do intervalo de datas do período.
 function formatDateRange(start: Date, end: Date): string {
   return `${formatSingleDate(start)} - ${formatSingleDate(end)}`;
 }
 
+// Conversão local de datas para ranges de data.
 function parseDateString(dateStr: string): Date {
   const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day);
 }
 
+function formatToISODate(date: Date | undefined | null): string | undefined {
+  if (!date) return undefined;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function PerformanceComparisonScreen() {
   const router = useRouter();
-  const { studentId } = useLocalSearchParams();
-  const { profile, isLoading } = useStudentSessions(studentId as string);
+  const { studentId: rawStudentId } = useLocalSearchParams();
+  const studentId = Array.isArray(rawStudentId) ? rawStudentId[0] : rawStudentId ?? "";
+  const { profile, isLoading } = useStudentSessions(studentId);
 
   // Ranges
   const [period1Range, setPeriod1Range] = useState<{ start: Date; end: Date } | null>(null);
   const [period2Range, setPeriod2Range] = useState<{ start: Date; end: Date } | null>(null);
 
-  // Estado para controlar a exibição dos resultados da comparação
   const [showResults, setShowResults] = useState(false);
 
   // Modal States
@@ -52,6 +63,20 @@ export function PerformanceComparisonScreen() {
   const [activePeriod, setActivePeriod] = useState<1 | 2 | null>(null);
   const [tempStart, setTempStart] = useState<Date | null>(null);
   const [tempEnd, setTempEnd] = useState<Date | null>(null);
+
+  // Hook centralizado para comparação de desempenho por períodos
+  const {
+    data: comparisonData,
+    isLoading: isLoadingComparison,
+    error: errorComparison,
+  } = usePerformanceComparison(
+    studentId,
+    formatToISODate(period1Range?.start),
+    formatToISODate(period1Range?.end),
+    formatToISODate(period2Range?.start),
+    formatToISODate(period2Range?.end),
+    showResults
+  );
 
   const handlePeriodPress = (periodNum: 1 | 2) => {
     setActivePeriod(periodNum);
@@ -73,7 +98,6 @@ export function PerformanceComparisonScreen() {
       setPeriod2Range(range);
     }
 
-    // Oculta os resultados anteriores se o usuário alterar as datas escolhidas para permitir re-execução
     setShowResults(false);
     setIsModalVisible(false);
   };
@@ -99,10 +123,8 @@ export function PerformanceComparisonScreen() {
     }
 
     const now = new Date();
-    // Removemos as horas para evitar falhas em datas iguais ao dia atual
     now.setHours(23, 59, 59, 999);
 
-    // Regra: Não é possível comparar períodos futuros
     if (
       period1Range.start > now || period1Range.end > now ||
       period2Range.start > now || period2Range.end > now
@@ -111,19 +133,16 @@ export function PerformanceComparisonScreen() {
       return;
     }
 
-    // Regra: Período 1 a frente do Período 2 cronologicamente
     if (period1Range.start > period2Range.start) {
       Alert.alert("Erro", "Data inválida. Período 1 a frente do Período 2");
       return;
     }
 
-    // Regra: Não é possível comparar dois períodos coincidentes (Lógica de interseção)
     if (period1Range.start <= period2Range.end && period1Range.end >= period2Range.start) {
       Alert.alert("Erro", "Data inválida. Não é possível comparar dois períodos coincidentes");
       return;
     }
 
-    // Se passar por todas as validações, podemos carregar os dados
     setShowResults(true);
   };
 
@@ -136,6 +155,56 @@ export function PerformanceComparisonScreen() {
     }
     return `Período ${periodNum}: selecionar intervalo de datas`;
   };
+
+  // Montagem dinâmica dos cartões do resumo da comparação
+  const summaryCards = useMemo(() => {
+    if (!comparisonData) return [];
+
+    const { resumo, ajuda, exercicios, comportamentos } = comparisonData;
+
+    const exerciciosP1 = (exercicios || []).filter((e) => e.nivel_p1 !== null).length;
+    const exerciciosP2 = (exercicios || []).filter((e) => e.nivel_p2 !== null).length;
+
+    const ajudaP1 = (ajuda?.autonomo?.p1 || 0) + (ajuda?.ajuda_intrusiva?.p1 || 0);
+    const ajudaP2 = (ajuda?.autonomo?.p2 || 0) + (ajuda?.ajuda_intrusiva?.p2 || 0);
+
+    const comportamentosP1 =
+      (comportamentos?.estereotipia?.p1 || 0) +
+      (comportamentos?.contato_visual?.p1 || 0) +
+      (comportamentos?.engajamento?.p1 || 0) +
+      (comportamentos?.fuga?.p1 || 0) +
+      (comportamentos?.crise?.p1 || 0);
+
+    const comportamentosP2 =
+      (comportamentos?.estereotipia?.p2 || 0) +
+      (comportamentos?.contato_visual?.p2 || 0) +
+      (comportamentos?.engajamento?.p2 || 0) +
+      (comportamentos?.fuga?.p2 || 0) +
+      (comportamentos?.crise?.p2 || 0);
+
+    return [
+      {
+        title: "Exercícios avaliados",
+        period1: { label: "Período 1", value: exerciciosP1 },
+        period2: { label: "Período 2", value: exerciciosP2 },
+      },
+      {
+        title: "Registros de ajuda",
+        period1: { label: "Período 1", value: ajudaP1 },
+        period2: { label: "Período 2", value: ajudaP2 },
+      },
+      {
+        title: "Comportamentos observados",
+        period1: { label: "Período 1", value: comportamentosP1 },
+        period2: { label: "Período 2", value: comportamentosP2 },
+      },
+      {
+        title: "Sessões registradas",
+        period1: { label: "Período 1", value: resumo?.sessoes_p1 ?? 0 },
+        period2: { label: "Período 2", value: resumo?.sessoes_p2 ?? 0 },
+      },
+    ];
+  }, [comparisonData]);
 
   return (
     <View className="flex-1 bg-level1">
@@ -182,13 +251,25 @@ export function PerformanceComparisonScreen() {
             {/* Renderização condicional e ordenada dos componentes após clicar em Comparar */}
             {showResults && (
               <View className="mt-6 gap-6">
-                <AnalysisSummary />
+                {isLoadingComparison ? (
+                  <View className="items-center justify-center py-10">
+                    <ActivityIndicator size="large" color={colors.primary} />
+                  </View>
+                ) : errorComparison ? (
+                  <Text className="text-red-400 text-center py-4 px-6">{errorComparison}</Text>
+                ) : (
+                  <>
+                    <AnalysisSummary cards={summaryCards} />
 
-                <ExerciceComparisonCard />
+                    <ExerciceComparisonCard 
+                      exercicios={comparisonData?.exercicios || []}
+                    />
 
-                <ComparisonHelp />
+                    <ComparisonHelp data={comparisonData?.ajuda} />
 
-                <ComparisonBehaviors />
+                    <ComparisonBehaviors data={comparisonData?.comportamentos} />
+                  </>
+                )}
               </View>
             )}
           </View>
@@ -196,7 +277,7 @@ export function PerformanceComparisonScreen() {
       </ScrollView>
 
       {/* Modal Overlay com fade-out (Tela Escurecida) */}
-      <Modal
+      <AppModal
         visible={isModalVisible}
         transparent
         animationType="fade"
@@ -232,7 +313,7 @@ export function PerformanceComparisonScreen() {
             </View>
           </Pressable>
         </Pressable>
-      </Modal>
+      </AppModal>
     </View>
   );
 }

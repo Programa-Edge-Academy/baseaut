@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { ConfirmationModal } from "@/components/confirmation-modal";
 import { type ToastMode } from "@/components/toast";
 import type { Mabc2SectionProps } from "@/features/analysis/components/mabc2-section";
 import {
@@ -6,11 +7,11 @@ import {
   getMabc2Record,
   saveMabc2Record,
   startMabc2Record,
-  useMabc2Records,
   type Mabc2Draft,
 } from "@/features/analysis/hooks/use-mabc2-records";
 import { Mabc2RecordFormScreen } from "@/features/analysis/screens/mabc2-record-form-screen";
-import { router, useLocalSearchParams } from "expo-router";
+import { supabase } from "@/lib/supabase";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 
@@ -36,13 +37,21 @@ export default function Mabc2RecordFormRoute() {
   const currentStudentName = studentName ?? "Aluno";
   const currentRecordId = recordId ?? "";
 
-  const { records } = useMabc2Records(currentStudentId);
+  const navigation = useNavigation();
+  const isAbortedRef = useRef(false);
+  const createdIdRef = useRef<string | null>(null);
+  const shouldBypassExit = useRef(false);
 
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [draft, setDraft] = useState<Mabc2Draft | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [exitAction, setExitAction] = useState<any>(null);
+  const [isExitModalVisible, setIsExitModalVisible] = useState(false);
+
   const [toastConfig, setToastConfig] = useState<{
     visible: boolean;
     mode: ToastMode;
@@ -56,7 +65,48 @@ export default function Mabc2RecordFormRoute() {
   const hasLoaded = useRef(false);
 
   useEffect(() => {
-    if (hasLoaded.current) return;
+    return () => {
+      isAbortedRef.current = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    async function checkAccess() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setIsAuthorized(false);
+          return;
+        }
+
+        const { data: profileData } = await supabase
+          .from("perfis")
+          .select("perfil")
+          .eq("id", user.id)
+          .single();
+
+        const role = profileData?.perfil || user.user_metadata?.perfil || user.user_metadata?.role;
+
+        if (role === "coordenador" || role === "monitor") {
+          setIsAuthorized(true);
+        } else {
+          setIsAuthorized(false);
+        }
+      } catch {
+        setIsAuthorized(false);
+      }
+    }
+    checkAccess();
+  }, []);
+
+  useEffect(() => {
+    if (isAuthorized === false) {
+      router.back();
+    }
+  }, [isAuthorized]);
+
+  useEffect(() => {
+    if (!isAuthorized || hasLoaded.current) return;
     hasLoaded.current = true;
 
     async function load() {
@@ -66,14 +116,21 @@ export default function Mabc2RecordFormRoute() {
       try {
         if (currentMode === "create") {
           const created = await startMabc2Record(currentStudentId);
+          if (isAbortedRef.current) {
+            deleteMabc2Record(created.formularioId).catch(() => {});
+            return;
+          }
+          createdIdRef.current = created.formularioId;
           setDraft(created);
         } else if (currentRecordId) {
           const existing = await getMabc2Record(currentRecordId);
+          if (isAbortedRef.current) return;
           setDraft(existing);
         } else {
           throw new Error("Registro não informado.");
         }
       } catch {
+        if (isAbortedRef.current) return;
         setLoadFailed(true);
         setToastConfig({
           visible: true,
@@ -82,12 +139,48 @@ export default function Mabc2RecordFormRoute() {
           description: "Tente novamente",
         });
       } finally {
-        setIsLoading(false);
+        if (!isAbortedRef.current) {
+          setIsLoading(false);
+        }
       }
     }
 
     load();
-  }, [currentMode, currentStudentId, currentRecordId]);
+  }, [currentMode, currentStudentId, currentRecordId, isAuthorized]);
+
+  const handleDiscardAndLeave = async (action?: any) => {
+    if (currentMode === "create" && createdIdRef.current) {
+      try {
+        await deleteMabc2Record(createdIdRef.current);
+      } catch {}
+    }
+    
+    shouldBypassExit.current = true;
+    if (action) {
+      navigation.dispatch(action);
+    } else {
+      router.back();
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+      if (currentMode === "view" || shouldBypassExit.current) {
+        return;
+      }
+
+      e.preventDefault();
+
+      if (isDirty) {
+        setExitAction(e.data.action);
+        setIsExitModalVisible(true);
+      } else {
+        handleDiscardAndLeave(e.data.action);
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, isDirty, currentMode]);
 
   const sections: Mabc2SectionProps[] = useMemo(() => {
     if (!draft) return [];
@@ -95,6 +188,7 @@ export default function Mabc2RecordFormRoute() {
     return draft.sections.map((section, sectionIndex) => ({
       ...section,
       onChangeCategoryScore: (value) => {
+        setIsDirty(true);
         setDraft((current) =>
           current
             ? {
@@ -109,6 +203,7 @@ export default function Mabc2RecordFormRoute() {
         );
       },
       onChangeCategoryPercentile: (value) => {
+        setIsDirty(true);
         setDraft((current) =>
           current
             ? {
@@ -125,6 +220,7 @@ export default function Mabc2RecordFormRoute() {
       exercises: section.exercises.map((exercise, exerciseIndex) => ({
         ...exercise,
         onChangeAttemptCount: (value) => {
+          setIsDirty(true);
           setDraft((current) =>
             current
               ? {
@@ -150,6 +246,7 @@ export default function Mabc2RecordFormRoute() {
           );
         },
         onChangeScore: (value) => {
+          setIsDirty(true);
           setDraft((current) =>
             current
               ? {
@@ -178,14 +275,16 @@ export default function Mabc2RecordFormRoute() {
     }));
   }, [draft]);
 
+  const recordCount = draft?.sections.length ?? 0;
+
   function validateDraft(draftData: Mabc2Draft) {
     if (draftData.totalScore === null || draftData.totalScore as any === "") return false;
     if (draftData.totalPercentile === null || draftData.totalPercentile.trim() === "") return false;
-    
+
     for (const section of draftData.sections) {
       if (section.categoryScore === null || section.categoryScore as any === "") return false;
       if (section.categoryPercentile === null || section.categoryPercentile.trim() === "") return false;
-      
+
       for (const exercise of section.exercises) {
         if (exercise.score === null || exercise.score as any === "") return false;
         if (exercise.attemptCount === null || exercise.attemptCount as any === "") return false;
@@ -211,6 +310,7 @@ export default function Mabc2RecordFormRoute() {
 
     try {
       await saveMabc2Record(draft);
+      shouldBypassExit.current = true;
       router.replace({
         pathname: "/mabc2-records",
         params: {
@@ -243,6 +343,7 @@ export default function Mabc2RecordFormRoute() {
 
     try {
       await deleteMabc2Record(targetRecordId);
+      shouldBypassExit.current = true;
       router.replace({
         pathname: "/mabc2-records",
         params: {
@@ -262,7 +363,7 @@ export default function Mabc2RecordFormRoute() {
     }
   }
 
-  if (isLoading) {
+  if (isAuthorized === null || (isAuthorized && isLoading)) {
     return (
       <View className="flex-1 items-center justify-center bg-level1">
         <ActivityIndicator size="large" color={colors.primary} />
@@ -270,12 +371,16 @@ export default function Mabc2RecordFormRoute() {
     );
   }
 
+  if (isAuthorized === false) {
+    return null;
+  }
+
   if (loadFailed || !draft) {
     return (
       <View className="flex-1 bg-level1">
         <Mabc2RecordFormScreen
           studentName={currentStudentName}
-          recordCount={records.length}
+          recordCount={0}
           totalScore={null}
           totalPercentile={null}
           sections={[]}
@@ -283,6 +388,7 @@ export default function Mabc2RecordFormRoute() {
           toastConfig={toastConfig}
           onHideToast={() => {
             setToastConfig((prev) => ({ ...prev, visible: false }));
+            shouldBypassExit.current = true;
             router.back();
           }}
           onPressBack={() => router.back()}
@@ -292,52 +398,62 @@ export default function Mabc2RecordFormRoute() {
   }
 
   return (
-    <Mabc2RecordFormScreen
-      studentName={currentStudentName}
-      recordCount={records.length}
-      totalScore={draft.totalScore}
-      totalPercentile={draft.totalPercentile}
-      sections={sections}
-      readOnly={currentMode === "view"}
-      showErrors={showErrors}
-      submitLabel={currentMode === "edit" ? "Salvar" : "Registrar"}
-      toastConfig={toastConfig}
-      onHideToast={() => setToastConfig((prev) => ({ ...prev, visible: false }))}
-      onChangeTotalScore={(value) =>
-        setDraft((current) =>
-          current ? { ...current, totalScore: parseNumber(value) } : current
-        )
-      }
-      onChangeTotalPercentile={(value) =>
-        setDraft((current) =>
-          current
-            ? { ...current, totalPercentile: value.trim() || null }
-            : current
-        )
-      }
-      onPressBack={() => router.back()}
-      onRegister={handleSave}
-      onEdit={() =>
-        router.replace({
-          pathname: "/mabc2-record-form",
-          params: {
-            mode: "edit",
-            studentId: currentStudentId,
-            studentName: currentStudentName,
-            recordId: currentRecordId || draft.formularioId,
-          },
-        } as any)
-      }
-      onDelete={handleDelete}
-      onViewRecords={() =>
-        router.replace({
-          pathname: "/mabc2-records",
-          params: {
-            studentId: currentStudentId,
-            studentName: currentStudentName,
-          },
-        } as any)
-      }
-    />
+    <>
+      <Mabc2RecordFormScreen
+        studentName={currentStudentName}
+        recordCount={recordCount}
+        totalScore={draft.totalScore}
+        totalPercentile={draft.totalPercentile}
+        sections={sections}
+        readOnly={currentMode === "view"}
+        showErrors={showErrors}
+        submitLabel={currentMode === "edit" ? "Salvar" : "Registrar"}
+        toastConfig={toastConfig}
+        onHideToast={() => setToastConfig((prev) => ({ ...prev, visible: false }))}
+        onChangeTotalScore={(value) => {
+          setIsDirty(true);
+          setDraft((current) =>
+            current ? { ...current, totalScore: parseNumber(value) } : current
+          );
+        }}
+        onChangeTotalPercentile={(value) => {
+          setIsDirty(true);
+          setDraft((current) =>
+            current
+              ? { ...current, totalPercentile: value.trim() || null }
+              : current
+          );
+        }}
+        onPressBack={() => router.back()}
+        onRegister={handleSave}
+        onEdit={() => {
+          shouldBypassExit.current = true;
+          router.replace({
+            pathname: "/mabc2-record-form",
+            params: {
+              mode: "edit",
+              studentId: currentStudentId,
+              studentName: currentStudentName,
+              recordId: currentRecordId || draft.formularioId,
+            },
+          } as any);
+        }}
+        onDelete={handleDelete}
+      />
+
+      <ConfirmationModal
+        visible={isExitModalVisible}
+        onClose={() => setIsExitModalVisible(false)}
+        onConfirm={() => {
+          setIsExitModalVisible(false);
+          handleDiscardAndLeave(exitAction);
+        }}
+        title="Você tem certeza que deseja sair?"
+        message="Os dados preenchidos serão perdidos."
+        confirmLabel="Sair"
+        cancelLabel="Cancelar"
+        iconType="alert"
+      />
+    </>
   );
 }

@@ -1,3 +1,4 @@
+import { AppModal } from "@/components/app-modal";
 import { colors } from "@/assets/colors";
 import { ActionButtons } from "@/components/action-buttons";
 import { ConfirmationModal } from "@/components/confirmation-modal";
@@ -164,7 +165,7 @@ export function NewExercise({
 
   return (
     <>
-      <Modal
+      <AppModal
         visible={visible}
         onRequestClose={onClose}
         transparent
@@ -229,7 +230,7 @@ export function NewExercise({
               </View>
 
               <View className="gap-[10px]">
-                <View className="gap-[2px]">
+                <View className="gap-2">
                   <Text className="text-muted text-default-1">
                     Nome do exercício*
                   </Text>
@@ -243,7 +244,7 @@ export function NewExercise({
                     }}
                     placeholder="Ex: Girar bambolê"
                     className="h-[44px]"
-                    outLineBorderClass={errors.name ? "border-error" : ""}
+                    outLineBorderClass={errors.name ? "border-error" : "border-outline"}
                     maxLength={100}
                   />
                   {errors.name ? (
@@ -253,7 +254,7 @@ export function NewExercise({
                   ) : null}
                 </View>
 
-                <View className="gap-[2px]">
+                <View className="gap-2">
                   <Text className="text-muted text-default-1">Descrição</Text>
                   <DefaultTextInput
                     multiline
@@ -264,7 +265,7 @@ export function NewExercise({
                   />
                 </View>
 
-                <View className="gap-[2px]">
+                <View className="gap-2">
                   <Text className="text-muted text-default-1">
                     Duração máxima (segundos)
                   </Text>
@@ -283,7 +284,7 @@ export function NewExercise({
                   ) : null}
                 </View>
 
-                <View className="gap-[2px]">
+                <View className="gap-2">
                   <Text className="text-muted text-default-1">Tags*</Text>
                   <TagGroup
                     availableTags={availableTags}
@@ -301,7 +302,7 @@ export function NewExercise({
                   ) : null}
                 </View>
 
-                <View className="gap-[2px] mt-2">
+                <View className="gap-2 mt-2">
                   <ActionButtons
                     onCancel={onClose}
                     onSave={handleSave}
@@ -314,7 +315,7 @@ export function NewExercise({
             </View>
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       <ConfirmationModal
         visible={deletePhotoModalVisible}
@@ -327,7 +328,7 @@ export function NewExercise({
         mode="delete"
       />
 
-      <Modal
+      <AppModal
         visible={isPreviewVisible}
         transparent
         animationType="fade"
@@ -373,7 +374,7 @@ export function NewExercise({
             />
           </View>
         </View>
-      </Modal>
+      </AppModal>
     </>
   );
 }

@@ -9,9 +9,9 @@ import { useHelpRecords } from "../hooks/use-help-records";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { BarChart3 } from "lucide-react-native";
 import React, { useState } from "react";
+import { AppModal } from "@/components/app-modal";
 import {
   ActivityIndicator,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -205,7 +205,7 @@ export function HelpRecordsScreen() {
         )}
       </ScrollView>
 
-      <Modal
+      <AppModal
         visible={isModalVisible}
         transparent
         animationType="fade"
@@ -237,7 +237,7 @@ export function HelpRecordsScreen() {
             </View>
           </Pressable>
         </Pressable>
-      </Modal>
+      </AppModal>
     </View>
   );
 }

@@ -1,8 +1,9 @@
+import { AppModal } from "@/components/app-modal";
 import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import { X } from "lucide-react-native";
 import React from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 interface ConcurrentSessionModalProps {
   visible: boolean;
@@ -28,7 +29,7 @@ export function ConcurrentSessionModal({
   backLabel = "Voltar",
 }: ConcurrentSessionModalProps) {
   return (
-    <Modal
+    <AppModal
       visible={visible}
       transparent
       animationType="fade"
@@ -86,6 +87,6 @@ export function ConcurrentSessionModal({
           </Pressable>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }

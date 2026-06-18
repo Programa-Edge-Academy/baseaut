@@ -1,159 +1,117 @@
 import { colors } from "@/assets/colors";
 import { AlertCircle } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Text, useWindowDimensions, View } from "react-native";
 
-import AnalysisMaturityCard from "./analysis-maturity-card";
+import AnalysisMaturityCard, { DevelopmentLevel } from "./analysis-maturity-card";
 import ExerciseSelectionCard from "./exercise-selection-card";
 
 const SIDE_MARGIN = 16;
 const MAX_WIDTH = 600;
 
-function ExerciseComparisonCard() {
+const LEVEL_MAP: Record<string, number> = {
+    inicial: 1,
+    intermediario: 2,
+    maduro: 3,
+};
+
+export interface RpcExerciciosItem {
+    titulo: string;
+    nivel_p1: string | null;
+    nivel_p2: string | null;
+}
+
+export type ExerciseComparisonCardProps = {
+    exercicios: RpcExerciciosItem[];
+};
+
+interface CombinedExerciseItem {
+    exercise: string;
+    previous: { status: DevelopmentLevel; label: string } | null;
+    current: { status: DevelopmentLevel; label: string } | null;
+    variacaoNivel: number;
+}
+
+function formatBadgeLabel(str: string | null): string {
+    if (!str) return "Sem registro";
+    const lower = str.toLowerCase();
+    if (lower === "intermediario") return "Intermediário";
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+function ExerciseComparisonCard({ exercicios }: ExerciseComparisonCardProps) {
     const { width: screenWidth } = useWindowDimensions();
-
-    const width = Math.min(
-        screenWidth - SIDE_MARGIN * 2,
-        MAX_WIDTH
-    );
-
-    const items = [
-        {
-            exercise: "Escalada",
-            previous: { status: "maduro" as const },
-            current: { status: "maduro" as const },
-        },
-        {
-            exercise: "Girar bambolê",
-            previous: { status: "inicial" as const },
-            current: { status: "intermediario" as const },
-        },
-        {
-            exercise: "Equilíbrio na tábua",
-            previous: { status: "intermediario" as const },
-            current: { status: "inicial" as const },
-        },
-        {
-            exercise: "Pular obstáculos",
-            previous: { status: "inicial" as const },
-            current: { status: "maduro" as const },
-        },
-    ];
-
-    const OPTIONS = [
-        "Todos",
-        "Escalada",
-        "Girar bambolê",
-        "Equilíbrio na tábua",
-        "Pular obstáculos",
-    ];
-
     const [selectedIndex, setSelectedIndex] = useState<number>(0);
 
-    const filteredItems =
-        selectedIndex === 0
-            ? items
-            : items.filter(
-                (item) => item.exercise === OPTIONS[selectedIndex]
-            );
+    const width = Math.min(screenWidth - SIDE_MARGIN * 2, MAX_WIDTH);
+
+    // Reset selection when database data changes
+    useEffect(() => {
+        setSelectedIndex(0);
+    }, [exercicios]);
+
+    const items = useMemo<CombinedExerciseItem[]>(() => {
+        const rawData = (exercicios || []) as RpcExerciciosItem[];
+        
+        return rawData.map((item) => {
+            const levelP1 = item.nivel_p1 ? item.nivel_p1.toLowerCase() : null;
+            const levelP2 = item.nivel_p2 ? item.nivel_p2.toLowerCase() : null;
+            
+            const n1 = levelP1 ? LEVEL_MAP[levelP1] : null;
+            const n2 = levelP2 ? LEVEL_MAP[levelP2] : null;
+            
+            let variacao = 0;
+            if (n1 !== null && n2 !== null) {
+                variacao = n2 - n1;
+            }
+
+            return {
+                exercise: item.titulo || "Exercício Desconhecido",
+                previous: levelP1 ? { status: levelP1 as DevelopmentLevel, label: formatBadgeLabel(item.nivel_p1) } : null,
+                current: levelP2 ? { status: levelP2 as DevelopmentLevel, label: formatBadgeLabel(item.nivel_p2) } : null,
+                variacaoNivel: variacao,
+            };
+        });
+    }, [exercicios]);
+
+    const OPTIONS = useMemo(() => ["Todos", ...items.map((i) => i.exercise)], [items]);
+    
+    const filteredItems = useMemo(() => {
+        if (selectedIndex === 0) return items;
+        const selected = items[selectedIndex - 1];
+        return selected ? [selected] : [];
+    }, [items, selectedIndex]);
 
     return (
-        <View
-            style={{
-                width,
-                alignSelf: "center",
-            }}
-            className="relative bg-level1 border border-outline rounded-2xl p-6"
-        >
-            {/* Title */}
-            <Text className="text-white text-[20px] font-bold">
-                Comparação por exercício
-            </Text>
-
-            {/* Dropdown Overlay */}
-            <View
-                style={{
-                    position: "absolute",
-                    top: 68,
-                    left: 24,
-                    right: 24,
-                    zIndex: 999,
-                    elevation: 999,
-                }}
-            >
-                <ExerciseSelectionCard
-                    onSelect={(index) => setSelectedIndex(index)}
-                />
+        <View style={{ width, alignSelf: "center" }} className="relative bg-level2 border border-outline rounded-2xl p-6">
+            <Text className="text-white text-[20px] font-bold">Comparação por exercício</Text>
+            
+            <View style={{ marginTop: 24, marginBottom: 24 }}>
+                <ExerciseSelectionCard options={OPTIONS} selectedIndex={selectedIndex} onSelect={setSelectedIndex} />
             </View>
 
-            {/* Space reserved for closed dropdown */}
-            <View style={{ height: 72 }} />
-
-            {/* Header */}
-            <View className="mb-3 px-3 flex-row items-center top-4">
-
-                <View className="flex-[2]">
-                    <Text className="text-muted text-xs">
-                        Exercício
-                    </Text>
-                </View>
-
-                <View className="flex-1 items-center">
-                    <Text className="text-muted text-xs">
-                        Período 1
-                    </Text>
-                </View>
-
-                <View className="flex-1 items-center">
-                    <Text className="text-muted text-xs">
-                        Período 2
-                    </Text>
-                </View>
-
-                <View className="flex-1 items-end">
-                    <Text className="text-muted text-xs">
-                        Variação
-                    </Text>
-                </View>
-
+            {/* Cabeçalho da Tabela */}
+            <View className="mb-3 px-3 flex-row items-center">
+                <View className="flex-[2]"><Text className="text-muted text-xs">Exercício</Text></View>
+                <View className="flex-1 items-center"><Text className="text-muted text-xs">Período 1</Text></View>
+                <View className="flex-1 items-center"><Text className="text-muted text-xs">Período 2</Text></View>
+                <View className="flex-1 items-end"><Text className="text-muted text-xs">Variação</Text></View>
             </View>
 
-            {/* Rows */}
             <View className="gap-3">
-
-                {filteredItems.map((item) => (
-                    <AnalysisMaturityCard
-                        key={item.exercise}
-                        exercise={item.exercise}
-                        previous={item.previous}
-                        current={item.current}
-                    />
-                ))}
-
+                {items.length === 0 ? (
+                    <Text className="text-muted text-center py-4">Não há exercícios com níveis registrados para comparar nos períodos selecionados.</Text>
+                ) : (
+                    filteredItems.map((item) => (
+                        <AnalysisMaturityCard key={item.exercise} exercise={item.exercise} previous={item.previous} current={item.current} variacaoNivel={item.variacaoNivel} />
+                    ))
+                )}
             </View>
 
-            {/* Footer */}
             <View className="mt-5 flex-row items-start">
-
-                <AlertCircle
-                    size={22}
-                    color={colors.muted}
-                    strokeWidth={2}
-                />
-
-                <Text
-                    className="text-muted text-xs ml-3"
-                    style={{
-                        flex: 1,
-                        lineHeight: 20,
-                    }}
-                >
-                    A variação indica a diferença de níveis no desempenho médio por
-                    exercício entre os dois períodos selecionados.
-                </Text>
-
+                <AlertCircle size={22} color={colors.muted} />
+                <Text className="text-muted text-xs ml-3 flex-1">A variação indica a diferença de níveis no desempenho médio por exercício entre os dois períodos selecionados.</Text>
             </View>
-
         </View>
     );
 }

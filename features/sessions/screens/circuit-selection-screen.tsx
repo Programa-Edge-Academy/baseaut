@@ -9,7 +9,13 @@ import { ClipboardEdit, Layers } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import { Text, View } from "react-native";
 
-export type CircuitType = "estruturado" | "livre" | "ata" | "cars" | "mabc";
+export type CircuitType =
+  | "estruturado"
+  | "semi-estruturado"
+  | "ata"
+  | "cars"
+  | "mabc"
+  | "mabc2";
 
 export type CircuitSelectionExercise = {
   id: string;
@@ -26,35 +32,6 @@ export type CircuitItem = {
   exercises?: CircuitSelectionExercise[];
 };
 
-const MOCK_CIRCUITS: CircuitItem[] = [
-  {
-    id: "1",
-    name: "Circuito 1",
-    description:
-      "3 exercícios - Girar bambolê, Equilíbrio na tábua, Escalada",
-    type: "estruturado",
-  },
-  {
-    id: "2",
-    name: "Circuito 2",
-    description:
-      "3 exercícios - Arremesso de bola, Empilhamento de cones, Escalada",
-    type: "livre",
-  },
-  {
-    id: "ata",
-    name: "Formulário ATA",
-    description: "",
-    type: "ata",
-  },
-  {
-    id: "cars",
-    name: "Formulário CARS",
-    description: "",
-    type: "cars",
-  },
-];
-
 export type CircuitSelectionScreenProps = {
   studentName: string;
   circuits?: CircuitItem[];
@@ -68,7 +45,7 @@ export type CircuitSelectionScreenProps = {
  */
 export function CircuitSelectionScreen({
   studentName,
-  circuits = MOCK_CIRCUITS,
+  circuits = [],
   onPressBack,
   onPressCircuit,
 }: CircuitSelectionScreenProps) {
@@ -113,8 +90,8 @@ export function CircuitSelectionScreen({
             const badge =
               item.type === "estruturado"
                 ? { label: "Estruturado", color: colors.primary }
-                : item.type === "livre"
-                ? { label: "Livre", color: colors.extra }
+                : item.type === "semi-estruturado"
+                ? { label: "Semi-estruturado", color: colors.extra }
                 : undefined;
 
             return (

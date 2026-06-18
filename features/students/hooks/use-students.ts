@@ -55,23 +55,18 @@ const loadStudents = useCallback(async () => {
 
       if (fetchError) throw fetchError;
 
-      if (alunos) {
-        // 2. Verificamos pendências de cada aluno em paralelo via RPC
-        const pendenciasResults = await Promise.all(
-          alunos.map(async (aluno) => {
-            try {
-              const { data } = await supabase.rpc("rpc_check_pendencia_aluno", { p_aluno_id: aluno.id });
-              return { aluno_id: aluno.id, tem_pendencia: data === true };
-            } catch {
-              return { aluno_id: aluno.id, tem_pendencia: false };
-            }
-          })
-        );
+      // 2. Buscamos as pendências separadamente
+      const { data: pendencias } = await supabase
+        .from("vw_alunos_pendencias")
+        .select("aluno_id, tem_pendencia");
 
+      if (alunos) {
         setStudents(
           alunos.map((aluno) => {
-            const temPendencia =
-              pendenciasResults.find((p) => p.aluno_id === aluno.id)?.tem_pendencia ?? false;
+            // Verifica pendência para este aluno específico
+            const temPendencia = pendencias?.some(
+              (p) => p.aluno_id === aluno.id && p.tem_pendencia
+            ) ?? false;
 
             return {
               id: aluno.id,
@@ -81,15 +76,15 @@ const loadStudents = useCallback(async () => {
               weight: Number(aluno.peso) || 0,
               height: Number(aluno.altura) || 0,
               waist: Number(aluno.cintura) || 0,
-              supportLevel:
-                aluno.nivel_suporte === "nivel_1" ? "Nível 1"
-                  : aluno.nivel_suporte === "nivel_2"
-                    ? "Nível 2"
-                    : "Nível 3",
+              supportLevel: 
+              aluno.nivel_suporte === "nivel_1" ? "Nível 1"
+                : aluno.nivel_suporte === "nivel_2"
+                  ? "Nível 2"
+                  : "Nível 3",
               healthConditions: aluno.diagnostico_detalhado || "",
               observations: aluno.observacoes_clinicas || "",
               avatarUrl: aluno.avatar_url,
-              pendencyAlert: temPendencia,
+              pendencyAlert: temPendencia, 
             };
           }),
         );

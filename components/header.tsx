@@ -1,9 +1,11 @@
 import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { colors } from "@/assets/colors";
+import { ConfirmationModal } from "@/components/confirmation-modal";
+import { useUserRole } from "@/lib/use-user-role";
 import { supabase } from "@/lib/supabase";
 import { usePathname, useRouter } from "expo-router";
-import { ArrowLeft, Save, Settings, Users, X } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import { ArrowLeft, LogOut, Save, Users, X } from "lucide-react-native";
+import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SvgXml } from "react-native-svg";
@@ -34,29 +36,14 @@ export function Header({
 }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [role, setRole] = useState<string | null>(null);
+  const role = useUserRole();
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
-  useEffect(() => {
-    async function fetchUserRole() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data, error } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-
-          if (!error && data) {
-            setRole(data.role);
-          }
-        }
-      } catch (err) {
-        console.error("Erro ao buscar role do cabeçalho:", err);
-      }
-    }
-    fetchUserRole();
-  }, []);
+  const handleLogout = async () => {
+    setIsLogoutModalVisible(false);
+    await supabase.auth.signOut();
+    router.replace("/");
+  };
 
   const showBack = ["back", "finish", "finishEngagement", "form"].includes(variant);
   const showDefaultActions = variant === "default";
@@ -71,6 +58,7 @@ export function Header({
   };
 
   return (
+    <>
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       <View className="w-full items-center justify-center bg-level2 p-4">
         <View className="w-full flex-row items-center justify-between">
@@ -116,15 +104,15 @@ export function Header({
           <View className="flex-1 flex-row justify-end items-center">
             {showDefaultActions && (
               <View className="flex-row items-center">
-                <Pressable onPress={() => router.push("/settings")} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
-                  <Settings color={colors.muted} size={24} />
-                </Pressable>
-                
                 {role === "coordenador" && (
                   <Pressable onPress={() => router.push("/team")} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
                     <Users color={colors.muted} size={24} />
                   </Pressable>
                 )}
+
+                <Pressable onPress={() => setIsLogoutModalVisible(true)} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
+                  <LogOut color={colors.muted} size={24} />
+                </Pressable>
               </View>
             )}
 
@@ -141,5 +129,13 @@ export function Header({
         </View>
       </View>
     </SafeAreaView>
+
+    <ConfirmationModal
+      visible={isLogoutModalVisible}
+      onClose={() => setIsLogoutModalVisible(false)}
+      onConfirm={handleLogout}
+      mode="logout"
+    />
+    </>
   );
 }

@@ -1,9 +1,11 @@
 import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import { ClipboardList, Dumbbell } from "lucide-react-native";
-import React from "react";
+import React, { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { Mabc2Section, Mabc2SectionProps } from "./mabc2-section";
+
+export type Mabc2ViewFilter = "records" | "exercises" | null;
 
 export type Mabc2MotorDevelopmentCardProps = {
   recordCount: number;
@@ -13,8 +15,6 @@ export type Mabc2MotorDevelopmentCardProps = {
   onChangeTotalPercentile?: (value: string) => void;
   sections: Mabc2SectionProps[];
   onRegister?: () => void;
-  onViewRecords?: () => void;
-  onViewExercises?: () => void;
   readOnly?: boolean;
   showErrors?: boolean;
   submitLabel?: string;
@@ -22,6 +22,9 @@ export type Mabc2MotorDevelopmentCardProps = {
   testID?: string;
   accessibilityLabel?: string;
 };
+
+const SELECTED_BORDER_COLOR = "#0E89E5";
+const SELECTED_BACKGROUND_COLOR = "#1A2836";
 
 export function Mabc2MotorDevelopmentCard({
   recordCount,
@@ -31,8 +34,6 @@ export function Mabc2MotorDevelopmentCard({
   onChangeTotalPercentile,
   sections,
   onRegister,
-  onViewRecords,
-  onViewExercises,
   readOnly = false,
   showErrors = false,
   submitLabel = "Registrar",
@@ -40,6 +41,20 @@ export function Mabc2MotorDevelopmentCard({
   testID,
   accessibilityLabel = "Desenvolvimento motor",
 }: Mabc2MotorDevelopmentCardProps) {
+  const [viewFilter, setViewFilter] = useState<Mabc2ViewFilter>(null);
+
+  const isRecordsSelected = viewFilter === "records";
+  const isExercisesSelected = viewFilter === "exercises";
+  const showAll = viewFilter === null;
+
+  function handleRecordsPress() {
+    setViewFilter((current) => (current === "records" ? null : "records"));
+  }
+
+  function handleExercisesPress() {
+    setViewFilter((current) => (current === "exercises" ? null : "exercises"));
+  }
+
   return (
     <View
       testID={testID}
@@ -54,12 +69,24 @@ export function Mabc2MotorDevelopmentCard({
         <Pressable
           testID={testID ? `${testID}-records-button` : undefined}
           accessibilityRole="button"
-          accessibilityLabel={`Ver registros, ${recordCount} encontrados`}
-          onPress={onViewRecords}
-          className="flex-row items-center gap-1.5 rounded-xl border border-outline bg-level1 px-2.5 py-1 active:opacity-70"
+          accessibilityState={{ selected: isRecordsSelected }}
+          accessibilityLabel={`Registros, ${recordCount} encontrados`}
+          onPress={handleRecordsPress}
+          className="flex-row items-center gap-1.5 rounded-full px-2.5 py-1 active:opacity-70"
+          style={{
+            borderWidth: 1,
+            borderColor: isRecordsSelected ? SELECTED_BORDER_COLOR : colors.outline,
+            backgroundColor: isRecordsSelected ? SELECTED_BACKGROUND_COLOR : colors.level1,
+          }}
         >
-          <ClipboardList size={16} color={colors.muted} />
-          <Text className="text-sm font-medium text-muted">
+          <ClipboardList
+            size={16}
+            color={isRecordsSelected ? SELECTED_BORDER_COLOR : colors.muted}
+          />
+          <Text
+            className="text-sm font-medium"
+            style={{ color: isRecordsSelected ? SELECTED_BORDER_COLOR : colors.muted }}
+          >
             Registros ({recordCount})
           </Text>
         </Pressable>
@@ -67,70 +94,86 @@ export function Mabc2MotorDevelopmentCard({
         <Pressable
           testID={testID ? `${testID}-exercises-button` : undefined}
           accessibilityRole="button"
-          accessibilityLabel="Ver exercícios"
-          onPress={onViewExercises}
-          className="flex-row items-center gap-1 rounded-xl border border-outline bg-level1 px-2.5 py-1 active:opacity-70"
+          accessibilityState={{ selected: isExercisesSelected }}
+          accessibilityLabel="Exercícios"
+          onPress={handleExercisesPress}
+          className="flex-row items-center gap-1 rounded-full px-2.5 py-1 active:opacity-70"
+          style={{
+            borderWidth: 1,
+            borderColor: isExercisesSelected ? SELECTED_BORDER_COLOR : colors.outline,
+            backgroundColor: isExercisesSelected ? SELECTED_BACKGROUND_COLOR : colors.level1,
+          }}
         >
-          <Dumbbell size={16} color={colors.muted} />
-          <Text className="text-sm font-medium text-muted">Exercícios</Text>
+          <Dumbbell
+            size={16}
+            color={isExercisesSelected ? SELECTED_BORDER_COLOR : colors.muted}
+          />
+          <Text
+            className="text-sm font-medium"
+            style={{ color: isExercisesSelected ? SELECTED_BORDER_COLOR : colors.muted }}
+          >
+            Exercícios
+          </Text>
         </Pressable>
       </View>
 
-      <View className="flex-row gap-3">
-        <View
-          className={`flex-1 rounded-xl border ${
-            showErrors && (totalScore === null || totalScore as any === "")
-              ? "border-error"
-              : "border-outline"
-          } bg-level1 px-3 py-1.5`}
-        >
-          <Text className="text-xs font-medium text-muted">
-            Pontuação total
-          </Text>
-          {readOnly ? (
-            <Text className="text-xl font-bold text-white">
-              {totalScore !== null ? String(totalScore) : "-"}
+      {showAll ? (
+        <View className="flex-row gap-3">
+          <View
+            className={`flex-1 rounded-xl border ${
+              showErrors && (totalScore === null || totalScore as any === "")
+                ? "border-error"
+                : "border-outline"
+            } bg-level1 px-3 py-1.5`}
+          >
+            <Text className="text-xs font-medium text-muted">
+              Pontuação total
             </Text>
-          ) : (
-            <TextInput
-              testID={testID ? `${testID}-total-score-input` : undefined}
-              className="m-0 p-0 text-xl font-bold text-white"
-              value={totalScore !== null ? String(totalScore) : ""}
-              onChangeText={onChangeTotalScore}
-              keyboardType="numeric"
-              placeholder="-"
-              placeholderTextColor={colors.muted}
-            />
-          )}
-        </View>
+            {readOnly ? (
+              <Text className="text-xl font-bold text-white">
+                {totalScore !== null ? String(totalScore) : "-"}
+              </Text>
+            ) : (
+              <TextInput
+                testID={testID ? `${testID}-total-score-input` : undefined}
+                className="m-0 p-0 text-xl font-bold text-white"
+                value={totalScore !== null ? String(totalScore) : ""}
+                onChangeText={onChangeTotalScore}
+                keyboardType="numeric"
+                placeholder="-"
+                placeholderTextColor={colors.muted}
+              />
+            )}
+          </View>
 
-        <View
-          className={`flex-1 rounded-xl border ${
-            showErrors && (totalPercentile === null || totalPercentile === "")
-              ? "border-error"
-              : "border-outline"
-          } bg-level1 px-3 py-1.5`}
-        >
-          <Text className="text-xs font-medium text-muted">
-            Percentil total
-          </Text>
-          {readOnly ? (
-            <Text className="text-xl font-bold text-white">
-              {totalPercentile ?? "-"}
+          <View
+            className={`flex-1 rounded-xl border ${
+              showErrors && (totalPercentile === null || totalPercentile === "")
+                ? "border-error"
+                : "border-outline"
+            } bg-level1 px-3 py-1.5`}
+          >
+            <Text className="text-xs font-medium text-muted">
+              Percentil total
             </Text>
-          ) : (
-            <TextInput
-              testID={testID ? `${testID}-total-percentile-input` : undefined}
-              className="m-0 p-0 text-xl font-bold text-white"
-              value={totalPercentile !== null ? String(totalPercentile) : ""}
-              onChangeText={onChangeTotalPercentile}
-              keyboardType="numeric"
-              placeholder="-"
-              placeholderTextColor={colors.muted}
-            />
-          )}
+            {readOnly ? (
+              <Text className="text-xl font-bold text-white">
+                {totalPercentile ?? "-"}
+              </Text>
+            ) : (
+              <TextInput
+                testID={testID ? `${testID}-total-percentile-input` : undefined}
+                className="m-0 p-0 text-xl font-bold text-white"
+                value={totalPercentile !== null ? String(totalPercentile) : ""}
+                onChangeText={onChangeTotalPercentile}
+                keyboardType="numeric"
+                placeholder="-"
+                placeholderTextColor={colors.muted}
+              />
+            )}
+          </View>
         </View>
-      </View>
+      ) : null}
 
       {sections.map((section, index) => (
         <React.Fragment key={section.id ?? section.title}>
@@ -138,6 +181,7 @@ export function Mabc2MotorDevelopmentCard({
 
           <Mabc2Section
             {...section}
+            viewMode={viewFilter}
             readOnly={section.readOnly ?? readOnly}
             showErrors={showErrors}
             testID={

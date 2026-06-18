@@ -71,8 +71,8 @@ export function SessionCompletion({
           className="flex-1 flex-row items-center justify-center rounded-[16px] bg-level1 border border-outline py-4 active:opacity-70"
           style={{ gap: 8 }}
         >
-          <RotateCcw size={18} color={colors.muted} />
-          <Text className="text-[16px] font-semibold text-muted">
+          <RotateCcw size={16} color={colors.muted} />
+          <Text className="text-header-3 text-muted">
             Continuar
           </Text>
         </RipplePressable>
@@ -82,7 +82,6 @@ export function SessionCompletion({
           label="Voltar ao início"
           sizeClass="flex-1 py-4"
           hasShadow={true}
-          textClassName="text-[16px] font-bold text-white"
           onPress={onBackToStart}
         />
       </View>

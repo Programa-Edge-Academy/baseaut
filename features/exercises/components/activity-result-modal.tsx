@@ -1,8 +1,9 @@
+import { AppModal } from "@/components/app-modal";
 import { colors } from "@/assets/colors";
 import { RipplePressable } from "@/components/ripple-pressable";
 import { SelectableChip } from "@/components/selectable-chip";
 import React, { useEffect, useState } from "react";
-import { Modal, Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
 // ---------------------------------------------------------------------------
@@ -164,7 +165,7 @@ export function ActivityResultModal({
   const isRegistrarApparentDisabled = selectedMotivo === null || (selectedMotivo === "Outro" && outroDescricao.trim() === "");
 
   return (
-    <Modal
+    <AppModal
       visible={visible}
       transparent
       animationType="fade"
@@ -607,6 +608,6 @@ export function ActivityResultModal({
           )}
         </Pressable>
       </Pressable>
-    </Modal>
+    </AppModal>
   );
 }

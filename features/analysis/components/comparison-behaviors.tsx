@@ -4,14 +4,28 @@ import React from "react";
 import { Text, useWindowDimensions, View } from "react-native";
 import ComparisonCard from "./comparison-card";
 
-// Constantes de alinhamento idênticas ao molde padrão
 const SIDE_MARGIN = 16;
 const MAX_WIDTH = 600;
 
-export function ComparisonBehaviors() {
+export interface BehaviorPeriodData {
+  p1: number;
+  p2: number;
+  diferenca_absoluta?: number;
+}
+
+export type ComparisonBehaviorsProps = {
+  data?: {
+    estereotipia?: BehaviorPeriodData | null;
+    contato_visual?: BehaviorPeriodData | null;
+    engajamento?: BehaviorPeriodData | null;
+    fuga?: BehaviorPeriodData | null;
+    crise?: BehaviorPeriodData | null;
+  } | null;
+};
+
+export function ComparisonBehaviors({ data }: ComparisonBehaviorsProps) {
   const { width: screenWidth } = useWindowDimensions();
 
-  // Cálculo de largura responsiva idêntico ao ExerciseComparisonCard
   const width = Math.min(
     screenWidth - SIDE_MARGIN * 2,
     MAX_WIDTH
@@ -53,32 +67,32 @@ export function ComparisonBehaviors() {
       <View className="space-y-3">
         <ComparisonCard
           title="Estereotipias"
-          period1={{ value: 6 }}
-          period2={{ value: 3 }}
+          period1={{ value: data?.estereotipia?.p1 ?? 0 }}
+          period2={{ value: data?.estereotipia?.p2 ?? 0 }}
         />
 
         <ComparisonCard
           title="Contato visual"
-          period1={{ value: 4 }}
-          period2={{ value: 7 }}
+          period1={{ value: data?.contato_visual?.p1 ?? 0 }}
+          period2={{ value: data?.contato_visual?.p2 ?? 0 }}
         />
 
         <ComparisonCard
           title="Engajamento"
-          period1={{ value: 5 }}
-          period2={{ value: 8 }}
+          period1={{ value: data?.engajamento?.p1 ?? 0 }}
+          period2={{ value: data?.engajamento?.p2 ?? 0 }}
         />
 
         <ComparisonCard
           title="Fuga"
-          period1={{ value: 3 }}
-          period2={{ value: 1 }}
+          period1={{ value: data?.fuga?.p1 ?? 0 }}
+          period2={{ value: data?.fuga?.p2 ?? 0 }}
         />
 
         <ComparisonCard
           title="Crises"
-          period1={{ value: 7 }}
-          period2={{ value: 0 }}
+          period1={{ value: data?.crise?.p1 ?? 0 }}
+          period2={{ value: data?.crise?.p2 ?? 0 }}
         />
       </View>
 

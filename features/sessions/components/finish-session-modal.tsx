@@ -1,3 +1,4 @@
+import { AppModal } from "@/components/app-modal";
 import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import { AlertCircle, Check, X } from "lucide-react-native";
@@ -57,7 +58,7 @@ export function FinishSessionModal({
   };
 
   return (
-    <Modal
+    <AppModal
       visible={visible}
       transparent
       animationType="fade"
@@ -131,6 +132,6 @@ export function FinishSessionModal({
           </View>
         </Pressable>
       </Pressable>
-    </Modal>
+    </AppModal>
   );
 }

@@ -2,7 +2,8 @@ import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import { Calendar, ChevronDown, ImageUp, Pencil, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { Image, Modal, Pressable, Text, View } from "react-native";
+import { AppModal } from "@/components/app-modal";
+import { Image, Pressable, Text, View } from "react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { ActionButtons } from "../../../components/action-buttons";
 import { ConfirmationModal } from "../../../components/confirmation-modal";
@@ -171,7 +172,7 @@ export function NewStudent({
    * Normalizes the height input on blur.
    */
   const handleHeightBlur = () => {
-    const numericHeight = height.replace(/[^\d.,]/g, "").trim();
+    const numericHeight = height.replace(/[^\d]/g, "").trim();
     if (numericHeight) setHeight(`${numericHeight} cm`);
   };
 
@@ -187,7 +188,7 @@ export function NewStudent({
    * Normalizes the waist input on blur.
    */
   const handleWaistBlur = () => {
-    const numericWaist = waist.replace(/[^\d.,]/g, "").trim();
+    const numericWaist = waist.replace(/[^\d]/g, "").trim();
     if (numericWaist) setWaist(`${numericWaist} cm`);
   };
 
@@ -263,13 +264,13 @@ export function NewStudent({
     }
 
     if (height.trim()) {
-      const parsedHeight = Number(height.replace(/[^\d.]/g, ""));
+      const parsedHeight = Number(height.replace(/[^\d]/g, ""));
       if (isNaN(parsedHeight) || parsedHeight <= 0)
         newErrors.height = "Valor inválido";
     }
 
     if (waist.trim()) {
-      const parsedWaist = Number(waist.replace(/[^\d.]/g, ""));
+      const parsedWaist = Number(waist.replace(/[^\d]/g, ""));
       if (isNaN(parsedWaist) || parsedWaist <= 0)
         newErrors.waist = "Valor inválido";
     }
@@ -298,8 +299,8 @@ export function NewStudent({
           name: cleanName,
           birthDate: dbDate,
           weight: weight.trim() ? Number(weight.replace(/[^\d.]/g, "")) : 0,
-          height: height.trim() ? Number(height.replace(/[^\d.]/g, "")) : 0,
-          waist: waist.trim() ? Number(waist.replace(/[^\d.]/g, "")) : 0,
+          height: height.trim() ? Number(height.replace(/[^\d]/g, "")) : 0,
+          waist: waist.trim() ? Number(waist.replace(/[^\d]/g, "")) : 0,
           supportLevel: supportLevel!,
           healthConditions: healthConditions.trim(),
           observations: observations.trim(),
@@ -312,7 +313,7 @@ export function NewStudent({
 
   return (
     <>
-      <Modal
+      <AppModal
         visible={visible}
         onRequestClose={onClose}
         transparent
@@ -476,18 +477,16 @@ export function NewStudent({
                     placeholder="Ex: 120"
                     value={height}
                     onChangeText={(text) => {
-                      let valStr = text
-                        .replace(/,/g, ".")
-                        .replace(/[^\d.]/g, "");
+                      let valStr = text.replace(/[^\d]/g, "");
                       if (valStr) {
-                        const numericVal = parseFloat(valStr);
+                        const numericVal = parseInt(valStr, 10);
                         if (numericVal > 300) valStr = "300";
                       }
                       setHeight(valStr);
                     }}
                     onBlur={handleHeightBlur}
                     onFocus={handleHeightFocus}
-                    keyboardType="decimal-pad"
+                    keyboardType="number-pad"
                     className="h-11 rounded-[15px]"
                     outLineBorderClass={
                       errors.height ? "border-error" : "border-outline"
@@ -506,18 +505,16 @@ export function NewStudent({
                     placeholder="Ex: 50"
                     value={waist}
                     onChangeText={(text) => {
-                      let valStr = text
-                        .replace(/,/g, ".")
-                        .replace(/[^\d.]/g, "");
+                      let valStr = text.replace(/[^\d]/g, "");
                       if (valStr) {
-                        const numericVal = parseFloat(valStr);
+                        const numericVal = parseInt(valStr, 10);
                         if (numericVal > 350) valStr = "350";
                       }
                       setWaist(valStr);
                     }}
                     onBlur={handleWaistBlur}
                     onFocus={handleWaistFocus}
-                    keyboardType="decimal-pad"
+                    keyboardType="number-pad"
                     className="h-11 rounded-[15px]"
                     outLineBorderClass={
                       errors.waist ? "border-error" : "border-outline"
@@ -615,7 +612,7 @@ export function NewStudent({
             </View>
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       <ConfirmationModal
         visible={deletePhotoModalVisible}
@@ -628,7 +625,7 @@ export function NewStudent({
         mode="delete"
       />
 
-      <Modal
+      <AppModal
         visible={isPreviewVisible}
         transparent
         animationType="fade"
@@ -674,7 +671,7 @@ export function NewStudent({
             />
           </View>
         </View>
-      </Modal>
+      </AppModal>
     </>
   );
 }
