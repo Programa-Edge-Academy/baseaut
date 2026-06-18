@@ -30,9 +30,9 @@ export function SessionResumeWidget({
   onNext,
 }: SessionResumeWidgetProps) {
   const insets = useSafeAreaInsets();
-  // Tab bar height is approximately 60px + safe area bottom
-  const TAB_BAR_HEIGHT = 60;
-  const bottomOffset = TAB_BAR_HEIGHT + insets.bottom + 8;
+  // A barra inferior tem aprox 84px de altura + padding/insets
+  const TAB_BAR_HEIGHT = 84;
+  const bottomOffset = TAB_BAR_HEIGHT + insets.bottom + 16;
 
   return (
     <View
