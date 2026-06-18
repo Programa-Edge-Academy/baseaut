@@ -25,8 +25,6 @@ export type Mabc2RecordFormScreenProps = {
   onChangeTotalPercentile?: (value: string) => void;
   onRegister?: () => void;
   onPressBack?: () => void;
-  onViewRecords?: () => void;
-  onViewExercises?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
 };
@@ -46,8 +44,6 @@ export function Mabc2RecordFormScreen({
   onChangeTotalPercentile,
   onRegister,
   onPressBack,
-  onViewRecords,
-  onViewExercises,
   onEdit,
   onDelete,
 }: Mabc2RecordFormScreenProps) {
@@ -101,8 +97,6 @@ export function Mabc2RecordFormScreen({
           onChangeTotalScore={onChangeTotalScore}
           onChangeTotalPercentile={onChangeTotalPercentile}
           onRegister={onRegister}
-          onViewRecords={onViewRecords}
-          onViewExercises={onViewExercises}
           readOnly={readOnly}
           showErrors={showErrors}
           submitLabel={submitLabel}
