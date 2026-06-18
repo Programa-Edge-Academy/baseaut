@@ -22,6 +22,7 @@ import {
   type MotivoFinalizacao,
   type MotivoNaoRealizacao,
 } from "../hooks/use-session-flow";
+import { useSessionGlobalContext } from "../contexts/session-global-context";
 
 type ExerciseStage = "ready" | "running";
 
@@ -61,6 +62,7 @@ export function SessionRunningSemiStructuredScreen({
   const router = useRouter();
 
   const { createSession, persistExecutions, finishSession } = useSessionFlow();
+  const { registerSession, updateSessionProgress, toggleTimer, closeSession, activeSessions } = useSessionGlobalContext();
 
   // ID efetivo da sessão: usa o recebido (retomada) ou cria um na montagem.
   const effectiveSessionIdRef = useRef<string>(sessionId || "");
@@ -82,13 +84,37 @@ export function SessionRunningSemiStructuredScreen({
         circuitoId: circuitId || null,
       });
       effectiveSessionIdRef.current = id;
+      registerSession({
+        sessionId: id,
+        studentId,
+        studentName: safeStudentName,
+        type: "semi-structured",
+        timeElapsed: 0,
+        isRunning: true,
+        exerciseProgress: "Iniciando...",
+      });
       return id;
     })();
     createSessionPromiseRef.current = promise.catch((err) => {
       console.error("Erro ao criar sessão (semi-estruturado):", err);
       throw err;
     });
-  }, [sessionId, studentId, circuitId, exercises.length, createSession]);
+  }, [sessionId, studentId, circuitId, exercises.length, createSession, registerSession, safeStudentName]);
+
+  // Se já veio com sessionId (retomada), registra no contexto se não existir
+  useEffect(() => {
+    if (sessionId) {
+      registerSession({
+        sessionId,
+        studentId,
+        studentName: safeStudentName,
+        type: "semi-structured",
+        timeElapsed: 0,
+        isRunning: true,
+        exerciseProgress: "Retomando...",
+      });
+    }
+  }, [sessionId, studentId, safeStudentName, registerSession]);
 
   // Garante um sessao_id válido antes de gravar (aguarda a criação em-flight).
   const ensureSessionId = async (): Promise<string | null> => {
@@ -134,6 +160,20 @@ export function SessionRunningSemiStructuredScreen({
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
   const [isFinishOpen, setIsFinishOpen] = useState(false);
 
+  // Lê do contexto global
+  const sid = effectiveSessionIdRef.current || sessionId || "";
+  const currentSessionData = activeSessions[sid];
+  const controlledSeconds = currentSessionData?.timeElapsed ?? 0;
+  const controlledIsRunning = currentSessionData?.isRunning ?? false;
+
+  // Atualiza o progresso globalmente quando o histórico muda
+  useEffect(() => {
+    if (!sid) return;
+    const completed = Object.keys(historicoExercicios).length;
+    const current = Math.min(completed + 1, exercises.length);
+    updateSessionProgress(sid, `Exercício ${current}/${exercises.length}`);
+  }, [historicoExercicios, exercises.length, sid, updateSessionProgress]);
+
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTranslateY = useRef(new Animated.Value(20)).current;
@@ -177,8 +217,10 @@ export function SessionRunningSemiStructuredScreen({
     setStage("ready");
   };
 
-  const handleStop = (elapsed: number) => {
+  const handleStop = () => {
+    const elapsed = controlledSeconds;
     lastElapsedSecondsRef.current = elapsed;
+    if (sid) toggleTimer(sid, false);
     const minutes = Math.floor(elapsed / 60)
       .toString()
       .padStart(2, "0");
@@ -235,8 +277,10 @@ export function SessionRunningSemiStructuredScreen({
     const pendentes = exercises.filter((ex) => !novoHistorico[ex.id]);
 
     if (pendentes.length === 0) {
-      const sid = effectiveSessionIdRef.current;
-      if (sid) void finishSession(sid, { status: "concluida" });
+      if (sid) {
+        void finishSession(sid, { status: "concluida" });
+        closeSession(sid);
+      }
       router.replace({
         pathname: "/session/completed",
         params: {
@@ -328,6 +372,11 @@ export function SessionRunningSemiStructuredScreen({
               autoStart
               variant="form"
               onStop={handleStop}
+              controlledSeconds={controlledSeconds}
+              controlledIsRunning={controlledIsRunning}
+              onToggleRunning={(isRunning) => {
+                if (sid) toggleTimer(sid, isRunning);
+              }}
             />
           )}
         </View>
