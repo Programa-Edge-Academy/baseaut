@@ -4,18 +4,35 @@ import React from "react";
 import { Text, useWindowDimensions, View } from "react-native";
 import ComparisonCard from "./comparison-card";
 
-// Constantes de alinhamento idênticas ao molde padrão
 const SIDE_MARGIN = 16;
 const MAX_WIDTH = 600;
 
-export default function ComparisonHelp() {
+export interface HelpPeriodData {
+  p1: number;
+  p2: number;
+  diferenca_absoluta?: number;
+  variacao_percentual?: number;
+}
+
+export type ComparisonHelpProps = {
+  data?: {
+    autonomo?: HelpPeriodData | null;
+    ajuda_intrusiva?: HelpPeriodData | null;
+  } | null;
+};
+
+export default function ComparisonHelp({ data }: ComparisonHelpProps) {
   const { width: screenWidth } = useWindowDimensions();
 
-  // Cálculo de largura responsiva idêntico ao ExerciseComparisonCard
   const width = Math.min(
     screenWidth - SIDE_MARGIN * 2,
     MAX_WIDTH
   );
+
+  const autonomoP1 = data?.autonomo?.p1 ?? 0;
+  const autonomoP2 = data?.autonomo?.p2 ?? 0;
+  const intrusiveP1 = data?.ajuda_intrusiva?.p1 ?? 0;
+  const intrusiveP2 = data?.ajuda_intrusiva?.p2 ?? 0;
 
   return (
     <View
@@ -53,14 +70,14 @@ export default function ComparisonHelp() {
       <View className="space-y-3">
         <ComparisonCard
           title="Ajuda Intrusiva"
-          period1={{ value: 8 }}
-          period2={{ value: 5 }}
+          period1={{ value: intrusiveP1 }}
+          period2={{ value: intrusiveP2 }}
         />
 
         <ComparisonCard
           title="Autônomo"
-          period1={{ value: 4 }}
-          period2={{ value: 7 }}
+          period1={{ value: autonomoP1 }}
+          period2={{ value: autonomoP2 }}
         />
       </View>
 
