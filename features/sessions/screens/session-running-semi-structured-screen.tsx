@@ -162,7 +162,10 @@ export function SessionRunningSemiStructuredScreen({
     if (!currentSessionData?.activeExerciseId) return null;
     return exercises.find((e) => e.id === currentSessionData.activeExerciseId) ?? null;
   });
-  const [stage, setStage] = useState<ExerciseStage>("ready");
+  const [stage, setStage] = useState<ExerciseStage>(() => {
+    if (currentSessionData?.activeExerciseId) return "running";
+    return "ready";
+  });
 
   const [historicoExercicios, setHistoricoExercicios] = useState<
     Record<string, "concluido" | "nao_realizada" | "adiado">
@@ -240,7 +243,11 @@ export function SessionRunningSemiStructuredScreen({
 
   const handleSelectExercise = (exercise: SessionExercise) => {
     setActiveExercise(exercise);
-    setStage("ready");
+    if (exercise.id === currentSessionData?.activeExerciseId) {
+      setStage("running");
+    } else {
+      setStage("ready");
+    }
   };
 
   const handleStop = () => {
