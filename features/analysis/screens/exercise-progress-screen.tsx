@@ -5,7 +5,8 @@ import { ExerciseProgressChart } from "@/features/analysis/components/exercise-p
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { AlertCircle, ChartNoAxesCombined, CircleAlert } from "lucide-react-native";
 import React, { useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { AppModal } from "@/components/app-modal";
+import { ActivityIndicator, Pressable, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import RangeCalendar from "../../../components/range-calendar";
 import { PeriodSelector } from "../components/period-selector";
 import ProgressExerciseCard from "../components/progress-exercise-card";
@@ -264,7 +265,7 @@ export function ExerciseProgressScreen() {
       )}
 
       {/* Modal para seleção do intervalo de datas */}
-      <Modal visible={isCalendarOpen} transparent animationType="fade" onRequestClose={() => setIsCalendarOpen(false)}>
+      <AppModal visible={isCalendarOpen} transparent animationType="fade" onRequestClose={() => setIsCalendarOpen(false)}>
         <Pressable className="flex-1 bg-black/60 justify-center items-center px-6" onPress={() => setIsCalendarOpen(false)}>
           <Pressable className="w-full max-w-[380px]" onPress={(e) => e.stopPropagation()}>
             <View className="w-full mb-4">
@@ -285,7 +286,7 @@ export function ExerciseProgressScreen() {
             </View>
           </Pressable>
         </Pressable>
-      </Modal>
+      </AppModal>
     </View>
   );
 }

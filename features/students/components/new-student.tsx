@@ -2,7 +2,8 @@ import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import { Calendar, ChevronDown, ImageUp, Pencil, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { Image, Modal, Pressable, Text, View } from "react-native";
+import { AppModal } from "@/components/app-modal";
+import { Image, Pressable, Text, View } from "react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { ActionButtons } from "../../../components/action-buttons";
 import { ConfirmationModal } from "../../../components/confirmation-modal";
@@ -312,7 +313,7 @@ export function NewStudent({
 
   return (
     <>
-      <Modal
+      <AppModal
         visible={visible}
         onRequestClose={onClose}
         transparent
@@ -615,7 +616,7 @@ export function NewStudent({
             </View>
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       <ConfirmationModal
         visible={deletePhotoModalVisible}
@@ -628,7 +629,7 @@ export function NewStudent({
         mode="delete"
       />
 
-      <Modal
+      <AppModal
         visible={isPreviewVisible}
         transparent
         animationType="fade"
@@ -674,7 +675,7 @@ export function NewStudent({
             />
           </View>
         </View>
-      </Modal>
+      </AppModal>
     </>
   );
 }

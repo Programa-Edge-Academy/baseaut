@@ -1,3 +1,4 @@
+import { AppModal } from "@/components/app-modal";
 import { colors } from "@/assets/colors";
 import { Calendar, Check, X } from "lucide-react-native";
 import {
@@ -69,7 +70,7 @@ export function NewReport({
 }: NewReportProps) {
   const { width, height } = useWindowDimensions();
   return (
-    <Modal visible onRequestClose={onClose} transparent animationType="fade">
+    <AppModal visible onRequestClose={onClose} transparent animationType="fade">
       <View className="flex-1 bg-black/50">
         <View
           className="border bg-level2 border-outline"
@@ -119,6 +120,6 @@ export function NewReport({
           </View>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }

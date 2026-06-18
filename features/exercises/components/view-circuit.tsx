@@ -1,11 +1,12 @@
+import { AppModal } from "@/components/app-modal";
 import { X } from "lucide-react-native";
 import React, { useRef } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 
 import { colors } from "@/assets/colors";
 import { Exercise } from "../hooks/use-exercises";
 
-type ExecutionMode = "estruturado" | "livre";
+type ExecutionMode = "estruturado" | "semi-estruturado";
 
 interface ViewCircuitProps {
   visible: boolean;
@@ -67,7 +68,7 @@ export function ViewCircuit({
   }
 
   return (
-    <Modal
+    <AppModal
       visible={visible}
       transparent
       animationType="fade"
@@ -137,6 +138,6 @@ export function ViewCircuit({
 
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
