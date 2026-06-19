@@ -123,6 +123,30 @@ Deno.serve(async (req: Request): Promise<Response> => {
     });
   }
 
+  // ── 3a. Verifica limite de envios por hora (anti-spam) ─────────────────────
+  const oneHourAgo = new Date(Date.now() - 3600_000).toISOString();
+  const { count: recentCount, error: countError } = await supabase
+    .from("solicitacoes_recuperacao")
+    .select("id", { count: "exact", head: true })
+    .eq("usuario_id", profile.id)
+    .gte("created_at", oneHourAgo);
+
+  if (countError) {
+    console.error(
+      "[send-recovery-code] Erro ao contar solicitações recentes:",
+      countError
+    );
+    return json({ error: "Erro interno do servidor." }, 500);
+  }
+
+  if ((recentCount ?? 0) >= 3) {
+    // Retorna a mesma mensagem genérica de sucesso para não revelar o rate limit
+    return json({
+      message:
+        "Se esse e-mail estiver cadastrado, você receberá um código em instantes.",
+    });
+  }
+
   // ── 4. Invalida solicitações anteriores do mesmo usuário ────────────────────
   const { error: invalidateError } = await supabase
     .from("solicitacoes_recuperacao")
