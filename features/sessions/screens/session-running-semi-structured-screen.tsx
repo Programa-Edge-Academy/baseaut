@@ -62,7 +62,7 @@ export function SessionRunningSemiStructuredScreen({
   const router = useRouter();
 
   const { createSession, persistExecutions, finishSession } = useSessionFlow();
-  const { registerSession, updateSessionProgress, updateSessionState, toggleTimer, closeSession, activeSessions } = useSessionGlobalContext();
+  const { registerSession, updateSessionProgress, updateSessionState, toggleTimer, closeSession, activeSessions, updateTimeElapsed } = useSessionGlobalContext();
 
   // ID efetivo da sessão: usa o recebido (retomada) ou cria um na montagem.
   const effectiveSessionIdRef = useRef<string>(sessionId || "");
@@ -73,43 +73,19 @@ export function SessionRunningSemiStructuredScreen({
   const lastElapsedSecondsRef = useRef<number | null>(null);
 
   // ID da sessão resolvido de forma síncrona (para inicializar estado local).
+  // Para novas sessões (sem sessionId), este ref começa vazio e é preenchido
+  // de forma lazy, apenas quando o usuário aperta "Começar" no primeiro exercício.
   const sid = sessionId || effectiveSessionIdRef.current || "";
 
   const safeStudentName = studentName || "Aluno";
 
-  // Cria a sessão no banco quando ainda não há um id válido (início semi-estruturado).
+  // Para retomada via widget: o sessionId já existe, apenas garante o registro no contexto
+  // (sem sobrescrever estado existente — registerSession preserva historico/activeExerciseId).
   useEffect(() => {
-    if (sessionId || !studentId || exercises.length === 0) return;
-    if (createSessionPromiseRef.current) return;
-    const promise = (async () => {
-      const id = await createSession({
-        alunoId: studentId,
-        circuitoId: circuitId || null,
-      });
-      effectiveSessionIdRef.current = id;
-      registerSession({
-        sessionId: id,
-        studentId,
-        studentName: safeStudentName,
-        type: "semi-structured",
-        timeElapsed: 0,
-        isRunning: false,
-        exerciseProgress: "Aguardando início...",
-        exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description }))),
-        circuitId: circuitId || undefined,
-        circuitName: circuitName || undefined,
-      });
-      return id;
-    })();
-    createSessionPromiseRef.current = promise.catch((err) => {
-      console.error("Erro ao criar sessão (semi-estruturado):", err);
-      throw err;
-    });
-  }, [sessionId, studentId, circuitId, exercises.length, createSession, registerSession, safeStudentName]);
-
-  // Se já veio com sessionId (retomada), registra no contexto se não existir
-  useEffect(() => {
-    if (sessionId) {
+    if (!sessionId) return;
+    const existing = activeSessions[sessionId];
+    // Só registra novamente se não existe no contexto (ex: app reiniciado)
+    if (!existing) {
       registerSession({
         sessionId,
         studentId,
@@ -123,12 +99,40 @@ export function SessionRunningSemiStructuredScreen({
         circuitName: circuitName || undefined,
       });
     }
-  }, [sessionId, studentId, safeStudentName, registerSession]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
-  // Garante um sessao_id válido antes de gravar (aguarda a criação em-flight).
+  // Cria a sessão no banco e registra no contexto de forma lazy (apenas no primeiro "Começar").
+  // Retorna o sessionId criado ou o já existente.
   const ensureSessionId = async (): Promise<string | null> => {
     if (effectiveSessionIdRef.current) return effectiveSessionIdRef.current;
-    if (!createSessionPromiseRef.current) return null;
+    if (!createSessionPromiseRef.current) {
+      const promise = (async () => {
+        const id = await createSession({
+          alunoId: studentId,
+          circuitoId: circuitId || null,
+        });
+        effectiveSessionIdRef.current = id;
+        registerSession({
+          sessionId: id,
+          studentId,
+          studentName: safeStudentName,
+          type: "semi-structured",
+          timeElapsed: 0,
+          isRunning: false,
+          exerciseProgress: `Exercício 1/${exercises.length}`,
+          exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description }))),
+          circuitId: circuitId || undefined,
+          circuitName: circuitName || undefined,
+        });
+        return id;
+      })();
+      createSessionPromiseRef.current = promise.catch((err) => {
+        createSessionPromiseRef.current = null; // allow retry on failure
+        console.error("Erro ao criar sessão (semi-estruturado):", err);
+        throw err;
+      });
+    }
     try {
       return await createSessionPromiseRef.current;
     } catch {
@@ -157,7 +161,10 @@ export function SessionRunningSemiStructuredScreen({
   };
 
   // Inicializa o histórico e o exercício ativo restaurando do contexto global (retomada)
-  const currentSessionData = activeSessions[sid];
+  // O sid síncrono pode estar vazio para novas sessões (antes do primeiro "Começar").
+  // Usamos o ref como fallback após criação assíncrona.
+  const resolvedSid = sessionId || effectiveSessionIdRef.current || "";
+  const currentSessionData = activeSessions[resolvedSid];
   const [activeExercise, setActiveExercise] = useState<SessionExercise | null>(() => {
     if (!currentSessionData?.activeExerciseId) return null;
     return exercises.find((e) => e.id === currentSessionData.activeExerciseId) ?? null;
@@ -182,26 +189,23 @@ export function SessionRunningSemiStructuredScreen({
 
   // Sincroniza a visibilidade do widget: oculta se a tela estiver exibindo a execução do exercício
   useEffect(() => {
-    if (!sid) return;
-    const isVisibleOnScreen = !!activeExercise;
-    setTimerVisible(sid, isVisibleOnScreen);
-  }, [activeExercise, sid, setTimerVisible]);
+    if (!resolvedSid) return;
+    setTimerVisible(resolvedSid, !!activeExercise);
+  }, [activeExercise, resolvedSid, setTimerVisible]);
 
   // Sincroniza o histórico de volta ao contexto global ao mudar
   useEffect(() => {
-    if (!sid) return;
-    updateSessionState(sid, {
-      historico: historicoExercicios,
-    });
-  }, [historicoExercicios, sid]);
+    if (!resolvedSid) return;
+    updateSessionState(resolvedSid, { historico: historicoExercicios });
+  }, [historicoExercicios, resolvedSid]);
 
   // Atualiza o progresso globalmente quando o histórico muda
   useEffect(() => {
-    if (!sid) return;
+    if (!resolvedSid) return;
     const completed = Object.keys(historicoExercicios).length;
     const current = Math.min(completed + 1, exercises.length);
-    updateSessionProgress(sid, `Exercício ${current}/${exercises.length}`);
-  }, [historicoExercicios, exercises.length, sid, updateSessionProgress]);
+    updateSessionProgress(resolvedSid, `Exercício ${current}/${exercises.length}`);
+  }, [historicoExercicios, exercises.length, resolvedSid, updateSessionProgress]);
 
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
@@ -253,10 +257,8 @@ export function SessionRunningSemiStructuredScreen({
   const handleStop = () => {
     const elapsed = controlledSeconds;
     lastElapsedSecondsRef.current = elapsed;
-    if (sid) toggleTimer(sid, false);
-    const minutes = Math.floor(elapsed / 60)
-      .toString()
-      .padStart(2, "0");
+    if (resolvedSid) toggleTimer(resolvedSid, false);
+    const minutes = Math.floor(elapsed / 60).toString().padStart(2, "0");
     const seconds = (elapsed % 60).toString().padStart(2, "0");
     setElapsedTimeStr(`${minutes}:${seconds}`);
     setIsResultModalOpen(true);
@@ -303,8 +305,8 @@ export function SessionRunningSemiStructuredScreen({
       [exercise.id]: status,
     };
     setHistoricoExercicios(novoHistorico);
-    if (sid) {
-      updateSessionState(sid, { activeExerciseId: null });
+    if (resolvedSid) {
+      updateSessionState(resolvedSid, { activeExerciseId: null });
     }
 
     setIsResultModalOpen(false);
@@ -313,9 +315,9 @@ export function SessionRunningSemiStructuredScreen({
     const pendentes = exercises.filter((ex) => !novoHistorico[ex.id]);
 
     if (pendentes.length === 0) {
-      if (sid) {
-        void finishSession(sid, { status: "concluida" });
-        closeSession(sid);
+      if (resolvedSid) {
+        void finishSession(resolvedSid, { status: "concluida" });
+        closeSession(resolvedSid);
       }
       router.replace({
         pathname: "/session/completed",
@@ -323,7 +325,7 @@ export function SessionRunningSemiStructuredScreen({
           type: "semi-structured",
           studentName: safeStudentName,
           studentId,
-          sessionId: sid,
+          sessionId: resolvedSid,
           fullCircuit: JSON.stringify(exercises),
           queue: JSON.stringify([]),
         },
@@ -341,13 +343,13 @@ export function SessionRunningSemiStructuredScreen({
       return status !== "concluido" && status !== "adiado";
     });
 
-    const sid = effectiveSessionIdRef.current;
-    if (sid) {
-      void finishSession(sid, {
+    if (resolvedSid) {
+      void finishSession(resolvedSid, {
         status: "concluida",
         motivoFinalizacao: MOTIVO_FINALIZACAO_MAP[motivo] ?? "outro",
         descricaoMotivo: motivo,
       });
+      closeSession(resolvedSid);
     }
 
     router.push({
@@ -356,7 +358,7 @@ export function SessionRunningSemiStructuredScreen({
         type: "semi-structured",
         studentName: safeStudentName,
         studentId,
-        sessionId: sid,
+        sessionId: resolvedSid,
         fullCircuit: JSON.stringify(exercises),
         queue: JSON.stringify(filaDePendentes),
       },
@@ -398,11 +400,15 @@ export function SessionRunningSemiStructuredScreen({
               title={activeExercise.name}
               subtitle={activeExercise.description}
               mediaUrls={activeExercise.mediaUrls ?? []}
-              onStart={() => {
+              onStart={async () => {
                 setStage("running");
-                if (sid) {
-                  toggleTimer(sid, true);
-                  updateSessionState(sid, { activeExerciseId: activeExercise.id });
+                // Cria a sessão no banco de forma lazy (somente no primeiro "Começar")
+                const newSid = await ensureSessionId();
+                if (newSid) {
+                  // Cada exercício tem seu próprio cronômetro — resetar antes de iniciar
+                  updateTimeElapsed(newSid, 0);
+                  toggleTimer(newSid, true);
+                  updateSessionState(newSid, { activeExerciseId: activeExercise.id });
                 }
               }}
               onStartAndRecord={null}
@@ -417,7 +423,7 @@ export function SessionRunningSemiStructuredScreen({
               controlledSeconds={controlledSeconds}
               controlledIsRunning={controlledIsRunning}
               onToggleRunning={(isRunning) => {
-                if (sid) toggleTimer(sid, isRunning);
+                if (resolvedSid) toggleTimer(resolvedSid, isRunning);
               }}
             />
           )}
@@ -528,7 +534,7 @@ export function SessionRunningSemiStructuredScreen({
           onPressBack={() =>
             activeExercise
               ? setActiveExercise(null)
-              : router.replace("/students")
+              : router.back()
           }
           onPressFinish={() => setIsFinishOpen(true)}
         />

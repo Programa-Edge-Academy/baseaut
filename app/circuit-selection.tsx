@@ -169,7 +169,7 @@ export default function CircuitSelectionRoute() {
       onPressBack={() => router.back()}
       onPressCircuit={(circuit: CircuitItem) => {
         // Block starting a different circuit if one is already active
-        if (studentActiveSession && studentActiveSession.circuitId !== circuit.id) {
+        if (studentActiveSession && studentActiveSession.activeExerciseId != null && studentActiveSession.circuitId !== circuit.id) {
           Alert.alert(
             "Circuito em andamento",
             "O aluno já possui um circuito em andamento. Conclua ou cancele o circuito atual antes de iniciar um novo."
