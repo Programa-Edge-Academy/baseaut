@@ -112,7 +112,10 @@ export function useStudentSessions(studentId?: string) {
         .rpc("rpc_get_progresso_sessoes_aluno", { p_aluno_id: studentId });
 
       if (progressError) console.error("Erro ao buscar progresso das sessões", progressError);
-      const parsedProgress = typeof progressData === "string" ? JSON.parse(progressData) : (progressData || []);
+      let parsedProgress: any[] = [];
+      try {
+        parsedProgress = typeof progressData === "string" ? JSON.parse(progressData) : (progressData || []);
+      } catch { /* JSON corrupto */ }
 
       // 5. Formata as Sessões (Mesclando a checagem de pendências e os exercícios recuperáveis)
       const mappedSessions: SessionItem[] = await Promise.all(
@@ -189,7 +192,10 @@ export function useStudentSessions(studentId?: string) {
       }));
 
       // 7. Formata o MABC-2 com chamadas assíncronas de progresso e cálculo de idade
-      const parsedMabcData = typeof mabcData === "string" ? JSON.parse(mabcData) : (mabcData || []);
+      let parsedMabcData: any[] = [];
+      try {
+        parsedMabcData = typeof mabcData === "string" ? JSON.parse(mabcData) : (mabcData || []);
+      } catch { /* JSON corrupto */ }
       
       const mappedMabc: SessionItem[] = await Promise.all(
         (parsedMabcData || []).map(async (item: any) => {

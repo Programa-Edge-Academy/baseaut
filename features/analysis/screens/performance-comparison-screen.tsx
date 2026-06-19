@@ -4,7 +4,7 @@ import { DefaultButton } from "@/components/default-button";
 import { Header } from "@/components/header";
 import RangeCalendar from "@/components/range-calendar";
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
-import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
+import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState, useMemo } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
@@ -50,7 +50,7 @@ export function PerformanceComparisonScreen() {
   const router = useRouter();
   const { studentId: rawStudentId } = useLocalSearchParams();
   const studentId = Array.isArray(rawStudentId) ? rawStudentId[0] : rawStudentId ?? "";
-  const { profile, isLoading } = useStudentSessions(studentId);
+  const { profile, isLoading } = useStudentProfile(studentId);
 
   // Ranges
   const [period1Range, setPeriod1Range] = useState<{ start: Date; end: Date } | null>(null);
