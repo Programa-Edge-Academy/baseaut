@@ -35,7 +35,7 @@ export function ProtocolRecordsListScreen({
   onPressBack,
   onPressRecord,
 }: ProtocolRecordsListScreenProps) {
-  const { records, isLoading, error } = useProtocolRecords(studentId, tipo);
+  const { records, isLoading, error, refetch } = useProtocolRecords(studentId, tipo);
   const protocolLabel = PROTOCOL_LABELS[tipo];
 
   return (
@@ -72,6 +72,7 @@ export function ProtocolRecordsListScreen({
             data={records}
             keyExtractor={(item) => item.id}
             emptyMessage="Nenhum registro encontrado."
+            onRefresh={refetch}
             renderItem={({ item }) => (
               <ProtocolRecordCard
                 record={item}

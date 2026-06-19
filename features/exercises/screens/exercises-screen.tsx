@@ -59,6 +59,7 @@ export function ExercisesScreen() {
     exercises,
     isLoading,
     error,
+    refresh,
     addExercise,
     updateExercise,
     deleteExercise,
@@ -197,6 +198,7 @@ export function ExercisesScreen() {
         className="mt-5 px-8"
         data={filteredExercises}
         emptyMessage="Nenhum exercício encontrado."
+        onRefresh={refresh}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
           const subtitleParts = [
