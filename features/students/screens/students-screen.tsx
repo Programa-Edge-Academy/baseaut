@@ -17,7 +17,7 @@ import { router } from "expo-router";
  * Students list screen with search and CRUD modals.
  */
 export function StudentsScreen() {
-  const { students, isLoading, addStudent, updateStudent, deleteStudent } =
+  const { students, isLoading, refresh, addStudent, updateStudent, deleteStudent } =
     useStudents();
   const [isNewStudentModalVisible, setIsNewStudentModalVisible] =
     useState(false);
@@ -76,6 +76,7 @@ export function StudentsScreen() {
             keyExtractor={(item) => item.id}
             emptyMessage="Nenhum aluno encontrado."
             contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
+            onRefresh={refresh}
             renderItem={({ item }) => (
               <ListCard
                 title={item.name}

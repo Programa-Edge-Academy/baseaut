@@ -11,6 +11,7 @@ export type Mabc2RecordsListScreenProps = {
   studentName: string;
   records: Mabc2Record[];
   isLoading?: boolean;
+  onRefresh?: () => void;
   toastConfig?: { visible: boolean; mode: ToastMode; title: string; description?: string };
   onHideToast?: () => void;
   onPressBack?: () => void;
@@ -22,6 +23,7 @@ export function Mabc2RecordsListScreen({
   studentName,
   records,
   isLoading = false,
+  onRefresh,
   toastConfig,
   onHideToast,
   onPressBack,
@@ -50,6 +52,7 @@ export function Mabc2RecordsListScreen({
           className="mx-5 mt-3"
           data={records}
           emptyMessage="Nenhum registro MABC-2 encontrado."
+          onRefresh={onRefresh}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Mabc2RecordCard
