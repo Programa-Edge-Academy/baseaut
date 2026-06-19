@@ -17,6 +17,7 @@ import {
 } from "../components/finish-session-modal";
 import { ReorderModal } from "../components/reorder-modal";
 import { useResumeSession } from "../hooks/use-resume-session";
+import { useSessionGlobalContext } from "../contexts/session-global-context";
 import {
   useSessionFlow,
   type CrisisRecord,
@@ -101,6 +102,8 @@ export function SessionRunningScreen({
   // Promise da criação da sessão — usada por persistAndFinish para aguardar
   // o insert caso o usuário finalize antes de ele resolver.
   const createSessionPromiseRef = useRef<Promise<string> | null>(null);
+
+  const { registerSession, updateSessionProgress, updateSessionState, toggleTimer, closeSession, activeSessions, updateTimeElapsed, setTimerVisible } = useSessionGlobalContext();
   // Execuções acumuladas (status + dados clínicos) para gravar ao final.
   const executionsRef = useRef<ExecutionRecord[]>([]);
   // Segundos do cronômetro capturados na última parada.
@@ -133,29 +136,66 @@ export function SessionRunningScreen({
     }
   };
 
-  // Cria a sessão no banco quando ainda não há um id válido.
+  const safeStudentName = studentName || "Aluno";
+
+  // Para retomada via widget ou selection: o sessionId já existe, apenas garante o registro no contexto
   useEffect(() => {
-    if (!order.length || sessionId || !studentId) return;
-    let active = true;
-    const promise = (async () => {
-      const id = await createSession({
-        alunoId: studentId,
-        circuitoId: circuitId ?? null,
+    if (!sessionId || exercises.length === 0) return;
+    const existing = activeSessions[sessionId];
+    if (!existing) {
+      registerSession({
+        sessionId,
+        studentId,
+        studentName: safeStudentName,
+        type: "structured",
+        timeElapsed: 0,
+        isRunning: false,
+        exerciseProgress: "Retomando...",
+        exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description }))),
+        circuitId: circuitId || undefined,
+        circuitName: circuitName || undefined,
       });
-      // Sempre grava no ref (não depende de active) para que persistAndFinish
-      // possa usar o id mesmo que o componente já tenha desmontado.
-      effectiveSessionIdRef.current = id;
-      if (active) setEffectiveSessionId(id);
-      return id;
-    })();
-    createSessionPromiseRef.current = promise.catch((err) => {
-      console.error("Erro ao criar sessão:", err);
-      throw err;
-    });
-    return () => {
-      active = false;
-    };
-  }, [sessionId, studentId, circuitId, createSession]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, exercises.length]);
+
+  // Cria a sessão no banco e registra no contexto de forma lazy (apenas no primeiro "Começar").
+  const ensureSessionId = async (): Promise<string | null> => {
+    if (effectiveSessionIdRef.current) return effectiveSessionIdRef.current;
+    if (!createSessionPromiseRef.current) {
+      const promise = (async () => {
+        const id = await createSession({
+          alunoId: studentId,
+          circuitoId: effectiveCircuitId || null,
+        });
+        effectiveSessionIdRef.current = id;
+        setEffectiveSessionId(id);
+        registerSession({
+          sessionId: id,
+          studentId,
+          studentName: safeStudentName,
+          type: "structured",
+          timeElapsed: 0,
+          isRunning: false,
+          exerciseProgress: `Exercício 1/${exercises.length}`,
+          exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description }))),
+          circuitId: effectiveCircuitId || undefined,
+          circuitName: effectiveCircuitName || undefined,
+        });
+        return id;
+      })();
+      createSessionPromiseRef.current = promise.catch((err) => {
+        createSessionPromiseRef.current = null;
+        console.error("Erro ao criar sessão:", err);
+        throw err;
+      });
+    }
+    try {
+      return await createSessionPromiseRef.current;
+    } catch {
+      return null;
+    }
+  };
 
   // Resolve a instância de RC da sessão para o formulário inline gravar nela.
   useEffect(() => {
@@ -177,9 +217,62 @@ export function SessionRunningScreen({
   // Ao retomar (sessionId não vazio), carrega as execuções já gravadas.
   const { data: resumeData } = useResumeSession(sessionId || null);
 
-  const [order, setOrder] = useState<SessionExercise[]>(exercises);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [stage, setStage] = useState<ExerciseStage>("ready");
+  const resolvedSid = sessionId || effectiveSessionIdRef.current || "";
+  const currentSessionData = activeSessions[resolvedSid];
+
+  const [order, setOrder] = useState<SessionExercise[]>(() => {
+    if (exercises && exercises.length > 0) return exercises;
+    
+    if (currentSessionData?.exercisesJson) {
+      try {
+        const parsed = JSON.parse(currentSessionData.exercisesJson) as SessionExercise[];
+        return parsed.map((e) => ({
+          id: e.id,
+          name: e.name,
+          description: e.description,
+          mediaUrls: [],
+        }));
+      } catch (err) {
+        console.error("Failed to parse exercises from context fallback", err);
+      }
+    }
+    return [];
+  });
+
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    if (currentSessionData?.activeExerciseId) {
+      const idx = order.findIndex((e) => e.id === currentSessionData.activeExerciseId);
+      if (idx !== -1) return idx;
+    }
+    return 0;
+  });
+
+  const [stage, setStage] = useState<ExerciseStage>(() => {
+    if (currentSessionData?.activeExerciseId) return "running";
+    return "ready";
+  });
+
+  // Expo Router's useLocalSearchParams might be undefined on the very first render,
+  // We sync the 'order' state if 'exercises' prop arrives later.
+  useEffect(() => {
+    if (order.length === 0 && exercises.length > 0) {
+      setOrder(exercises);
+    }
+  }, [exercises, order.length]);
+
+  const controlledSeconds = currentSessionData?.timeElapsed ?? 0;
+  const controlledIsRunning = currentSessionData?.isRunning ?? false;
+
+  // Fallbacks for dropped URL params
+  const effectiveCircuitId = circuitId || currentSessionData?.circuitId || "";
+  const effectiveCircuitName = circuitName || currentSessionData?.circuitName || "Circuito";
+
+  // Enquanto a tela estruturada está ativa, ela sempre ocupa a tela, ocultando o widget
+  useEffect(() => {
+    if (!resolvedSid) return;
+    setTimerVisible(resolvedSid, true);
+    return () => setTimerVisible(resolvedSid, false);
+  }, [resolvedSid, setTimerVisible]);
   const [hasAdvanced, setHasAdvanced] = useState(false);
   const [isReorderOpen, setIsReorderOpen] = useState(false);
   const [isFinishOpen, setIsFinishOpen] = useState(false);
@@ -210,9 +303,11 @@ export function SessionRunningScreen({
     setHistoricoExercicios(histrico);
     setHasAdvanced(true);
 
-    // Retoma no primeiro exercício da ordem original que ainda não tem execução.
-    const resumeIndex = exercises.findIndex((ex) => !executed.has(ex.id));
-    setCurrentIndex(resumeIndex === -1 ? exercises.length - 1 : resumeIndex);
+    if (!currentSessionData?.activeExerciseId) {
+      // Retoma no primeiro exercício da ordem original que ainda não tem execução.
+      const resumeIndex = order.findIndex((ex) => !executed.has(ex.id));
+      setCurrentIndex(resumeIndex === -1 ? Math.max(0, order.length - 1) : resumeIndex);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeData]);
 
@@ -335,6 +430,7 @@ export function SessionRunningScreen({
         motivoFinalizacao,
         descricaoMotivo,
       });
+      closeSession(sid);
     } catch (err) {
       console.error("Erro ao salvar a sessão:", err);
     }
@@ -389,6 +485,10 @@ export function SessionRunningScreen({
 
     if (currentIndex < total - 1) {
       setCurrentIndex(currentIndex + 1);
+      if (effectiveSessionIdRef.current) {
+        updateSessionState(effectiveSessionIdRef.current, { activeExerciseId: null });
+        updateSessionProgress(effectiveSessionIdRef.current, `Exercício ${currentIndex + 2}/${total}`);
+      }
     } else {
       const pendentes = order.filter(
         (ex) =>
@@ -418,22 +518,43 @@ export function SessionRunningScreen({
           <Text className="text-white text-base text-center font-medium">
             Não foi possível carregar os exercícios do circuito.
           </Text>
+          <Text className="text-white/50 text-xs text-center mt-4">
+            Debug: exercises.length={exercises.length}, sid={sessionId}, 
+            type={circuitType}, circuitId={circuitId}
+            {"\n"}Raw JSON: {currentSessionData?.exercisesJson ?? "undefined in context"}
+          </Text>
         </View>
       </View>
     );
   }
 
   const currentExercise = order[currentIndex];
-  const subtitle = `${circuitName} - ${currentIndex + 1}/${total}`;
+  const subtitle = `${effectiveCircuitName} - ${currentIndex + 1}/${total}`;
 
-  const handleStart = () => setStage("running");
-  const handleStartAndRecord = () => {
+  const handleStart = async () => {
+    setStage("running");
+    const sid = await ensureSessionId();
+    if (sid) {
+      updateTimeElapsed(sid, 0);
+      toggleTimer(sid, true);
+      updateSessionState(sid, { activeExerciseId: currentExercise.id });
+    }
+  };
+
+  const handleStartAndRecord = async () => {
     // TODO: kick off media recording before starting the stopwatch.
     setStage("running");
+    const sid = await ensureSessionId();
+    if (sid) {
+      updateTimeElapsed(sid, 0);
+      toggleTimer(sid, true);
+      updateSessionState(sid, { activeExerciseId: currentExercise.id });
+    }
   };
 
   const handleStop = (elapsed: number) => {
     lastElapsedSecondsRef.current = elapsed;
+    if (resolvedSid) toggleTimer(resolvedSid, false);
 
     const minutes = Math.floor(elapsed / 60)
       .toString()
@@ -514,6 +635,11 @@ export function SessionRunningScreen({
                 onPressCrise={handleCrisePress}
                 isCriseActive={isCriseActive}
                 onStop={handleStop}
+                controlledSeconds={controlledSeconds}
+                controlledIsRunning={controlledIsRunning}
+                onToggleRunning={(isRunning) => {
+                  if (resolvedSid) toggleTimer(resolvedSid, isRunning);
+                }}
                 isFormVisible={isFormVisible} // Nova prop
                 onPressCorner={() => setIsFormVisible(!isFormVisible)} // Alterna o estado
               />
