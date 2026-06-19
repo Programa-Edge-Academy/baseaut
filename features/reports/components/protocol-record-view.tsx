@@ -1,0 +1,170 @@
+import { colors } from "@/assets/colors";
+import { useProtocolRecordDetail } from "@/features/analysis/hooks/use-protocol-record-detail";
+import React from "react";
+import { ActivityIndicator, Text, View } from "react-native";
+
+const COMPONENT_TITLES: Record<string, string> = {
+  destreza_manual: "Destreza Manual",
+  mirar_pegar: "Mirar e Pegar",
+  equilibrio: "Equilíbrio",
+};
+
+function fmtComponentTitle(raw: string): string {
+  return COMPONENT_TITLES[raw] ?? raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function ScoreBadge({ label }: { label: string }) {
+  return (
+    <View className="bg-level1 border border-outline rounded-lg px-3 py-1">
+      <Text className="text-xs text-white font-bold">{label}</Text>
+    </View>
+  );
+}
+
+function SectionRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="flex-row items-center justify-between py-2.5 border-b border-outline">
+      <Text className="text-xs text-white flex-1 mr-3" numberOfLines={2}>{label}</Text>
+      <ScoreBadge label={value} />
+    </View>
+  );
+}
+
+function EmptyProtocol() {
+  return (
+    <Text className="text-xs text-muted py-2">Nenhuma resposta preenchida neste formulário.</Text>
+  );
+}
+
+export function ProtocolRecordView({
+  tipo,
+  recordId,
+  dateLabel,
+  responsavel,
+}: {
+  tipo: "ata" | "cars" | "mabc2";
+  recordId: string;
+  dateLabel: string;
+  responsavel?: string;
+}) {
+  const { detail, isLoading } = useProtocolRecordDetail(tipo, recordId);
+
+  if (isLoading) {
+    return (
+      <View className="items-center py-4">
+        <ActivityIndicator size="small" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (!detail) return null;
+
+  if (tipo === "ata" && detail.ata) {
+    const hasResponses = detail.ata.sections.some((s) => s.value != null);
+    return (
+      <View className="border border-outline rounded-lg bg-level2 p-4 mb-3">
+        <View className="flex-row items-center justify-between mb-2">
+          <Text className="text-sm font-bold text-white">ATA — {dateLabel}</Text>
+          {detail.ata.total != null && <ScoreBadge label={`Total: ${detail.ata.total}`} />}
+        </View>
+        {responsavel && <Text className="text-xs text-muted mb-2">Responsável: {responsavel}</Text>}
+        {hasResponses ? (
+          detail.ata.sections.map((section) => (
+            <SectionRow key={section.id} label={section.title} value={section.valueLabel} />
+          ))
+        ) : (
+          <EmptyProtocol />
+        )}
+      </View>
+    );
+  }
+
+  if (tipo === "cars" && detail.cars) {
+    const hasResponses = detail.cars.domains.some((d) => d.score != null);
+    return (
+      <View className="border border-outline rounded-lg bg-level2 p-4 mb-3">
+        <View className="flex-row items-center justify-between mb-2">
+          <Text className="text-sm font-bold text-white">CARS — {dateLabel}</Text>
+          {detail.cars.total != null && <ScoreBadge label={`Total: ${detail.cars.total}`} />}
+        </View>
+        {responsavel && <Text className="text-xs text-muted mb-2">Responsável: {responsavel}</Text>}
+        {hasResponses ? (
+          detail.cars.domains.map((domain) => (
+            <View key={domain.id}>
+              <SectionRow label={domain.title} value={domain.scoreLabel} />
+              {domain.observation && (
+                <Text className="text-xs text-muted py-1 pl-2 italic">{domain.observation}</Text>
+              )}
+            </View>
+          ))
+        ) : (
+          <EmptyProtocol />
+        )}
+      </View>
+    );
+  }
+
+  if (tipo === "mabc2" && detail.mabc2) {
+    const m = detail.mabc2;
+    return (
+      <View className="border border-outline rounded-lg bg-level2 p-4 mb-3">
+        {/* Header */}
+        <View className="mb-3">
+          <Text className="text-sm font-bold text-white">MABC-2 — {dateLabel}</Text>
+          {m.evaluatorName && <Text className="text-xs text-muted mt-0.5">Avaliador: {m.evaluatorName}</Text>}
+          {m.ageGroupLabel && <Text className="text-xs text-muted">Faixa etária: {m.ageGroupLabel}</Text>}
+        </View>
+
+        {/* Summary scores */}
+        <View className="flex-row gap-3 mb-4">
+          {m.totalScore != null && (
+            <View className="flex-1 bg-level1 border border-outline rounded-lg py-2 items-center">
+              <Text className="text-[10px] text-muted">Escore total</Text>
+              <Text className="text-base text-white font-bold">{m.totalScore}</Text>
+            </View>
+          )}
+          {m.totalPercentile != null && (
+            <View className="flex-1 bg-level1 border border-outline rounded-lg py-2 items-center">
+              <Text className="text-[10px] text-muted">Percentil</Text>
+              <Text className="text-base text-white font-bold">{m.totalPercentile}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Components */}
+        {m.components.map((comp, ci) => (
+          <View key={ci} className="mb-4">
+            {/* Component header with score/percentile */}
+            <View className="flex-row items-center justify-between mb-2 pb-1.5 border-b border-outline">
+              <Text className="text-sm font-bold text-white">{fmtComponentTitle(comp.title)}</Text>
+              <View className="flex-row gap-2">
+                {comp.categoryScore != null && (
+                  <View className="bg-level1 border border-outline rounded-lg px-2.5 py-1 items-center">
+                    <Text className="text-[9px] text-muted">Escore padrão</Text>
+                    <Text className="text-xs text-white font-bold">{comp.categoryScore}</Text>
+                  </View>
+                )}
+                {comp.categoryPercentile && (
+                  <View className="bg-level1 border border-outline rounded-lg px-2.5 py-1 items-center">
+                    <Text className="text-[9px] text-muted">Percentil</Text>
+                    <Text className="text-xs text-white font-bold">{comp.categoryPercentile}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Items */}
+            {comp.items.map((item) => (
+              <View key={item.id} className="flex-row items-center justify-between py-2 border-b border-outline/40">
+                <Text className="text-[11px] text-white flex-1 mr-3" numberOfLines={2}>{item.name}</Text>
+                <Text className="text-[11px] text-muted min-w-[40px] text-right">{item.rawScore}</Text>
+              </View>
+            ))}
+          </View>
+        ))}
+      </View>
+    );
+  }
+
+  return null;
+}
