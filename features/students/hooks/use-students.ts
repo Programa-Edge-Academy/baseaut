@@ -111,10 +111,12 @@ const loadStudents = useCallback(async (showLoader = true) => {
     try {
       if (!equipeId) throw new Error("ID da equipe não identificado.");
 
-      let finalAvatarUrl = data.avatarUrl;
-      if (photoUri && !photoUri.startsWith("http")) {
-        const uploadedUrl = await uploadImage("avatares", photoUri, "alunos");
-        if (uploadedUrl) finalAvatarUrl = uploadedUrl;
+      // photoUri é a fonte de verdade: URI local nova faz upload; null/ausente fica sem avatar.
+      let finalAvatarUrl: string | null = null;
+      if (photoUri) {
+        finalAvatarUrl = photoUri.startsWith("http")
+          ? photoUri
+          : (await uploadImage("avatares", photoUri, "alunos")) ?? null;
       }
 
       let nivelSuporteDb = "nivel_1";
@@ -166,12 +168,6 @@ const loadStudents = useCallback(async (showLoader = true) => {
     photoUri?: string | null,
   ) => {
     try {
-      let finalAvatarUrl = data.avatarUrl;
-      if (photoUri && !photoUri.startsWith("http")) {
-        const uploadedUrl = await uploadImage("avatares", photoUri, "alunos");
-        if (uploadedUrl) finalAvatarUrl = uploadedUrl;
-      }
-
       const payload: any = {};
       if (data.name !== undefined) payload.nome_completo = data.name;
       if (data.weight !== undefined) payload.peso = data.weight;
@@ -181,7 +177,18 @@ const loadStudents = useCallback(async (showLoader = true) => {
         payload.diagnostico_detalhado = data.healthConditions;
       if (data.observations !== undefined)
         payload.observacoes_clinicas = data.observations;
-      if (finalAvatarUrl !== undefined) payload.avatar_url = finalAvatarUrl;
+
+      // Imagem: photoUri é a fonte de verdade.
+      //   null            => foto removida   => avatar_url = null  (dispara trigger de limpeza)
+      //   URL http         => foto inalterada => mantém o mesmo valor (trigger não dispara)
+      //   URI local nova   => faz upload      => avatar_url = nova URL (trigger apaga a antiga)
+      if (photoUri === null) {
+        payload.avatar_url = null;
+      } else if (photoUri !== undefined) {
+        payload.avatar_url = photoUri.startsWith("http")
+          ? photoUri
+          : (await uploadImage("avatares", photoUri, "alunos")) ?? null;
+      }
 
       if (data.supportLevel !== undefined) {
         let nivelSuporteDb = "nivel_1";
