@@ -1,20 +1,19 @@
 import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { DefaultButton } from "@/components/default-button";
 import { DefaultTextInput } from "@/components/default-text-input";
-import { supabase } from "@/lib/supabase";
+import { usePasswordRecovery } from "@/features/auth/hooks/use-password-recovery";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
 /**
- * Screen to request a password reset email.
+ * Screen to request a password recovery code by e-mail.
  */
 export function ResetPasswordCodeScreen() {
   const router = useRouter();
+  const { sendRecoveryCode, loading, error, setError } = usePasswordRecovery();
   const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [isSent, setIsSent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   /**
@@ -34,26 +33,18 @@ export function ResetPasswordCodeScreen() {
   };
 
   /**
-   * Sends the password reset email request.
+   * Requests the recovery code and advances to the reset screen on success.
    */
   const handleSendInstructions = async () => {
     if (!validate()) return;
 
-    setLoading(true);
+    const sent = await sendRecoveryCode(email);
+    if (!sent) return;
 
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: "baseaut://reset-password",
-      });
-
-      if (error) throw error;
-
-      setIsSent(true);
-    } catch (error: any) {
-      Alert.alert("Erro", error.message || "Não foi possível enviar o e-mail.");
-    } finally {
-      setLoading(false);
-    }
+    router.push({
+      pathname: "/reset-password",
+      params: { email: email.trim().toLowerCase() },
+    });
   };
 
   return (
@@ -64,69 +55,48 @@ export function ResetPasswordCodeScreen() {
 
       <View className="mt-10 w-full items-center">
         <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-6 shadow-panelShadow border border-outline">
-          {!isSent ? (
-            <>
-              <Text className="text-header-3 text-white mb-5">
-                Redefinir senha
-              </Text>
+          <Text className="text-header-3 text-white mb-5">Redefinir senha</Text>
 
-              <View className="w-full gap-7">
-                <View className="w-full gap-1">
-                  <Text className="text-default-2 text-muted">E-mail</Text>
-                  <DefaultTextInput
-                    placeholder="Seu e-mail"
-                    value={email}
-                    maxLength={254}
-                    onChangeText={(text) => {
-                      setEmail(text);
-                      if (errors.email) setErrors({});
-                    }}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    className="h-11 w-full rounded-[15px]"
-                    outLineBorderClass={
-                      errors.email ? "border-error" : "border-outline"
-                    }
-                  />
-                  {errors.email && (
-                    <Text className="text-default-3 text-error">
-                      {errors.email}
-                    </Text>
-                  )}
-                </View>
-
-                <DefaultButton
-                  className="w-full h-11"
-                  label={loading ? "Enviando..." : "Enviar solicitação"}
-                  onPress={handleSendInstructions}
-                  disabled={loading}
-                />
-              </View>
-
-              <Pressable onPress={() => router.replace("/")} className="mt-7">
-                <Text className="text-header-3 text-primary">
-                  Voltar ao login
-                </Text>
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <Text className="text-header-3 text-white mb-5">
-                E-mail enviado!
-              </Text>
-
-              <Text className="text-default-2 text-muted mb-7 text-center leading-5">
-                Se o e-mail estiver cadastrado, você receberá as instruções em
-                breve. Verifique sua caixa de entrada.
-              </Text>
-
-              <DefaultButton
-                label="Voltar ao login"
-                onPress={() => router.replace("/")}
-                className="h-11 w-full"
+          <View className="w-full gap-7">
+            <View className="w-full gap-1">
+              <Text className="text-default-2 text-muted">E-mail</Text>
+              <DefaultTextInput
+                placeholder="Seu e-mail"
+                value={email}
+                maxLength={254}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) setErrors({});
+                  if (error) setError(null);
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                className="h-11 w-full rounded-[15px]"
+                outLineBorderClass={
+                  errors.email ? "border-error" : "border-outline"
+                }
               />
-            </>
-          )}
+              {errors.email && (
+                <Text className="text-default-3 text-error">
+                  {errors.email}
+                </Text>
+              )}
+              {error && (
+                <Text className="text-default-3 text-error">{error}</Text>
+              )}
+            </View>
+
+            <DefaultButton
+              className="w-full h-11"
+              label={loading ? "Enviando..." : "Enviar solicitação"}
+              onPress={handleSendInstructions}
+              disabled={loading}
+            />
+          </View>
+
+          <Pressable onPress={() => router.replace("/")} className="mt-7">
+            <Text className="text-header-3 text-primary">Voltar ao login</Text>
+          </Pressable>
         </View>
       </View>
     </View>

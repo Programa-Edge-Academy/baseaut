@@ -1,42 +1,46 @@
 import { DefaultButton } from "@/components/default-button";
+import { DefaultTextInput } from "@/components/default-text-input";
 import { passwordChecker } from "@/features/auth/hooks/password-checker";
-import { useRouter } from "expo-router";
+import { usePasswordRecovery } from "@/features/auth/hooks/use-password-recovery";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Alert, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
 import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { PasswordInput } from "@/features/auth/components/password-input";
-import { supabase } from "@/lib/supabase";
 
 const invalidPasswordMessage =
   "A senha deve ter entre 8 e 20 caracteres, maiúscula, minúscula, número ou especial";
 
 /**
- * Maps Supabase reset errors to localized UI-friendly messages.
- */
-const translateResetError = (msg: string | null | undefined) => {
-  if (!msg) return null;
-  const lowerMsg = msg.toLowerCase();
-  if (lowerMsg.includes("new password should be different") || lowerMsg.includes("same as the old password")) {
-    return "A nova senha não pode ser igual à senha anterior.";
-  }
-  if (lowerMsg.includes("session missing") || lowerMsg.includes("unauthorized") || lowerMsg.includes("jwt") || lowerMsg.includes("expired") || lowerMsg.includes("invalid token")) {
-    return "Link de redefinição inválido ou expirado. Por favor, solicite um novo.";
-  }
-  return "Ocorreu um erro ao redefinir a senha. Tente novamente.";
-};
-
-/**
- * Screen to update the user password after recovery.
+ * Screen to validate the recovery code and set a new password.
  */
 export function ResetPasswordScreen() {
   const router = useRouter();
+  const { email } = useLocalSearchParams<{ email: string }>();
+  const { verifyRecoveryCode, loading, error, setError } =
+    usePasswordRecovery();
+
+  const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
+
+  /**
+   * Updates the recovery code field and clears any pending API error.
+   */
+  const handleCodeChange = (text: string) => {
+    const digitsOnly = text.replace(/\D/g, "");
+    setCode(digitsOnly);
+
+    if (errors.code) {
+      const newErrors = { ...errors };
+      delete newErrors.code;
+      setErrors(newErrors);
+    }
+    if (error) setError(null);
+  };
 
   /**
    * Updates the password field and performs live validation.
@@ -82,6 +86,12 @@ export function ResetPasswordScreen() {
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
+    if (!code.trim()) {
+      newErrors.code = "Código é obrigatório";
+    } else if (!/^\d{6}$/.test(code.trim())) {
+      newErrors.code = "O código deve conter 6 dígitos";
+    }
+
     if (!password.trim()) {
       newErrors.password = "Senha é obrigatória";
     } else if (!passwordChecker(password)) {
@@ -99,39 +109,31 @@ export function ResetPasswordScreen() {
   };
 
   /**
-   * Submits the password update to Supabase.
+   * Validates the code and submits the new password to the recovery service.
    */
   const handleResetPassword = async () => {
     if (!validate()) return;
 
-    setLoading(true);
-    setApiError(null);
-
-
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: password,
-      });
-
-      if (error) {
-        setApiError(translateResetError(error.message));
-        return;
-      }
-
-      Alert.alert("Sucesso", "Senha redefinida com sucesso.");
-
-      router.replace({
-        pathname: "/auth-feedback",
-        params: { mode: "passwordUpdated" },
-      });
-    } catch (error: any) {
-      setApiError(error.message || "Ocorreu um erro ao redefinir a senha.");
-    } finally {
-      setLoading(false);
+    if (!email) {
+      setError("Sessão de recuperação inválida. Solicite um novo código.");
+      return;
     }
+
+    const updated = await verifyRecoveryCode({
+      email,
+      code,
+      newPassword: password,
+    });
+
+    if (!updated) return;
+
+    router.replace({
+      pathname: "/auth-feedback",
+      params: { mode: "passwordUpdated" },
+    });
   };
 
-  const isButtonDisabled = !password || !confirmPassword || loading;
+  const isButtonDisabled = !code || !password || !confirmPassword || loading;
 
   return (
     <View className="flex-1 items-center bg-level1 px-4 pt-10">
@@ -144,6 +146,26 @@ export function ResetPasswordScreen() {
           <Text className="mb-5 text-header-3 text-white">Redefinir senha</Text>
 
           <View className="w-full max-w-[342px] gap-4">
+            <View className="gap-1">
+              <Text className="text-default-2 text-muted">
+                Código de verificação
+              </Text>
+              <DefaultTextInput
+                placeholder="Digite o código de 6 dígitos"
+                value={code}
+                maxLength={6}
+                onChangeText={handleCodeChange}
+                keyboardType="number-pad"
+                className="h-11 w-full rounded-[15px]"
+                outLineBorderClass={
+                  errors.code ? "border-error" : "border-outline"
+                }
+              />
+              {errors.code && (
+                <Text className="text-default-3 text-error">{errors.code}</Text>
+              )}
+            </View>
+
             <View className="gap-1">
               <Text className="text-default-2 text-muted">Nova senha</Text>
               <PasswordInput
@@ -183,10 +205,10 @@ export function ResetPasswordScreen() {
                 </Text>
               )}
             </View>
-                        
-            {apiError && (
+
+            {error && (
               <Text className="text-default-3 text-error text-center mt-1">
-                {apiError}
+                {error}
               </Text>
             )}
           </View>
