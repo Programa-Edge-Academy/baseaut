@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { Pressable, PressableProps, Animated, GestureResponderEvent } from "react-native";
+import { Pressable, PressableProps, Animated, GestureResponderEvent, View } from "react-native";
 
 export interface RipplePressableProps extends Omit<PressableProps, 'children'> {
   rippleColor?: string;
   className?: string;
-  children?: React.ReactNode; 
+  children?: React.ReactNode;
 }
 
 export function RipplePressable({
@@ -15,6 +15,8 @@ export function RipplePressable({
 }: RipplePressableProps) {
   const [ripples, setRipples] = useState<{ id: number; x: number; y: number; anim: Animated.Value }[]>([]);
 
+  const isInteractive = !!(rest.onPress || rest.onPressIn || rest.onLongPress);
+
   const handlePressIn = (e: GestureResponderEvent) => {
     const { locationX, locationY } = e.nativeEvent;
     const newRipple = {
@@ -23,7 +25,7 @@ export function RipplePressable({
       y: locationY,
       anim: new Animated.Value(0),
     };
-    
+
     setRipples((prev) => [...prev, newRipple]);
 
     Animated.timing(newRipple.anim, {
@@ -36,6 +38,14 @@ export function RipplePressable({
 
     if (rest.onPressIn) rest.onPressIn(e);
   };
+
+  if (!isInteractive) {
+    return (
+      <View className={`overflow-hidden ${className ?? ""}`}>
+        {children}
+      </View>
+    );
+  }
 
   return (
     <Pressable
