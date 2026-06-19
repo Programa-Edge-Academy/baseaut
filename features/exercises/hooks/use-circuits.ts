@@ -212,8 +212,8 @@ export function useCircuits() {
   /**
    * Fetches the list of active circuits using real database columns 'tipo' and 'modo_execucao'.
    */
-  const loadCircuits = useCallback(async () => {
-    setIsLoading(true);
+  const loadCircuits = useCallback(async (showLoader = true) => {
+    if (showLoader) setIsLoading(true);
     setError(null);
 
     try {
@@ -292,12 +292,12 @@ export function useCircuits() {
       setError(caught);
       console.error("Error loading circuits:", caught);
     } finally {
-      setIsLoading(false);
+      if (showLoader) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadCircuits();
+    loadCircuits(true);
   }, [loadCircuits]);
 
   /**
@@ -310,7 +310,6 @@ export function useCircuits() {
     form: string | null;
     exercises: Exercise[]
   }) => {
-    setIsLoading(true);
     try {
       if (!equipeId) throw new Error("Team ID not identified.");
 
@@ -352,13 +351,11 @@ export function useCircuits() {
         if (itemsError) throw itemsError;
       }
 
-      await loadCircuits();
+      await loadCircuits(false);
     } catch (err: any) {
       console.error("Error adding circuit:", err);
       Alert.alert("Erro ao Criar", `Não foi possível salvar o circuito: ${err.message}`);
       throw err;
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -372,7 +369,6 @@ export function useCircuits() {
     form: string | null;
     exercises: Exercise[]
   }) => {
-    setIsLoading(true);
     try {
       const formId =
         data.form ??
@@ -404,13 +400,11 @@ export function useCircuits() {
 
       if (rpcError) throw rpcError;
 
-      await loadCircuits();
+      await loadCircuits(false);
     } catch (err: any) {
       console.error("Error updating circuit:", err);
       Alert.alert("Erro ao Editar", `Não foi possível atualizar o circuito: ${err.message}`);
       throw err;
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -418,7 +412,6 @@ export function useCircuits() {
    * Performs standard soft delete for active circuits.
    */
   const deleteCircuit = async (id: string) => {
-    setIsLoading(true);
     try {
       const { error: deleteError } = await supabase
         .from("circuitos")
@@ -426,12 +419,10 @@ export function useCircuits() {
         .eq("id", id);
 
       if (deleteError) throw deleteError;
-      await loadCircuits();
+      await loadCircuits(false);
     } catch (err: any) {
       console.error("Error disabling circuit:", err);
       Alert.alert("Erro ao Remover", err.message);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -439,7 +430,6 @@ export function useCircuits() {
      * Duplicates an existing circuit properties and rebuilds relational items.
      */
   const duplicateCircuit = async (circuit: Circuit) => {
-    setIsLoading(true);
     try {
       if (!equipeId) throw new Error("Team ID not identified.");
 
@@ -477,13 +467,11 @@ export function useCircuits() {
         if (itemsError) throw itemsError;
       }
 
-      await loadCircuits();
+      await loadCircuits(false);
     } catch (err: any) {
       console.error("Error duplicating circuit:", err);
       Alert.alert("Erro ao Duplicar", `Não foi possível duplicar o circuito: ${err.message}`);
       throw err;
-    } finally {
-      setIsLoading(false);
     }
   };
 

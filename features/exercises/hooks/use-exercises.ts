@@ -30,8 +30,8 @@ export function useExercises() {
   /**
    * Loads exercises for the active team.
    */
-  const loadExercises = useCallback(async () => {
-    setIsLoading(true);
+  const loadExercises = useCallback(async (showLoader = true) => {
+    if (showLoader) setIsLoading(true);
     setError(null);
     try {
       const teamId = await resolveEquipeId();
@@ -66,12 +66,12 @@ export function useExercises() {
       setError(caught);
       console.error("Erro ao carregar exercícios:", caught);
     } finally {
-      setIsLoading(false);
+      if (showLoader) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadExercises();
+    loadExercises(true);
   }, [loadExercises]);
 
   /**
@@ -81,7 +81,6 @@ export function useExercises() {
     data: NewExerciseData,
     photoUri?: string | null,
   ) => {
-    setIsLoading(true);
     try {
       if (!equipeId) throw new Error("ID da equipe não identificado.");
       let finalIconUrl = null;
@@ -105,15 +104,13 @@ export function useExercises() {
         .insert([payload]);
       if (insertError) throw insertError;
 
-      await loadExercises();
+      await loadExercises(false);
     } catch (err: any) {
       console.error("Erro ao adicionar exercício:", err);
       Alert.alert(
         "Erro ao Criar",
         `Não foi possível salvar o exercício: ${err.message}`,
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -125,7 +122,6 @@ export function useExercises() {
     data: NewExerciseData,
     photoUri?: string | null,
   ) => {
-    setIsLoading(true);
     try {
       const payload: any = {
         titulo: data.name,
@@ -147,15 +143,13 @@ export function useExercises() {
         .eq("id", id);
       if (updateError) throw updateError;
 
-      await loadExercises();
+      await loadExercises(false);
     } catch (err: any) {
       console.error("Erro ao atualizar exercício:", err);
       Alert.alert(
         "Erro ao Editar",
         `Não foi possível atualizar o exercício: ${err.message}`,
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -163,7 +157,6 @@ export function useExercises() {
    * Soft-deletes an exercise.
    */
   const deleteExercise = async (id: string) => {
-    setIsLoading(true);
     try {
       const { error: deleteError } = await supabase
         .from("exercicios")
@@ -171,12 +164,10 @@ export function useExercises() {
         .eq("id", id);
 
       if (deleteError) throw deleteError;
-      await loadExercises();
+      await loadExercises(false);
     } catch (err: any) {
       console.error("Erro ao inativar exercício:", err);
       Alert.alert("Erro ao Remover", err.message);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -184,7 +175,6 @@ export function useExercises() {
    * Duplicates an exercise with a copy suffix.
    */
   const duplicateExercise = async (exercise: Exercise) => {
-    setIsLoading(true);
     try {
       if (!equipeId) throw new Error("ID da equipe não identificado.");
 
@@ -204,15 +194,13 @@ export function useExercises() {
         .insert([payload]);
       if (insertError) throw insertError;
 
-      await loadExercises();
+      await loadExercises(false);
     } catch (err: any) {
       console.error("Erro ao duplicar exercício:", err);
       Alert.alert(
         "Erro ao Duplicar",
         `Não foi possível duplicar o exercício: ${err.message}`,
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
