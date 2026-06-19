@@ -7,7 +7,7 @@ import { BehaviorDetailCard } from "@/features/analysis/components/behavior-deta
 import { ObservedBehaviorsChart, BehaviorType } from "@/features/analysis/components/observed-behaviors-chart";
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { NoRecordsScreen } from "@/features/analysis/screens/no-records-screen";
-import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
+import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile";
 import { useObservedBehaviors } from "@/features/analysis/hooks/use-observed-behaviors";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
@@ -39,7 +39,7 @@ export function ObservedBehaviorsScreen() {
   const { studentId } = useLocalSearchParams();
 
   // Busca dados reais do banco, se disponíveis
-  const { profile: dbProfile, isLoading: isDbLoading } = useStudentSessions(studentId as string);
+  const { profile: dbProfile, isLoading: isDbLoading } = useStudentProfile(studentId as string);
 
   // Estados de data selecionados (Período)
   const [startDate, setStartDate] = useState<Date | null>(null);
