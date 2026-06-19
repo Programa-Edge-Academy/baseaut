@@ -24,6 +24,7 @@ export interface ExerciseProgressChartProps {
   records: ExerciseProgressRecord[];
   startDate?: Date | null;
   endDate?: Date | null;
+  hideShadow?: boolean;
 }
 
 /**
@@ -36,6 +37,7 @@ export function ExerciseProgressChart({
   records,
   startDate,
   endDate,
+  hideShadow = false,
 }: ExerciseProgressChartProps) {
   // Estado para armazenar a largura do contêiner obtida dinamicamente via evento onLayout
   const [containerWidth, setContainerWidth] = useState<number>(340);
@@ -141,7 +143,7 @@ export function ExerciseProgressChart({
   return (
     <View
       onLayout={handleLayout}
-      className="w-full bg-level2 rounded-[20px] border border-outline p-5 shadow-panelShadow flex-col gap-4 mt-5"
+      className={`w-full bg-level2 rounded-[20px] border border-outline p-5 flex-col gap-4 mt-5 ${hideShadow ? "" : "shadow-panelShadow"}`}
     >
       {/* Bloco 5: Cabeçalho com título fixado em 16px e legenda horizontal de cores */}
       <View className="flex-col gap-1">
@@ -171,7 +173,7 @@ export function ExerciseProgressChart({
         
         {/* Eixo Y fixo à esquerda exibindo apenas os rótulos de texto de cada nível */}
         <View style={{ width: leftAxisWidth, height: chartHeight }}>
-          <Svg width={leftAxisWidth} height={chartHeight}>
+          <Svg width={leftAxisWidth} height={chartHeight} pointerEvents="none">
             {/* Maduro (Alinhado verticalmente em yMature) */}
             <SvgText
               x={10}
@@ -209,7 +211,7 @@ export function ExerciseProgressChart({
 
         {/* Eixo X fixo (sem scroll) contendo a grade e plotagem dos dados */}
         <View className="flex-1" style={{ height: chartHeight }}>
-          <Svg width={plotWidth} height={chartHeight}>
+          <Svg width={plotWidth} height={chartHeight} pointerEvents="none">
             
             {/* Linhas horizontais de grade (Grid background) */}
               <Line

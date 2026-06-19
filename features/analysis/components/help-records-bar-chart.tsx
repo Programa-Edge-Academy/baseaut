@@ -222,7 +222,7 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
 
         {/* Eixo Y fixo à esquerda */}
         <View style={{ width: Y_AXIS_WIDTH, height: CHART_HEIGHT }}>
-          <Svg width={Y_AXIS_WIDTH} height={CHART_HEIGHT}>
+          <Svg width={Y_AXIS_WIDTH} height={CHART_HEIGHT} pointerEvents="none">
             {yTicks.map((tick) => (
               <SvgText
                 key={`ytick-${tick}`}
@@ -241,7 +241,7 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
 
         {/* Área adaptativa com barras + grade (sem scroll) */}
         <View className="flex-1" style={{ height: CHART_HEIGHT }}>
-          <Svg width={svgWidth} height={CHART_HEIGHT}>
+          <Svg width={svgWidth} height={CHART_HEIGHT} pointerEvents="none">
 
               {/* Linhas de grade horizontais (dashed) */}
               {yTicks.map((tick) => {

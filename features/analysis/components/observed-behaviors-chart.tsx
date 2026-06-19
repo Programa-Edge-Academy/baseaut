@@ -16,6 +16,7 @@ export interface ObservedBehaviorsChartProps {
   records: BehaviorRecord[];
   startDate?: Date | null;
   endDate?: Date | null;
+  hideShadow?: boolean;
 }
 
 export const BEHAVIOR_CONFIG: Record<
@@ -53,6 +54,7 @@ export function ObservedBehaviorsChart({
   records,
   startDate,
   endDate,
+  hideShadow = false,
 }: ObservedBehaviorsChartProps) {
   const [containerWidth, setContainerWidth] = useState<number>(340);
 
@@ -163,7 +165,7 @@ export function ObservedBehaviorsChart({
   return (
     <View
       onLayout={handleLayout}
-      className="w-full bg-level2 rounded-[20px] border border-outline p-5 shadow-panelShadow flex-col gap-5 mt-5"
+      className={`w-full bg-level2 rounded-[20px] border border-outline p-5 flex-col gap-5 mt-5 ${hideShadow ? "" : "shadow-panelShadow"}`}
     >
       {/* Título e Legendas */}
       <View className="flex-col gap-3">
@@ -191,7 +193,7 @@ export function ObservedBehaviorsChart({
 
       {/* Gráfico SVG */}
       <View style={{ height: chartHeight, width: "100%" }}>
-        <Svg width={innerWidth} height={chartHeight}>
+        <Svg width={innerWidth} height={chartHeight} pointerEvents="none">
           {/* 1. Desenho das Barras Verticais (Camada inferior) */}
           {behaviorKeys.map((key, index) => {
             const config = BEHAVIOR_CONFIG[key];
