@@ -35,8 +35,8 @@ export function useStudents() {
   /**
    * Loads students for the active team.
    */
-const loadStudents = useCallback(async () => {
-    setIsLoading(true);
+const loadStudents = useCallback(async (showLoader = true) => {
+    if (showLoader) setIsLoading(true);
     setError(null);
     try {
       const teamId = await resolveEquipeId();
@@ -93,12 +93,12 @@ const loadStudents = useCallback(async () => {
       setError(caught);
       console.error("Erro ao carregar alunos:", caught);
     } finally {
-      setIsLoading(false);
+      if (showLoader) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadStudents();
+    loadStudents(true);
   }, [loadStudents]);
 
   /**
@@ -108,7 +108,6 @@ const loadStudents = useCallback(async () => {
     data: Omit<Student, "id" | "age">,
     photoUri?: string | null,
   ) => {
-    setIsLoading(true);
     try {
       if (!equipeId) throw new Error("ID da equipe não identificado.");
 
@@ -148,15 +147,13 @@ const loadStudents = useCallback(async () => {
         .insert([payload]);
       if (insertError) throw insertError;
 
-      await loadStudents();
+      await loadStudents(false);
     } catch (err: any) {
       console.error("Erro ao adicionar aluno:", err);
       Alert.alert(
         "Erro ao Criar",
         `Não foi possível salvar o aluno: ${err.message}`,
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -168,7 +165,6 @@ const loadStudents = useCallback(async () => {
     data: Partial<Omit<Student, "id" | "age">>,
     photoUri?: string | null,
   ) => {
-    setIsLoading(true);
     try {
       let finalAvatarUrl = data.avatarUrl;
       if (photoUri && !photoUri.startsWith("http")) {
@@ -210,15 +206,13 @@ const loadStudents = useCallback(async () => {
         .eq("id", id);
       if (updateError) throw updateError;
 
-      await loadStudents();
+      await loadStudents(false);
     } catch (err: any) {
       console.error("Erro ao atualizar aluno:", err);
       Alert.alert(
         "Erro ao Editar",
         `Não foi possível atualizar o aluno: ${err.message}`,
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -226,7 +220,6 @@ const loadStudents = useCallback(async () => {
    * Soft-deletes a student record.
    */
   const deleteStudent = async (id: string) => {
-    setIsLoading(true);
     try {
       const { error: deleteError } = await supabase
         .from("alunos")
@@ -234,12 +227,10 @@ const loadStudents = useCallback(async () => {
         .eq("id", id);
 
       if (deleteError) throw deleteError;
-      await loadStudents();
+      await loadStudents(false);
     } catch (err: any) {
       console.error("Erro ao inativar aluno:", err);
       Alert.alert("Erro ao Remover", err.message);
-    } finally {
-      setIsLoading(false);
     }
   };
 
