@@ -6,7 +6,6 @@ import { User } from "lucide-react-native";
 
 import { colors } from "@/assets/colors";
 import { DataList } from "@/components/data-list"; 
-import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { ListCard } from "@/components/list-card";
 import { PageHeader } from "@/components/page-header";
@@ -16,7 +15,7 @@ import { SearchInput } from "@/components/search-input";
 import { useHistory } from "@/features/sessions/hooks/use-history";
 
 export default function HistoryScreen() {
-  const { studentsHistory, isLoading, error } = useHistory();
+  const { studentsHistory, isLoading, error, refetch } = useHistory();
   const [query, setQuery] = useState("");
 
   // Filtro em tempo real por nome (simplificado e sem o bug de retorno implícito truncado)
@@ -51,7 +50,8 @@ export default function HistoryScreen() {
       <DataList
         className="mt-5 px-8"
         data={filteredHistory}
-        emptyMessage="Nenhum aluno encontrado." // 🛠️ Mensagem atualizada
+        emptyMessage="Nenhum aluno encontrado."
+        onRefresh={refetch}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <ListCard
@@ -109,7 +109,6 @@ export default function HistoryScreen() {
         {renderListBody()}
       </View>
 
-      <Footer />
     </View>
   );
 }
