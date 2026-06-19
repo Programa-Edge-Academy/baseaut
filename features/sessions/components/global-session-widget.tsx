@@ -54,7 +54,16 @@ export function GlobalSessionWidget() {
   };
 
   const handlePress = () => {
-    if (sessionData.type === "semi-structured") {
+    if (sessionData.isEngagementRunning) {
+      router.push({
+        pathname: "/session/engagement",
+        params: {
+          sessionId: sessionData.sessionId,
+          studentId: sessionData.studentId,
+          studentName: sessionData.studentName,
+        },
+      });
+    } else if (sessionData.type === "semi-structured") {
       router.push({
         pathname: "/session/semi-structured",
         params: {

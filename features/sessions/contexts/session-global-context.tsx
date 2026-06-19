@@ -19,6 +19,8 @@ export interface ActiveSessionInfo {
   activeExerciseId?: string;
   /** Flag para evitar conflito visual entre widget e cronômetro da tela */
   isTimerVisibleOnScreen?: boolean;
+  /** Indica se a atividade atual é um exercício de engajamento */
+  isEngagementRunning?: boolean;
 }
 
 interface SessionGlobalContextData {
@@ -30,6 +32,7 @@ interface SessionGlobalContextData {
     state: {
       historico?: Record<string, "concluido" | "nao_realizada" | "adiado">;
       activeExerciseId?: string | null;
+      isEngagementRunning?: boolean;
     }
   ) => void;
   toggleTimer: (sessionId: string, isRunning?: boolean) => void;
@@ -71,6 +74,7 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
         isRunning: prev[session.sessionId]?.isRunning ?? session.isRunning ?? true,
         historico: prev[session.sessionId]?.historico ?? session.historico,
         activeExerciseId: prev[session.sessionId]?.activeExerciseId ?? session.activeExerciseId,
+        isEngagementRunning: prev[session.sessionId]?.isEngagementRunning ?? session.isEngagementRunning ?? false,
       },
     }));
   };
@@ -87,6 +91,7 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
     state: {
       historico?: Record<string, "concluido" | "nao_realizada" | "adiado">;
       activeExerciseId?: string | null;
+      isEngagementRunning?: boolean;
     }
   ) => {
     setActiveSessions((prev) => {
@@ -97,6 +102,7 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
           ...prev[sessionId],
           ...(state.historico !== undefined ? { historico: state.historico } : {}),
           ...(state.activeExerciseId !== undefined ? { activeExerciseId: state.activeExerciseId ?? undefined } : {}),
+          ...(state.isEngagementRunning !== undefined ? { isEngagementRunning: state.isEngagementRunning } : {}),
         },
       };
     });

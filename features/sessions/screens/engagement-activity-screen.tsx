@@ -13,6 +13,7 @@ import {
   type ExecutionRecord,
   type MotivoNaoRealizacao,
 } from "../hooks/use-session-flow";
+import { useSessionGlobalContext } from "../contexts/session-global-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { CheckCircle2 } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
@@ -38,10 +39,21 @@ export function EngagementActivityScreen() {
   const safeStudentName = studentName || "Aluno";
 
   const { persistExecutions } = useSessionFlow();
+  const {
+    activeSessions,
+    updateSessionState,
+    updateSessionProgress,
+    toggleTimer,
+    setTimerVisible,
+  } = useSessionGlobalContext();
+
   // Id do exercício-sentinela de engajamento da equipe (resolvido na montagem).
   const engagementExerciseIdRef = useRef<string | null>(null);
   const ordemRef = useRef(0);
   const lastElapsedSecondsRef = useRef<number | null>(null);
+
+  const currentSessionData = activeSessions[sessionId || ""];
+  const isEngagementRunning = currentSessionData?.isEngagementRunning ?? false;
 
   useEffect(() => {
     let active = true;
@@ -53,9 +65,18 @@ export function EngagementActivityScreen() {
     };
   }, []);
 
-  const [stage, setStage] = useState<"ready" | "running">("ready");
+  const [stage, setStage] = useState<"ready" | "running">(() => {
+    return isEngagementRunning ? "running" : "ready";
+  });
   const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
+
+  // Informa o contexto global que a tela está focada (esconde o cronômetro nativo do widget)
+  useEffect(() => {
+    if (!sessionId) return;
+    setTimerVisible(sessionId, true);
+    return () => setTimerVisible(sessionId, false);
+  }, [sessionId, setTimerVisible]);
   const [elapsedTimeStr, setElapsedTimeStr] = useState<string | undefined>();
 
   const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -84,6 +105,7 @@ export function EngagementActivityScreen() {
   };
 
   const handleStop = (elapsed: number) => {
+    if (sessionId) toggleTimer(sessionId, false);
     lastElapsedSecondsRef.current = elapsed;
     const minutes = Math.floor(elapsed / 60).toString().padStart(2, "0");
     const seconds = (elapsed % 60).toString().padStart(2, "0");
@@ -140,9 +162,24 @@ export function EngagementActivityScreen() {
       });
     }
 
+    if (sessionId) {
+      updateSessionState(sessionId, { activeExerciseId: null, isEngagementRunning: false });
+    }
+
     lastElapsedSecondsRef.current = null;
     setIsResultModalOpen(false);
     triggerToastAndBack();
+  };
+
+  const handleStart = () => {
+    setStage("running");
+    if (!sessionId) return;
+    updateSessionState(sessionId, {
+      activeExerciseId: engagementExerciseIdRef.current,
+      isEngagementRunning: true,
+    });
+    updateSessionProgress(sessionId, "Atividade de engajamento");
+    toggleTimer(sessionId, true);
   };
 
   const handleConfirmFinish = () => {
@@ -171,19 +208,24 @@ export function EngagementActivityScreen() {
             <StartActivity
               title="Atividade de engajamento"
               subtitle="Momento focado na interação com o aluno"
-              onStart={() => setStage("running")}
-              onStartAndRecord={() => setStage("running")}
+              onStart={handleStart}
+              onStartAndRecord={handleStart}
             />
           ) : (
             <Stopwatch
               title="Atividade de engajamento"
               subtitle="Momento focado na interação com o aluno"
-              autoStart
+              autoStart={true}
+              controlledSeconds={currentSessionData?.timeElapsed ?? 0}
+              controlledIsRunning={currentSessionData?.isRunning ?? false}
               variant="minimize"
               className="bg-level2"
               onStop={handleStop}
-              onToggleRunning={() => {}}
+              onToggleRunning={(isRunning) => {
+                if (sessionId) toggleTimer(sessionId, isRunning);
+              }}
               onPressCrise={() => {}}
+              onPressCorner={() => router.back()}
             />
           )}
         </View>
