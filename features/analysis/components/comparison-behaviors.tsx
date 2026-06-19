@@ -1,11 +1,8 @@
 import { colors } from "@/assets/colors";
 import { AlertCircle } from "lucide-react-native";
 import React from "react";
-import { Text, useWindowDimensions, View } from "react-native";
+import { Text, View } from "react-native";
 import ComparisonCard from "./comparison-card";
-
-const SIDE_MARGIN = 16;
-const MAX_WIDTH = 600;
 
 export interface BehaviorPeriodData {
   p1: number;
@@ -24,23 +21,14 @@ export type ComparisonBehaviorsProps = {
 };
 
 export function ComparisonBehaviors({ data }: ComparisonBehaviorsProps) {
-  const { width: screenWidth } = useWindowDimensions();
-
-  const width = Math.min(
-    screenWidth - SIDE_MARGIN * 2,
-    MAX_WIDTH
-  );
-
   return (
-    <View 
-      style={{ 
-        width,
-        alignSelf: "center",
-        backgroundColor: colors.level2, 
-        borderWidth: 1, 
-        borderColor: colors.outline 
+    <View
+      style={{
+        backgroundColor: colors.level2,
+        borderWidth: 1,
+        borderColor: colors.outline
       }}
-      className="rounded-2xl p-6"
+      className="w-full rounded-2xl p-6"
     >
       {/* Title */}
       <Text className="text-white text-lg font-bold mb-4" style={{ fontFamily: "Inter" }}>
