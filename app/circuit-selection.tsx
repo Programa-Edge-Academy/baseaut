@@ -12,6 +12,8 @@ import {
   CircuitItem,
   CircuitSelectionScreen,
 } from "../features/sessions/screens/circuit-selection-screen";
+import { useSessionGlobalContext } from "../features/sessions/contexts/session-global-context";
+import { Alert } from "react-native";
 
 type MabcCircuitType = "mabc_1" | "mabc_2" | "mabc_3";
 
@@ -78,8 +80,14 @@ export default function CircuitSelectionRoute() {
   }>();
 
   const { circuits } = useCircuits();
+  const { activeSessions } = useSessionGlobalContext();
 
   const [studentAge, setStudentAge] = useState<number | null>(null);
+
+  const studentActiveSession = useMemo(() => {
+    if (!studentId) return undefined;
+    return Object.values(activeSessions).find((s) => s.studentId === studentId);
+  }, [activeSessions, studentId]);
 
   useEffect(() => {
     async function loadStudentAge() {
@@ -160,7 +168,19 @@ export default function CircuitSelectionRoute() {
       circuits={items}
       onPressBack={() => router.back()}
       onPressCircuit={(circuit: CircuitItem) => {
+        // Block starting a different circuit if one is already active
+        if (studentActiveSession && studentActiveSession.circuitId !== circuit.id) {
+          Alert.alert(
+            "Circuito em andamento",
+            "O aluno já possui um circuito em andamento. Conclua ou cancele o circuito atual antes de iniciar um novo."
+          );
+          return;
+        }
+
         const exercisesParam = JSON.stringify(circuit.exercises ?? []);
+
+        // If it's the exact same circuit, pass the sessionId to resume instead of creating a new one
+        const resumeSessionId = studentActiveSession?.circuitId === circuit.id ? studentActiveSession.sessionId : undefined;
 
         const baseParams = {
           studentName,
@@ -169,6 +189,7 @@ export default function CircuitSelectionRoute() {
           circuitName: circuit.name,
           circuitType: dbTipoById.get(circuit.id) ?? "padrao",
           exercises: exercisesParam,
+          ...(resumeSessionId ? { sessionId: resumeSessionId } : {}),
         };
 
         if (circuit.type === "semi-estruturado") {

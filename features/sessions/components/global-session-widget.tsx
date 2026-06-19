@@ -18,8 +18,12 @@ export function GlobalSessionWidget() {
     return null;
   }
 
-  // Consider only sessions where the timer is NOT visible natively on screen
-  const sessionIds = Object.keys(activeSessions).filter((id) => !activeSessions[id].isTimerVisibleOnScreen);
+  // Consider only sessions where the timer is NOT visible natively on screen,
+  // AND where an exercise is actively running (activeExerciseId is not null)
+  const sessionIds = Object.keys(activeSessions).filter((id) => {
+    const session = activeSessions[id];
+    return !session.isTimerVisibleOnScreen && session.activeExerciseId != null;
+  });
   
   if (sessionIds.length === 0) {
     return null;
