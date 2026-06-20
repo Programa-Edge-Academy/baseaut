@@ -12,8 +12,8 @@ export function GlobalSessionWidget() {
   // MUST be before any conditional returns (Rules of Hooks)
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Restringir a exibição apenas nas telas iniciais (abas principais)
-  const isRootScreen = pathname === "/students" || pathname === "/exercises" || pathname === "/analysis";
+  // Restringir a exibição apenas nas telas iniciais (abas principais) e na tela de seleção de circuito
+  const isRootScreen = pathname === "/students" || pathname === "/exercises" || pathname === "/analysis" || pathname === "/circuit-selection";
   if (!isRootScreen) {
     return null;
   }
