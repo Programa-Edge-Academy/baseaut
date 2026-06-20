@@ -1,19 +1,14 @@
 -- ════════════════════════════════════════════════════════════════════
--- Simplifica a view de pendências para exibir apenas exercícios adiados
+-- [DESATUALIZADO] Simplifica view de pendências
 -- ════════════════════════════════════════════════════════════════════
 -- A view antiga (vw_alunos_pendencias) marcava falhas de registro como 
--- pendência (ex: formulários sem resposta ou exercícios marcados como
--- realizados, mas sem preenchimento de nível de desenvolvimento/ajuda).
+-- pendência (ex: exercícios marcados como realizados, mas sem
+-- preenchimento de nível de desenvolvimento/ajuda).
 --
--- Atualmente, a própria interface do aplicativo já bloqueia o envio de 
--- formulários com campos vazios e impede que um exercício seja marcado 
--- como "realizada" sem as suas respectivas avaliações preenchidas. 
--- (Sessões finalizadas precocemente que não geram registro de não 
--- realização serão tratadas em ajustes futuros).
---
--- Dessa forma, as travas de formulário obsoleceram a verificação de erros 
--- pela view, sobrando apenas um único motivo real e legítimo para acusar 
--- uma pendência no sistema: quando o terapeuta clica ativamente em "Adiar".
+-- Atualmente, a própria interface do aplicativo já impede que um exercício
+-- seja marcado como "realizada" sem as suas respectivas avaliações
+-- preenchidas. (Sessões finalizadas precocemente que não geram registro de
+-- não realização serão tratadas em ajustes futuros).
 --
 -- Atualizamos a view para considerar exclusivamente o status 'adiado',
 -- desconsiderando sessões canceladas. A checagem é feita direto em
