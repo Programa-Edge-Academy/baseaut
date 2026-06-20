@@ -1,5 +1,7 @@
 import { colors } from "@/assets/colors";
+import { AppModal } from "@/components/app-modal";
 import { ConfirmationModal } from "@/components/confirmation-modal";
+import { DefaultButton } from "@/components/default-button";
 import { type ToastMode } from "@/components/toast";
 import type { Mabc2SectionProps } from "@/features/analysis/components/mabc2-section";
 import {
@@ -10,10 +12,11 @@ import {
   type Mabc2Draft,
 } from "@/features/analysis/hooks/use-mabc2-records";
 import { Mabc2RecordFormScreen } from "@/features/analysis/screens/mabc2-record-form-screen";
+import { exportMabc } from "@/features/analysis/utils/export-mabc";
 import { supabase } from "@/lib/supabase";
 import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 type ScreenMode = "create" | "view" | "edit";
 
@@ -51,6 +54,8 @@ export default function Mabc2RecordFormRoute() {
   const [isDirty, setIsDirty] = useState(false);
   const [exitAction, setExitAction] = useState<any>(null);
   const [isExitModalVisible, setIsExitModalVisible] = useState(false);
+  const [isFormatPickerOpen, setIsFormatPickerOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const [toastConfig, setToastConfig] = useState<{
     visible: boolean;
@@ -336,6 +341,25 @@ export default function Mabc2RecordFormRoute() {
     }
   }
 
+  async function handleExport(formats: { pdf: boolean; csv: boolean }) {
+    if (!draft) return;
+    setIsFormatPickerOpen(false);
+    setIsExporting(true);
+    try {
+      await exportMabc(draft, formats, currentStudentName);
+      setToastConfig({ visible: true, mode: "success", title: "Exportado com sucesso" });
+    } catch (err: any) {
+      setToastConfig({
+        visible: true,
+        mode: "error",
+        title: "Erro ao exportar",
+        description: err?.message,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   async function handleDelete() {
     const targetRecordId = currentRecordId || draft?.formularioId;
     if (!targetRecordId || isSubmitting) return;
@@ -426,6 +450,7 @@ export default function Mabc2RecordFormRoute() {
         }}
         onPressBack={() => router.back()}
         onRegister={handleSave}
+        onShare={currentMode === "view" ? () => setIsFormatPickerOpen(true) : undefined}
         onEdit={() => {
           shouldBypassExit.current = true;
           router.replace({
@@ -454,6 +479,103 @@ export default function Mabc2RecordFormRoute() {
         cancelLabel="Cancelar"
         iconType="alert"
       />
+
+      {/* Format picker */}
+      <AppModal
+        visible={isFormatPickerOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsFormatPickerOpen(false)}
+      >
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", paddingHorizontal: 24 }}
+          onPress={() => setIsFormatPickerOpen(false)}
+        >
+          <MabcFormatPicker
+            onExport={handleExport}
+            onClose={() => setIsFormatPickerOpen(false)}
+          />
+        </Pressable>
+      </AppModal>
     </>
+  );
+}
+
+function MabcFormatPicker({
+  onExport,
+  onClose,
+}: {
+  onExport: (f: { pdf: boolean; csv: boolean }) => void;
+  onClose: () => void;
+}) {
+  const [pdf, setPdf] = useState(true);
+  const [csv, setCsv] = useState(false);
+
+  return (
+    <Pressable
+      style={{
+        backgroundColor: colors.level2,
+        borderWidth: 1,
+        borderColor: colors.outline,
+        borderRadius: 16,
+        padding: 24,
+        width: "100%",
+        gap: 20,
+      }}
+      onPress={(e) => e.stopPropagation()}
+    >
+      <Text style={{ color: "#fff", fontSize: 18, fontFamily: "Inter-Bold" }}>
+        Selecionar formato
+      </Text>
+
+      <View style={{ gap: 12 }}>
+        <Pressable onPress={() => setPdf((v) => !v)} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <View
+            style={{
+              width: 20, height: 20, borderRadius: 4, borderWidth: 1,
+              alignItems: "center", justifyContent: "center",
+              backgroundColor: pdf ? colors.primary : "transparent",
+              borderColor: pdf ? colors.primary : colors.outline,
+            }}
+          >
+            {pdf && <Text style={{ color: "#fff", fontSize: 12, fontWeight: "bold" }}>✓</Text>}
+          </View>
+          <Text style={{ color: "#fff", fontSize: 15, fontFamily: "Inter-Medium" }}>PDF</Text>
+        </Pressable>
+
+        <Pressable onPress={() => setCsv((v) => !v)} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <View
+            style={{
+              width: 20, height: 20, borderRadius: 4, borderWidth: 1,
+              alignItems: "center", justifyContent: "center",
+              backgroundColor: csv ? colors.primary : "transparent",
+              borderColor: csv ? colors.primary : colors.outline,
+            }}
+          >
+            {csv && <Text style={{ color: "#fff", fontSize: 12, fontWeight: "bold" }}>✓</Text>}
+          </View>
+          <Text style={{ color: "#fff", fontSize: 15, fontFamily: "Inter-Medium" }}>CSV (dados tabulares)</Text>
+        </Pressable>
+      </View>
+
+      <View style={{ flexDirection: "row", gap: 12 }}>
+        <DefaultButton
+          label="Cancelar"
+          onPress={onClose}
+          bgColorClass="bg-level1"
+          shadowClass=""
+          sizeClass="flex-1 h-11"
+          className="border border-outline"
+          textClassName="text-muted"
+        />
+        <DefaultButton
+          label="Exportar"
+          onPress={() => onExport({ pdf, csv })}
+          sizeClass="flex-1 h-11"
+          bgColorClass="bg-primary"
+          hasShadow
+        />
+      </View>
+    </Pressable>
   );
 }
