@@ -61,6 +61,7 @@ export function GlobalSessionWidget() {
           sessionId: sessionData.sessionId,
           studentId: sessionData.studentId,
           studentName: sessionData.studentName,
+          fromWidget: "true",
         },
       });
     } else if (sessionData.type === "semi-structured") {

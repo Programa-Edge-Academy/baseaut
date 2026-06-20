@@ -31,10 +31,11 @@ const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
 
 export function EngagementActivityScreen() {
   const router = useRouter();
-  const { studentName, sessionId } = useLocalSearchParams<{
+  const { studentName, sessionId, studentId, fromWidget } = useLocalSearchParams<{
     studentName: string;
     studentId: string;
     sessionId: string;
+    fromWidget?: string;
   }>();
   const safeStudentName = studentName || "Aluno";
 
@@ -99,7 +100,21 @@ export function EngagementActivityScreen() {
           Animated.timing(toastTranslateY, { toValue: 20, duration: 350, useNativeDriver: true }),
         ]).start(() => {
           setShowSuccessToast(false);
-          router.back();
+          if (fromWidget === "true" && currentSessionData) {
+            router.replace({
+              pathname: "/session/semi-structured",
+              params: {
+                sessionId: currentSessionData.sessionId,
+                studentId: currentSessionData.studentId,
+                studentName: currentSessionData.studentName,
+                circuitId: currentSessionData.circuitId || "",
+                circuitName: currentSessionData.circuitName || "Circuito",
+                queue: currentSessionData.exercisesJson || "[]",
+              },
+            });
+          } else {
+            router.back();
+          }
         });
       }, 2000);
     });
