@@ -45,6 +45,7 @@ export function EngagementActivityScreen() {
     updateSessionProgress,
     toggleTimer,
     setTimerVisible,
+    updateTimeElapsed,
   } = useSessionGlobalContext();
 
   // Id do exercício-sentinela de engajamento da equipe (resolvido na montagem).
@@ -179,6 +180,7 @@ export function EngagementActivityScreen() {
       isEngagementRunning: true,
     });
     updateSessionProgress(sessionId, "Atividade de engajamento");
+    updateTimeElapsed(sessionId, 0); // <--- Zera o cronômetro!
     toggleTimer(sessionId, true);
   };
 
