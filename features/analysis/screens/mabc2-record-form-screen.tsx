@@ -4,7 +4,7 @@ import { DefaultScrollView } from "@/components/default-scroll-view";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { Toast, type ToastMode } from "@/components/toast";
-import { Edit2, Trash2 } from "lucide-react-native";
+import { Edit2, Share2, Trash2 } from "lucide-react-native";
 import React, { useState } from "react";
 import { Pressable, View } from "react-native";
 import { Mabc2MotorDevelopmentCard } from "../components/mabc2-motor-development-card";
@@ -27,6 +27,7 @@ export type Mabc2RecordFormScreenProps = {
   onPressBack?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  onShare?: () => void;
 };
 
 export function Mabc2RecordFormScreen({
@@ -46,6 +47,7 @@ export function Mabc2RecordFormScreen({
   onPressBack,
   onEdit,
   onDelete,
+  onShare,
 }: Mabc2RecordFormScreenProps) {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
 
@@ -69,6 +71,20 @@ export function Mabc2RecordFormScreen({
             >
               <Edit2 size={18} color={colors.muted} />
             </Pressable>
+
+            {onShare && (
+              <Pressable
+                onPress={onShare}
+                className="h-10 w-10 items-center justify-center rounded-2xl active:opacity-70"
+                style={{
+                  borderWidth: 1,
+                  borderColor: colors.secondary,
+                  backgroundColor: `${colors.secondary}1A`,
+                }}
+              >
+                <Share2 size={18} color={colors.secondary} />
+              </Pressable>
+            )}
 
             <Pressable
               onPress={() => setIsDeleteModalVisible(true)}
