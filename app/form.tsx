@@ -13,6 +13,7 @@ const FORM_SUBTITLES: Record<string, string> = {
   cars: "Arraste o marcador para definir a pontuação",
   registro_controle: "Preencha o registro de controle da sessão",
   rc: "Preencha o registro de controle da sessão",
+  mabc2: "Preencha os itens da avaliação MABC-2",
 };
 
 /**
@@ -111,6 +112,33 @@ export default function FormRoute() {
 
         if (active) {
           setFormId(error ? fallback : data);
+          setResolvingForm(false);
+        }
+        return;
+      }
+
+      // 4. MABC-2: cria instância via rpc_iniciar_mabc2 (determina faixa pela idade).
+      if (circuitType === "mabc2" && alunoSelecionadoId) {
+        if (creatingInstanceRef.current) return;
+        creatingInstanceRef.current = true;
+
+        const { data: userData } = await supabase.auth.getUser();
+        const avaliadorId = userData?.user?.id ?? null;
+
+        if (!avaliadorId) {
+          if (active) { setFormId(null); setResolvingForm(false); }
+          return;
+        }
+
+        const { data, error } = await supabase.rpc("rpc_iniciar_mabc2", {
+          p_aluno_id: alunoSelecionadoId,
+          p_avaliador_id: avaliadorId,
+        });
+
+        const fallback = error ? await resolveTemplateId("mabc2") : null;
+
+        if (active) {
+          setFormId(error ? fallback : (data?.formulario_id ?? null));
           setResolvingForm(false);
         }
         return;

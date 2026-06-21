@@ -4,15 +4,16 @@ import { DefaultButton } from "@/components/default-button";
 import { Header } from "@/components/header";
 import RangeCalendar from "@/components/range-calendar";
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
-import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
+import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 
 import { AnalysisSummary } from "@/features/analysis/components/analysis-summary";
 import ComparisonBehaviors from "@/features/analysis/components/comparison-behaviors";
 import ComparisonHelp from "@/features/analysis/components/comparison-help";
 import ExerciceComparisonCard from "@/features/analysis/components/exercice-comparison-card";
+import { usePerformanceComparison } from "@/features/analysis/hooks/use-performance-comparison";
 
 const monthsPt = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -26,10 +27,12 @@ function formatSingleDate(date: Date): string {
   return `${day} ${month} ${year}`;
 }
 
+// Formatação do intervalo de datas do período.
 function formatDateRange(start: Date, end: Date): string {
   return `${formatSingleDate(start)} - ${formatSingleDate(end)}`;
 }
 
+// Conversão local de datas para ranges de data.
 function parseDateString(dateStr: string): Date {
   const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day);
@@ -47,7 +50,7 @@ export function PerformanceComparisonScreen() {
   const router = useRouter();
   const { studentId: rawStudentId } = useLocalSearchParams();
   const studentId = Array.isArray(rawStudentId) ? rawStudentId[0] : rawStudentId ?? "";
-  const { profile, isLoading } = useStudentSessions(studentId);
+  const { profile, isLoading } = useStudentProfile(studentId);
 
   // Ranges
   const [period1Range, setPeriod1Range] = useState<{ start: Date; end: Date } | null>(null);
@@ -60,6 +63,20 @@ export function PerformanceComparisonScreen() {
   const [activePeriod, setActivePeriod] = useState<1 | 2 | null>(null);
   const [tempStart, setTempStart] = useState<Date | null>(null);
   const [tempEnd, setTempEnd] = useState<Date | null>(null);
+
+  // Hook centralizado para comparação de desempenho por períodos
+  const {
+    data: comparisonData,
+    isLoading: isLoadingComparison,
+    error: errorComparison,
+  } = usePerformanceComparison(
+    studentId,
+    formatToISODate(period1Range?.start),
+    formatToISODate(period1Range?.end),
+    formatToISODate(period2Range?.start),
+    formatToISODate(period2Range?.end),
+    showResults
+  );
 
   const handlePeriodPress = (periodNum: 1 | 2) => {
     setActivePeriod(periodNum);
@@ -106,7 +123,6 @@ export function PerformanceComparisonScreen() {
     }
 
     const now = new Date();
-    
     now.setHours(23, 59, 59, 999);
 
     if (
@@ -139,6 +155,56 @@ export function PerformanceComparisonScreen() {
     }
     return `Período ${periodNum}: selecionar intervalo de datas`;
   };
+
+  // Montagem dinâmica dos cartões do resumo da comparação
+  const summaryCards = useMemo(() => {
+    if (!comparisonData) return [];
+
+    const { resumo, ajuda, exercicios, comportamentos } = comparisonData;
+
+    const exerciciosP1 = (exercicios || []).filter((e) => e.nivel_p1 !== null).length;
+    const exerciciosP2 = (exercicios || []).filter((e) => e.nivel_p2 !== null).length;
+
+    const ajudaP1 = (ajuda?.autonomo?.p1 || 0) + (ajuda?.ajuda_intrusiva?.p1 || 0);
+    const ajudaP2 = (ajuda?.autonomo?.p2 || 0) + (ajuda?.ajuda_intrusiva?.p2 || 0);
+
+    const comportamentosP1 =
+      (comportamentos?.estereotipia?.p1 || 0) +
+      (comportamentos?.contato_visual?.p1 || 0) +
+      (comportamentos?.engajamento?.p1 || 0) +
+      (comportamentos?.fuga?.p1 || 0) +
+      (comportamentos?.crise?.p1 || 0);
+
+    const comportamentosP2 =
+      (comportamentos?.estereotipia?.p2 || 0) +
+      (comportamentos?.contato_visual?.p2 || 0) +
+      (comportamentos?.engajamento?.p2 || 0) +
+      (comportamentos?.fuga?.p2 || 0) +
+      (comportamentos?.crise?.p2 || 0);
+
+    return [
+      {
+        title: "Exercícios avaliados",
+        period1: { label: "Período 1", value: exerciciosP1 },
+        period2: { label: "Período 2", value: exerciciosP2 },
+      },
+      {
+        title: "Registros de ajuda",
+        period1: { label: "Período 1", value: ajudaP1 },
+        period2: { label: "Período 2", value: ajudaP2 },
+      },
+      {
+        title: "Comportamentos observados",
+        period1: { label: "Período 1", value: comportamentosP1 },
+        period2: { label: "Período 2", value: comportamentosP2 },
+      },
+      {
+        title: "Sessões registradas",
+        period1: { label: "Período 1", value: resumo?.sessoes_p1 ?? 0 },
+        period2: { label: "Período 2", value: resumo?.sessoes_p2 ?? 0 },
+      },
+    ];
+  }, [comparisonData]);
 
   return (
     <View className="flex-1 bg-level1">
@@ -185,20 +251,25 @@ export function PerformanceComparisonScreen() {
             {/* Renderização condicional e ordenada dos componentes após clicar em Comparar */}
             {showResults && (
               <View className="mt-6 gap-6">
-                <AnalysisSummary />
+                {isLoadingComparison ? (
+                  <View className="items-center justify-center py-10">
+                    <ActivityIndicator size="large" color={colors.primary} />
+                  </View>
+                ) : errorComparison ? (
+                  <Text className="text-red-400 text-center py-4 px-6">{errorComparison}</Text>
+                ) : (
+                  <>
+                    <AnalysisSummary cards={summaryCards} />
 
-                {/* MODIFICAÇÃO AQUI: Agora repassando as propriedades de data formatadas como string */}
-                <ExerciceComparisonCard 
-                  alunoId={studentId}
-                  p1Inicio={formatToISODate(period1Range?.start)}
-                  p1Fim={formatToISODate(period1Range?.end)}
-                  p2Inicio={formatToISODate(period2Range?.start)}
-                  p2Fim={formatToISODate(period2Range?.end)}
-                />
+                    <ExerciceComparisonCard 
+                      exercicios={comparisonData?.exercicios || []}
+                    />
 
-                <ComparisonHelp />
+                    <ComparisonHelp data={comparisonData?.ajuda} />
 
-                <ComparisonBehaviors />
+                    <ComparisonBehaviors data={comparisonData?.comportamentos} />
+                  </>
+                )}
               </View>
             )}
           </View>

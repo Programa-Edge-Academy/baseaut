@@ -1,11 +1,11 @@
+import { colors } from "@/assets/colors";
 import React, { useState } from "react";
-import { LayoutChangeEvent, ScrollView, Text, View } from "react-native";
+import { LayoutChangeEvent, Text, View } from "react-native";
 import Svg, {
   Line,
   Rect,
   Text as SvgText,
 } from "react-native-svg";
-import { colors } from "@/assets/colors";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -154,15 +154,53 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
   // Largura disponível para a área de barras (descontando eixo Y e padding do card)
   const availableWidth = containerWidth - Y_AXIS_WIDTH - CARD_PADDING * 2;
   const N = sessions.length;
-  const dynamicSlotWidth = N > 0
-    ? Math.max(SESSION_SLOT_WIDTH, (availableWidth - X_START_PADDING) / N)
-    : SESSION_SLOT_WIDTH;
 
-  // Largura total do SVG rolável
-  const svgScrollWidth =
-    X_START_PADDING +
-    N * dynamicSlotWidth +
-    GROUP_SPACING;
+  // Padding simétrico: reserva espaço no início e no fim para que o primeiro e
+  // último grupo de barras não sejam cortados pela borda do SVG
+  const X_START_PADDING = 15;
+  const X_END_PADDING = X_START_PADDING;
+
+  // Parâmetros base da barra
+  const baseBarWidth = 18;
+  const baseBarGap = 4;
+  const baseGroupWidth = baseBarWidth * 2 + baseBarGap;
+
+  const usableWidth = availableWidth - X_START_PADDING - X_END_PADDING;
+  const slotWidth = N > 0 ? usableWidth / N : usableWidth;
+
+  // Se a largura do slot for menor do que a largura do grupo base + margem de 6px, reduzimos as barras
+  const needsReduction = baseGroupWidth + 6 > slotWidth;
+
+  let groupWidth = baseGroupWidth;
+  let barWidth = baseBarWidth;
+  let barGap = baseBarGap;
+
+  if (needsReduction && slotWidth > 0) {
+    groupWidth = slotWidth * 0.80;
+    barGap = Math.max(1, groupWidth * 0.15);
+    barWidth = Math.max(2, (groupWidth - barGap) / 2);
+    groupWidth = barWidth * 2 + barGap;
+  }
+
+  // Largura total do SVG — sempre fixa no espaço disponível (sem rolagem)
+  const svgWidth = availableWidth;
+
+  // Tamanho adaptativo da fonte do eixo X
+  const labelFontSize = slotWidth < 25 ? Math.max(8, Math.round(slotWidth * 0.5)) : 12;
+
+  // Define o espaçamento dos rótulos do eixo X se houver muitas sessões
+  let labelStep = 1;
+  if (N > 7) {
+    if (N <= 14) {
+      labelStep = 2;
+    } else if (N <= 35) {
+      labelStep = 5;
+    } else if (N <= 70) {
+      labelStep = 10;
+    } else {
+      labelStep = Math.ceil(N / 7);
+    }
+  }
 
   // Coordenada Y de um tick no SVG
   const tickToSvgY = (tick: number) =>
@@ -219,7 +257,7 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
 
         {/* Eixo Y fixo à esquerda */}
         <View style={{ width: Y_AXIS_WIDTH, height: CHART_HEIGHT }}>
-          <Svg width={Y_AXIS_WIDTH} height={CHART_HEIGHT}>
+          <Svg width={Y_AXIS_WIDTH} height={CHART_HEIGHT} pointerEvents="none">
             {yTicks.map((tick) => (
               <SvgText
                 key={`ytick-${tick}`}
@@ -236,85 +274,88 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
           </Svg>
         </View>
 
-        {/* Área rolável com barras + grade */}
+        {/* Área adaptativa com barras + grade (sem scroll) */}
         <View className="flex-1" style={{ height: CHART_HEIGHT }}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <Svg width={svgScrollWidth} height={CHART_HEIGHT}>
+          <Svg width={svgWidth} height={CHART_HEIGHT} pointerEvents="none">
 
-              {/* Linhas de grade horizontais (dashed) */}
-              {yTicks.map((tick) => {
-                const y = tickToSvgY(tick);
-                return (
-                  <Line
-                    key={`grid-${tick}`}
-                    x1={0}
-                    y1={y}
-                    x2={svgScrollWidth}
-                    y2={y}
-                    stroke={colors.outline}
-                    strokeWidth={1}
-                    strokeDasharray="4 4"
-                  />
-                );
-              })}
+            {/* Linhas de grade horizontais (dashed) */}
+            {yTicks.map((tick) => {
+              const y = tickToSvgY(tick);
+              return (
+                <Line
+                  key={`grid-${tick}`}
+                  x1={0}
+                  y1={y}
+                  x2={svgWidth}
+                  y2={y}
+                  stroke={colors.outline}
+                  strokeWidth={1}
+                  strokeDasharray="4 4"
+                />
+              );
+            })}
 
-              {/* Barras agrupadas + rótulo de sessão */}
-              {sessions.map((session, index) => {
-                const groupX = X_START_PADDING + index * dynamicSlotWidth;
-                const xIntrusive = groupX;
-                const xAutonomous = groupX + BAR_WIDTH + BAR_GAP;
-                const groupCenterX = groupX + GROUP_WIDTH / 2;
+            {/* Barras agrupadas + rótulo de sessão */}
+            {sessions.map((session, index) => {
+              const groupX = X_START_PADDING + index * slotWidth + (slotWidth - groupWidth) / 2;
+              const xIntrusive = groupX;
+              const xAutonomous = groupX + barWidth + barGap;
+              const groupCenterX = groupX + groupWidth / 2;
 
-                const intrusiveH = valueToBarHeight(session.intrusiveCount, yMax);
-                const autonomousH = valueToBarHeight(session.autonomousCount, yMax);
-                const intrusiveY = valueToY(session.intrusiveCount, yMax);
-                const autonomousY = valueToY(session.autonomousCount, yMax);
+              const intrusiveH = valueToBarHeight(session.intrusiveCount, yMax);
+              const autonomousH = valueToBarHeight(session.autonomousCount, yMax);
+              const intrusiveY = valueToY(session.intrusiveCount, yMax);
+              const autonomousY = valueToY(session.autonomousCount, yMax);
 
-                return (
-                  <React.Fragment key={session.sessionId}>
-                    {/* Barra Ajuda Intrusiva */}
-                    {intrusiveH > 0 && (
-                      <Rect
-                        x={xIntrusive}
-                        y={intrusiveY}
-                        width={BAR_WIDTH}
-                        height={intrusiveH}
-                        fill={COLOR_INTRUSIVE}
-                        rx={3}
-                        ry={3}
-                      />
-                    )}
+              const num = index + 1;
+              const shouldShowLabel = (N - num) % labelStep === 0;
 
-                    {/* Barra Autônomo */}
-                    {autonomousH > 0 && (
-                      <Rect
-                        x={xAutonomous}
-                        y={autonomousY}
-                        width={BAR_WIDTH}
-                        height={autonomousH}
-                        fill={COLOR_AUTONOMOUS}
-                        rx={3}
-                        ry={3}
-                      />
-                    )}
+              return (
+                <React.Fragment key={session.sessionId}>
+                  {/* Barra Ajuda Intrusiva */}
+                  {intrusiveH > 0 && (
+                    <Rect
+                      x={xIntrusive}
+                      y={intrusiveY}
+                      width={barWidth}
+                      height={intrusiveH}
+                      fill={COLOR_INTRUSIVE}
+                      rx={3}
+                      ry={3}
+                    />
+                  )}
 
-                    {/* Rótulo de sessão no eixo X */}
+                  {/* Barra Autônomo */}
+                  {autonomousH > 0 && (
+                    <Rect
+                      x={xAutonomous}
+                      y={autonomousY}
+                      width={barWidth}
+                      height={autonomousH}
+                      fill={COLOR_AUTONOMOUS}
+                      rx={3}
+                      ry={3}
+                    />
+                  )}
+
+                  {/* Rótulo de sessão no eixo X */}
+                  {shouldShowLabel && (
                     <SvgText
                       x={groupCenterX}
                       y={CHART_HEIGHT - BOTTOM_PADDING + 16}
                       fill={colors.muted}
-                      fontSize={12}
+                      fontSize={labelFontSize}
                       fontFamily="Inter-Medium"
                       textAnchor="middle"
                     >
                       {session.sessionLabel}
                     </SvgText>
-                  </React.Fragment>
-                );
-              })}
+                  )}
+                </React.Fragment>
+              );
+            })}
 
-            </Svg>
-          </ScrollView>
+          </Svg>
         </View>
       </View>
 

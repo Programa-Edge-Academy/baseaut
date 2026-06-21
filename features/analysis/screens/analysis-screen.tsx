@@ -15,7 +15,7 @@ import { ActivityIndicator, Image, View } from "react-native";
 
 export default function AnalysisScreen() {
     const router = useRouter();
-    const { students, isLoading: isStudentsLoading } = useStudents();
+    const { students, isLoading: isStudentsLoading, refresh: refreshStudents } = useStudents();
     const [sessionsCounts, setSessionsCounts] = useState<Record<string, number>>({});
     const [isCountsLoading, setIsCountsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -92,6 +92,7 @@ export default function AnalysisScreen() {
                             data={filteredStudents}
                             keyExtractor={(item) => item.id}
                             emptyMessage="Nenhum aluno encontrado."
+                            onRefresh={refreshStudents}
                             contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
                             renderItem={({ item }) => {
                                 const count = sessionsCounts[item.id] || 0;

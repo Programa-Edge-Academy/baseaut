@@ -4,7 +4,7 @@ import { withOpacity } from "@/components/color-opacity";
 import { RipplePressable } from "@/components/ripple-pressable";
 import { AlertCircle, ChevronRight, MoreVertical } from "lucide-react-native";
 import React, { useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, View, ViewProps } from "react-native";
 
 export type RightActionType = "more" | "chevron" | "none";
 
@@ -19,6 +19,7 @@ export type ListCardProps = {
   icon: React.ReactNode;
   iconBgColor?: string;
   rightAction?: RightActionType;
+  rightActionColor?: string; // Novo opcional para pendencias
   badge?: ListCardBadge;
   pendencyAlert?: boolean;
   className?: string;
@@ -27,6 +28,7 @@ export type ListCardProps = {
   onDelete?: () => void;
   onDuplicate?: () => void;
   showDuplicate?: boolean;
+  editLabel?: string;
   enableRipple?: boolean;
 };
 
@@ -36,6 +38,7 @@ export function ListCard({
   icon,
   iconBgColor = withOpacity(colors.muted, 0.2),
   rightAction = "more",
+  rightActionColor,
   badge,
   pendencyAlert = false,
   className,
@@ -44,6 +47,7 @@ export function ListCard({
   onDelete,
   onDuplicate,
   showDuplicate = false,
+  editLabel,
   enableRipple = false,
 }: ListCardProps) {
   const [menuVisible, setMenuVisible] = useState(false);
@@ -70,13 +74,14 @@ export function ListCard({
             onPress={handleMorePress}
             className="h-10 w-10 items-center justify-center active:opacity-60"
           >
-            <MoreVertical size={24} color={colors.muted} />
+            <MoreVertical size={24} color={rightActionColor || colors.muted} />
           </Pressable>
         );
       case "chevron":
         return (
           <View className="h-10 w-10 items-center justify-center">
-            <ChevronRight size={24} color={colors.muted} />
+            {/* 🛠️ APLICAÇÃO AQUI */}
+            <ChevronRight size={24} color={rightActionColor || colors.muted} />
           </View>
         );
       case "none":
@@ -85,12 +90,21 @@ export function ListCard({
     }
   };
 
-  const PressableComponent = enableRipple ? RipplePressable : Pressable;
+  const isInteractive = !!(onPress || onEdit || onDelete || onDuplicate);
+  const PressableComponent: React.ComponentType<any> = isInteractive
+    ? enableRipple ? RipplePressable : Pressable
+    : View;
+
+  // 🛠️ NOVO: Remove a borda padrão se o className injetado já tiver comandos de borda
+  const defaultBorder = className?.includes("border") ? "" : "border border-outline";
 
   return (
     <PressableComponent
       onPress={onPress}
-      className={`mb-4 h-20 w-full flex-row items-center rounded-2xl border border-outline bg-level2 p-3.5 ${onPress && !enableRipple ? "active:opacity-80" : ""} ${className ?? ""}`}
+      // 🛠️ Substitua a linha do className por esta:
+      className={`mb-4 h-20 w-full flex-row items-center rounded-2xl bg-level2 p-3.5 ${defaultBorder} ${
+        onPress && !enableRipple ? "active:opacity-80" : ""
+      } ${className ?? ""}`}
       style={{ zIndex: menuVisible ? 10 : 1 }}
     >
       <View className="relative mr-3.5 h-11 w-11">
@@ -148,6 +162,7 @@ export function ListCard({
             onClose={() => setMenuVisible(false)}
             layout={menuLayout}
             showDuplicate={showDuplicate}
+            editLabel={editLabel}
             onEdit={onEdit}
             onDuplicate={onDuplicate}
             onDelete={onDelete}

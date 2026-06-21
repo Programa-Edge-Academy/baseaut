@@ -35,8 +35,8 @@ export function useStudents() {
   /**
    * Loads students for the active team.
    */
-const loadStudents = useCallback(async () => {
-    setIsLoading(true);
+const loadStudents = useCallback(async (showLoader = true) => {
+    if (showLoader) setIsLoading(true);
     setError(null);
     try {
       const teamId = await resolveEquipeId();
@@ -55,23 +55,18 @@ const loadStudents = useCallback(async () => {
 
       if (fetchError) throw fetchError;
 
-      if (alunos) {
-        // 2. Verificamos pendências de cada aluno em paralelo via RPC
-        const pendenciasResults = await Promise.all(
-          alunos.map(async (aluno) => {
-            try {
-              const { data } = await supabase.rpc("rpc_check_pendencia_aluno", { p_aluno_id: aluno.id });
-              return { aluno_id: aluno.id, tem_pendencia: data === true };
-            } catch {
-              return { aluno_id: aluno.id, tem_pendencia: false };
-            }
-          })
-        );
+      // 2. Buscamos as pendências separadamente
+      const { data: pendencias } = await supabase
+        .from("vw_alunos_pendencias")
+        .select("aluno_id, tem_pendencia");
 
+      if (alunos) {
         setStudents(
           alunos.map((aluno) => {
-            const temPendencia =
-              pendenciasResults.find((p) => p.aluno_id === aluno.id)?.tem_pendencia ?? false;
+            // Verifica pendência para este aluno específico
+            const temPendencia = pendencias?.some(
+              (p) => p.aluno_id === aluno.id && p.tem_pendencia
+            ) ?? false;
 
             return {
               id: aluno.id,
@@ -81,15 +76,15 @@ const loadStudents = useCallback(async () => {
               weight: Number(aluno.peso) || 0,
               height: Number(aluno.altura) || 0,
               waist: Number(aluno.cintura) || 0,
-              supportLevel:
-                aluno.nivel_suporte === "nivel_1" ? "Nível 1"
-                  : aluno.nivel_suporte === "nivel_2"
-                    ? "Nível 2"
-                    : "Nível 3",
+              supportLevel: 
+              aluno.nivel_suporte === "nivel_1" ? "Nível 1"
+                : aluno.nivel_suporte === "nivel_2"
+                  ? "Nível 2"
+                  : "Nível 3",
               healthConditions: aluno.diagnostico_detalhado || "",
               observations: aluno.observacoes_clinicas || "",
               avatarUrl: aluno.avatar_url,
-              pendencyAlert: temPendencia,
+              pendencyAlert: temPendencia, 
             };
           }),
         );
@@ -98,12 +93,12 @@ const loadStudents = useCallback(async () => {
       setError(caught);
       console.error("Erro ao carregar alunos:", caught);
     } finally {
-      setIsLoading(false);
+      if (showLoader) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadStudents();
+    loadStudents(true);
   }, [loadStudents]);
 
   /**
@@ -113,14 +108,15 @@ const loadStudents = useCallback(async () => {
     data: Omit<Student, "id" | "age">,
     photoUri?: string | null,
   ) => {
-    setIsLoading(true);
     try {
       if (!equipeId) throw new Error("ID da equipe não identificado.");
 
-      let finalAvatarUrl = data.avatarUrl;
-      if (photoUri && !photoUri.startsWith("http")) {
-        const uploadedUrl = await uploadImage("avatares", photoUri, "alunos");
-        if (uploadedUrl) finalAvatarUrl = uploadedUrl;
+      // photoUri é a fonte de verdade: URI local nova faz upload; null/ausente fica sem avatar.
+      let finalAvatarUrl: string | null = null;
+      if (photoUri) {
+        finalAvatarUrl = photoUri.startsWith("http")
+          ? photoUri
+          : (await uploadImage("avatares", photoUri, "alunos")) ?? null;
       }
 
       let nivelSuporteDb = "nivel_1";
@@ -153,15 +149,13 @@ const loadStudents = useCallback(async () => {
         .insert([payload]);
       if (insertError) throw insertError;
 
-      await loadStudents();
+      await loadStudents(false);
     } catch (err: any) {
       console.error("Erro ao adicionar aluno:", err);
       Alert.alert(
         "Erro ao Criar",
         `Não foi possível salvar o aluno: ${err.message}`,
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -173,14 +167,7 @@ const loadStudents = useCallback(async () => {
     data: Partial<Omit<Student, "id" | "age">>,
     photoUri?: string | null,
   ) => {
-    setIsLoading(true);
     try {
-      let finalAvatarUrl = data.avatarUrl;
-      if (photoUri && !photoUri.startsWith("http")) {
-        const uploadedUrl = await uploadImage("avatares", photoUri, "alunos");
-        if (uploadedUrl) finalAvatarUrl = uploadedUrl;
-      }
-
       const payload: any = {};
       if (data.name !== undefined) payload.nome_completo = data.name;
       if (data.weight !== undefined) payload.peso = data.weight;
@@ -190,7 +177,18 @@ const loadStudents = useCallback(async () => {
         payload.diagnostico_detalhado = data.healthConditions;
       if (data.observations !== undefined)
         payload.observacoes_clinicas = data.observations;
-      if (finalAvatarUrl !== undefined) payload.avatar_url = finalAvatarUrl;
+
+      // Imagem: photoUri é a fonte de verdade.
+      //   null            => foto removida   => avatar_url = null  (dispara trigger de limpeza)
+      //   URL http         => foto inalterada => mantém o mesmo valor (trigger não dispara)
+      //   URI local nova   => faz upload      => avatar_url = nova URL (trigger apaga a antiga)
+      if (photoUri === null) {
+        payload.avatar_url = null;
+      } else if (photoUri !== undefined) {
+        payload.avatar_url = photoUri.startsWith("http")
+          ? photoUri
+          : (await uploadImage("avatares", photoUri, "alunos")) ?? null;
+      }
 
       if (data.supportLevel !== undefined) {
         let nivelSuporteDb = "nivel_1";
@@ -215,15 +213,13 @@ const loadStudents = useCallback(async () => {
         .eq("id", id);
       if (updateError) throw updateError;
 
-      await loadStudents();
+      await loadStudents(false);
     } catch (err: any) {
       console.error("Erro ao atualizar aluno:", err);
       Alert.alert(
         "Erro ao Editar",
         `Não foi possível atualizar o aluno: ${err.message}`,
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -231,7 +227,6 @@ const loadStudents = useCallback(async () => {
    * Soft-deletes a student record.
    */
   const deleteStudent = async (id: string) => {
-    setIsLoading(true);
     try {
       const { error: deleteError } = await supabase
         .from("alunos")
@@ -239,12 +234,10 @@ const loadStudents = useCallback(async () => {
         .eq("id", id);
 
       if (deleteError) throw deleteError;
-      await loadStudents();
+      await loadStudents(false);
     } catch (err: any) {
       console.error("Erro ao inativar aluno:", err);
       Alert.alert("Erro ao Remover", err.message);
-    } finally {
-      setIsLoading(false);
     }
   };
 

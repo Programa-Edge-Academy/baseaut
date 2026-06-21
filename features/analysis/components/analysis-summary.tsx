@@ -1,12 +1,8 @@
 import { colors } from "@/assets/colors";
 import { AlertCircle } from "lucide-react-native";
 import React from "react";
-import { Text, useWindowDimensions, View } from "react-native";
+import { Text, View } from "react-native";
 import { AnalysisSummaryCard, AnalysisSummaryCardProps } from "./analysis-summary-card";
-
-// Constantes de alinhamento idênticas ao molde padrão
-const SIDE_MARGIN = 16;
-const MAX_WIDTH = 600;
 
 const defaultCards: AnalysisSummaryCardProps[] = [
   {
@@ -42,24 +38,14 @@ export function AnalysisSummary({
   cards = defaultCards,
   showNote = true,
 }: AnalysisSummaryProps) {
-  const { width: screenWidth } = useWindowDimensions();
-
-  // Cálculo de largura responsiva idêntico ao ExerciseComparisonCard
-  const width = Math.min(
-    screenWidth - SIDE_MARGIN * 2,
-    MAX_WIDTH
-  );
-
   return (
     <View
       style={{
-        width,
-        alignSelf: "center",
         backgroundColor: colors.level2,
         borderWidth: 1,
         borderColor: colors.outline,
       }}
-      className="rounded-2xl p-6"
+      className="w-full rounded-2xl p-6"
     >
       <View className="flex-col gap-3">
         {/* Title */}

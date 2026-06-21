@@ -4,7 +4,7 @@ import { Header } from "@/components/header";
 import RangeCalendar from "@/components/range-calendar";
 import { HelpRecordsBarChart } from "@/features/analysis/components/help-records-bar-chart";
 import PeriodSelector from "@/features/analysis/components/period-selector";
-import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
+import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile";
 import { useHelpRecords } from "../hooks/use-help-records";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { BarChart3 } from "lucide-react-native";
@@ -98,7 +98,7 @@ export function HelpRecordsScreen() {
     params.studentName as string | string[] | undefined
   );
 
-  const { profile, isLoading: isProfileLoading } = useStudentSessions(studentId as string);
+  const { profile, isLoading: isProfileLoading } = useStudentProfile(studentId as string);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
 

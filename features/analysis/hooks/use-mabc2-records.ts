@@ -9,6 +9,7 @@ export type Mabc2DraftExercise = {
   unit: string;
   attemptCount: number | null;
   score: number | null;
+  valorAjuda?: Record<string, any> | null;
 };
 
 export type Mabc2DraftSection = {
@@ -27,82 +28,21 @@ export type Mabc2Draft = {
   sections: Mabc2DraftSection[];
 };
 
-type ExerciseRule = {
-  key: string;
-  component: string;
-  code: string;
-  subItem?: string;
-  label: string;
-};
+type SectionId = "destreza_manual" | "pontaria" | "equilibrio";
 
-const SECTION_ORDER = ["destreza_manual", "mirar_pegar", "equilibrio"];
+const SECTION_ORDER: SectionId[] = ["destreza_manual", "pontaria", "equilibrio"];
 
-const SECTION_LABELS: Record<string, string> = {
+const SECTION_LABELS: Record<SectionId, string> = {
   destreza_manual: "Destreza manual",
-  mirar_pegar: "Pontaria e agarrar",
+  pontaria: "Pontaria e agarrar",
   equilibrio: "Equilíbrio",
 };
 
-const EXERCISE_RULES: ExerciseRule[] = [
-  {
-    key: "dm1_mao_preferida",
-    component: "destreza_manual",
-    code: "DM1",
-    subItem: "mao_preferida",
-    label: "Inserir moeda com a mão preferida",
-  },
-  {
-    key: "dm1_mao_nao_preferida",
-    component: "destreza_manual",
-    code: "DM1",
-    subItem: "mao_nao_preferida",
-    label: "Inserir moeda com a mão não preferida",
-  },
-  {
-    key: "dm2",
-    component: "destreza_manual",
-    code: "DM2",
-    label: "Enfiar contas num cordão",
-  },
-  {
-    key: "dm3",
-    component: "destreza_manual",
-    code: "DM3",
-    label: "Desenhar trilha",
-  },
-  {
-    key: "mp1",
-    component: "mirar_pegar",
-    code: "MP1",
-    label: "Agarrar saco de grãos",
-  },
-  {
-    key: "mp2",
-    component: "mirar_pegar",
-    code: "MP2",
-    label: "Lançar saco de grãos no tapete",
-  },
-  {
-    key: "e1_melhor_perna",
-    component: "equilibrio",
-    code: "E1",
-    subItem: "melhor_perna",
-    label: "Equilíbrio na melhor perna",
-  },
-  {
-    key: "e1_outra_perna",
-    component: "equilibrio",
-    code: "E1",
-    subItem: "outra_perna",
-    label: "Equilíbrio na outra perna",
-  },
-  {
-    key: "e2",
-    component: "equilibrio",
-    code: "E2",
-    label: "Caminhar com calcanhares elevados",
-  },
-];
+const SECTION_ALIASES: Record<SectionId, string[]> = {
+  destreza_manual: ["destreza", "destreza_manual"],
+  pontaria: ["pontaria", "mirar_pegar", "pegar_lancar", "agarrar"],
+  equilibrio: ["equilibrio", "equilíbrio"],
+};
 
 function parseNumber(value: any): number | null {
   if (value == null || value === "") return null;
@@ -116,49 +56,209 @@ function formatDate(value: string | null) {
     : "Data não definida";
 }
 
+function normalizeText(value: any) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function getPath(source: any, paths: string[]) {
+  for (const path of paths) {
+    const value = path.split(".").reduce((current, key) => current?.[key], source);
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+  return null;
+}
+
 function getItemComponent(item: any) {
-  return item.componente ?? item.opcoes?.componente ?? "";
+  return getPath(item, [
+    "componente",
+    "componente_motor",
+    "opcoes.componente",
+    "opcoes.componente_motor",
+    "metadados.componente",
+    "metadados.componente_motor",
+  ]);
 }
 
 function getItemCode(item: any) {
-  return item.codigo_item ?? item.opcoes?.codigo_item ?? "";
+  return getPath(item, [
+    "codigo_item",
+    "codigo",
+    "opcoes.codigo_item",
+    "opcoes.codigo",
+    "metadados.codigo_item",
+    "metadados.codigo",
+  ]);
 }
 
 function getItemSubItem(item: any) {
-  return item.sub_item ?? item.opcoes?.sub_item ?? "";
+  return getPath(item, [
+    "sub_item",
+    "subitem",
+    "opcoes.sub_item",
+    "opcoes.subitem",
+    "metadados.sub_item",
+    "metadados.subitem",
+  ]);
 }
 
 function getItemUnit(item: any) {
-  return item.unidade ?? item.opcoes?.unidade ?? "";
+  return String(
+    getPath(item, [
+      "unidade",
+      "unit",
+      "opcoes.unidade",
+      "opcoes.unit",
+      "metadados.unidade",
+      "metadados.unit",
+    ]) ?? ""
+  );
 }
 
 function getItemQuestionId(item: any) {
-  return item.pergunta_id ?? item.id ?? "";
+  return String(getPath(item, ["pergunta_id", "id"]) ?? "");
 }
 
-function matchesRule(item: any, rule: ExerciseRule) {
-  const component = getItemComponent(item);
+function getItemOrder(item: any) {
+  return parseNumber(getPath(item, ["ordem", "opcoes.ordem", "metadados.ordem"])) ?? 0;
+}
+
+function getItemScore(item: any) {
+  return parseNumber(
+    getPath(item, ["escore_bruto", "valor_preenchido", "pontuacao", "score"])
+  );
+}
+
+function getItemValorAjuda(item: any) {
+  return getPath(item, ["valor_ajuda", "ajuda"]) as Record<string, any> | null;
+}
+
+function getItemName(item: any) {
+  const label =
+    getPath(item, [
+      "texto_pergunta",
+      "texto",
+      "titulo",
+      "label",
+      "opcoes.label",
+      "metadados.label",
+    ]) ?? "";
+
+  if (label) return String(label);
+
   const code = getItemCode(item);
   const subItem = getItemSubItem(item);
 
-  if (component !== rule.component) return false;
-  if (code !== rule.code) return false;
+  return [code, subItem].filter(Boolean).join(" - ") || "Item MABC-2";
+}
 
-  if (rule.subItem) {
-    return subItem === rule.subItem;
+function identifySectionId(value: any): SectionId | null {
+  const normalized = normalizeText(value);
+  if (!normalized) return null;
+
+  for (const sectionId of SECTION_ORDER) {
+    if (SECTION_ALIASES[sectionId].some((alias) => normalized.includes(normalizeText(alias)))) {
+      return sectionId;
+    }
   }
 
-  return true;
+  return null;
+}
+
+function sectionMetricSource(metadados: any, sectionId: SectionId) {
+  const legacyId = sectionId === "pontaria" ? "mirar_pegar" : sectionId;
+
+  return (
+    metadados?.[sectionId] ??
+    metadados?.[legacyId] ??
+    metadados?.componentes?.[sectionId] ??
+    metadados?.componentes?.[legacyId] ??
+    {}
+  );
 }
 
 function createEmptySections(metadados: any): Mabc2DraftSection[] {
-  return SECTION_ORDER.map((sectionId) => ({
-    id: sectionId,
-    title: SECTION_LABELS[sectionId],
-    categoryScore: metadados?.componentes?.[sectionId]?.escore_padrao ?? null,
-    categoryPercentile: metadados?.componentes?.[sectionId]?.percentil ?? null,
-    exercises: [],
-  }));
+  return SECTION_ORDER.map((sectionId) => {
+    const source = sectionMetricSource(metadados, sectionId);
+
+    return {
+      id: sectionId,
+      title: SECTION_LABELS[sectionId],
+      categoryScore: parseNumber(source?.pontuacao ?? source?.escore_padrao),
+      categoryPercentile:
+        source?.percentil !== undefined && source?.percentil !== null
+          ? String(source.percentil)
+          : null,
+      exercises: [],
+    };
+  });
+}
+
+function createExercise(item: any): Mabc2DraftExercise | null {
+  const perguntaId = getItemQuestionId(item);
+  if (!perguntaId) return null;
+
+  return {
+    id: perguntaId,
+    perguntaId,
+    name: getItemName(item),
+    unit: getItemUnit(item),
+    attemptCount: null,
+    score: getItemScore(item),
+    valorAjuda: getItemValorAjuda(item),
+  };
+}
+
+function sortItems(items: any[]) {
+  return [...items].sort((first, second) => getItemOrder(first) - getItemOrder(second));
+}
+
+function flattenGroupedContent(conteudo: any) {
+  if (Array.isArray(conteudo)) return conteudo;
+  if (!conteudo || typeof conteudo !== "object") return [];
+
+  return Object.values(conteudo).flatMap((value) => (Array.isArray(value) ? value : []));
+}
+
+function addFlatItemsToSections(sections: Mabc2DraftSection[], items: any[]) {
+  const sectionById = new Map(sections.map((section) => [section.id, section]));
+
+  for (const item of sortItems(items)) {
+    const sectionId = identifySectionId(getItemComponent(item));
+    if (!sectionId) continue;
+
+    const exercise = createExercise(item);
+    if (!exercise) continue;
+
+    sectionById.get(sectionId)?.exercises.push(exercise);
+  }
+}
+
+function addGroupedItemsToSections(sections: Mabc2DraftSection[], conteudo: any) {
+  if (!conteudo || Array.isArray(conteudo) || typeof conteudo !== "object") {
+    addFlatItemsToSections(sections, flattenGroupedContent(conteudo));
+    return;
+  }
+
+  const sectionById = new Map(sections.map((section) => [section.id, section]));
+
+  for (const [groupName, items] of Object.entries(conteudo)) {
+    if (!Array.isArray(items)) continue;
+
+    const sectionId = identifySectionId(groupName);
+    if (!sectionId) {
+      addFlatItemsToSections(sections, items);
+      continue;
+    }
+
+    for (const item of sortItems(items)) {
+      const exercise = createExercise(item);
+      if (!exercise) continue;
+      sectionById.get(sectionId)?.exercises.push(exercise);
+    }
+  }
 }
 
 function mapItemsToDraft(
@@ -167,39 +267,67 @@ function mapItemsToDraft(
   itens: any[]
 ): Mabc2Draft {
   const sections = createEmptySections(metadados);
-  const sectionById = new Map(sections.map((section) => [section.id, section]));
-  const usedRules = new Set<string>();
-
-  for (const rule of EXERCISE_RULES) {
-    if (usedRules.has(rule.key)) continue;
-
-    const item = itens.find((currentItem) => matchesRule(currentItem, rule));
-    if (!item) continue;
-
-    const perguntaId = getItemQuestionId(item);
-    if (!perguntaId) continue;
-
-    const section = sectionById.get(rule.component);
-    if (!section) continue;
-
-    section.exercises.push({
-      id: perguntaId,
-      perguntaId,
-      name: rule.label,
-      unit: getItemUnit(item),
-      attemptCount: null,
-      score: parseNumber(item.escore_bruto),
-    });
-
-    usedRules.add(rule.key);
-  }
+  addFlatItemsToSections(sections, itens);
 
   return {
     formularioId,
-    totalScore: metadados?.escore_total ?? null,
-    totalPercentile: metadados?.percentil ?? null,
+    totalScore: parseNumber(metadados?.pontuacao_total ?? metadados?.escore_total),
+    totalPercentile:
+      metadados?.percentil_total !== undefined && metadados?.percentil_total !== null
+        ? String(metadados.percentil_total)
+        : metadados?.percentil !== undefined && metadados?.percentil !== null
+          ? String(metadados.percentil)
+          : null,
     metadados: metadados ?? {},
     sections,
+  };
+}
+
+function mapExportToDraft(data: any): Mabc2Draft {
+  const metadados = data?.metadados ?? {};
+  const sections = createEmptySections(metadados);
+  addGroupedItemsToSections(sections, data?.conteudo);
+
+  return {
+    formularioId: data?.id,
+    totalScore: parseNumber(metadados?.pontuacao_total ?? metadados?.escore_total),
+    totalPercentile:
+      metadados?.percentil_total !== undefined && metadados?.percentil_total !== null
+        ? String(metadados.percentil_total)
+        : metadados?.percentil !== undefined && metadados?.percentil !== null
+          ? String(metadados.percentil)
+          : null,
+    metadados,
+    sections,
+  };
+}
+
+function buildTotalsPayload(draft: Mabc2Draft) {
+  const sectionTotals = Object.fromEntries(
+    draft.sections.map((section) => [
+      section.id,
+      {
+        pontuacao: section.categoryScore,
+        percentil: section.categoryPercentile,
+      },
+    ])
+  );
+
+  return {
+    pontuacao_total: draft.totalScore,
+    percentil_total: draft.totalPercentile,
+    destreza_manual: sectionTotals.destreza_manual ?? {
+      pontuacao: null,
+      percentil: null,
+    },
+    pontaria: sectionTotals.pontaria ?? {
+      pontuacao: null,
+      percentil: null,
+    },
+    equilibrio: sectionTotals.equilibrio ?? {
+      pontuacao: null,
+      percentil: null,
+    },
   };
 }
 
@@ -231,8 +359,16 @@ export function useMabc2Records(studentId: string) {
           id: item.id,
           label: `Formulário MABC-2 ${index + 1}`,
           date: formatDate(item.created_at),
-          totalScore: item.metadados?.escore_total ?? null,
-          totalPercentile: item.metadados?.percentil ?? null,
+          totalScore: parseNumber(
+            item.metadados?.pontuacao_total ?? item.metadados?.escore_total
+          ),
+          totalPercentile:
+            item.metadados?.percentil_total !== undefined &&
+            item.metadados?.percentil_total !== null
+              ? String(item.metadados.percentil_total)
+              : item.metadados?.percentil !== undefined && item.metadados?.percentil !== null
+                ? String(item.metadados.percentil)
+                : null,
         }))
       );
     } catch (err: any) {
@@ -269,18 +405,38 @@ export async function startMabc2Record(studentId: string) {
   return mapItemsToDraft(data.formulario_id, {}, data.itens ?? []);
 }
 
-export async function getMabc2Record(formularioId: string) {
-  const { data, error } = await supabase.rpc("rpc_get_mabc2_formulario", {
-    p_formulario_id: formularioId,
-  });
+async function getMabc2RecordFallback(formularioId: string) {
+  const { data: fallbackData, error: fallbackError } = await supabase.rpc(
+    "rpc_get_mabc2_formulario",
+    {
+      p_formulario_id: formularioId,
+    }
+  );
 
-  if (error) throw error;
+  if (fallbackError) throw fallbackError;
 
   return mapItemsToDraft(
-    data.formulario.id,
-    data.formulario.metadados ?? {},
-    data.itens ?? []
+    fallbackData.formulario.id,
+    fallbackData.formulario.metadados ?? {},
+    fallbackData.itens ?? []
   );
+}
+
+export async function getMabc2Record(formularioId: string) {
+  const { data, error } = await supabase.rpc("rpc_get_registro_exportacao", {
+    p_tipo: "formulario",
+    p_id: formularioId,
+  });
+
+  if (!error) {
+    const draft = mapExportToDraft(data);
+
+    if (draft.formularioId && draft.sections.some((section) => section.exercises.length > 0)) {
+      return draft;
+    }
+  }
+
+  return getMabc2RecordFallback(formularioId);
 }
 
 export async function saveMabc2Record(draft: Mabc2Draft) {
@@ -301,23 +457,9 @@ export async function saveMabc2Record(draft: Mabc2Draft) {
     }
   }
 
-  const componentes = Object.fromEntries(
-    draft.sections.map((section) => [
-      section.id,
-      {
-        escore_padrao: section.categoryScore,
-        percentil: section.categoryPercentile,
-      },
-    ])
-  );
-
   const { error } = await supabase.rpc("rpc_salvar_totais_mabc2", {
     p_formulario_id: draft.formularioId,
-    p_totais_jsonb: {
-      escore_total: draft.totalScore,
-      percentil: draft.totalPercentile,
-      componentes,
-    },
+    p_totais_jsonb: buildTotalsPayload(draft),
   });
 
   if (error) throw error;

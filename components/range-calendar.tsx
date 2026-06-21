@@ -1,4 +1,4 @@
-import { colors } from '@/assets/colors'
+import { colors } from '@/assets/colors';
 import { withOpacity } from '@/components/color-opacity';
 import React, { useState } from 'react';
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
@@ -10,7 +10,7 @@ LocaleConfig.locales['pt-br'] = {
     monthNamesShort: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
     dayNames: ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'],
     dayNamesShort: ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'],
-    today: 'Hoje'
+    today: ['Hoje']
 };
 LocaleConfig.defaultLocale = 'pt-br';
 
@@ -24,20 +24,30 @@ const ARROW_COLOR = colors.muted;
 
 interface RangeCalendarProps {
     onRangeSelected: (start: string, end: string | null) => void;
-    style?: StyleProp<ViewStyle>;
+    mode?: 'range' | 'single';
+    style?: StyleProp<ViewStyle>; // Mantido da versão antiga para não quebrar o [studentID].tsx -> MUDAR RÁPIDO
 }
 
-const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected, style }) => {
+const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected, mode = 'range', style }) => {
     const [markedDates, setMarkedDates] = useState<MarkedDates>({});
     const [startDate, setStartDate] = useState<string | null>(null);
 
     const handleDayPress = (day: DateData) => {
         const dateString = day.dateString;
 
-        const keys = Object.keys(markedDates);
-        const hasSingleDateSelected = keys.length === 1 && markedDates[keys[0]]?.startingDay && markedDates[keys[0]]?.endingDay;
+        // Modo Seleção Única
+        if (mode === 'single') {
+            setMarkedDates({
+                [dateString]: { selected: true, selectedColor: ACCENT_COLOR, textColor: DAY_TEXT }
+            });
+            onRangeSelected(dateString, null);
+            return;
+        }
 
-        if (!startDate && !hasSingleDateSelected) {
+        // Modo Intervalo (Range)
+        const keys = Object.keys(markedDates);
+
+        if (!startDate || (startDate && keys.length > 1)) {
             setStartDate(dateString);
 
             const newMarked: MarkedDates = {
@@ -53,7 +63,7 @@ const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected, style })
             onRangeSelected(dateString, null);
         }
         else {
-            let start = startDate || keys[0];
+            let start = startDate;
             let end = dateString;
 
             if (dateString === start) {
@@ -110,7 +120,7 @@ const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected, style })
     return (
         <View style={[styles.card, style]}>
             <Calendar
-                markingType={'period'}
+                markingType={mode === 'single' ? 'dot' : 'period'}
                 markedDates={markedDates}
                 onDayPress={handleDayPress}
                 maxDate={new Date().toISOString().split('T')[0]}

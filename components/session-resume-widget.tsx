@@ -1,7 +1,7 @@
-import React from "react";
-import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
-import { Play, Pause, ChevronLeft, ChevronRight, X } from "lucide-react-native";
 import { colors } from "@/assets/colors";
+import { ChevronLeft, ChevronRight, Pause, Play, X } from "lucide-react-native";
+import React from "react";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type SessionResumeWidgetProps = {

@@ -11,7 +11,9 @@ import {
   DEFAULT_FINISH_MOTIVOS,
   FinishSessionModal,
 } from "@/features/sessions/components/finish-session-modal";
+import { FormComponent } from "@/features/forms/components/form-component";
 import { SessionExercise } from "@/features/sessions/screens/session-running-screen";
+import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import { CheckCircle2, ChevronRight, Split } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
@@ -65,8 +67,12 @@ export function SessionRunningSemiStructuredScreen({
   const { registerSession, updateSessionProgress, updateSessionState, toggleTimer, closeSession, activeSessions, updateTimeElapsed } = useSessionGlobalContext();
 
   // ID efetivo da sessão: usa o recebido (retomada) ou cria um na montagem.
+  const [effectiveSessionId, setEffectiveSessionId] = useState<string>(sessionId || "");
   const effectiveSessionIdRef = useRef<string>(sessionId || "");
   const createSessionPromiseRef = useRef<Promise<string> | null>(null);
+  // Template/instância de RC para o formulário inline.
+  const [rcFormId, setRcFormId] = useState<string>("");
+  const formRef = useRef<any>(null);
   // Contador de ordem de execução para gravar cada exercício realizado.
   const ordemRef = useRef(0);
   // Segundos do cronômetro capturados na última parada.
@@ -99,11 +105,42 @@ export function SessionRunningSemiStructuredScreen({
         circuitName: circuitName || undefined,
       });
     }
+    effectiveSessionIdRef.current = sessionId;
+    setEffectiveSessionId(sessionId);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId]);
+  }, [sessionId, studentId, circuitId, exercises.length]);
 
-  // Cria a sessão no banco e registra no contexto de forma lazy (apenas no primeiro "Começar").
-  // Retorna o sessionId criado ou o já existente.
+
+  // Resolve a instância de RC da sessão. Circuitos sem formulario_id caem no
+  // template global de RC como fallback (mesmo comportamento do circuito estruturado).
+  useEffect(() => {
+    if (!effectiveSessionId) return;
+    let active = true;
+    supabase
+      .from("sessoes")
+      .select("formulario_id")
+      .eq("id", effectiveSessionId)
+      .maybeSingle()
+      .then(async ({ data }) => {
+        if (!active) return;
+        if (data?.formulario_id) {
+          setRcFormId(data.formulario_id);
+        } else {
+          const { data: tmpl } = await supabase
+            .from("formularios")
+            .select("id")
+            .eq("tipo", "registro_controle")
+            .is("aluno_id", null)
+            .maybeSingle();
+          if (active && tmpl?.id) setRcFormId(tmpl.id);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [effectiveSessionId]);
+
+  // Garante um sessao_id válido antes de gravar (aguarda a criação em-flight).
   const ensureSessionId = async (): Promise<string | null> => {
     if (effectiveSessionIdRef.current) return effectiveSessionIdRef.current;
     if (!createSessionPromiseRef.current) {
@@ -522,6 +559,17 @@ export function SessionRunningSemiStructuredScreen({
             })}
           </View>
         </View>
+
+        {rcFormId && (
+          <View className="mx-5 mt-4">
+            <FormComponent
+              ref={formRef}
+              formularioId={rcFormId}
+              sessaoId={effectiveSessionId}
+              alunoId={""}
+            />
+          </View>
+        )}
       </View>
     );
   };

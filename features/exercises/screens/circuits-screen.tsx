@@ -46,6 +46,7 @@ export function CircuitsScreen() {
     circuits,
     isLoading,
     error,
+    refresh,
     addCircuit,
     updateCircuit,
     duplicateCircuit,
@@ -139,6 +140,7 @@ export function CircuitsScreen() {
         className="mt-5 px-8"
         data={filteredCircuits}
         emptyMessage="Nenhum circuito encontrado."
+        onRefresh={refresh}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
           const isMabc = item.type === "mabc_1" || item.type === "mabc_2" || item.type === "mabc_3";

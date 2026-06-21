@@ -198,6 +198,8 @@ export function SessionRunningScreen({
   };
 
   // Resolve a instância de RC da sessão para o formulário inline gravar nela.
+  // Circuitos sem formulario_id configurado não disparam o trigger de criação
+  // de instância — nesses casos cai no template global de RC como fallback.
   useEffect(() => {
     if (!effectiveSessionId) return;
     let active = true;
@@ -206,8 +208,19 @@ export function SessionRunningScreen({
       .select("formulario_id")
       .eq("id", effectiveSessionId)
       .maybeSingle()
-      .then(({ data }) => {
-        if (active && data?.formulario_id) setRcFormId(data.formulario_id);
+      .then(async ({ data }) => {
+        if (!active) return;
+        if (data?.formulario_id) {
+          setRcFormId(data.formulario_id);
+        } else {
+          const { data: tmpl } = await supabase
+            .from("formularios")
+            .select("id")
+            .eq("tipo", "registro_controle")
+            .is("aluno_id", null)
+            .maybeSingle();
+          if (active && tmpl?.id) setRcFormId(tmpl.id);
+        }
       });
     return () => {
       active = false;

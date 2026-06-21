@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, ScrollView, LayoutChangeEvent } from "react-native";
+import { View, Text, LayoutChangeEvent } from "react-native";
 import Svg, { Line, Circle, Defs, LinearGradient, Stop, Text as SvgText } from "react-native-svg";
 import { colors } from "@/assets/colors";
 
@@ -24,17 +24,20 @@ export interface ExerciseProgressChartProps {
   records: ExerciseProgressRecord[];
   startDate?: Date | null;
   endDate?: Date | null;
+  hideShadow?: boolean;
 }
 
 /**
  * Componente que renderiza o gráfico temporal de desempenho do aluno em um exercício específico.
- * Eixo Y fixo à esquerda e eixo X rolável à direita para garantir responsividade no mobile.
+ * O gráfico se adapta ao espaço disponível, distribuindo todos os pontos uniformemente
+ * na largura do card sem necessidade de rolagem horizontal.
  */
 export function ExerciseProgressChart({
   exerciseName,
   records,
   startDate,
   endDate,
+  hideShadow = false,
 }: ExerciseProgressChartProps) {
   // Estado para armazenar a largura do contêiner obtida dinamicamente via evento onLayout
   const [containerWidth, setContainerWidth] = useState<number>(340);
@@ -119,24 +122,28 @@ export function ExerciseProgressChart({
     }
   };
 
-  // Bloco 4: Cálculo da largura e espaçamento da área de rolagem horizontal (Eixo X)
+  // Bloco 4: Cálculo do espaçamento adaptativo — distribui pontos uniformemente no espaço disponível
   const N = filteredRecords.length;
-  // Define 65px de espaçamento mínimo para evitar sobreposição, escalando para preencher a tela se houver poucos pontos
-  const spacing = N > 1 ? Math.max(65, availableWidth / (N - 1)) : 0;
-  const plotWidth = N > 1 ? (N - 1) * spacing : availableWidth;
+  // plotWidth = largura total do SVG, fixada na largura disponível do container
+  const plotWidth = availableWidth;
+  // Margem interna horizontal: garante que o primeiro e último ponto não sejam cortados pela borda do SVG
+  const EDGE_PADDING = 10;
+  // Distribui os N pontos uniformemente dentro de availableWidth, respeitando as margens laterais
+  const usableWidth = plotWidth - EDGE_PADDING * 2;
+  const spacing = N > 1 ? usableWidth / (N - 1) : 0;
 
-  // Função auxiliar para retornar a posição X de cada ponto no gráfico rolável
+  // Função auxiliar para retornar a posição X de cada ponto dentro da largura fixa
   const getXPosition = (index: number) => {
     if (N <= 1) {
       return plotWidth / 2; // Centraliza o ponto se houver apenas 1 registro no período
     }
-    return index * spacing;
+    return EDGE_PADDING + index * spacing;
   };
 
   return (
     <View
       onLayout={handleLayout}
-      className="w-full bg-level2 rounded-[20px] border border-outline p-5 shadow-panelShadow flex-col gap-4 mt-5"
+      className={`w-full bg-level2 rounded-[20px] border border-outline p-5 flex-col gap-4 mt-5 ${hideShadow ? "" : "shadow-panelShadow"}`}
     >
       {/* Bloco 5: Cabeçalho com título fixado em 16px e legenda horizontal de cores */}
       <View className="flex-col gap-1">
@@ -161,12 +168,12 @@ export function ExerciseProgressChart({
         </View>
       </View>
 
-      {/* Bloco 6: Área principal do gráfico estruturada em colunas (Eixo Y fixo + Eixo X rolável) */}
+      {/* Bloco 6: Área principal do gráfico — sem scroll, ocupa 100% da largura do card */}
       <View className="flex-row w-full" style={{ height: chartHeight }}>
         
         {/* Eixo Y fixo à esquerda exibindo apenas os rótulos de texto de cada nível */}
         <View style={{ width: leftAxisWidth, height: chartHeight }}>
-          <Svg width={leftAxisWidth} height={chartHeight}>
+          <Svg width={leftAxisWidth} height={chartHeight} pointerEvents="none">
             {/* Maduro (Alinhado verticalmente em yMature) */}
             <SvgText
               x={10}
@@ -202,12 +209,11 @@ export function ExerciseProgressChart({
           </Svg>
         </View>
 
-        {/* Eixo X rolável horizontalmente contendo a grade e plotagem dos dados */}
+        {/* Eixo X fixo (sem scroll) contendo a grade e plotagem dos dados */}
         <View className="flex-1" style={{ height: chartHeight }}>
-          <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
-            <Svg width={plotWidth + 30} height={chartHeight}>
-              
-              {/* Linhas horizontais de grade (Grid background) */}
+          <Svg width={plotWidth} height={chartHeight} pointerEvents="none">
+            
+            {/* Linhas horizontais de grade (Grid background) */}
               <Line
                 x1={0}
                 y1={yMature}
@@ -327,8 +333,7 @@ export function ExerciseProgressChart({
                 );
               })}
             </Svg>
-          </ScrollView>
-        </View>
+          </View>
       </View>
 
       {/* Rótulo fixo geral "Sessão" posicionado no rodapé do card, centralizado sob a área rolável */}
