@@ -6,8 +6,8 @@ import RangeCalendar from "@/components/range-calendar";
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState, useMemo } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
+import React, { useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 
 import { AnalysisSummary } from "@/features/analysis/components/analysis-summary";
 import ComparisonBehaviors from "@/features/analysis/components/comparison-behaviors";
@@ -27,12 +27,10 @@ function formatSingleDate(date: Date): string {
   return `${day} ${month} ${year}`;
 }
 
-// Formatação do intervalo de datas do período.
 function formatDateRange(start: Date, end: Date): string {
   return `${formatSingleDate(start)} - ${formatSingleDate(end)}`;
 }
 
-// Conversão local de datas para ranges de data.
 function parseDateString(dateStr: string): Date {
   const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day);
@@ -57,14 +55,15 @@ export function PerformanceComparisonScreen() {
   const [period2Range, setPeriod2Range] = useState<{ start: Date; end: Date } | null>(null);
 
   const [showResults, setShowResults] = useState(false);
+  const [compareError, setCompareError] = useState<string | null>(null);
 
   // Modal States
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [activePeriod, setActivePeriod] = useState<1 | 2 | null>(null);
   const [tempStart, setTempStart] = useState<Date | null>(null);
   const [tempEnd, setTempEnd] = useState<Date | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null); // Estado para erros no modal
 
-  // Hook centralizado para comparação de desempenho por períodos
   const {
     data: comparisonData,
     isLoading: isLoadingComparison,
@@ -79,6 +78,7 @@ export function PerformanceComparisonScreen() {
   );
 
   const handlePeriodPress = (periodNum: 1 | 2) => {
+    setModalError(null); // Limpa o erro ao abrir o modal
     setActivePeriod(periodNum);
     const range = periodNum === 1 ? period1Range : period2Range;
     setTempStart(range?.start || null);
@@ -87,10 +87,53 @@ export function PerformanceComparisonScreen() {
   };
 
   const handleSavePeriod = () => {
+    setModalError(null);
+
     if (!tempStart || !tempEnd) {
-      Alert.alert("Erro", "O Período é obrigatório.");
+      setModalError("O Período é obrigatório. Selecione o início e o fim no calendário.");
       return;
     }
+
+    // Convertendo para getTime() para garantir precisão matemática
+    const startMs = tempStart.getTime();
+    const endMs = tempEnd.getTime();
+    const nowMs = new Date().setHours(23, 59, 59, 999);
+
+    if (startMs > nowMs || endMs > nowMs) {
+      setModalError("Data inválida. Não é possível selecionar períodos futuros.");
+      return;
+    }
+
+    // Validações cruzadas de Período 1 e Período 2
+    if (activePeriod === 1 && period2Range) {
+      const p2StartMs = period2Range.start.getTime();
+      const p2EndMs = period2Range.end.getTime();
+
+      if (startMs > p2StartMs) {
+        setModalError("O Período 1 não pode iniciar depois do Período 2.");
+        return;
+      }
+      if (startMs <= p2EndMs && endMs >= p2StartMs) {
+        setModalError("As datas não podem coincidir com o Período 2.");
+        return;
+      }
+    }
+
+    if (activePeriod === 2 && period1Range) {
+      const p1StartMs = period1Range.start.getTime();
+      const p1EndMs = period1Range.end.getTime();
+
+      if (p1StartMs > startMs) {
+        setModalError("O Período 2 não pode iniciar antes do Período 1.");
+        return;
+      }
+      if (p1StartMs <= endMs && p1EndMs >= startMs) {
+        setModalError("As datas não podem coincidir com o Período 1.");
+        return;
+      }
+    }
+
+    // Passou em tudo: salva os dados e fecha o modal
     const range = { start: tempStart, end: tempEnd };
     if (activePeriod === 1) {
       setPeriod1Range(range);
@@ -98,11 +141,13 @@ export function PerformanceComparisonScreen() {
       setPeriod2Range(range);
     }
 
+    setCompareError(null); // Limpa eventuais erros da tela principal
     setShowResults(false);
     setIsModalVisible(false);
   };
 
   const handleRangeSelected = (start: string, end: string | null) => {
+    setModalError(null); // Limpa o erro ao interagir com o calendário
     if (start) {
       setTempStart(parseDateString(start));
     } else {
@@ -117,29 +162,10 @@ export function PerformanceComparisonScreen() {
   };
 
   const handleComparePress = () => {
+    setCompareError(null);
+    
     if (!period1Range || !period2Range) {
-      Alert.alert("Erro", "O Período 1 e o Período 2 são obrigatórios.");
-      return;
-    }
-
-    const now = new Date();
-    now.setHours(23, 59, 59, 999);
-
-    if (
-      period1Range.start > now || period1Range.end > now ||
-      period2Range.start > now || period2Range.end > now
-    ) {
-      Alert.alert("Erro", "Data inválida. Não é possível comparar períodos futuros");
-      return;
-    }
-
-    if (period1Range.start > period2Range.start) {
-      Alert.alert("Erro", "Data inválida. Período 1 a frente do Período 2");
-      return;
-    }
-
-    if (period1Range.start <= period2Range.end && period1Range.end >= period2Range.start) {
-      Alert.alert("Erro", "Data inválida. Não é possível comparar dois períodos coincidentes");
+      setCompareError("Ambos os períodos são obrigatórios para a comparação.");
       return;
     }
 
@@ -156,10 +182,8 @@ export function PerformanceComparisonScreen() {
     return `Período ${periodNum}: selecionar intervalo de datas`;
   };
 
-  // Montagem dinâmica dos cartões do resumo da comparação
   const summaryCards = useMemo(() => {
     if (!comparisonData) return [];
-
     const { resumo, ajuda, exercicios, comportamentos } = comparisonData;
 
     const exerciciosP1 = (exercicios || []).filter((e) => e.nivel_p1 !== null).length;
@@ -208,7 +232,6 @@ export function PerformanceComparisonScreen() {
 
   return (
     <View className="flex-1 bg-level1">
-      {/* Cabeçalho de navegação */}
       <Header variant="back" onPressBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }} className="flex-1">
@@ -218,7 +241,6 @@ export function PerformanceComparisonScreen() {
           </View>
         ) : (
           <View className="mt-5">
-            {/* Título com nome do aluno */}
             <Text
               className="text-xl font-bold text-white"
               style={{ marginHorizontal: 22, marginBottom: 16, fontFamily: "Inter-Bold" }}
@@ -226,7 +248,6 @@ export function PerformanceComparisonScreen() {
               Comparar desempenho - {profile?.name || "Aluno"}
             </Text>
 
-            {/* Seletores de Período */}
             <PeriodSelector
               label={getLabel(1, period1Range)}
               onPress={() => handlePeriodPress(1)}
@@ -237,18 +258,23 @@ export function PerformanceComparisonScreen() {
               onPress={() => handlePeriodPress(2)}
             />
 
-            {/* Botão Comparar */}
-            <View className="items-center mt-6">
+            {/* Mensagem de Erro da Tela Principal (Inline) */}
+            {compareError && (
+              <Text className="text-red-400 text-sm font-medium text-center mt-4 px-6">
+                {compareError}
+              </Text>
+            )}
+
+            <View className="items-center mt-4">
               <DefaultButton
                 label="Comparar"
                 sizeClass="w-[168px] h-[44px]"
-                disabled={isCompareDisabled}
+                disabled={false} // Mantido false para capturar o clique e gerar o erro inline
                 style={{ opacity: isCompareDisabled ? 0.5 : 1 }}
                 onPress={handleComparePress}
               />
             </View>
 
-            {/* Renderização condicional e ordenada dos componentes após clicar em Comparar */}
             {showResults && (
               <View className="mt-6 gap-6">
                 {isLoadingComparison ? (
@@ -260,13 +286,8 @@ export function PerformanceComparisonScreen() {
                 ) : (
                   <>
                     <AnalysisSummary cards={summaryCards} />
-
-                    <ExerciceComparisonCard 
-                      exercicios={comparisonData?.exercicios || []}
-                    />
-
+                    <ExerciceComparisonCard exercicios={comparisonData?.exercicios || []} />
                     <ComparisonHelp data={comparisonData?.ajuda} />
-
                     <ComparisonBehaviors data={comparisonData?.comportamentos} />
                   </>
                 )}
@@ -276,24 +297,20 @@ export function PerformanceComparisonScreen() {
         )}
       </ScrollView>
 
-      {/* Modal Overlay com fade-out (Tela Escurecida) */}
       <AppModal
         visible={isModalVisible}
         transparent
         animationType="fade"
         onRequestClose={() => setIsModalVisible(false)}
       >
-        {/* Fade-out: Clicar aqui fecha o modal */}
         <Pressable
           className="flex-1 bg-black/60 justify-center items-center px-6"
           onPress={() => setIsModalVisible(false)}
         >
-          {/* Container Flutuante Invisível: Clicar aqui NÃO fecha o modal */}
           <Pressable
             className="w-full max-w-[380px]"
             onPress={(e) => e.stopPropagation()}
           >
-            {/* Calendário de Seleção de Range */}
             <View className="w-full mb-4">
               <RangeCalendar
                 key={`${activePeriod}-${isModalVisible}`}
@@ -301,12 +318,20 @@ export function PerformanceComparisonScreen() {
               />
             </View>
 
-            {/* Botão Salvar (Fica embaixo do calendário no modal) */}
+            {/* Mensagem de Erro do Modal (Inline) - Substitui o Alert com maestria */}
+            {modalError && (
+              <View className="bg-red-500/10 border border-red-500/50 rounded-lg p-2 mb-4 mx-2">
+                 <Text className="text-red-400 text-xs font-medium text-center">
+                   {modalError}
+                 </Text>
+              </View>
+            )}
+
             <View className="items-center">
               <DefaultButton
                 label="Salvar"
                 sizeClass="w-[168px] h-[44px]"
-                disabled={isSaveDisabled}
+                disabled={false}
                 style={{ opacity: isSaveDisabled ? 0.5 : 1 }}
                 onPress={handleSavePeriod}
               />
