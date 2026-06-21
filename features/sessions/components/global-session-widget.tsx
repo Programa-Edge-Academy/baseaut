@@ -1,10 +1,13 @@
 import React, { useState } from "react";
+import { Alert } from "react-native";
 import { usePathname, useRouter } from "expo-router";
 import { useSessionGlobalContext } from "../contexts/session-global-context";
+import { useSessionFlow } from "../hooks/use-session-flow";
 import { SessionResumeWidget } from "@/components/session-resume-widget";
 
 export function GlobalSessionWidget() {
   const { activeSessions, toggleTimer, closeSession } = useSessionGlobalContext();
+  const { finishSession } = useSessionFlow();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -89,7 +92,21 @@ export function GlobalSessionWidget() {
   };
 
   const handleClose = () => {
-    closeSession(sessionData.sessionId);
+    Alert.alert(
+      "Cancelar sessão",
+      "Tem certeza que deseja cancelar esta sessão? Os exercícios já realizados serão mantidos, mas a sessão será encerrada.",
+      [
+        { text: "Não, continuar", style: "cancel" },
+        {
+          text: "Sim, cancelar",
+          style: "destructive",
+          onPress: () => {
+            void finishSession(sessionData.sessionId, { status: "cancelada" });
+            closeSession(sessionData.sessionId);
+          },
+        },
+      ]
+    );
   };
 
   return (
