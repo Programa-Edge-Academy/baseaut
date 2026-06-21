@@ -57,7 +57,7 @@ export default function HistoryDetailsScreen() {
       case "mabc": {
         const feita = item.totalRealizado ?? 0;
         const total = item.totalPrevisto ?? 0;
-        const age = item.ageAtEvent;
+        const age = item.ageAtEvent || 0;
 
         // Cor baseada na faixa etária do aluno no momento da avaliação
         // 3–6 anos: laranja | 7–10 anos: verde | 11–16 anos: roxo
