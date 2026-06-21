@@ -1,6 +1,6 @@
 import { AppModal } from "@/components/app-modal";
 import { colors } from "@/assets/colors";
-import { HelpCircle, Mic, X } from "lucide-react-native";
+import { HelpCircle, X } from "lucide-react-native";
 import { useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
@@ -101,7 +101,7 @@ export function FormQuestion({
 
   const content = (
     <>
-    <View className="self-stretch px-0.7 py-2.5 rounded-[10px] flex flex-row items-center gap-2.5">
+    <View className="self-stretch px-0.7 rounded-[10px] flex flex-row items-center gap-2.5">
       {/* Container do título com alinhamento centralizado */}
       <View className="flex-1 min-h-[44px] px-3.5 py-2.5 justify-center">
         <Text className="text-white text-default-2">
@@ -135,12 +135,6 @@ export function FormQuestion({
               className="flex-1 min-h-[44px]"
               placeholder="Adicione uma observação"
             />
-            <Pressable
-              onPress={() => {}}
-              className="w-[44px] h-[44px] bg-level1 rounded-[10px] outline outline-1 outline-offset-[-1px] outline-outline justify-center items-center active:opacity-60"
-            >
-              <Mic color={colors.muted} size={20} />
-            </Pressable>
           </View>
         </View>
       )}
@@ -150,9 +144,9 @@ export function FormQuestion({
   return (
     <>
       {isSubQuestion ? (
-        <View className="self-stretch flex flex-col gap-2 mt-4">{content}</View>
+        <View className="self-stretch flex flex-col mt-4">{content}</View>
       ) : (
-        <View className="w-full p-[15px] bg-level2 rounded-2xl outline outline-1 outline-offset-[-1px] outline-outline flex flex-col justify-start items-start gap-2">
+        <View className="w-full p-[15px] bg-level2 rounded-2xl border border-outline flex flex-col justify-start items-start">
           {content}
         </View>
       )}
@@ -176,7 +170,7 @@ export function FormQuestion({
                 <X color={colors.muted} size={24} />
               </Pressable>
             </View>
-            <ScrollView className="p-5" showsVerticalScrollIndicator={false}>
+            <ScrollView className="px-5" showsVerticalScrollIndicator={false}>
               <Markdown style={helpMarkdownStyles}>
                 {question.helpText}
               </Markdown>
