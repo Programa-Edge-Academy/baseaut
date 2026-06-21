@@ -9,6 +9,8 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { Keyboard, TouchableWithoutFeedback, View, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SessionGlobalProvider } from "@/features/sessions/contexts/session-global-context";
+import { GlobalSessionWidget } from "@/features/sessions/components/global-session-widget";
 import "./global.css";
 
 SplashScreen.preventAutoHideAsync();
@@ -33,14 +35,22 @@ export default function RootLayout() {
   const stack = <Stack screenOptions={{ headerShown: false }} />;
 
   return (
-    Platform.OS !== "web" ? (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <View style={{ flex: 1 }}>{stack}</View>
-        </TouchableWithoutFeedback>
-      </GestureHandlerRootView>      
-    ) : (
-      stack
-    )
+    <SessionGlobalProvider>
+      {Platform.OS !== "web" ? (
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <View style={{ flex: 1 }}>
+              {stack}
+              <GlobalSessionWidget />
+            </View>
+          </TouchableWithoutFeedback>
+        </GestureHandlerRootView>      
+      ) : (
+        <View style={{ flex: 1 }}>
+          {stack}
+          <GlobalSessionWidget />
+        </View>
+      )}
+    </SessionGlobalProvider>
   );
 }
