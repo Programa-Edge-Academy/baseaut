@@ -1,13 +1,10 @@
 import { colors } from "@/assets/colors";
 import { AlertCircle } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
-import { Text, useWindowDimensions, View } from "react-native";
+import { Text, View } from "react-native";
 
 import AnalysisMaturityCard, { DevelopmentLevel } from "./analysis-maturity-card";
 import ExerciseSelectionCard from "./exercise-selection-card";
-
-const SIDE_MARGIN = 16;
-const MAX_WIDTH = 600;
 
 const LEVEL_MAP: Record<string, number> = {
     inicial: 1,
@@ -23,6 +20,7 @@ export interface RpcExerciciosItem {
 
 export type ExerciseComparisonCardProps = {
     exercicios: RpcExerciciosItem[];
+    hideDropdown?: boolean;
 };
 
 interface CombinedExerciseItem {
@@ -39,11 +37,8 @@ function formatBadgeLabel(str: string | null): string {
     return lower.charAt(0).toUpperCase() + lower.slice(1);
 }
 
-function ExerciseComparisonCard({ exercicios }: ExerciseComparisonCardProps) {
-    const { width: screenWidth } = useWindowDimensions();
+function ExerciseComparisonCard({ exercicios, hideDropdown = false }: ExerciseComparisonCardProps) {
     const [selectedIndex, setSelectedIndex] = useState<number>(0);
-
-    const width = Math.min(screenWidth - SIDE_MARGIN * 2, MAX_WIDTH);
 
     // Reset selection when database data changes
     useEffect(() => {
@@ -83,12 +78,14 @@ function ExerciseComparisonCard({ exercicios }: ExerciseComparisonCardProps) {
     }, [items, selectedIndex]);
 
     return (
-        <View style={{ width, alignSelf: "center" }} className="relative bg-level2 border border-outline rounded-2xl p-6">
+        <View className="w-full relative bg-level2 border border-outline rounded-2xl p-6">
             <Text className="text-white text-[20px] font-bold">Comparação por exercício</Text>
             
-            <View style={{ marginTop: 24, marginBottom: 24 }}>
-                <ExerciseSelectionCard options={OPTIONS} selectedIndex={selectedIndex} onSelect={setSelectedIndex} />
-            </View>
+            {!hideDropdown && (
+                <View style={{ marginTop: 24, marginBottom: 24 }}>
+                    <ExerciseSelectionCard options={OPTIONS} selectedIndex={selectedIndex} onSelect={setSelectedIndex} />
+                </View>
+            )}
 
             {/* Cabeçalho da Tabela */}
             <View className="mb-3 px-3 flex-row items-center">

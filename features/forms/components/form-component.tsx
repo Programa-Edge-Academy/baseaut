@@ -46,7 +46,7 @@ export const FormComponent = forwardRef(function FormComponent(
       
       const { data, error } = await supabase
         .from("perguntas")
-        .select("*")
+        .select("id, texto_pergunta, tipo_resposta, opcoes, descricao, obrigatoria, ordem")
         .eq("formulario_id", questionSourceId)
         .order("ordem", { ascending: true });
 

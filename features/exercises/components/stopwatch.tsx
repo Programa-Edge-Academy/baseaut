@@ -19,6 +19,10 @@ export type StopwatchProps = {
   autoStart?: boolean;
   /** Starting value in seconds. Defaults to 0. */
   initialSeconds?: number;
+  /** If provided, overrides internal seconds state */
+  controlledSeconds?: number;
+  /** If provided, overrides internal running state */
+  controlledIsRunning?: boolean;
   /** Fired when the user taps the play/pause icon. Receives the new running state. */
   onToggleRunning?: (isRunning: boolean) => void;
   /**
@@ -57,6 +61,8 @@ export function Stopwatch({
   subtitle,
   autoStart = true,
   initialSeconds = 0,
+  controlledSeconds,
+  controlledIsRunning,
   onToggleRunning,
   onStop,
   onPressCrise,
@@ -66,25 +72,33 @@ export function Stopwatch({
   className,
   isFormVisible = true,
 }: StopwatchProps) {
-  const [isRunning, setIsRunning] = useState(autoStart);
-  const [seconds, setSeconds] = useState(initialSeconds);
+  const [internalIsRunning, setInternalIsRunning] = useState(autoStart);
+  const [internalSeconds, setInternalSeconds] = useState(initialSeconds);
+
+  const isRunning = controlledIsRunning !== undefined ? controlledIsRunning : internalIsRunning;
+  const seconds = controlledSeconds !== undefined ? controlledSeconds : internalSeconds;
 
   useEffect(() => {
+    if (controlledSeconds !== undefined) return;
     if (!isRunning) return;
     const id = setInterval(() => {
-      setSeconds((current) => current + 1);
+      setInternalSeconds((current) => current + 1);
     }, 1000);
     return () => clearInterval(id);
-  }, [isRunning]);
+  }, [isRunning, controlledSeconds]);
 
   const handleToggle = () => {
     const next = !isRunning;
-    setIsRunning(next);
+    if (controlledIsRunning === undefined) {
+      setInternalIsRunning(next);
+    }
     onToggleRunning?.(next);
   };
 
   const handleStop = () => {
-    setIsRunning(false);
+    if (controlledIsRunning === undefined) {
+      setInternalIsRunning(false);
+    }
     onStop?.(seconds);
     //setSeconds(0); Estava zerando o cronômetro, então se esbarrar o dedo e sair do modal, vocÊ perde o tempo registrado.
   };

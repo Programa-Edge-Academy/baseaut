@@ -4,7 +4,7 @@ import { withOpacity } from "@/components/color-opacity";
 import { RipplePressable } from "@/components/ripple-pressable";
 import { AlertCircle, ChevronRight, MoreVertical } from "lucide-react-native";
 import React, { useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, View, ViewProps } from "react-native";
 
 export type RightActionType = "more" | "chevron" | "none";
 
@@ -28,6 +28,7 @@ export type ListCardProps = {
   onDelete?: () => void;
   onDuplicate?: () => void;
   showDuplicate?: boolean;
+  editLabel?: string;
   enableRipple?: boolean;
 };
 
@@ -46,6 +47,7 @@ export function ListCard({
   onDelete,
   onDuplicate,
   showDuplicate = false,
+  editLabel,
   enableRipple = false,
 }: ListCardProps) {
   const [menuVisible, setMenuVisible] = useState(false);
@@ -88,7 +90,10 @@ export function ListCard({
     }
   };
 
-  const PressableComponent = enableRipple ? RipplePressable : Pressable;
+  const isInteractive = !!(onPress || onEdit || onDelete || onDuplicate);
+  const PressableComponent: React.ComponentType<any> = isInteractive
+    ? enableRipple ? RipplePressable : Pressable
+    : View;
 
   // 🛠️ NOVO: Remove a borda padrão se o className injetado já tiver comandos de borda
   const defaultBorder = className?.includes("border") ? "" : "border border-outline";
@@ -157,6 +162,7 @@ export function ListCard({
             onClose={() => setMenuVisible(false)}
             layout={menuLayout}
             showDuplicate={showDuplicate}
+            editLabel={editLabel}
             onEdit={onEdit}
             onDuplicate={onDuplicate}
             onDelete={onDelete}

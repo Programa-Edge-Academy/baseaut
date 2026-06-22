@@ -4,19 +4,18 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
-import { Stack, useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import * as Linking from "expo-linking";
-import { supabase } from "@/lib/supabase";
 import { Keyboard, TouchableWithoutFeedback, View, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SessionGlobalProvider } from "@/features/sessions/contexts/session-global-context";
+import { GlobalSessionWidget } from "@/features/sessions/components/global-session-widget";
 import "./global.css";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const router = useRouter();
   const [loaded, error] = useFonts({
     Inter: Inter_400Regular,
     "Inter-Medium": Inter_500Medium,
@@ -29,38 +28,6 @@ export default function RootLayout() {
     }
   }, [loaded, error]);
 
-  useEffect(() => {
-    const handleDeepLink = async (url: string | null) => {
-      if (!url) return;
-      if (url.includes("access_token") && url.includes("type=recovery")) {
-        const extractParam = (str: string, param: string) => {
-          const match = str.match(new RegExp(`[#?&]${param}=([^&]+)`));
-          return match ? match[1] : null;
-        };
-
-        const access_token = extractParam(url, "access_token");
-        const refresh_token = extractParam(url, "refresh_token");
-
-        if (access_token && refresh_token) {
-          const { error } = await supabase.auth.setSession({
-            access_token,
-            refresh_token,
-          });
-
-          if (!error) {
-            router.replace("/reset-password");
-          }
-        }
-      }
-    };
-
-    Linking.getInitialURL().then(handleDeepLink);
-    const sub = Linking.addEventListener("url", (e) => handleDeepLink(e.url));
-    return () => {
-      sub.remove();
-    };
-  }, [router]);
-
   if (!loaded && !error) {
     return null;
   }
@@ -68,14 +35,22 @@ export default function RootLayout() {
   const stack = <Stack screenOptions={{ headerShown: false }} />;
 
   return (
-    Platform.OS !== "web" ? (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <View style={{ flex: 1 }}>{stack}</View>
-        </TouchableWithoutFeedback>
-      </GestureHandlerRootView>      
-    ) : (
-      stack
-    )
+    <SessionGlobalProvider>
+      {Platform.OS !== "web" ? (
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <View style={{ flex: 1 }}>
+              {stack}
+              <GlobalSessionWidget />
+            </View>
+          </TouchableWithoutFeedback>
+        </GestureHandlerRootView>      
+      ) : (
+        <View style={{ flex: 1 }}>
+          {stack}
+          <GlobalSessionWidget />
+        </View>
+      )}
+    </SessionGlobalProvider>
   );
 }

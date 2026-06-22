@@ -9,6 +9,7 @@ export type CardMenuProps = {
   onClose: () => void;
   layout: { top: number; left: number; width: number };
   showDuplicate?: boolean;
+  editLabel?: string;
   onEdit?: () => void;
   onDuplicate?: () => void;
   onDelete?: () => void;
@@ -19,6 +20,7 @@ export function CardMenu({
   onClose,
   layout,
   showDuplicate = false,
+  editLabel = "Editar",
   onEdit,
   onDuplicate,
   onDelete,
@@ -52,7 +54,7 @@ export function CardMenu({
                 onPress={() => { onClose(); onEdit(); }} 
                 className="flex-row items-center justify-between active:opacity-70"
               >
-                <Text className="text-sm font-medium text-white">Editar</Text>
+                <Text className="text-sm font-medium text-white">{editLabel}</Text>
                 <Edit2 size={16} color="#FFFFFF" />
               </Pressable>
             )}

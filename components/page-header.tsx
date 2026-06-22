@@ -1,6 +1,6 @@
 import { colors } from "@/assets/colors";
 import { withOpacity } from "@/components/color-opacity";
-import { Calendar, Check, ClipboardEdit, Edit2, History, Trash2, Share2 } from "lucide-react-native";
+import { Calendar, Check, ClipboardEdit, Download, Edit2, History, Trash2, Share2 } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 
@@ -9,13 +9,15 @@ export type HeaderMode =
   | "inicio-pendente"
   | "exercicios"
   | "relatorios"
+  | "relatorios-aluno"
   | "registro"
   | "registro-editando"
   | "sessoes"
   | "sessao-historico"
   | "sessao-historico-pendente"
   | "execucao"
-  | "historico-estudante";
+  | "historico-estudante"
+  | "relatorio-detalhe";
 
 export type PageHeaderProps = {
   containerClassName?: string;
@@ -29,7 +31,9 @@ export type PageHeaderProps = {
   onDeletePress?: () => void;
   onCheckPress?: () => void;
   onFormPress?: () => void;
-  onSharePress?: () => void; 
+  onSharePress?: () => void;
+  onExportPress?: () => void;
+  isExportActive?: boolean;
   totalExercises?: number;
   completedExercises?: number;
   isExecuting?: boolean;
@@ -48,6 +52,8 @@ export function PageHeader({
   onCheckPress,
   onFormPress,
   onSharePress,
+  onExportPress,
+  isExportActive = false,
   totalExercises = 1,
   completedExercises = 0,
   isExecuting = false,
@@ -90,6 +96,16 @@ export function PageHeader({
               <Calendar size={20} color={colors.muted} />
             </Pressable>
             {renderNovoBtn()}
+          </View>
+        );
+
+      case "relatorios-aluno":
+        return (
+          <View className="flex-row items-center gap-5">
+            <Pressable onPress={onExportPress} className="active:opacity-70">
+              <Download size={20} color={isExportActive ? colors.primary : colors.muted} />
+            </Pressable>
+            {!isExportActive && renderNovoBtn()}
           </View>
         );
 
@@ -215,19 +231,44 @@ export function PageHeader({
       case "historico-estudante":
         return (
           <View className="flex-row items-center gap-3">
-            {/* Botão Share (Borda Verde) */}
             <Pressable
-              onPress={onSharePress} // Certifique-se de adicionar onSharePress nos props
+              onPress={onSharePress}
               className="items-center justify-center rounded-[10px] border p-2.5 active:opacity-70"
               style={{
-                borderColor: colors.secondary, // Assumindo que você tenha 'success' no seu arquivo de cores
+                borderColor: colors.secondary,
                 backgroundColor: withOpacity(colors.secondary, 0.1),
               }}
             >
               <Share2 size={16} color={colors.secondary} />
             </Pressable>
 
-            {/* Botão Trash (Borda Vermelha) */}
+            <Pressable
+              onPress={onDeletePress}
+              className="items-center justify-center rounded-[10px] border p-2.5 active:opacity-70"
+              style={{
+                borderColor: colors.error,
+                backgroundColor: withOpacity(colors.error, 0.1),
+              }}
+            >
+              <Trash2 size={16} color={colors.error} />
+            </Pressable>
+          </View>
+        );
+
+      case "relatorio-detalhe":
+        return (
+          <View className="flex-row items-center gap-3">
+            <Pressable
+              onPress={onExportPress}
+              className="items-center justify-center rounded-[10px] border p-2.5 active:opacity-70"
+              style={{
+                borderColor: colors.primary,
+                backgroundColor: withOpacity(colors.primary, 0.1),
+              }}
+            >
+              <Download size={16} color={colors.primary} />
+            </Pressable>
+
             <Pressable
               onPress={onDeletePress}
               className="items-center justify-center rounded-[10px] border p-2.5 active:opacity-70"

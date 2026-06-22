@@ -24,6 +24,8 @@ export interface SessionItem {
   faixaMabc?: number;
   totalPrevisto?: number;
   totalRealizado?: number;
+  numeroSessao?: number | null;
+  formType?: string | null;
 }
 
 export interface StudentProfile {
@@ -88,10 +90,12 @@ export function useStudentSessions(studentId?: string) {
           id,
           status,
           data_inicio,
+          numero_sessao,
           circuito_id (id, titulo, tipo, itens_circuito (ordem, exercicios (id, titulo, descricao))),
           formulario_id (titulo)
         `)
-        .eq("aluno_id", studentId);
+        .eq("aluno_id", studentId)
+        .neq("status", "cancelada");
 
       if (sessionsError) console.error("Erro ao buscar sessões", sessionsError);
 
@@ -112,8 +116,10 @@ export function useStudentSessions(studentId?: string) {
         .rpc("rpc_get_progresso_sessoes_aluno", { p_aluno_id: studentId });
 
       if (progressError) console.error("Erro ao buscar progresso das sessões", progressError);
-      const parsedProgress = typeof progressData === "string" ? JSON.parse(progressData) : (progressData || []);
-
+      let parsedProgress: any[] = [];
+      try {
+        parsedProgress = typeof progressData === "string" ? JSON.parse(progressData) : (progressData || []);
+      } catch { /* JSON corrupto */ }
       // 5. Formata as Sessões (Mesclando a checagem de pendências e os exercícios recuperáveis)
       const mappedSessions: SessionItem[] = await Promise.all(
         (sessionsData || []).map(async (item: any) => {
@@ -167,6 +173,7 @@ export function useStudentSessions(studentId?: string) {
             resumeExercises,
             totalPrevisto: sessaoProgresso?.total_previsto ?? 0,
             totalRealizado: sessaoProgresso?.total_realizado ?? 0,
+            numeroSessao: item.numero_sessao ?? null,
           };
         })
       );
@@ -186,11 +193,15 @@ export function useStudentSessions(studentId?: string) {
         circuitId: null,
         circuitType: null,
         resumeExercises: null,
+        formType: item.tipo ?? null,
       }));
 
       // 7. Formata o MABC-2 com chamadas assíncronas de progresso e cálculo de idade
-      const parsedMabcData = typeof mabcData === "string" ? JSON.parse(mabcData) : (mabcData || []);
-      
+      let parsedMabcData: any[] = [];
+      try {
+        parsedMabcData = typeof mabcData === "string" ? JSON.parse(mabcData) : (mabcData || []);
+      } catch { /* JSON corrupto */ }
+     
       const mappedMabc: SessionItem[] = await Promise.all(
         (parsedMabcData || []).map(async (item: any) => {
           const eventDate = item.data_avaliacao || item.created_at || new Date().toISOString();
