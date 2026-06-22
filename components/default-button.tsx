@@ -12,6 +12,7 @@ type DefaultButtonProps = Omit<PressableProps, 'children'> & {
   textClassName?: string;      
   outlineBorderClass?: string; 
   rippleColor?: string;
+  customTextSize?: string;
 };
 
 export function DefaultButton({
@@ -24,6 +25,7 @@ export function DefaultButton({
   textClassName,
   outlineBorderClass = "border-primary",
   rippleColor,
+  customTextSize,
   className,
   ...rest 
 }: DefaultButtonProps) { 
@@ -41,7 +43,7 @@ export function DefaultButton({
       {...rest}
     >
       <Text
-        className={`text-header-3 ${textClassName ? textClassName : defaultTextColor}`}
+        className={`${customTextSize || "text-header-3"} ${textClassName ? textClassName : defaultTextColor}`}
       >
         {label}
       </Text>
