@@ -1,7 +1,7 @@
+import { deliverFiles, type DeliveryMode, type ExportableFile } from "@/lib/export-delivery";
 import { supabase } from "@/lib/supabase";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Print from "expo-print";
-import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
 import { Report } from "../hooks/use-student-reports";
 
@@ -456,7 +456,8 @@ export async function exportReports(
   reports: Report[],
   formats: { pdf: boolean; csv: boolean },
   studentName: string,
-  studentId: string
+  studentId: string,
+  mode: DeliveryMode = "share",
 ): Promise<void> {
   if (!formats.pdf && !formats.csv) {
     throw new Error("Selecione ao menos um formato para exportar.");
@@ -465,6 +466,9 @@ export async function exportReports(
   const emissao = new Date().toLocaleDateString("pt-BR");
   // Fallback: busca perfil atual quando snapshot não existe (migration pendente)
   const fallbackProfile = await fetchStudentProfile(studentId);
+
+  // Nativo: acumula os arquivos gerados para entregar de uma vez (zip/baixar).
+  const files: ExportableFile[] = [];
 
   for (const report of reports) {
     const { data_inicio, data_fim } = report;
@@ -518,9 +522,10 @@ export async function exportReports(
         const result = await Print.printToFileAsync({ html });
         if (result?.uri) {
           const safeName = report.titulo.replace(/[^a-zA-Z0-9]/g, "_");
-          const dest = `${FileSystem.cacheDirectory}relatorio_${safeName}.pdf`;
+          const name = `relatorio_${safeName}.pdf`;
+          const dest = `${FileSystem.cacheDirectory}${name}`;
           await FileSystem.moveAsync({ from: result.uri, to: dest });
-          await Sharing.shareAsync(dest, { mimeType: "application/pdf", dialogTitle: "Exportar relatório" });
+          files.push({ uri: dest, name, mimeType: "application/pdf" });
         }
       }
     }
@@ -617,10 +622,19 @@ export async function exportReports(
         a.click();
         URL.revokeObjectURL(url);
       } else {
-        const path = `${FileSystem.cacheDirectory}relatorio_${safeName}.csv`;
-        await FileSystem.writeAsStringAsync(path, csv);
-        await Sharing.shareAsync(path, { mimeType: "text/csv", dialogTitle: "Exportar relatório" });
+        const name = `relatorio_${safeName}.csv`;
+        const path = `${FileSystem.cacheDirectory}${name}`;
+        // BOM UTF-8 + encoding explícito: sem isso o Android/Excel quebram acentos.
+        await FileSystem.writeAsStringAsync(path, "﻿" + csv, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+        files.push({ uri: path, name, mimeType: "text/csv" });
       }
     }
+  }
+
+  // Nativo: entrega tudo de uma vez (zip se houver mais de um arquivo, ou baixa).
+  if (Platform.OS !== "web" && files.length) {
+    await deliverFiles(files, mode, "Exportar relatório");
   }
 }
