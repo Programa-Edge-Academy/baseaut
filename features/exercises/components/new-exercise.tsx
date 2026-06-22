@@ -237,8 +237,7 @@ export function NewExercise({
                   <DefaultTextInput
                     value={name}
                     onChangeText={(val) => {
-                      const cleanVal = val.replace(/\d/g, "");
-                      setName(cleanVal);
+                      setName(val);
                       if (errors.name)
                         setErrors((prev) => ({ ...prev, name: "" }));
                     }}

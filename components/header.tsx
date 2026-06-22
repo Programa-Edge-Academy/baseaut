@@ -103,7 +103,7 @@ export function Header({
 
           <View className="flex-1 flex-row justify-end items-center">
             {showDefaultActions && (
-              <View className="flex-row items-center">
+              <View className="flex-row items-center px-3 py-1.5">
                 {role === "coordenador" && (
                   <Pressable onPress={() => router.push("/team")} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
                     <Users color={colors.muted} size={24} />
