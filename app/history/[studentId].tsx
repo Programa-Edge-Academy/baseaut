@@ -1,6 +1,7 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ClipboardList, Route, X } from "lucide-react-native";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { colors } from "@/assets/colors";
@@ -15,16 +16,17 @@ import { parseLocalDate } from "@/lib/date-utils";
 
 export default function HistoryDetailsScreen() {
   const { studentId } = useLocalSearchParams();
-  const { sessions, profile, isLoading, refetch} = useStudentSessions(
+  const { sessions, profile, isLoading, refetch } = useStudentSessions(
     studentId as string,
   );
+
+  useFocusEffect(useCallback(() => { refetch(); }, [refetch]));
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const filteredSessions = useMemo(() => {
     if (!selectedDate) return sessions;
-    // Compara apenas a parte de data, em horário local
     const y = selectedDate.getFullYear();
     const m = String(selectedDate.getMonth() + 1).padStart(2, "0");
     const d = String(selectedDate.getDate()).padStart(2, "0");
@@ -55,8 +57,6 @@ export default function HistoryDetailsScreen() {
         };
       }
       case "mabc": {
-        const feita = item.totalRealizado ?? 0;
-        const total = item.totalPrevisto ?? 0;
         const age = item.ageAtEvent || 0;
 
         // Cor baseada na faixa etária do aluno no momento da avaliação
@@ -72,11 +72,14 @@ export default function HistoryDetailsScreen() {
           else if (item.faixaMabc === 3) mabcColor = colors.mabc3;
         }
 
+        // MABC agora é tratado como formulário: ícone de formulário e
+        // subtítulo apenas com a data (sem contagem de exercícios), mantendo
+        // apenas a paleta de cor por faixa etária.
         return {
           iconColor: mabcColor,
           bgColor: withOpacity(mabcColor, 0.15),
-          IconComponent: Route,
-          subtitle: `${item.date} · ${feita}/${total} realizado`,
+          IconComponent: ClipboardList,
+          subtitle: item.date,
         };
       }
       default:
@@ -135,6 +138,7 @@ export default function HistoryDetailsScreen() {
           data={filteredSessions}
           keyExtractor={(item) => item.id}
           onRefresh={refetch}
+          refreshing={isLoading}
           emptyMessage={
             selectedDate
               ? "Nenhum registro encontrado nesta data."
@@ -221,20 +225,17 @@ export default function HistoryDetailsScreen() {
       {showDatePicker && (
         <View className="absolute inset-0 z-50 justify-center px-4 bg-black/50">
           <RangeCalendar
-            mode="single"
             onRangeSelected={(date) => {
               setShowDatePicker(false);
-              // parseLocalDate evita o bug de fuso horário (new Date("YYYY-MM-DD") é UTC)
               const parsed = parseLocalDate(date);
               setSelectedDate(parsed);
             }}
           />
-          {/* Botão opcional para fechar se clicar fora */}
-          <Pressable 
-              className="mt-4 items-center" 
-              onPress={() => setShowDatePicker(false)}
+          <Pressable
+            className="mt-4 items-center"
+            onPress={() => setShowDatePicker(false)}
           >
-              <Text className="text-white font-bold">Fechar</Text>
+            <Text className="text-white font-bold">Fechar</Text>
           </Pressable>
         </View>
       )}

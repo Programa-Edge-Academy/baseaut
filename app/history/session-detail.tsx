@@ -5,8 +5,10 @@ import { DefaultButton } from "@/components/default-button";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { Toast } from "@/components/toast";
+import { withOpacity } from "@/components/color-opacity";
 import {
   ActivityRecordCard,
+  hasActivityRecordPendency,
   type ActivityRecordUpdate,
 } from "@/features/sessions/components/activity-record-card";
 import { useSessionDetail } from "@/features/sessions/hooks/use-session-detail";
@@ -15,6 +17,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -22,9 +25,10 @@ import {
 } from "react-native";
 
 export default function SessionDetailScreen() {
-  const { sessionId, studentName, sessionTitle } =
+  const { sessionId, studentId, studentName, sessionTitle } =
     useLocalSearchParams<{
       sessionId: string;
+      studentId?: string;
       studentName: string;
       sessionTitle?: string;
     }>();
@@ -82,19 +86,24 @@ export default function SessionDetailScreen() {
     }
   }
 
-  async function handleExport(formats: { pdf: boolean; csv: boolean }) {
+  async function handleExport(
+    formats: { pdf: boolean; csv: boolean },
+    deliveryMode: "share" | "download" = "share",
+  ) {
     if (!data) return;
     setIsFormatPickerOpen(false);
     setIsExporting(true);
     try {
       await exportSession(
         {
+          sessionId: sessionId as string,
           sessionTitle: data.sessionTitle,
           sessionDate: data.sessionDate,
           studentName: safeName,
           executions: data.executions,
         },
         formats,
+        deliveryMode,
       );
       setToastConfig({ visible: true, mode: "success", title: "Exportado com sucesso" });
     } catch (err: any) {
@@ -117,6 +126,25 @@ export default function SessionDetailScreen() {
 
   const subtitle = data?.sessionDate ?? "";
 
+  // Só é possível exportar quando todas as execuções estão resolvidas
+  // (nenhuma pendente / com fundo amarelo).
+  const hasPendingExecutions = (data?.executions ?? []).some(
+    hasActivityRecordPendency,
+  );
+
+  function handleSharePress() {
+    if (hasPendingExecutions) {
+      setToastConfig({
+        visible: true,
+        mode: "error",
+        title: "Há execuções pendentes",
+        description: "Resolva todos os registros pendentes antes de exportar.",
+      });
+      return;
+    }
+    setIsFormatPickerOpen(true);
+  }
+
   return (
     <View className="flex-1 bg-level1">
       <Header variant="back" onPressBack={() => router.back()} />
@@ -126,7 +154,19 @@ export default function SessionDetailScreen() {
           title={title}
           subtitle={subtitle}
           mode="historico-estudante"
-          onSharePress={() => setIsFormatPickerOpen(true)}
+          onEditPress={() =>
+            router.push({
+              pathname: "/form",
+              params: {
+                mode: "editar",
+                sessionId: sessionId as string,
+                studentId: (studentId as string) ?? "",
+                circuitType: "registro_controle",
+                circuitName: "Registro de Controle",
+              },
+            } as any)
+          }
+          onSharePress={handleSharePress}
           onDeletePress={() => setIsDeleteModalVisible(true)}
         />
       </View>
@@ -207,7 +247,7 @@ function FormatPicker({
   onExport,
   onClose,
 }: {
-  onExport: (f: { pdf: boolean; csv: boolean }) => void;
+  onExport: (f: { pdf: boolean; csv: boolean }, mode: "share" | "download") => void;
   onClose: () => void;
 }) {
   const [pdf, setPdf] = useState(true);
@@ -240,23 +280,40 @@ function FormatPicker({
         </Pressable>
       </View>
 
-      <View className="flex-row gap-3">
-        <DefaultButton
-          label="Cancelar"
-          onPress={onClose}
-          bgColorClass="bg-level1"
-          shadowClass=""
-          sizeClass="flex-1 h-11"
-          className="border border-outline"
-          textClassName="text-muted"
-        />
-        <DefaultButton
-          label="Exportar"
-          onPress={() => onExport({ pdf, csv })}
-          sizeClass="flex-1 h-11"
-          bgColorClass="bg-primary"
-          hasShadow
-        />
+      <View className="gap-3">
+        <View className="flex-row gap-3">
+          <DefaultButton
+            label="Cancelar"
+            onPress={onClose}
+            bgColorClass="bg-level1"
+            shadowClass=""
+            sizeClass="flex-1 h-11"
+            className="border border-outline"
+            textClassName="text-muted"
+          />
+          <DefaultButton
+            label="Exportar"
+            onPress={() => onExport({ pdf, csv }, "share")}
+            sizeClass="flex-1 h-11"
+            bgColorClass="bg-primary"
+            hasShadow
+          />
+        </View>
+
+        {Platform.OS === "android" && (
+          <DefaultButton
+            label="Baixar"
+            onPress={() => onExport({ pdf, csv }, "download")}
+            sizeClass="w-full h-11"
+            bgColorClass="bg-transparent"
+            style={{ backgroundColor: colors.secondary, borderColor: colors.secondary }}
+            isOutline={true}
+            outlineBorderClass="border-secondary"
+            hasShadow={true}
+            shadowClass="shadow-secondaryShadow"
+            textClassName="text-white"
+          />
+        )}
       </View>
     </Pressable>
   );
