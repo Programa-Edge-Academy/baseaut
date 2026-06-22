@@ -131,7 +131,7 @@ export function SelectableChip({
                 hasShadow={false}
 
                 // REQUIREMENT: When clicked (active), it has no outline. When inactive, it has an outline.
-                isOutline={!isActive}
+                isOutline={true}
 
                 // REQUIREMENT: When active, bg-primary. When inactive, it remains transparent.
                 bgColorClass={isActive ? "bg-primary" : "bg-transparent"}
