@@ -1,57 +1,75 @@
 import { supabase } from "@/lib/supabase";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export interface StudentHistoryData {
   id: string;
   name: string;
   sessions: number;
   pendencyAlert: boolean;
-  avatarUrl: string | null; // 🛠️ ADICIONADO: Nova propriedade na interface
+  avatarUrl: string | null;
 }
 
 export function useHistory() {
-  const [studentsHistory, setStudentsHistory] = useState<StudentHistoryData[]>([]);
+  const [studentsHistory, setStudentsHistory] = useState<StudentHistoryData[]>(
+    [],
+  );
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // 1. Busca de alunos e sessões
+      // 1. Busca de alunos.
       const { data: alunos, error: alunosError } = await supabase
         .from("alunos")
-        // 🛠️ ATUALIZADO: Adicionado 'avatar_url' no select para trazer a imagem do banco
-        .select(`id, nome_completo, avatar_url, sessoes(count)`)
+        .select(`id, nome_completo, avatar_url`)
         .eq("ativo", true)
         .order("nome_completo", { ascending: true });
 
       if (alunosError) throw alunosError;
 
-      // 2. Dispara as chamadas da RPC para todos os alunos em paralelo
-      const formattedData: StudentHistoryData[] = await Promise.all(
-        (alunos || []).map(async (item: any) => {
-          const totalSessions = item.sessoes?.[0]?.count ?? item.sessoes?.count ?? 0;
-          
-          // Chama a RPC passando o parâmetro esperado (p_aluno_id)
-          const { data: temPendencia, error: rpcError } = await supabase.rpc(
-            "rpc_check_pendencia_aluno", 
-            { p_aluno_id: item.id }
-          );
+      // 2. Contagem de registros = sessões + formulários do aluno (mesma regra
+      // da tela de Análises), excluindo sessões canceladas e formulários do tipo
+      // "registro_controle" (instâncias de RC por sessão).
+      const [{ data: sessions }, { data: forms }] = await Promise.all([
+        supabase.from("sessoes").select("aluno_id").neq("status", "cancelada"),
+        supabase
+          .from("formularios")
+          .select("aluno_id")
+          .neq("tipo", "registro_controle")
+          .eq("ativo", true),
+      ]);
 
-          if (rpcError) {
-            console.error(`Erro ao verificar pendência do aluno ${item.nome_completo}:`, rpcError);
-          }
+      const counts: Record<string, number> = {};
+      sessions?.forEach((s) => {
+        if (s.aluno_id) counts[s.aluno_id] = (counts[s.aluno_id] || 0) + 1;
+      });
+      forms?.forEach((f) => {
+        if (f.aluno_id) counts[f.aluno_id] = (counts[f.aluno_id] || 0) + 1;
+      });
+
+      // 3. Pendências de uma vez via view (otimizado), igual à tela de alunos.
+      const { data: pendencias } = await supabase
+        .from("vw_alunos_pendencias")
+        .select("aluno_id, tem_pendencia");
+
+      const formattedData: StudentHistoryData[] = (alunos || []).map(
+        (item: any) => {
+          const temPendencia =
+            pendencias?.some(
+              (p) => p.aluno_id === item.id && p.tem_pendencia
+            ) ?? false;
 
           return {
             id: item.id,
             name: item.nome_completo,
-            sessions: totalSessions,
-            pendencyAlert: temPendencia ?? false, 
-            avatarUrl: item.avatar_url, // 🛠️ ADICIONADO: Mapeando o retorno do banco para o estado do front
+            sessions: counts[item.id] ?? 0,
+            pendencyAlert: temPendencia,
+            avatarUrl: item.avatar_url,
           };
-        })
+        }
       );
 
       setStudentsHistory(formattedData);
@@ -61,11 +79,11 @@ export function useHistory() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchHistory();
-  }, []);
+  }, [fetchHistory]);
 
   return { studentsHistory, isLoading, error, refetch: fetchHistory };
 }
