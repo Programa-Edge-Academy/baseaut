@@ -34,10 +34,14 @@ export type ExecutionRecord = {
   duracaoRealSegundos?: number | null;
 };
 
-/** One crisis episode timed during an exercise (stored in comportamentos_sessao). */
+/**
+ * One behavior episode (crisis or flight) timed during an exercise, stored in
+ * comportamentos_sessao. `tipo` defaults to "crise" for backward compatibility.
+ */
 export type CrisisRecord = {
   exercicioId: string;
   durationSeconds: number;
+  tipo?: "crise" | "fuga";
 };
 
 /** Inserted execution row, used to link crises to the matching execution. */
@@ -54,7 +58,8 @@ type CreateSessionInput = {
 
 type FinishSessionInput = {
   status?: "concluida" | "cancelada";
-  motivoFinalizacao?: MotivoFinalizacao | null;
+  // A coluna sessoes.motivo_finalizacao usa motivo_nao_realizacao_enum.
+  motivoFinalizacao?: MotivoNaoRealizacao | null;
   descricaoMotivo?: string | null;
 };
 
@@ -150,7 +155,7 @@ export function useSessionFlow() {
       const payload = crises.map((crise) => ({
         sessao_id: sessaoId,
         execucao_id: execucaoIdByExercicio.get(crise.exercicioId) ?? null,
-        tipo: "crise",
+        tipo: crise.tipo ?? "crise",
         duracao_segundos: Math.round(crise.durationSeconds),
       }));
 
@@ -227,6 +232,185 @@ export function useSessionFlow() {
     [persistCrises, finishSession],
   );
 
+  /**
+   * Finaliza uma sessão em andamento "de fora" da tela de execução (ex.: ao
+   * iniciar uma nova sessão concorrente). Marca como concluída e, se o circuito
+   * for estruturado, grava os exercícios não realizados (sem execução) como
+   * 'nao_realizada' com motivo/descrição padrão. Lê tudo do banco — não depende
+   * do estado em memória da tela de sessão.
+   */
+  const finishSessionAndSaveUnexecuted = useCallback(
+    async (
+      sessaoId: string,
+      motivo: MotivoNaoRealizacao = "outro",
+      descricao: string = "Sessão encerrada para iniciar uma nova.",
+    ): Promise<void> => {
+      const MOTIVO: MotivoNaoRealizacao = motivo;
+      const DESCRICAO = descricao;
+
+      const { data: sessao } = await supabase
+        .from("sessoes")
+        .select("circuito_id")
+        .eq("id", sessaoId)
+        .maybeSingle();
+
+      const circuitoId = sessao?.circuito_id ?? null;
+
+      if (circuitoId) {
+        const { data: circuito } = await supabase
+          .from("circuitos")
+          .select("modo_execucao")
+          .eq("id", circuitoId)
+          .maybeSingle();
+
+        // Só circuitos estruturados têm um conjunto fixo de exercícios a marcar
+        // como não realizados; o semi-estruturado é de seleção livre.
+        if (circuito?.modo_execucao === "estruturado") {
+          const [{ data: itens }, { data: execs }] = await Promise.all([
+            supabase
+              .from("itens_circuito")
+              .select("exercicio_id, ordem")
+              .eq("circuito_id", circuitoId)
+              .order("ordem", { ascending: true }),
+            supabase
+              .from("execucoes_exercicio")
+              .select("exercicio_id")
+              .eq("sessao_id", sessaoId),
+          ]);
+
+          const executed = new Set((execs ?? []).map((e) => e.exercicio_id));
+          const baseOrdem = (execs ?? []).length;
+          const unexecuted = (itens ?? []).filter(
+            (it) => !executed.has(it.exercicio_id),
+          );
+
+          if (unexecuted.length > 0) {
+            const payload = unexecuted.map((it, i) => ({
+              sessao_id: sessaoId,
+              exercicio_id: it.exercicio_id,
+              ordem_execucao: baseOrdem + i + 1,
+              status_realizacao: "nao_realizada" as StatusRealizacao,
+              motivo_nao_realizacao: MOTIVO,
+              descricao_adicional: DESCRICAO,
+            }));
+            const { error: insertError } = await supabase
+              .from("execucoes_exercicio")
+              .insert(payload);
+            if (insertError) throw insertError;
+          }
+        }
+      }
+
+      await finishSession(sessaoId, {
+        status: "concluida",
+        motivoFinalizacao: MOTIVO,
+        descricaoMotivo: DESCRICAO,
+      });
+    },
+    [finishSession],
+  );
+
+  /**
+   * Ao encerrar a sessão, grava o tempo total em sessoes.tempo_total e replica
+   * os valores automáticos no RC da sessão:
+   *  • pergunta "Tempo da sessão"  → total em segundos;
+   *  • pergunta "Fugas (número de fugas e tempo do ocorrido)" →
+   *    "<n> - (mm:ss,mm:ss), ...", com início/fim no cronômetro total.
+   * Essas perguntas não são exibidas durante a execução (preenchidas aqui),
+   * mas podem ser editadas depois no RC pelo histórico.
+   */
+  const finalizeSessionAutoFill = useCallback(
+    async (
+      sessaoId: string,
+      totalSeconds: number,
+      fugaIntervals: { start: number; end: number }[],
+    ): Promise<void> => {
+      if (!sessaoId) return;
+
+      // 1. tempo_total na própria sessão.
+      await supabase
+        .from("sessoes")
+        .update({ tempo_total: totalSeconds })
+        .eq("id", sessaoId);
+
+      // 2. instância de RC da sessão.
+      const { data: sessao } = await supabase
+        .from("sessoes")
+        .select("formulario_id")
+        .eq("id", sessaoId)
+        .maybeSingle();
+      const formId = sessao?.formulario_id;
+      if (!formId) return;
+
+      const { data: form } = await supabase
+        .from("formularios")
+        .select("template_origem_id")
+        .eq("id", formId)
+        .maybeSingle();
+      const sourceId = form?.template_origem_id ?? formId;
+
+      const { data: perguntas } = await supabase
+        .from("perguntas")
+        .select("id, texto_pergunta")
+        .eq("formulario_id", sourceId);
+
+      if (!perguntas?.length) return;
+
+      const normalize = (s: string) =>
+        s
+          .normalize("NFD")
+          .replace(/[̀-ͯ]/g, "")
+          .toLowerCase()
+          .trim();
+
+      const findByTitle = (target: string) =>
+        perguntas.find((p) =>
+          normalize(p.texto_pergunta || "").includes(normalize(target)),
+        );
+
+      const tempoQ = findByTitle("Tempo da sessão");
+      const fugasQ = findByTitle("Fugas (número de fugas e tempo do ocorrido)");
+
+      const mmss = (s: number) => {
+        const safe = Math.max(0, Math.floor(s));
+        return `${String(Math.floor(safe / 60)).padStart(2, "0")}:${String(safe % 60).padStart(2, "0")}`;
+      };
+      const fugasValue =
+        fugaIntervals.length === 0
+          ? "0"
+          : `${fugaIntervals.length} - ${fugaIntervals
+              .map((i) => `(${mmss(i.start)},${mmss(i.end)})`)
+              .join(", ")}`;
+
+      const payload: any[] = [];
+      if (tempoQ) {
+        payload.push({
+          formulario_id: formId,
+          sessao_id: sessaoId,
+          pergunta_id: tempoQ.id,
+          valor_preenchido: String(totalSeconds),
+          status_item: "respondido",
+        });
+      }
+      if (fugasQ) {
+        payload.push({
+          formulario_id: formId,
+          sessao_id: sessaoId,
+          pergunta_id: fugasQ.id,
+          valor_preenchido: fugasValue,
+          status_item: "respondido",
+        });
+      }
+
+      if (payload.length) {
+        await supabase
+          .from("respostas_formulario")
+          .upsert(payload, { onConflict: "sessao_id, pergunta_id" });
+      }
+    },
+    [],
+  );
+
   return {
     isSaving,
     error,
@@ -234,6 +418,14 @@ export function useSessionFlow() {
     persistExecutions,
     persistCrises,
     finishSession,
+    finishSessionAndSaveUnexecuted,
+    finalizeSessionAutoFill,
     saveSession,
   };
 }
+
+/** Títulos das perguntas de RC preenchidas automaticamente pela sessão. */
+export const RC_AUTO_FILLED_TITLES = [
+  "Tempo da sessão",
+  "Fugas (número de fugas e tempo do ocorrido)",
+];
