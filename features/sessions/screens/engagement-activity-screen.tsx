@@ -13,7 +13,7 @@ import {
   type ExecutionRecord,
   type MotivoNaoRealizacao,
 } from "../hooks/use-session-flow";
-import { useSessionGlobalContext } from "../contexts/session-global-context";
+import { formatSessionClock, useSessionGlobalContext } from "../contexts/session-global-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { CheckCircle2 } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
@@ -216,7 +216,7 @@ export function EngagementActivityScreen() {
         <View className="mx-8 mt-5">
           <PageHeader
             title={`Sessão de ${safeStudentName}`}
-            subtitle="Circuito Semi-estruturado · Engajamento"
+            subtitle={`Circuito Semi-estruturado · Engajamento - ${formatSessionClock(currentSessionData?.totalElapsed ?? 0)}`}
           />
         </View>
 
