@@ -64,7 +64,7 @@ export function TeamScreen() {
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" onPressBack={() => router.back()} />
+      <Header variant="back" onPressBack={() => router.replace("/students")} />
 
       {isLoading ? (
         <View className="flex-1 justify-center items-center">

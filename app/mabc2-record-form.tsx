@@ -16,7 +16,7 @@ import { exportMabc } from "@/features/analysis/utils/export-mabc";
 import { supabase } from "@/lib/supabase";
 import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, Text, View } from "react-native";
 
 type ScreenMode = "create" | "view" | "edit";
 
@@ -341,12 +341,15 @@ export default function Mabc2RecordFormRoute() {
     }
   }
 
-  async function handleExport(formats: { pdf: boolean; csv: boolean }) {
+  async function handleExport(
+    formats: { pdf: boolean; csv: boolean },
+    deliveryMode: "share" | "download" = "share",
+  ) {
     if (!draft) return;
     setIsFormatPickerOpen(false);
     setIsExporting(true);
     try {
-      await exportMabc(draft, formats, currentStudentName);
+      await exportMabc(draft, formats, currentStudentName, deliveryMode);
       setToastConfig({ visible: true, mode: "success", title: "Exportado com sucesso" });
     } catch (err: any) {
       setToastConfig({
@@ -368,14 +371,10 @@ export default function Mabc2RecordFormRoute() {
     try {
       await deleteMabc2Record(targetRecordId);
       shouldBypassExit.current = true;
-      router.replace({
-        pathname: "/mabc2-records",
-        params: {
-          studentId: currentStudentId,
-          studentName: currentStudentName,
-          toastSuccess: "Registro excluído com sucesso",
-        },
-      } as any);
+      // Mesmo comportamento de apagar os demais formulários: volta direto para
+      // a tela anterior (que refaz o fetch no foco), sem toast nem redirecionar
+      // para a lista de MABC.
+      router.back();
     } catch {
       setIsSubmitting(false);
       setToastConfig({
@@ -505,7 +504,7 @@ function MabcFormatPicker({
   onExport,
   onClose,
 }: {
-  onExport: (f: { pdf: boolean; csv: boolean }) => void;
+  onExport: (f: { pdf: boolean; csv: boolean }, mode: "share" | "download") => void;
   onClose: () => void;
 }) {
   const [pdf, setPdf] = useState(true);
@@ -558,23 +557,39 @@ function MabcFormatPicker({
         </Pressable>
       </View>
 
-      <View style={{ flexDirection: "row", gap: 12 }}>
-        <DefaultButton
-          label="Cancelar"
-          onPress={onClose}
-          bgColorClass="bg-level1"
-          shadowClass=""
-          sizeClass="flex-1 h-11"
-          className="border border-outline"
-          textClassName="text-muted"
-        />
-        <DefaultButton
-          label="Exportar"
-          onPress={() => onExport({ pdf, csv })}
-          sizeClass="flex-1 h-11"
-          bgColorClass="bg-primary"
-          hasShadow
-        />
+      <View style={{ gap: 12 }}>
+        <View style={{ flexDirection: "row", gap: 12 }}>
+          <DefaultButton
+            label="Cancelar"
+            onPress={onClose}
+            bgColorClass="bg-level1"
+            shadowClass=""
+            sizeClass="flex-1 h-11"
+            className="border border-outline"
+            textClassName="text-muted"
+          />
+          <DefaultButton
+            label="Exportar"
+            onPress={() => onExport({ pdf, csv }, "share")}
+            sizeClass="flex-1 h-11"
+            bgColorClass="bg-primary"
+            hasShadow
+          />
+        </View>
+
+        {Platform.OS === "android" && (
+          <DefaultButton
+            label="Apenas baixar"
+            onPress={() => onExport({ pdf, csv }, "download")}
+            sizeClass="w-full h-11"
+            bgColorClass="bg-level1"
+            isOutline={true}
+            outlineBorderClass="border-outline"
+            hasShadow={false}
+            className="border border-outline"
+            textClassName="text-white"
+          />
+        )}
       </View>
     </Pressable>
   );

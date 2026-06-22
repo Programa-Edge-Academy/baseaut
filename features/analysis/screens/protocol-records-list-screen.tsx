@@ -1,6 +1,5 @@
 import { colors } from "@/assets/colors";
 import { DataList } from "@/components/data-list";
-import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import React from "react";
@@ -83,7 +82,6 @@ export function ProtocolRecordsListScreen({
           />
         )}
       </View>
-      <Footer />
     </View>
   );
 }
