@@ -1,9 +1,11 @@
 import { colors } from "@/assets/colors";
 import {
   ClipboardEdit,
+  Footprints,
   Minimize2,
   Pause,
   Play,
+  RotateCcw,
   Siren,
   Timer,
 } from "lucide-react-native";
@@ -30,10 +32,17 @@ export type StopwatchProps = {
    * seconds before the internal counter is reset to zero.
    */
   onStop?: (elapsedSeconds: number) => void;
+  /** Fired when the user taps restart. Em modo controlado, o pai deve zerar o
+   * tempo (o estado interno é ignorado quando `controlledSeconds` é usado). */
+  onRestart?: () => void;
   /** Fired when the user taps the "Crise" pill. */
   onPressCrise?: () => void;
   /** Whether a crisis is currently being timed (turns the pill solid red). */
   isCriseActive?: boolean;
+  /** Fired when the user taps the "Fuga" pill. */
+  onPressFuga?: () => void;
+  /** Whether a flight episode is currently being timed (turns the pill solid red). */
+  isFugaActive?: boolean;
   /** Visual variant for the bottom-right corner action. Defaults to "minimize". */
   variant?: StopwatchVariant;
   /** Fired when the user taps the bottom-right corner action. */
@@ -65,8 +74,11 @@ export function Stopwatch({
   controlledIsRunning,
   onToggleRunning,
   onStop,
+  onRestart,
   onPressCrise,
   isCriseActive = false,
+  onPressFuga,
+  isFugaActive = false,
   variant = "minimize",
   onPressCorner,
   className,
@@ -103,6 +115,20 @@ export function Stopwatch({
     //setSeconds(0); Estava zerando o cronômetro, então se esbarrar o dedo e sair do modal, vocÊ perde o tempo registrado.
   };
 
+  // Zera o contador e mantém a contagem em andamento.
+  const handleRestart = () => {
+    // Modo não-controlado: zera o estado interno.
+    if (controlledSeconds === undefined) {
+      setInternalSeconds(0);
+    }
+    if (controlledIsRunning === undefined) {
+      setInternalIsRunning(true);
+    }
+    // Modo controlado: o pai zera o tempo (updateTimeElapsed) e garante rodando.
+    onRestart?.();
+    onToggleRunning?.(true);
+  };
+
   return (
     <View
       className={`w-full rounded-2xl border border-outline bg-level2 p-4 ${className ?? ""}`}
@@ -117,22 +143,41 @@ export function Stopwatch({
           </Text>
         </View>
 
-        <Pressable
-          onPress={onPressCrise}
-          hitSlop={6}
-          className={`flex-row items-center gap-1.5 rounded-full border px-3 py-1 active:opacity-70 ${
-            isCriseActive
-              ? "border-error bg-error"
-              : "border-extra bg-extra/10"
-          }`}
-        >
-          <Siren size={14} color={isCriseActive ? "#fff" : colors.extra} />
-          <Text
-            className={`text-default-2 ${isCriseActive ? "text-white" : "text-extra"}`}
+        <View className="items-end gap-1.5">
+          <Pressable
+            onPress={onPressCrise}
+            hitSlop={6}
+            className={`w-[88px] flex-row items-center justify-center gap-1.5 rounded-full border px-3 py-1 active:opacity-70 ${
+              isCriseActive
+                ? "border-error bg-error"
+                : "border-extra bg-extra/10"
+            }`}
           >
-            Crise
-          </Text>
-        </Pressable>
+            <Siren size={14} color={isCriseActive ? "#fff" : colors.extra} />
+            <Text
+              className={`text-default-2 ${isCriseActive ? "text-white" : "text-extra"}`}
+            >
+              Crise
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={onPressFuga}
+            hitSlop={6}
+            className={`w-[88px] flex-row items-center justify-center gap-1.5 rounded-full border px-3 py-1 active:opacity-70 ${
+              isFugaActive
+                ? "border-error bg-error"
+                : "border-extra bg-extra/10"
+            }`}
+          >
+            <Footprints size={14} color={isFugaActive ? "#fff" : colors.extra} />
+            <Text
+              className={`text-default-2 ${isFugaActive ? "text-white" : "text-extra"}`}
+            >
+              Fuga
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       <View className="mt-3 flex-row items-center justify-between">
@@ -171,6 +216,14 @@ export function Stopwatch({
             className="active:opacity-70"
           >
             <View className="h-5 w-5 rounded-[3px] bg-error" />
+          </Pressable>
+
+          <Pressable
+            onPress={handleRestart}
+            hitSlop={8}
+            className="active:opacity-70"
+          >
+            <RotateCcw size={20} color={colors.muted} />
           </Pressable>
         </View>
 
