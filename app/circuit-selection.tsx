@@ -1,19 +1,21 @@
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { calculateAge } from "@/lib/date-utils";
+import { getStartGuard, type StartGuardState } from "@/lib/session-start-guard";
 import { supabase } from "@/lib/supabase";
+import { ConcurrentSessionModal } from "@/components/concurrent-session-modal";
 import {
   Circuit,
   CircuitType,
   useCircuits,
 } from "../features/exercises/hooks/use-circuits";
+import { useSessionFlow } from "../features/sessions/hooks/use-session-flow";
 import {
   CircuitItem,
   CircuitSelectionScreen,
 } from "../features/sessions/screens/circuit-selection-screen";
 import { useSessionGlobalContext } from "../features/sessions/contexts/session-global-context";
-import { Alert } from "react-native";
 
 type MabcCircuitType = "mabc_1" | "mabc_2" | "mabc_3";
 
@@ -73,16 +75,30 @@ function getCircuitDescription(circuit: Circuit) {
     : "Sem exercícios vinculados";
 }
 
+type GuardModalType =
+  | "session-conflict"
+  | "rc-pending"
+  | "form-conflict"
+  | null;
+
 export default function CircuitSelectionRoute() {
   const { studentId, studentName } = useLocalSearchParams<{
     studentId: string;
     studentName: string;
   }>();
 
-  const { circuits } = useCircuits();
+  const { circuits, isLoading: circuitsLoading } = useCircuits();
+  const { finishSessionAndSaveUnexecuted } = useSessionFlow();
   const { activeSessions } = useSessionGlobalContext();
 
   const [studentAge, setStudentAge] = useState<number | null>(null);
+  // Idade do aluno carrega de forma assíncrona; só exibimos a lista (circuitos
+  // + formulários juntos) quando circuitos E idade terminaram de resolver.
+  const [ageResolved, setAgeResolved] = useState(false);
+  const [guardModal, setGuardModal] = useState<GuardModalType>(null);
+  const [guardData, setGuardData] = useState<StartGuardState | null>(null);
+  const pendingCircuitRef = useRef<CircuitItem | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const studentActiveSession = useMemo(() => {
     if (!studentId) return undefined;
@@ -93,36 +109,38 @@ export default function CircuitSelectionRoute() {
     async function loadStudentAge() {
       if (!studentId) {
         setStudentAge(null);
+        setAgeResolved(true);
         return;
       }
 
-      const { data, error } = await supabase
-        .from("alunos")
-        .select("data_nascimento")
-        .eq("id", studentId)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from("alunos")
+          .select("data_nascimento")
+          .eq("id", studentId)
+          .single();
 
-      if (error) {
-        console.error("Erro ao buscar data de nascimento do aluno:", error);
-        setStudentAge(null);
-        return;
+        if (error) {
+          console.error("Erro ao buscar data de nascimento do aluno:", error);
+          setStudentAge(null);
+          return;
+        }
+
+        const age = calculateAge(data?.data_nascimento ?? null);
+        setStudentAge(age);
+      } finally {
+        setAgeResolved(true);
       }
-
-      const age = calculateAge(data?.data_nascimento ?? null);
-      setStudentAge(age);
     }
 
     loadStudentAge();
   }, [studentId]);
 
-  // Tipo real do circuito no banco (padrao/mabc_1/mabc_2/mabc_3) por id,
-  // usado para o fluxo de execução distinguir MABC dos demais.
   const dbTipoById = useMemo(
     () => new Map(circuits.map((circuit) => [circuit.id, circuit.type])),
     [circuits]
   );
 
-  // Circuitos reais da equipe filtrados pela idade do aluno + entradas de formulário (ATA/CARS).
   const items: CircuitItem[] = useMemo(() => {
     const availableCircuits = circuits.filter((circuit) =>
       isCircuitAvailableForStudentAge(circuit, studentAge)
@@ -143,7 +161,6 @@ export default function CircuitSelectionRoute() {
       })),
     }));
 
-    // Registros padronizados — sempre disponíveis para iniciar uma nova avaliação.
     const formularios: CircuitItem[] = [
       {
         id: "formulario-ata",
@@ -159,7 +176,6 @@ export default function CircuitSelectionRoute() {
       },
     ];
 
-    // MABC-2 como formulário: disponível apenas para alunos na faixa 3–16 anos.
     const mabcForms: CircuitItem[] = [];
     if (studentAge !== null && studentAge >= 3 && studentAge <= 16) {
       let faixaLabel = "";
@@ -171,64 +187,276 @@ export default function CircuitSelectionRoute() {
         id: "formulario-mabc2",
         name: "MABC-2",
         description: `Iniciar uma nova avaliação MABC-2 — Faixa ${faixaLabel}`,
-        type: "mabc2",
+        type: "mabc",
       });
     }
 
     return [...real, ...formularios, ...mabcForms];
   }, [circuits, studentAge]);
 
-  return (
-    <CircuitSelectionScreen
-      studentName={studentName || "Aluno"}
-      circuits={items}
-      onPressBack={() => router.back()}
-      onPressCircuit={(circuit: CircuitItem) => {
-        if (studentActiveSession && studentActiveSession.circuitId !== circuit.id) {
-          Alert.alert(
-            "Circuito em andamento",
-            "O aluno já possui um circuito em andamento. Conclua ou cancele o circuito atual antes de iniciar um novo."
-          );
-          return;
-        }
+  const isFormType = (type: string) =>
+    type === "ata" || type === "cars" || type === "mabc";
 
-        const exercisesParam = JSON.stringify(circuit.exercises ?? []);
+  const navigateToSession = useCallback(
+    (circuit: CircuitItem) => {
+      const exercisesParam = JSON.stringify(circuit.exercises ?? []);
+      const baseParams = {
+        studentName,
+        studentId: studentId ?? "",
+        circuitId: circuit.id,
+        circuitName: circuit.name,
+        circuitType: dbTipoById.get(circuit.id) ?? "padrao",
+        exercises: exercisesParam,
+      };
 
-        // If it's the exact same circuit, pass the sessionId to resume instead of creating a new one
-        const resumeSessionId = studentActiveSession?.circuitId === circuit.id ? studentActiveSession.sessionId : undefined;
+      if (circuit.type === "semi-estruturado") {
+        router.push({ pathname: "/session/semi-structured", params: baseParams });
+      } else {
+        router.push({ pathname: "/session/structured", params: baseParams });
+      }
+    },
+    [studentName, studentId, dbTipoById]
+  );
 
-        const baseParams = {
+  const navigateToForm = useCallback(
+    (circuit: CircuitItem) => {
+      // CircuitType "mabc" maps to DB tipo "mabc2" for the form route.
+      const formTipo = circuit.type === "mabc" ? "mabc2" : circuit.type;
+      router.push({
+        pathname: "/form",
+        params: {
           studentName,
           studentId: studentId ?? "",
-          circuitId: circuit.id,
+          circuitType: formTipo,
           circuitName: circuit.name,
-          circuitType: dbTipoById.get(circuit.id) ?? "padrao",
-          exercises: exercisesParam,
-          ...(resumeSessionId ? { sessionId: resumeSessionId } : {}),
-        };
+        },
+      });
+    },
+    [studentName, studentId]
+  );
 
-        if (circuit.type === "semi-estruturado") {
-          router.push({
-            pathname: "/session/semi-structured",
-            params: baseParams,
-          });
-        } else if (circuit.type === "estruturado") {
-          router.push({
-            pathname: "/session/structured",
-            params: baseParams,
-          });
-        } else if (circuit.type === "ata" || circuit.type === "cars" || circuit.type === "mabc2") {
-          router.push({
-            pathname: "/form",
-            params: {
-              studentName,
-              studentId: studentId ?? "",
-              circuitType: circuit.type,
-              circuitName: circuit.name,
-            },
-          });
+  const navigateToExistingForm = useCallback(
+    (formularioId: string, tipo: string) => {
+      const nameMap: Record<string, string> = {
+        ata: "ATA",
+        cars: "CARS",
+        mabc2: "MABC-2",
+        registro_controle: "Registro de Controle",
+      };
+      router.push({
+        pathname: "/form",
+        params: {
+          formularioId,
+          studentName,
+          studentId: studentId ?? "",
+          circuitType: tipo,
+          circuitName: nameMap[tipo] ?? tipo,
+        },
+      });
+    },
+    [studentName, studentId]
+  );
+
+  const resumeInProgressSession = useCallback(
+    (guard: StartGuardState) => {
+      const session = guard.inProgressSession!;
+      const circuitoId = session.circuitoId;
+
+      const circuit = circuitoId
+        ? circuits.find((c) => c.id === circuitoId)
+        : null;
+
+      const exercisesParam = JSON.stringify(
+        (circuit?.exercises ?? []).map((e) => ({
+          id: e.id,
+          name: e.name,
+          description: e.description,
+        }))
+      );
+
+      const pathname =
+        session.modoExecucao === "semi-estruturado"
+          ? "/session/semi-structured"
+          : "/session/structured";
+
+      router.push({
+        pathname,
+        params: {
+          sessionId: session.id,
+          studentId: studentId ?? "",
+          studentName: studentName ?? "Aluno",
+          circuitId: circuitoId ?? "",
+          circuitType: circuit
+            ? (dbTipoById.get(circuit.id) ?? "padrao")
+            : "padrao",
+          circuitName: circuit?.name ?? "Sessão",
+          exercises: exercisesParam,
+        },
+      });
+    },
+    [circuits, studentId, studentName, dbTipoById]
+  );
+
+  const handlePressCircuit = useCallback(
+    async (circuit: CircuitItem) => {
+      if (!studentId) return;
+
+      const guard = await getStartGuard(studentId);
+      const isForm = isFormType(circuit.type);
+
+      if (!isForm) {
+        // Iniciando uma SESSÃO
+        if (guard.inProgressSession) {
+          pendingCircuitRef.current = circuit;
+          setGuardData(guard);
+          setGuardModal("session-conflict");
+          return;
         }
-      }}
-    />
+        if (guard.pendingByType.registro_controle) {
+          pendingCircuitRef.current = circuit;
+          setGuardData(guard);
+          setGuardModal("rc-pending");
+          return;
+        }
+      } else {
+        // Iniciando um FORMULÁRIO (ATA/CARS/MABC). A chave no guard usa o tipo
+        // do banco — "mabc" do circuito corresponde a "mabc2" no formulário.
+        const guardKey = circuit.type === "mabc" ? "mabc2" : circuit.type;
+        if (guard.pendingByType[guardKey]) {
+          pendingCircuitRef.current = circuit;
+          setGuardData(guard);
+          setGuardModal("form-conflict");
+          return;
+        }
+      }
+
+      // Sem conflitos — prossegue
+      if (isForm) {
+        navigateToForm(circuit);
+      } else {
+        navigateToSession(circuit);
+      }
+    },
+    [studentId, navigateToSession, navigateToForm]
+  );
+
+  const handleContinueCurrent = useCallback(async () => {
+    if (!guardData) return;
+
+    setGuardModal(null);
+
+    if (guardModal === "session-conflict") {
+      resumeInProgressSession(guardData);
+    } else if (guardModal === "rc-pending") {
+      const rcId = guardData.pendingByType.registro_controle;
+      navigateToExistingForm(rcId, "registro_controle");
+    } else if (guardModal === "form-conflict") {
+      const tipo = pendingCircuitRef.current?.type ?? "";
+      const guardKey = tipo === "mabc" ? "mabc2" : tipo;
+      const formId = guardData.pendingByType[guardKey];
+      if (formId) navigateToExistingForm(formId, guardKey);
+    }
+  }, [guardData, guardModal, resumeInProgressSession, navigateToExistingForm]);
+
+  const handleFinishAndStartNew = useCallback(async () => {
+    if (!guardData) return;
+    setIsProcessing(true);
+
+    try {
+      if (guardModal === "session-conflict" && guardData.inProgressSession) {
+        await finishSessionAndSaveUnexecuted(guardData.inProgressSession.id);
+      } else if (guardModal === "form-conflict") {
+        const tipo = pendingCircuitRef.current?.type ?? "";
+        const guardKey = tipo === "mabc" ? "mabc2" : tipo;
+        const oldFormId = guardData.pendingByType[guardKey];
+        if (oldFormId) {
+          await supabase
+            .from("formularios")
+            .update({ ativo: false })
+            .eq("id", oldFormId);
+        }
+      }
+      // rc-pending: o usuário escolheu iniciar nova sessão sem preencher o RC
+
+      setGuardModal(null);
+
+      const circuit = pendingCircuitRef.current;
+      if (circuit) {
+        if (isFormType(circuit.type)) {
+          navigateToForm(circuit);
+        } else {
+          navigateToSession(circuit);
+        }
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [
+    guardData,
+    guardModal,
+    finishSessionAndSaveUnexecuted,
+    navigateToSession,
+    navigateToForm,
+  ]);
+
+  const modalProps = useMemo(() => {
+    if (guardModal === "session-conflict") {
+      return {
+        title: "Sessão em andamento",
+        message:
+          "Já existe uma sessão em andamento com este aluno. O que deseja fazer?",
+        continueLabel: "Continuar sessão em andamento",
+        finishLabel: isProcessing
+          ? "Finalizando..."
+          : "Finalizar sessão e iniciar nova",
+      };
+    }
+    if (guardModal === "rc-pending") {
+      return {
+        title: "Registro de Controle pendente",
+        message:
+          "Existe um Registro de Controle de uma sessão anterior que ainda não foi preenchido.",
+        continueLabel: "Preencher registro de controle",
+        finishLabel: "Iniciar nova sessão",
+      };
+    }
+    if (guardModal === "form-conflict") {
+      const tipo = pendingCircuitRef.current?.type ?? "";
+      const nameMap: Record<string, string> = {
+        ata: "ATA",
+        cars: "CARS",
+        mabc: "MABC-2",
+      };
+      const formName = nameMap[tipo] ?? tipo;
+      return {
+        title: `Formulário ${formName} pendente`,
+        message: `Já existe um formulário ${formName} pendente para este aluno. O que deseja fazer?`,
+        continueLabel: "Continuar formulário anterior",
+        finishLabel: isProcessing
+          ? "Apagando..."
+          : "Apagar anterior e iniciar um novo",
+      };
+    }
+    return {};
+  }, [guardModal, isProcessing]);
+
+  return (
+    <>
+      <CircuitSelectionScreen
+        studentName={studentName || "Aluno"}
+        circuits={items}
+        isLoading={circuitsLoading || !ageResolved}
+        onPressBack={() => router.back()}
+        onPressCircuit={handlePressCircuit}
+      />
+
+      <ConcurrentSessionModal
+        visible={guardModal !== null}
+        onRequestClose={() => setGuardModal(null)}
+        onContinueCurrent={handleContinueCurrent}
+        onFinishAndStartNew={handleFinishAndStartNew}
+        {...modalProps}
+      />
+    </>
   );
 }

@@ -1,13 +1,12 @@
 import { colors } from "@/assets/colors";
 import { withOpacity } from "@/components/color-opacity";
 import { DataList } from "@/components/data-list";
-import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { ListCard } from "@/components/list-card";
 import { SearchInput } from "@/components/search-input";
 import { ClipboardEdit, Layers } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
-import { Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 
 export type CircuitType =
   | "estruturado"
@@ -35,6 +34,9 @@ export type CircuitItem = {
 export type CircuitSelectionScreenProps = {
   studentName: string;
   circuits?: CircuitItem[];
+  /** Enquanto true, mostra spinner em vez da lista (evita exibir os formulários
+   * antes dos circuitos terminarem de carregar). */
+  isLoading?: boolean;
   onPressBack?: () => void;
   onPressCircuit?: (circuit: CircuitItem) => void;
 };
@@ -46,6 +48,7 @@ export type CircuitSelectionScreenProps = {
 export function CircuitSelectionScreen({
   studentName,
   circuits = [],
+  isLoading = false,
   onPressBack,
   onPressCircuit,
 }: CircuitSelectionScreenProps) {
@@ -80,6 +83,11 @@ export function CircuitSelectionScreen({
           onChangeText={setQuery}
         />
 
+        {isLoading ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : (
         <DataList
           className="mt-5 px-8"
           data={filtered}
@@ -116,9 +124,9 @@ export function CircuitSelectionScreen({
             );
           }}
         />
+        )}
       </View>
 
-      <Footer />
     </View>
   );
 }
