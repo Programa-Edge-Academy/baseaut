@@ -1,9 +1,9 @@
 import type {
   Mabc2Draft,
 } from "@/features/analysis/hooks/use-mabc2-records";
+import { deliverFiles, type DeliveryMode, type ExportableFile } from "@/lib/export-delivery";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Print from "expo-print";
-import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -20,7 +20,8 @@ function str(value: string | number | null | undefined): string {
 export async function exportMabc(
   draft: Mabc2Draft,
   formats: { pdf: boolean; csv: boolean },
-  studentName: string
+  studentName: string,
+  mode: DeliveryMode = "share",
 ): Promise<void> {
   if (!formats.pdf && !formats.csv) {
     throw new Error("Selecione ao menos um formato para exportar.");
@@ -29,7 +30,7 @@ export async function exportMabc(
   const emissao = new Date().toLocaleDateString("pt-BR");
   const safeName = studentName.replace(/[^a-zA-Z0-9]/g, "_");
 
-  if (formats.pdf) {
+  const buildPdfHtml = () => {
     const sectionRows = draft.sections
       .map((section) => {
         const exerciseRows = section.exercises
@@ -41,7 +42,7 @@ export async function exportMabc(
             <td style="${TD}">${str(ex.score)}</td>
             <td style="${TD}">${str(ex.attemptCount)}</td>
             <td style="${TD}">${ex.unit ?? "–"}</td>
-          </tr>`
+          </tr>`,
           )
           .join("");
 
@@ -56,7 +57,7 @@ export async function exportMabc(
       })
       .join("");
 
-    const html = `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html><head>
 <meta charset="utf-8"/>
 <style>
@@ -90,23 +91,9 @@ export async function exportMabc(
     <tbody>${sectionRows}</tbody>
   </table>
 </body></html>`;
+  };
 
-    if (Platform.OS === "web") {
-      await Print.printAsync({ html });
-    } else {
-      const result = await Print.printToFileAsync({ html });
-      if (result?.uri) {
-        const dest = `${FileSystem.cacheDirectory}mabc2_${safeName}.pdf`;
-        await FileSystem.moveAsync({ from: result.uri, to: dest });
-        await Sharing.shareAsync(dest, {
-          mimeType: "application/pdf",
-          dialogTitle: "Exportar MABC-2",
-        });
-      }
-    }
-  }
-
-  if (formats.csv) {
+  const buildCsv = () => {
     const rows: string[][] = [
       ["MABC-2", "Aluno", "Emissão"],
       ["", studentName, emissao],
@@ -130,27 +117,49 @@ export async function exportMabc(
       }
     }
 
-    const csv = rows
+    return rows
       .map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
       )
       .join("\n");
+  };
 
-    if (Platform.OS === "web") {
-      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+  if (Platform.OS === "web") {
+    if (formats.pdf) {
+      await Print.printAsync({ html: buildPdfHtml() });
+    }
+    if (formats.csv) {
+      const blob = new Blob(["﻿" + buildCsv()], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `mabc2_${safeName}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-    } else {
-      const path = `${FileSystem.cacheDirectory}mabc2_${safeName}.csv`;
-      await FileSystem.writeAsStringAsync(path, csv);
-      await Sharing.shareAsync(path, {
-        mimeType: "text/csv",
-        dialogTitle: "Exportar MABC-2",
-      });
+    }
+    return;
+  }
+
+  const files: ExportableFile[] = [];
+
+  if (formats.pdf) {
+    const result = await Print.printToFileAsync({ html: buildPdfHtml() });
+    if (result?.uri) {
+      const name = `mabc2_${safeName}.pdf`;
+      const dest = `${FileSystem.cacheDirectory}${name}`;
+      await FileSystem.moveAsync({ from: result.uri, to: dest });
+      files.push({ uri: dest, name, mimeType: "application/pdf" });
     }
   }
+
+  if (formats.csv) {
+    const name = `mabc2_${safeName}.csv`;
+    const path = `${FileSystem.cacheDirectory}${name}`;
+    await FileSystem.writeAsStringAsync(path, "﻿" + buildCsv(), {
+      encoding: FileSystem.EncodingType.UTF8,
+    });
+    files.push({ uri: path, name, mimeType: "text/csv" });
+  }
+
+  await deliverFiles(files, mode, "Exportar MABC-2");
 }
