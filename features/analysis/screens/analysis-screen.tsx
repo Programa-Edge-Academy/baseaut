@@ -26,10 +26,13 @@ export default function AnalysisScreen() {
                 setIsCountsLoading(true);
                 const { data: sessions } = await supabase
                     .from("sessoes")
-                    .select("aluno_id");
+                    .select("aluno_id")
+                    .neq("status", "cancelada");
                 const { data: forms } = await supabase
                     .from("formularios")
-                    .select("aluno_id");
+                    .select("aluno_id")
+                    .neq("tipo", "registro_controle")
+                    .eq("ativo", true);
 
                 const counts: Record<string, number> = {};
                 sessions?.forEach((s) => {

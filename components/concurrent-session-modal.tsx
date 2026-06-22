@@ -8,25 +8,23 @@ import { Pressable, Text, View } from "react-native";
 interface ConcurrentSessionModalProps {
   visible: boolean;
   onRequestClose: () => void;
-  onOpenConcurrent: () => void;
-  onCancelAndStartNew: () => void;
+  onContinueCurrent: () => void;
+  onFinishAndStartNew: () => void;
   title?: string;
   message?: string;
-  cancelLabel?: string;
-  confirmLabel?: string;
-  backLabel?: string;
+  continueLabel?: string;
+  finishLabel?: string;
 }
 
 export function ConcurrentSessionModal({
   visible,
   onRequestClose,
-  onOpenConcurrent,
-  onCancelAndStartNew,
+  onContinueCurrent,
+  onFinishAndStartNew,
   title = "Sessão em andamento",
-  message = "Já existe uma sessão ativa. O que deseja fazer?",
-  confirmLabel = "Abrir sessão concorrente",
-  cancelLabel = "Cancelar existente e iniciar nova",
-  backLabel = "Voltar",
+  message = "Já existe uma sessão em andamento com este aluno. O que deseja fazer?",
+  continueLabel = "Continuar sessão em andamento",
+  finishLabel = "Finalizar sessão e iniciar nova",
 }: ConcurrentSessionModalProps) {
   return (
     <AppModal
@@ -36,55 +34,35 @@ export function ConcurrentSessionModal({
       onRequestClose={onRequestClose}
     >
       <View className="flex-1 items-center justify-center bg-black/50 px-4">
-        <View className="w-full max-w-[320px] rounded-2xl bg-level2 p-6 shadow-[0px_0px_10px_0px_rgba(0,0,0,0.25)] outline outline-1 outline-offset-[-1px] outline-outline">
-          <View className="flex-row items-center justify-between gap-3 mb-4">
-            <Text className="text-white text-xl font-bold leading-5">
+        <View className="w-full max-w-[360px] gap-4 rounded-2xl border border-outline bg-level2 p-6 shadow-panelShadow">
+          <View className="flex-row items-center justify-between gap-3">
+            <Text className="flex-1 text-white text-xl font-bold leading-5">
               {title}
             </Text>
-            <Pressable
-              onPress={onRequestClose}
-              className="p-2 rounded-xl active:opacity-70"
-            >
-              <X size={24} color={colors.muted} />
+            <Pressable onPress={onRequestClose} className="active:opacity-70">
+              <X size={28} color={colors.muted} />
             </Pressable>
           </View>
 
-          <Text className="text-muted text-base font-medium leading-5 mb-6">
+          <Text className="text-muted text-base font-medium leading-5">
             {message}
           </Text>
 
-          <View className="space-y-3 mb-4">
-            <DefaultButton
-              label={confirmLabel}
-              sizeClass="w-full h-11"
-              bgColorClass="bg-level2"
-              isOutline
-              outlineBorderClass="border-primary"
-              textClassName="text-white"
-              hasShadow={false}
-              onPress={onOpenConcurrent}
-            />
+          <DefaultButton
+            label={continueLabel}
+            sizeClass="w-full h-11"
+            textClassName="text-white font-bold"
+            onPress={onContinueCurrent}
+          />
 
-            <DefaultButton
-              label={cancelLabel}
-              sizeClass="w-full h-11"
-              bgColorClass="bg-error/20"
-              isOutline
-              outlineBorderClass="border-error"
-              textClassName="text-error"
-              hasShadow={false}
-              onPress={onCancelAndStartNew}
-            />
-          </View>
-
-          <Pressable
-            onPress={onRequestClose}
-            className="items-center justify-center rounded-2xl h-11"
-          >
-            <Text className="text-muted text-base font-medium leading-5">
-              {backLabel}
-            </Text>
-          </Pressable>
+          <DefaultButton
+            label={finishLabel}
+            sizeClass="w-full h-11"
+            bgColorClass="bg-error"
+            shadowClass="shadow-errorShadow"
+            textClassName="text-white font-bold"
+            onPress={onFinishAndStartNew}
+          />
         </View>
       </View>
     </AppModal>

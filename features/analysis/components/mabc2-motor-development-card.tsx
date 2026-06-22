@@ -87,7 +87,7 @@ export function Mabc2MotorDevelopmentCard({
             className="text-sm font-medium"
             style={{ color: isRecordsSelected ? SELECTED_BORDER_COLOR : colors.muted }}
           >
-            Registros ({recordCount})
+            Categorias
           </Text>
         </Pressable>
 

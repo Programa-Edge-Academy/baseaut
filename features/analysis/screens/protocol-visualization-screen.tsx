@@ -1,5 +1,4 @@
 import { colors } from "@/assets/colors";
-import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { ClipboardList } from "lucide-react-native";
 import React from "react";
@@ -245,7 +244,6 @@ export function ProtocolVisualizationScreen({
         {renderBody()}
       </ScrollView>
 
-      <Footer />
     </View>
   );
 }

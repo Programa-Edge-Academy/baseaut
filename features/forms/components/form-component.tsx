@@ -10,15 +10,32 @@ function getDefaultAnswer(question: { type: string; min?: number }): any {
   return undefined;
 }
 
+// Perguntas do RC preenchidas automaticamente pela sessão — ocultadas durante
+// a execução (o app as preenche ao encerrar; editáveis depois no histórico).
+const RC_AUTO_FILLED_TITLES = [
+  "Tempo da sessão",
+  "Fugas (número de fugas e tempo do ocorrido)",
+];
+
+function normalizeTitle(s: string) {
+  return s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 export interface FormComponentProps {
   formularioId: string;
   sessaoId?: string;
   alunoId?: string;
   onSuccess?: () => void;
+  /** Oculta as perguntas auto-preenchidas do RC (uso inline durante a sessão). */
+  hideAutoFilledSessionFields?: boolean;
 }
 
 export const FormComponent = forwardRef(function FormComponent(
-  { formularioId, sessaoId, alunoId, onSuccess }: FormComponentProps,
+  { formularioId, sessaoId, alunoId, onSuccess, hideAutoFilledSessionFields }: FormComponentProps,
   ref
 ) {
   const [questions, setQuestions] = useState<any[]>([]);
@@ -38,11 +55,13 @@ export const FormComponent = forwardRef(function FormComponent(
       // As perguntas vivem no template; as respostas, na instância.
       const { data: formulario } = await supabase
         .from("formularios")
-        .select("template_origem_id")
+        .select("template_origem_id, tipo")
         .eq("id", formularioId)
         .maybeSingle();
 
       const questionSourceId = formulario?.template_origem_id ?? formularioId;
+      // MABC: todas as perguntas abertas aceitam apenas números (single-line).
+      const isMabc = formulario?.tipo === "mabc2";
       
       const { data, error } = await supabase
         .from("perguntas")
@@ -98,10 +117,23 @@ export const FormComponent = forwardRef(function FormComponent(
           multiple,
           obrigatoria: q.obrigatoria,
           helpText,
+          // Em formulários MABC, perguntas abertas viram numéricas (single-line).
+          numeric: isMabc && type === "open",
         };
       });
 
-      setQuestions(mappedQuestions);
+      // Durante a execução da sessão, oculta as perguntas auto-preenchidas
+      // (tempo da sessão e fugas) — elas são gravadas ao encerrar a sessão.
+      const visibleQuestions = hideAutoFilledSessionFields
+        ? mappedQuestions.filter(
+            (q) =>
+              !RC_AUTO_FILLED_TITLES.some(
+                (t) => normalizeTitle(q.title) === normalizeTitle(t),
+              ),
+          )
+        : mappedQuestions;
+
+      setQuestions(visibleQuestions);
 
       // Seed visual defaults so untouched questions are saved as answered.
       const defaultAnswers: Record<string, any> = {};
@@ -155,7 +187,7 @@ export const FormComponent = forwardRef(function FormComponent(
     }
 
     loadQuestions();
-  }, [formularioId, sessaoId, alunoId]);
+  }, [formularioId, sessaoId, alunoId, hideAutoFilledSessionFields]);
 
   const handleSave = async (silent = true) => {
     setSaving(true);

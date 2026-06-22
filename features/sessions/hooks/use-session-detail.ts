@@ -49,6 +49,8 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
           registro_ajuda,
           complementos_ajuda,
           status_realizacao,
+          motivo_nao_realizacao,
+          descricao_adicional,
           exercicio_id (titulo)
         `)
         .eq("sessao_id", sessionId)
@@ -60,9 +62,12 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
         id: e.id,
         title: e.exercicio_id?.titulo || "Exercício",
         durationSeconds: e.duracao_real_segundos ?? null,
+        statusRealizacao: e.status_realizacao ?? "realizada",
         nivelDesenvolvimento: e.nivel_desenvolvimento ?? null,
         registroAjuda: e.registro_ajuda ?? null,
         complementosAjuda: e.complementos_ajuda ?? null,
+        motivoNaoRealizacao: e.motivo_nao_realizacao ?? null,
+        descricaoAdicional: e.descricao_adicional ?? null,
       }));
 
       setData({ sessionTitle, sessionDate, executions });
@@ -81,9 +86,13 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
     const { error } = await supabase
       .from("execucoes_exercicio")
       .update({
+        status_realizacao: values.statusRealizacao,
+        duracao_real_segundos: values.durationSeconds,
         nivel_desenvolvimento: values.nivelDesenvolvimento,
         registro_ajuda: values.registroAjuda,
         complementos_ajuda: values.complementosAjuda,
+        motivo_nao_realizacao: values.motivoNaoRealizacao,
+        descricao_adicional: values.descricaoAdicional,
       })
       .eq("id", execId);
 
@@ -97,9 +106,13 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
               e.id === execId
                 ? {
                     ...e,
+                    statusRealizacao: values.statusRealizacao,
+                    durationSeconds: values.durationSeconds,
                     nivelDesenvolvimento: values.nivelDesenvolvimento,
                     registroAjuda: values.registroAjuda,
                     complementosAjuda: values.complementosAjuda,
+                    motivoNaoRealizacao: values.motivoNaoRealizacao,
+                    descricaoAdicional: values.descricaoAdicional,
                   }
                 : e,
             ),

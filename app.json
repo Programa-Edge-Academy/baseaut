@@ -7,6 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "baseaut",
     "userInterfaceStyle": "dark",
+    "backgroundColor": "#14181F",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -36,9 +37,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#14181F",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#14181F"
           }
         }
       ],

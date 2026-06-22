@@ -1,12 +1,15 @@
 import type {
   ActivityRecordItem,
 } from "@/features/sessions/components/activity-record-card";
+import { deliverFiles, type DeliveryMode, type ExportableFile } from "@/lib/export-delivery";
+import { supabase } from "@/lib/supabase";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Print from "expo-print";
-import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
 
 export type SessionExportData = {
+  /** Necessário para anexar o Registro de Controle (RC) da sessão. */
+  sessionId?: string;
   sessionTitle: string;
   sessionDate: string;
   studentName: string;
@@ -44,11 +47,63 @@ function fmtAjuda(ajuda: string | null, complementos: string[] | null): string {
   return "–";
 }
 
+type RcRow = { pergunta: string; resposta: string };
+
+/**
+ * Busca o Registro de Controle (RC) vinculado à sessão e suas respostas.
+ * As perguntas vivem no template (template_origem_id); as respostas, na instância.
+ */
+async function fetchRcForSession(sessionId: string): Promise<RcRow[]> {
+  const { data: sessao } = await supabase
+    .from("sessoes")
+    .select("formulario_id")
+    .eq("id", sessionId)
+    .maybeSingle();
+
+  const formId = sessao?.formulario_id;
+  if (!formId) return [];
+
+  const { data: form } = await supabase
+    .from("formularios")
+    .select("template_origem_id")
+    .eq("id", formId)
+    .maybeSingle();
+
+  const sourceId = form?.template_origem_id ?? formId;
+
+  const [{ data: perguntas }, { data: respostas }] = await Promise.all([
+    supabase
+      .from("perguntas")
+      .select("id, texto_pergunta, ordem")
+      .eq("formulario_id", sourceId)
+      .order("ordem", { ascending: true }),
+    supabase
+      .from("respostas_formulario")
+      .select("pergunta_id, valor_preenchido")
+      .eq("formulario_id", formId)
+      .eq("sessao_id", sessionId),
+  ]);
+
+  const respByQ = new Map(
+    (respostas ?? []).map((r) => [r.pergunta_id, r.valor_preenchido]),
+  );
+
+  return (perguntas ?? []).map((q) => {
+    const titulo = (q.texto_pergunta || "").split(/\n(?=\(0=)/)[0].trim();
+    const valor = respByQ.get(q.id);
+    return {
+      pergunta: titulo,
+      resposta: valor != null && valor !== "" ? String(valor) : "–",
+    };
+  });
+}
+
 // ─── Public export ────────────────────────────────────────────────────────────
 
 export async function exportSession(
   data: SessionExportData,
-  formats: { pdf: boolean; csv: boolean }
+  formats: { pdf: boolean; csv: boolean },
+  mode: DeliveryMode = "share",
 ): Promise<void> {
   if (!formats.pdf && !formats.csv) {
     throw new Error("Selecione ao menos um formato para exportar.");
@@ -56,8 +111,9 @@ export async function exportSession(
 
   const emissao = new Date().toLocaleDateString("pt-BR");
   const safeName = data.sessionTitle.replace(/[^a-zA-Z0-9]/g, "_");
+  const rcRows = data.sessionId ? await fetchRcForSession(data.sessionId) : [];
 
-  if (formats.pdf) {
+  const buildPdfHtml = () => {
     const bodyRows = data.executions
       .map(
         (exec) => `
@@ -66,11 +122,24 @@ export async function exportSession(
         <td style="${TD}">${fmtDuration(exec.durationSeconds)}</td>
         <td style="${TD}">${fmtNivel(exec.nivelDesenvolvimento)}</td>
         <td style="${TD}">${fmtAjuda(exec.registroAjuda, exec.complementosAjuda)}</td>
-      </tr>`
+      </tr>`,
       )
       .join("");
 
-    const html = `<!DOCTYPE html>
+    const rcHtml = rcRows.length
+      ? `
+  <h2 style="margin-top:24px">Registro de Controle</h2>
+  <table>
+    <thead><tr><th style="${TH}">Pergunta</th><th style="${TH}">Resposta</th></tr></thead>
+    <tbody>${rcRows
+      .map(
+        (r) => `<tr><td style="${TD}">${r.pergunta}</td><td style="${TD}">${r.resposta}</td></tr>`,
+      )
+      .join("")}</tbody>
+  </table>`
+      : "";
+
+    return `<!DOCTYPE html>
 <html><head>
 <meta charset="utf-8"/>
 <style>
@@ -97,24 +166,11 @@ export async function exportSession(
     </thead>
     <tbody>${bodyRows}</tbody>
   </table>
+  ${rcHtml}
 </body></html>`;
+  };
 
-    if (Platform.OS === "web") {
-      await Print.printAsync({ html });
-    } else {
-      const result = await Print.printToFileAsync({ html });
-      if (result?.uri) {
-        const dest = `${FileSystem.cacheDirectory}sessao_${safeName}.pdf`;
-        await FileSystem.moveAsync({ from: result.uri, to: dest });
-        await Sharing.shareAsync(dest, {
-          mimeType: "application/pdf",
-          dialogTitle: "Exportar sessão",
-        });
-      }
-    }
-  }
-
-  if (formats.csv) {
+  const buildCsv = () => {
     const rows: string[][] = [
       ["Sessão", "Aluno", "Data", "Emissão"],
       [data.sessionTitle, data.studentName, data.sessionDate, emissao],
@@ -128,27 +184,56 @@ export async function exportSession(
       ]),
     ];
 
-    const csv = rows
+    if (rcRows.length) {
+      rows.push([], ["Registro de Controle"], ["Pergunta", "Resposta"]);
+      rcRows.forEach((r) => rows.push([r.pergunta, r.resposta]));
+    }
+
+    return rows
       .map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
       )
       .join("\n");
+  };
 
-    if (Platform.OS === "web") {
-      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+  // ── Web: mantém impressão/blob diretos (sem zip/SAF). ──
+  if (Platform.OS === "web") {
+    if (formats.pdf) {
+      await Print.printAsync({ html: buildPdfHtml() });
+    }
+    if (formats.csv) {
+      const blob = new Blob(["﻿" + buildCsv()], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `sessao_${safeName}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-    } else {
-      const path = `${FileSystem.cacheDirectory}sessao_${safeName}.csv`;
-      await FileSystem.writeAsStringAsync(path, csv);
-      await Sharing.shareAsync(path, {
-        mimeType: "text/csv",
-        dialogTitle: "Exportar sessão",
-      });
+    }
+    return;
+  }
+
+  // ── Nativo: gera os arquivos e entrega (compartilhar com zip / baixar). ──
+  const files: ExportableFile[] = [];
+
+  if (formats.pdf) {
+    const result = await Print.printToFileAsync({ html: buildPdfHtml() });
+    if (result?.uri) {
+      const name = `sessao_${safeName}.pdf`;
+      const dest = `${FileSystem.cacheDirectory}${name}`;
+      await FileSystem.moveAsync({ from: result.uri, to: dest });
+      files.push({ uri: dest, name, mimeType: "application/pdf" });
     }
   }
+
+  if (formats.csv) {
+    const name = `sessao_${safeName}.csv`;
+    const path = `${FileSystem.cacheDirectory}${name}`;
+    await FileSystem.writeAsStringAsync(path, "﻿" + buildCsv(), {
+      encoding: FileSystem.EncodingType.UTF8,
+    });
+    files.push({ uri: path, name, mimeType: "text/csv" });
+  }
+
+  await deliverFiles(files, mode, "Exportar sessão");
 }

@@ -21,6 +21,26 @@ export interface ActiveSessionInfo {
   isTimerVisibleOnScreen?: boolean;
   /** Indica se a atividade atual é um exercício de engajamento */
   isEngagementRunning?: boolean;
+  /** Visibilidade do Registro de Controle inline (toggle por sessão). */
+  isFormVisible?: boolean;
+  /** Duração total da sessão em segundos (cronômetro contínuo, máx. 3h). */
+  totalElapsed?: number;
+  /** Intervalos das fugas (início/fim no cronômetro total) para o RC. */
+  fugaIntervals?: { start: number; end: number }[];
+}
+
+/** Limite de contagem do cronômetro total da sessão: 3 horas. */
+export const SESSION_TOTAL_CAP_SECONDS = 3 * 60 * 60;
+
+/** Formata segundos como mm:ss (ou h:mm:ss a partir de 1h). */
+export function formatSessionClock(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(safe / 3600);
+  const m = Math.floor((safe % 3600) / 60);
+  const s = safe % 60;
+  const mm = String(m).padStart(2, "0");
+  const ss = String(s).padStart(2, "0");
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
 interface SessionGlobalContextData {
@@ -37,6 +57,11 @@ interface SessionGlobalContextData {
   ) => void;
   toggleTimer: (sessionId: string, isRunning?: boolean) => void;
   setTimerVisible: (sessionId: string, isVisible: boolean) => void;
+  setFormVisible: (sessionId: string, isVisible: boolean) => void;
+  addFugaInterval: (
+    sessionId: string,
+    interval: { start: number; end: number },
+  ) => void;
   closeSession: (sessionId: string) => void;
   updateTimeElapsed: (sessionId: string, seconds: number) => void;
 }
@@ -53,8 +78,25 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
         let hasChanges = false;
         const next = { ...prev };
         for (const key in next) {
-          if (next[key].isRunning) {
-            next[key] = { ...next[key], timeElapsed: next[key].timeElapsed + 1 };
+          let entry = next[key];
+          let changed = false;
+
+          // Cronômetro do exercício: conta apenas quando "rodando".
+          if (entry.isRunning) {
+            entry = { ...entry, timeElapsed: entry.timeElapsed + 1 };
+            changed = true;
+          }
+
+          // Cronômetro TOTAL da sessão: conta sempre enquanto a sessão existe
+          // (independe de pausa/exercício), até o teto de 3h.
+          const total = entry.totalElapsed ?? 0;
+          if (total < SESSION_TOTAL_CAP_SECONDS) {
+            entry = { ...entry, totalElapsed: total + 1 };
+            changed = true;
+          }
+
+          if (changed) {
+            next[key] = entry;
             hasChanges = true;
           }
         }
@@ -75,6 +117,12 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
         historico: prev[session.sessionId]?.historico ?? session.historico,
         activeExerciseId: prev[session.sessionId]?.activeExerciseId ?? session.activeExerciseId,
         isEngagementRunning: prev[session.sessionId]?.isEngagementRunning ?? session.isEngagementRunning ?? false,
+        // Default visível ao iniciar qualquer sessão; preserva o toggle ao retomar.
+        isFormVisible: prev[session.sessionId]?.isFormVisible ?? session.isFormVisible ?? true,
+        // Cronômetro total contínuo; preserva o acumulado ao retomar.
+        totalElapsed: prev[session.sessionId]?.totalElapsed ?? session.totalElapsed ?? 0,
+        // Fugas acumuladas; preserva ao retomar.
+        fugaIntervals: prev[session.sessionId]?.fugaIntervals ?? session.fugaIntervals ?? [],
       },
     }));
   };
@@ -130,6 +178,31 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const setFormVisible = (sessionId: string, isVisible: boolean) => {
+    setActiveSessions((prev) => {
+      if (!prev[sessionId]) return prev;
+      if (prev[sessionId].isFormVisible === isVisible) return prev;
+      return {
+        ...prev,
+        [sessionId]: { ...prev[sessionId], isFormVisible: isVisible },
+      };
+    });
+  };
+
+  const addFugaInterval = (
+    sessionId: string,
+    interval: { start: number; end: number },
+  ) => {
+    setActiveSessions((prev) => {
+      if (!prev[sessionId]) return prev;
+      const current = prev[sessionId].fugaIntervals ?? [];
+      return {
+        ...prev,
+        [sessionId]: { ...prev[sessionId], fugaIntervals: [...current, interval] },
+      };
+    });
+  };
+
   const updateTimeElapsed = (sessionId: string, seconds: number) => {
     setActiveSessions((prev) => {
       if (!prev[sessionId]) return prev;
@@ -157,6 +230,8 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
         updateSessionState,
         toggleTimer,
         setTimerVisible,
+        setFormVisible,
+        addFugaInterval,
         closeSession,
         updateTimeElapsed,
       }}

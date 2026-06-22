@@ -1,5 +1,4 @@
 import { colors } from "@/assets/colors";
-import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { AnalysisOptionCard } from "@/features/analysis/components/analysis-option-card";
 import { AppliedProtocolsCard } from "@/features/analysis/components/applied-protocols-card";
@@ -177,7 +176,6 @@ export function StudentAnalysisScreen() {
         </View>
       </ScrollView>
 
-      <Footer />
     </View>
   );
 }

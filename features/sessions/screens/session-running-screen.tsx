@@ -17,22 +17,15 @@ import {
 } from "../components/finish-session-modal";
 import { ReorderModal } from "../components/reorder-modal";
 import { useResumeSession } from "../hooks/use-resume-session";
-import { useSessionGlobalContext } from "../contexts/session-global-context";
+import { formatSessionClock, useSessionGlobalContext } from "../contexts/session-global-context";
 import {
   useSessionFlow,
   type CrisisRecord,
   type ExecutionRecord,
-  type MotivoFinalizacao,
   type MotivoNaoRealizacao,
 } from "../hooks/use-session-flow";
 
-/** Maps early-finish reason labels to the motivo_finalizacao_enum. */
-const MOTIVO_FINALIZACAO_MAP: Record<string, MotivoFinalizacao> = {
-  "Comportamento disruptivo": "comportamento_disruptivo",
-  "Tempo insuficiente": "tempo_esgotado",
-};
-
-/** Maps the result-modal reason labels to the motivo_nao_realizacao_enum. */
+/** Maps the result-modal/finish reason labels to the motivo_nao_realizacao_enum. */
 const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
   "Recusa do aluno": "recusa_aluno",
   "Comportamento disruptivo": "comportamento_disruptivo",
@@ -89,7 +82,7 @@ export function SessionRunningScreen({
   onCompleteSession,
 }: SessionRunningScreenProps) {
   const formRef = useRef<any>(null);
-  const { createSession, persistExecutions, saveSession } = useSessionFlow();
+  const { createSession, persistExecutions, saveSession, finalizeSessionAutoFill } = useSessionFlow();
 
   // ID efetivo da sessão: usa o recebido por parâmetro ou cria um na montagem.
   const [effectiveSessionId, setEffectiveSessionId] = useState<string>(
@@ -103,16 +96,22 @@ export function SessionRunningScreen({
   // o insert caso o usuário finalize antes de ele resolver.
   const createSessionPromiseRef = useRef<Promise<string> | null>(null);
 
-  const { registerSession, updateSessionProgress, updateSessionState, toggleTimer, closeSession, activeSessions, updateTimeElapsed, setTimerVisible } = useSessionGlobalContext();
+  const { registerSession, updateSessionProgress, updateSessionState, toggleTimer, closeSession, activeSessions, updateTimeElapsed, setTimerVisible, setFormVisible, addFugaInterval } = useSessionGlobalContext();
   // Execuções acumuladas (status + dados clínicos) para gravar ao final.
   const executionsRef = useRef<ExecutionRecord[]>([]);
   // Segundos do cronômetro capturados na última parada.
   const lastElapsedSecondsRef = useRef<number | null>(null);
 
-  // Botão de crise: episódios cronometrados de forma oculta, por exercício.
+  // Botões de crise/fuga: episódios cronometrados de forma oculta, por exercício.
+  // Ambos são gravados em comportamentos_sessao (diferenciados pelo campo `tipo`).
   const [isCriseActive, setIsCriseActive] = useState(false);
   const criseStartRef = useRef<number | null>(null);
+  const [isFugaActive, setIsFugaActive] = useState(false);
+  const fugaStartRef = useRef<number | null>(null);
   const crisesRef = useRef<CrisisRecord[]>([]);
+  // Início/fim de cada fuga no cronômetro total da sessão (para a resposta do RC).
+  const fugaStartTotalRef = useRef<number | null>(null);
+  const fugaIntervalsRef = useRef<{ start: number; end: number }[]>([]);
 
   // Encerra a crise em andamento (se houver), retendo a duração para o exercício atual.
   const finalizeActiveCrise = () => {
@@ -120,7 +119,7 @@ export function SessionRunningScreen({
     const durationSeconds = (Date.now() - criseStartRef.current) / 1000;
     crisesRef.current = [
       ...crisesRef.current,
-      { exercicioId: currentExercise.id, durationSeconds },
+      { exercicioId: currentExercise.id, durationSeconds, tipo: "crise" },
     ];
     criseStartRef.current = null;
     setIsCriseActive(false);
@@ -133,6 +132,40 @@ export function SessionRunningScreen({
       setIsCriseActive(true);
     } else {
       finalizeActiveCrise();
+    }
+  };
+
+  // Encerra a fuga em andamento (se houver), retendo a duração para o exercício atual.
+  const finalizeActiveFuga = () => {
+    if (fugaStartRef.current == null) return;
+    const durationSeconds = (Date.now() - fugaStartRef.current) / 1000;
+    crisesRef.current = [
+      ...crisesRef.current,
+      { exercicioId: currentExercise.id, durationSeconds, tipo: "fuga" },
+    ];
+    // Registra o intervalo no cronômetro total (início → fim) para o RC.
+    if (fugaStartTotalRef.current != null) {
+      const interval = {
+        start: fugaStartTotalRef.current,
+        end: currentSessionData?.totalElapsed ?? 0,
+      };
+      fugaIntervalsRef.current = [...fugaIntervalsRef.current, interval];
+      // Também persiste no contexto global (para finalização pelo widget).
+      if (resolvedSid) addFugaInterval(resolvedSid, interval);
+      fugaStartTotalRef.current = null;
+    }
+    fugaStartRef.current = null;
+    setIsFugaActive(false);
+  };
+
+  // Alterna o botão de fuga: inicia uma nova contagem ou pausa a atual.
+  const handleFugaPress = () => {
+    if (fugaStartRef.current == null) {
+      fugaStartRef.current = Date.now();
+      fugaStartTotalRef.current = currentSessionData?.totalElapsed ?? 0;
+      setIsFugaActive(true);
+    } else {
+      finalizeActiveFuga();
     }
   };
 
@@ -198,8 +231,6 @@ export function SessionRunningScreen({
   };
 
   // Resolve a instância de RC da sessão para o formulário inline gravar nela.
-  // Circuitos sem formulario_id configurado não disparam o trigger de criação
-  // de instância — nesses casos cai no template global de RC como fallback.
   useEffect(() => {
     if (!effectiveSessionId) return;
     let active = true;
@@ -208,19 +239,8 @@ export function SessionRunningScreen({
       .select("formulario_id")
       .eq("id", effectiveSessionId)
       .maybeSingle()
-      .then(async ({ data }) => {
-        if (!active) return;
-        if (data?.formulario_id) {
-          setRcFormId(data.formulario_id);
-        } else {
-          const { data: tmpl } = await supabase
-            .from("formularios")
-            .select("id")
-            .eq("tipo", "registro_controle")
-            .is("aluno_id", null)
-            .maybeSingle();
-          if (active && tmpl?.id) setRcFormId(tmpl.id);
-        }
+      .then(({ data }) => {
+        if (active && data?.formulario_id) setRcFormId(data.formulario_id);
       });
     return () => {
       active = false;
@@ -235,7 +255,7 @@ export function SessionRunningScreen({
 
   const [order, setOrder] = useState<SessionExercise[]>(() => {
     if (exercises && exercises.length > 0) return exercises;
-    
+
     if (currentSessionData?.exercisesJson) {
       try {
         const parsed = JSON.parse(currentSessionData.exercisesJson) as SessionExercise[];
@@ -334,8 +354,8 @@ export function SessionRunningScreen({
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTranslateY = useRef(new Animated.Value(20)).current;
 
-  // State for onPressCorner
-  const [isFormVisible, setIsFormVisible] = useState(true);
+  // Visibilidade do RC por sessão (default visível; toggle persiste na sessão).
+  const isFormVisible = currentSessionData?.isFormVisible ?? true;
 
   const triggerToast = () => {
     setShowSuccessToast(true);
@@ -425,7 +445,7 @@ export function SessionRunningScreen({
   // Grava as execuções acumuladas e finaliza a sessão no banco.
   // Se createSession ainda estiver em-flight, aguarda seu resultado antes de prosseguir.
   const persistAndFinish = async (
-    motivoFinalizacao: MotivoFinalizacao | null = null,
+    motivoFinalizacao: MotivoNaoRealizacao | null = null,
     descricaoMotivo: string | null = null,
   ) => {
     let sid = effectiveSessionIdRef.current;
@@ -437,12 +457,43 @@ export function SessionRunningScreen({
         return;
       }
     }
+
+    // Exercícios do circuito que não foram realizados (sem execução) viram
+    // execuções 'nao_realizada', herdando o motivo/descrição da finalização da
+    // sessão. Cobre tanto a conclusão quanto a finalização precoce.
+    const executedIds = new Set(
+      executionsRef.current.map((e) => e.exercicioId),
+    );
+    const unexecuted = order.filter((ex) => !executedIds.has(ex.id));
+    if (unexecuted.length > 0) {
+      const baseOrdem = executionsRef.current.length;
+      const records: ExecutionRecord[] = unexecuted.map((ex, i) => ({
+        exercicioId: ex.id,
+        ordemExecucao: baseOrdem + i + 1,
+        statusRealizacao: "nao_realizada",
+        motivoNaoRealizacao: motivoFinalizacao ?? "outro",
+        descricaoAdicional: descricaoMotivo,
+      }));
+      executionsRef.current = [...executionsRef.current, ...records];
+      try {
+        await persistExecutions(sid, records);
+      } catch (err) {
+        console.error("Erro ao salvar exercícios não realizados:", err);
+      }
+    }
+
     try {
       await saveSession(sid, executionsRef.current, crisesRef.current, {
         status: "concluida",
         motivoFinalizacao,
         descricaoMotivo,
       });
+      // Grava tempo_total e preenche tempo/fugas no RC desta sessão.
+      await finalizeSessionAutoFill(
+        sid,
+        currentSessionData?.totalElapsed ?? 0,
+        fugaIntervalsRef.current,
+      );
       closeSession(sid);
     } catch (err) {
       console.error("Erro ao salvar a sessão:", err);
@@ -467,9 +518,10 @@ export function SessionRunningScreen({
     statusAtual: "concluido" | "nao_realizada" | "adiado",
     record?: Omit<ExecutionRecord, "exercicioId" | "ordemExecucao">,
   ) => {
-    // Garante que qualquer crise em andamento seja atribuída a este exercício
-    // antes de trocar de atividade.
+    // Garante que qualquer crise/fuga em andamento seja atribuída a este
+    // exercício antes de trocar de atividade.
     finalizeActiveCrise();
+    finalizeActiveFuga();
 
     setStage("ready");
     setHasAdvanced(true);
@@ -531,18 +583,13 @@ export function SessionRunningScreen({
           <Text className="text-white text-base text-center font-medium">
             Não foi possível carregar os exercícios do circuito.
           </Text>
-          <Text className="text-white/50 text-xs text-center mt-4">
-            Debug: exercises.length={exercises.length}, sid={sessionId}, 
-            type={circuitType}, circuitId={circuitId}
-            {"\n"}Raw JSON: {currentSessionData?.exercisesJson ?? "undefined in context"}
-          </Text>
         </View>
       </View>
     );
   }
 
   const currentExercise = order[currentIndex];
-  const subtitle = `${effectiveCircuitName} - ${currentIndex + 1}/${total}`;
+  const subtitle = `${effectiveCircuitName} - ${currentIndex + 1}/${total} - ${formatSessionClock(currentSessionData?.totalElapsed ?? 0)}`;
 
   const handleStart = async () => {
     setStage("running");
@@ -579,8 +626,9 @@ export function SessionRunningScreen({
   };
 
   const handleConfirmFinish = (motivo: string) => {
-    // Encerra uma crise eventualmente ativa antes de finalizar a sessão.
+    // Encerra crise/fuga eventualmente ativas antes de finalizar a sessão.
     finalizeActiveCrise();
+    finalizeActiveFuga();
 
     if (formRef.current) {
       formRef.current.handleSave();
@@ -593,7 +641,7 @@ export function SessionRunningScreen({
     );
     const temPendencias = pendentes.length > 0;
 
-    void persistAndFinish(MOTIVO_FINALIZACAO_MAP[motivo] ?? "outro", motivo);
+    void persistAndFinish(MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro", motivo);
     onFinishSession?.(motivo);
     onCompleteSession?.(
       temPendencias,
@@ -647,14 +695,21 @@ export function SessionRunningScreen({
                 variant="form"
                 onPressCrise={handleCrisePress}
                 isCriseActive={isCriseActive}
+                onPressFuga={handleFugaPress}
+                isFugaActive={isFugaActive}
                 onStop={handleStop}
+                onRestart={() => {
+                  if (resolvedSid) updateTimeElapsed(resolvedSid, 0);
+                }}
                 controlledSeconds={controlledSeconds}
                 controlledIsRunning={controlledIsRunning}
                 onToggleRunning={(isRunning) => {
                   if (resolvedSid) toggleTimer(resolvedSid, isRunning);
                 }}
-                isFormVisible={isFormVisible} // Nova prop
-                onPressCorner={() => setIsFormVisible(!isFormVisible)} // Alterna o estado
+                isFormVisible={isFormVisible}
+                onPressCorner={() => {
+                  if (resolvedSid) setFormVisible(resolvedSid, !isFormVisible);
+                }}
               />
             )}
 
@@ -671,6 +726,7 @@ export function SessionRunningScreen({
                   formularioId={rcFormId}
                   sessaoId={effectiveSessionId}
                   alunoId={""}
+                  hideAutoFilledSessionFields
                 />
               </View>
             )}
