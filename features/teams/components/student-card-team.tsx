@@ -60,7 +60,7 @@ export function StudentCardTeam({
           Nenhum aluno na equipe. Cadastre novos alunos.
         </Text>
       ) : (
-        <View>
+        <View className="gap-2">
           {students.map((student) => (
             <StudentItemTeam
               key={student.id}

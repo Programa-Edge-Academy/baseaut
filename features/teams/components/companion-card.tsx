@@ -52,7 +52,7 @@ export function CompanionCard({
           o código da equipe.
         </Text>
       ) : (
-        <View>
+        <View className="gap-2">
           {companions.map((companion, index) => (
             <React.Fragment key={companion.id}>
               <CompanionItem
