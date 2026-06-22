@@ -32,6 +32,8 @@ export interface BaseQuestion {
  */
 export interface OpenQuestion extends BaseQuestion {
   type: "open";
+  /** Quando true, aceita apenas números (single-line + teclado numérico). */
+  numeric?: boolean;
 }
 
 /**
