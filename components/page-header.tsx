@@ -231,27 +231,44 @@ export function PageHeader({
       case "historico-estudante":
         return (
           <View className="flex-row items-center gap-3">
-            <Pressable
-              onPress={onSharePress}
-              className="items-center justify-center rounded-[10px] border p-2.5 active:opacity-70"
-              style={{
-                borderColor: colors.secondary,
-                backgroundColor: withOpacity(colors.secondary, 0.1),
-              }}
-            >
-              <Share2 size={16} color={colors.secondary} />
-            </Pressable>
+            {onEditPress && (
+              <Pressable
+                onPress={onEditPress}
+                className="items-center justify-center rounded-[10px] border p-2.5 active:opacity-70"
+                style={{
+                  borderColor: colors.primary,
+                  backgroundColor: withOpacity(colors.primary, 0.1),
+                }}
+              >
+                <Edit2 size={16} color={colors.primary} />
+              </Pressable>
+            )}
 
-            <Pressable
-              onPress={onDeletePress}
-              className="items-center justify-center rounded-[10px] border p-2.5 active:opacity-70"
-              style={{
-                borderColor: colors.error,
-                backgroundColor: withOpacity(colors.error, 0.1),
-              }}
-            >
-              <Trash2 size={16} color={colors.error} />
-            </Pressable>
+            {onSharePress && (
+              <Pressable
+                onPress={onSharePress}
+                className="items-center justify-center rounded-[10px] border p-2.5 active:opacity-70"
+                style={{
+                  borderColor: colors.secondary,
+                  backgroundColor: withOpacity(colors.secondary, 0.1),
+                }}
+              >
+                <Share2 size={16} color={colors.secondary} />
+              </Pressable>
+            )}
+
+            {onDeletePress && (
+              <Pressable
+                onPress={onDeletePress}
+                className="items-center justify-center rounded-[10px] border p-2.5 active:opacity-70"
+                style={{
+                  borderColor: colors.error,
+                  backgroundColor: withOpacity(colors.error, 0.1),
+                }}
+              >
+                <Trash2 size={16} color={colors.error} />
+              </Pressable>
+            )}
           </View>
         );
 
