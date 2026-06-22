@@ -1,19 +1,36 @@
 import React, { useState } from "react";
-import { Alert } from "react-native";
 import { usePathname, useRouter } from "expo-router";
 import { useSessionGlobalContext } from "../contexts/session-global-context";
-import { useSessionFlow } from "../hooks/use-session-flow";
+import {
+  useSessionFlow,
+  type MotivoNaoRealizacao,
+} from "../hooks/use-session-flow";
+import {
+  DEFAULT_FINISH_MOTIVOS,
+  FinishSessionModal,
+} from "./finish-session-modal";
 import { SessionResumeWidget } from "@/components/session-resume-widget";
+
+/** Mapeia os rótulos do modal de finalização para o motivo_nao_realizacao_enum. */
+const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
+  "Recusa do aluno": "recusa_aluno",
+  "Comportamento disruptivo": "comportamento_disruptivo",
+  "Fadiga ou cansaço": "fadiga_cansaco",
+  "Tempo insuficiente": "tempo_insuficiente",
+  "Dificuldade física": "dificuldade_fisica",
+  Outro: "outro",
+};
 
 export function GlobalSessionWidget() {
   const { activeSessions, toggleTimer, closeSession } = useSessionGlobalContext();
-  const { finishSession } = useSessionFlow();
+  const { finishSessionAndSaveUnexecuted, finalizeSessionAutoFill } = useSessionFlow();
   const router = useRouter();
   const pathname = usePathname();
 
   // Usar estado local para navegar entre as sessões múltiplas
   // MUST be before any conditional returns (Rules of Hooks)
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFinishOpen, setIsFinishOpen] = useState(false);
 
   // Restringir a exibição apenas nas telas iniciais (abas principais) e na tela de seleção de circuito
   const isRootScreen = pathname === "/students" || pathname === "/exercises" || pathname === "/analysis" || pathname === "/circuit-selection";
@@ -27,7 +44,7 @@ export function GlobalSessionWidget() {
     const session = activeSessions[id];
     return !session.isTimerVisibleOnScreen;
   });
-  
+
   if (sessionIds.length === 0) {
     return null;
   }
@@ -91,36 +108,44 @@ export function GlobalSessionWidget() {
     }
   };
 
-  const handleClose = () => {
-    Alert.alert(
-      "Cancelar sessão",
-      "Tem certeza que deseja cancelar esta sessão? Os exercícios já realizados serão mantidos, mas a sessão será encerrada.",
-      [
-        { text: "Não, continuar", style: "cancel" },
-        {
-          text: "Sim, cancelar",
-          style: "destructive",
-          onPress: () => {
-            void finishSession(sessionData.sessionId, { status: "cancelada" });
-            closeSession(sessionData.sessionId);
-          },
-        },
-      ]
-    );
+  // Finaliza pelo widget como uma finalização NORMAL de sessão (concluida),
+  // usando o mesmo modal de motivo da execução — não cancela mais a sessão.
+  const handleConfirmFinish = (motivo: string) => {
+    setIsFinishOpen(false);
+    const sid = sessionData.sessionId;
+    const total = sessionData.totalElapsed ?? 0;
+    const fugas = sessionData.fugaIntervals ?? [];
+    const motivoEnum = MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro";
+    void (async () => {
+      // Conclui a sessão (salvando exercícios não realizados no estruturado).
+      await finishSessionAndSaveUnexecuted(sid, motivoEnum, motivo);
+      // Replica tempo total e fugas (do contexto global) no RC.
+      await finalizeSessionAutoFill(sid, total, fugas);
+    })();
+    closeSession(sid);
   };
 
   return (
-    <SessionResumeWidget
-      mode={mode}
-      studentName={sessionData.studentName}
-      exerciseProgress={sessionData.exerciseProgress}
-      timeElapsed={formatTime(sessionData.timeElapsed)}
-      isPlaying={sessionData.isRunning}
-      onTogglePlay={() => toggleTimer(sessionData.sessionId)}
-      onPress={handlePress}
-      onClose={handleClose}
-      onNext={handleNext}
-      onPrev={handlePrev}
-    />
+    <>
+      <SessionResumeWidget
+        mode={mode}
+        studentName={sessionData.studentName}
+        exerciseProgress={sessionData.exerciseProgress}
+        timeElapsed={formatTime(sessionData.timeElapsed)}
+        isPlaying={sessionData.isRunning}
+        onTogglePlay={() => toggleTimer(sessionData.sessionId)}
+        onPress={handlePress}
+        onClose={() => setIsFinishOpen(true)}
+        onNext={handleNext}
+        onPrev={handlePrev}
+      />
+
+      <FinishSessionModal
+        visible={isFinishOpen}
+        motivos={DEFAULT_FINISH_MOTIVOS}
+        onClose={() => setIsFinishOpen(false)}
+        onConfirm={handleConfirmFinish}
+      />
+    </>
   );
 }
