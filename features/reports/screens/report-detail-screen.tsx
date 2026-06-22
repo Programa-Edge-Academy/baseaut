@@ -21,7 +21,7 @@ import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { BarChart3 } from "lucide-react-native";
 import React, { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from "react-native";
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("pt-BR");
@@ -91,11 +91,14 @@ export function ReportDetailScreen() {
     created_at: "",
   };
 
-  const handleExport = async (formats: { pdf: boolean; csv: boolean }) => {
+  const handleExport = async (
+    formats: { pdf: boolean; csv: boolean },
+    deliveryMode: "share" | "download" = "share",
+  ) => {
     setIsFormatPickerOpen(false);
     try {
       setExporting(true);
-      await exportReports([currentReport], formats, titulo ?? "", studentId ?? "");
+      await exportReports([currentReport], formats, titulo ?? "", studentId ?? "", deliveryMode);
       setToast({ visible: true, mode: "success", title: "Relatório exportado!" });
     } catch (err: any) {
       setToast({ visible: true, mode: "error", title: "Erro ao exportar", description: err?.message });
@@ -358,7 +361,7 @@ export function ReportDetailScreen() {
   );
 }
 
-function FormatPicker({ onExport, onClose }: { onExport: (f: { pdf: boolean; csv: boolean }) => void; onClose: () => void }) {
+function FormatPicker({ onExport, onClose }: { onExport: (f: { pdf: boolean; csv: boolean }, mode: "share" | "download") => void; onClose: () => void }) {
   const [pdf, setPdf] = useState(true);
   const [csv, setCsv] = useState(false);
   return (
@@ -378,9 +381,14 @@ function FormatPicker({ onExport, onClose }: { onExport: (f: { pdf: boolean; csv
           <Text className="text-white text-default-1">CSV (dados tabulares)</Text>
         </Pressable>
       </View>
-      <View className="flex-row gap-3">
-        <DefaultButton label="Cancelar" onPress={onClose} bgColorClass="bg-level1" shadowClass="" sizeClass="flex-1 h-11" className="border border-outline" textClassName="text-muted" />
-        <DefaultButton label="Exportar" onPress={() => onExport({ pdf, csv })} sizeClass="flex-1 h-11" bgColorClass="bg-primary" hasShadow />
+      <View className="gap-3">
+        <View className="flex-row gap-3">
+          <DefaultButton label="Cancelar" onPress={onClose} bgColorClass="bg-level1" shadowClass="" sizeClass="flex-1 h-11" className="border border-outline" textClassName="text-muted" />
+          <DefaultButton label="Exportar" onPress={() => onExport({ pdf, csv }, "share")} sizeClass="flex-1 h-11" bgColorClass="bg-primary" hasShadow />
+        </View>
+        {Platform.OS === "android" && (
+          <DefaultButton label="Apenas baixar" onPress={() => onExport({ pdf, csv }, "download")} sizeClass="w-full h-11" bgColorClass="bg-level1" isOutline={true} outlineBorderClass="border-outline" hasShadow={false} className="border border-outline" textClassName="text-white" />
+        )}
       </View>
     </Pressable>
   );

@@ -81,7 +81,7 @@ export function StudentsScreen() {
               <ListCard
                 title={item.name}
                 pendencyAlert={item.pendencyAlert}
-                subtitle={`${item.age} anos · ${item.weight}kg · ${item.height}cm · ${formatSupportLevel(item.supportLevel)}`}
+                subtitle={`${item.age} anos · ${item.weight ? `${item.weight}kg · ` : ''}${item.height ? `${(item.height/100).toFixed(2)}m · ` : ''}${item.waist ? `${item.waist}cm · ` : ''}${formatSupportLevel(item.supportLevel)}`}
                 icon={
                   item.avatarUrl ? (
                     <Image
