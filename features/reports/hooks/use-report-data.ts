@@ -117,17 +117,30 @@ export function useReportData(studentId: string, dataInicio: string, dataFim: st
 
 const BEHAVIOR_MAP: Record<string, string> = {
   estereotipia: "stereotypy",
-  contato_visual: "eye_contact",
   engajamento: "engagement",
   fuga: "escape",
   crise: "crisis",
+  inapto: "unfit",
+  atividade_preferencial: "preferred_activity",
 };
+
+/** Resolve o tipo de gráfico, separando contato visual por pessoas/objetos. */
+function resolveBehaviorType(tipo: string, observacao: string | null): string | undefined {
+  if (tipo === "contato_visual") {
+    const obs = (observacao ?? "").toLowerCase();
+    if (obs.includes("objeto")) return "eye_contact_objects";
+    if (obs.includes("pessoa")) return "eye_contact_people";
+    return undefined;
+  }
+  return BEHAVIOR_MAP[tipo];
+}
 
 async function fetchBehaviors(studentId: string, inicio: string, fim: string) {
   const { data: sessoes } = await supabase
     .from("sessoes")
     .select("id, data_inicio")
     .eq("aluno_id", studentId)
+    .eq("status", "concluida")
     .gte("data_inicio", inicio)
     .lte("data_inicio", fim);
 
@@ -141,13 +154,13 @@ async function fetchBehaviors(studentId: string, inicio: string, fim: string) {
 
   const { data } = await supabase
     .from("comportamentos_sessao")
-    .select("tipo, sessao_id")
+    .select("tipo, sessao_id, observacao")
     .in("sessao_id", ids)
     .neq("tipo", "outro");
 
   const grouped: Record<string, Record<string, number>> = {};
   (data ?? []).forEach((b: any) => {
-    const frontendType = BEHAVIOR_MAP[b.tipo];
+    const frontendType = resolveBehaviorType(b.tipo, b.observacao);
     if (!frontendType) return;
     const date = sessionDateMap[b.sessao_id] ?? inicio;
     const key = `${frontendType}__${date}`;

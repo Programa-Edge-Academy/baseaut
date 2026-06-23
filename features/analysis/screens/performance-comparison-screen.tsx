@@ -194,17 +194,23 @@ export function PerformanceComparisonScreen() {
 
     const comportamentosP1 =
       (comportamentos?.estereotipia?.p1 || 0) +
-      (comportamentos?.contato_visual?.p1 || 0) +
+      (comportamentos?.contato_visual_pessoas?.p1 || 0) +
+      (comportamentos?.contato_visual_objetos?.p1 || 0) +
       (comportamentos?.engajamento?.p1 || 0) +
       (comportamentos?.fuga?.p1 || 0) +
-      (comportamentos?.crise?.p1 || 0);
+      (comportamentos?.crise?.p1 || 0) +
+      (comportamentos?.inapto?.p1 || 0) +
+      (comportamentos?.atividade_preferencial?.p1 || 0);
 
     const comportamentosP2 =
       (comportamentos?.estereotipia?.p2 || 0) +
-      (comportamentos?.contato_visual?.p2 || 0) +
+      (comportamentos?.contato_visual_pessoas?.p2 || 0) +
+      (comportamentos?.contato_visual_objetos?.p2 || 0) +
       (comportamentos?.engajamento?.p2 || 0) +
       (comportamentos?.fuga?.p2 || 0) +
-      (comportamentos?.crise?.p2 || 0);
+      (comportamentos?.crise?.p2 || 0) +
+      (comportamentos?.inapto?.p2 || 0) +
+      (comportamentos?.atividade_preferencial?.p2 || 0);
 
     return [
       {
