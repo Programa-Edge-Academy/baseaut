@@ -149,10 +149,8 @@ export function StudentAnalysisScreen() {
                 <AppliedProtocolsCard
                   carsStatus={protocolStatuses.cars}
                   ataStatus={protocolStatuses.ata}
-                  mabcStatus={protocolStatuses.mabc2}
                   onCarsPress={() => openProtocol("cars")}
                   onAtaPress={() => openProtocol("ata")}
-                  onMabcPress={() => openProtocol("mabc2")}
                 />
 
                 {isAuthorized && (

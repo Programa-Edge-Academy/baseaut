@@ -5,8 +5,9 @@ import { ProtocolVisualizationScreen } from "@/features/analysis/screens/protoco
 import type { ProtocolTipo } from "@/features/analysis/hooks/use-protocol-records";
 
 export default function ProtocolViewRoute() {
-  const { studentName, tipo, recordId, label, dateLabel, scoreLabel } =
+  const { studentId, studentName, tipo, recordId, label, dateLabel, scoreLabel } =
     useLocalSearchParams<{
+      studentId: string;
       studentName: string;
       tipo: ProtocolTipo;
       recordId: string;
@@ -19,6 +20,7 @@ export default function ProtocolViewRoute() {
     <ProtocolVisualizationScreen
       tipo={(tipo as ProtocolTipo) || "ata"}
       recordId={(recordId as string) || ""}
+      studentId={(studentId as string) || ""}
       studentName={studentName || "Aluno"}
       label={label}
       dateLabel={dateLabel}
