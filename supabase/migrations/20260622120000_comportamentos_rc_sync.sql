@@ -50,6 +50,7 @@ BEGIN
   DELETE FROM public.comportamentos_sessao
   WHERE sessao_id = p_sessao_id
     AND tipo IN ('contato_visual', 'estereotipia', 'inapto', 'atividade_preferencial');
+    AND execucao_id IS NULL;
 
   -- Sim/Não → contato_visual / atividade_preferencial.
   INSERT INTO public.comportamentos_sessao (sessao_id, tipo, observacao)
