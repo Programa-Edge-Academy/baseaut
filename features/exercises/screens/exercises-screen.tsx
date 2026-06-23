@@ -194,51 +194,52 @@ export function ExercisesScreen() {
     }
 
     return (
-      <DataList
-        className="mt-5 px-8"
-        data={filteredExercises}
-        emptyMessage="Nenhum exercício encontrado."
-        onRefresh={refresh}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => {
-          const subtitleParts = [
-            item.description,
-            formatDuration(item.durationSeconds),
-            item.tag,
-          ]
-            .filter(Boolean)
-            .join(" · ");
+      <View className="mt-5 px-8">
+        <DataList
+          data={filteredExercises}
+          emptyMessage="Nenhum exercício encontrado."
+          onRefresh={refresh}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => {
+            const subtitleParts = [
+              item.description,
+              formatDuration(item.durationSeconds),
+              item.tag,
+            ]
+              .filter(Boolean)
+              .join(" · ");
 
-          return (
-            <ListCard
-              title={item.name}
-              subtitle={subtitleParts}
-              onPress={() => setExerciseToEdit(item)}
-              icon={
-                item.iconUrl ? (
-                  <Image
-                    source={{ uri: item.iconUrl }}
-                    style={{ width: "100%", height: "100%", borderRadius: 12 }}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <Dumbbell size={20} color={colors.secondary} />
-                )
-              }
-              iconBgColor={
-                item.iconUrl
-                  ? "transparent"
-                  : withOpacity(colors.secondary, 0.15)
-              }
-              showDuplicate
-              onEdit={() => setExerciseToEdit(item)}
-              onDuplicate={() => handleDuplicate(item)}
-              onDelete={() => handleDeleteRequest(item)}
-              enableRipple={true}
-            />
-          );
-        }}
-      />
+            return (
+              <ListCard
+                title={item.name}
+                subtitle={subtitleParts}
+                onPress={() => setExerciseToEdit(item)}
+                icon={
+                  item.iconUrl ? (
+                    <Image
+                      source={{ uri: item.iconUrl }}
+                      style={{ width: "100%", height: "100%", borderRadius: 12 }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Dumbbell size={20} color={colors.secondary} />
+                  )
+                }
+                iconBgColor={
+                  item.iconUrl
+                    ? "transparent"
+                    : withOpacity(colors.secondary, 0.15)
+                }
+                showDuplicate
+                onEdit={() => setExerciseToEdit(item)}
+                onDuplicate={() => handleDuplicate(item)}
+                onDelete={() => handleDeleteRequest(item)}
+                enableRipple={true}
+              />
+            );
+          }}
+        />
+      </View>
     );
   };
 

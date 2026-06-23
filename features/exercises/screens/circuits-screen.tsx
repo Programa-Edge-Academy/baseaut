@@ -136,54 +136,55 @@ export function CircuitsScreen() {
     }
 
     return (
-      <DataList
-        className="mt-5 px-8"
-        data={filteredCircuits}
-        emptyMessage="Nenhum circuito encontrado."
-        onRefresh={refresh}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => {
-          const isMabc = item.type === "mabc_1" || item.type === "mabc_2" || item.type === "mabc_3";
-          const isStructured = item.executionMode === "estruturado";
+      <View className="mt-5 px-8">
+        <DataList
+          data={filteredCircuits}
+          emptyMessage="Nenhum circuito encontrado."
+          onRefresh={refresh}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => {
+            const isMabc = item.type === "mabc_1" || item.type === "mabc_2" || item.type === "mabc_3";
+            const isStructured = item.executionMode === "estruturado";
 
-          let iconColor = isStructured ? colors.primary : colors.extra || "#EAB308";
-          let iconComponent = !isStructured
-            ? <Shuffle size={20} color={iconColor} /> 
-            : <Share2 size={20} color={iconColor} />;
-            
-          let badgeLabel = isStructured ? "Estruturado" : "Semi-estruturado";
+            let iconColor = isStructured ? colors.primary : colors.extra || "#EAB308";
+            let iconComponent = !isStructured
+              ? <Shuffle size={20} color={iconColor} /> 
+              : <Share2 size={20} color={iconColor} />;
+              
+            let badgeLabel = isStructured ? "Estruturado" : "Semi-estruturado";
 
-          if (isMabc) {
-            if (item.type === "mabc_1") {
-              iconColor = colors.mabc1;
-            } else if (item.type === "mabc_2") {
-              iconColor = colors.mabc2;
-            } else {
-              iconColor = colors.mabc3;
+            if (isMabc) {
+              if (item.type === "mabc_1") {
+                iconColor = colors.mabc1;
+              } else if (item.type === "mabc_2") {
+                iconColor = colors.mabc2;
+              } else {
+                iconColor = colors.mabc3;
+              }
+              iconComponent = <ClipboardList size={20} color={iconColor} />;
+              badgeLabel = "MABC-2";
             }
-            iconComponent = <ClipboardList size={20} color={iconColor} />;
-            badgeLabel = "MABC-2";
-          }
 
-          const subtitleText = `${item.exercisesCount} exercícios · ${item.exercisesSummary}`;
+            const subtitleText = `${item.exercisesCount} exercícios · ${item.exercisesSummary}`;
 
-          return (
-            <ListCard
-              title={item.name}
-              subtitle={subtitleText}
-              icon={iconComponent}
-              iconBgColor={withOpacity(iconColor, 0.15)}
-              badge={{ label: badgeLabel, color: iconColor }}
-              showDuplicate={!isMabc}
-              onPress={isMabc ? () => setCircuitToView(item) : () => setCircuitToEdit(item)}
-              onEdit={isMabc ? undefined : () => setCircuitToEdit(item)}
-              onDuplicate={isMabc ? undefined : () => handleDuplicate(item)}
-              onDelete={isMabc ? undefined : () => setCircuitToDelete(item)}
-              enableRipple={true}
-            />
-          );
-        }}
-      />
+            return (
+              <ListCard
+                title={item.name}
+                subtitle={subtitleText}
+                icon={iconComponent}
+                iconBgColor={withOpacity(iconColor, 0.15)}
+                badge={{ label: badgeLabel, color: iconColor }}
+                showDuplicate={!isMabc}
+                onPress={isMabc ? () => setCircuitToView(item) : () => setCircuitToEdit(item)}
+                onEdit={isMabc ? undefined : () => setCircuitToEdit(item)}
+                onDuplicate={isMabc ? undefined : () => handleDuplicate(item)}
+                onDelete={isMabc ? undefined : () => setCircuitToDelete(item)}
+                enableRipple={true}
+              />
+            );
+          }}
+        />
+      </View>
     );
   };
 
