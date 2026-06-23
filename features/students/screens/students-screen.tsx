@@ -65,13 +65,13 @@ export function StudentsScreen() {
           />
         </View>
 
+        <View className="mx-8 mt-5">
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
           <DataList
-            className="mx-8 mt-5"
             data={filteredStudents}
             keyExtractor={(item) => item.id}
             emptyMessage="Nenhum aluno encontrado."
@@ -111,6 +111,7 @@ export function StudentsScreen() {
             )}
           />
         )}
+        </View>
       </View>
       <Footer />
 
