@@ -8,6 +8,7 @@ import {
 } from "@/features/exercises/components/activity-result-modal";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { resolveEngagementExerciseId } from "@/lib/resolve-engagement-exercise";
+import { supabase } from "@/lib/supabase";
 import {
   useSessionFlow,
   type ExecutionRecord,
@@ -132,37 +133,52 @@ export function EngagementActivityScreen() {
   // Grava a atividade de engajamento como uma execução (exercício-sentinela).
   const persistEngagement = async (
     record: Omit<ExecutionRecord, "exercicioId" | "ordemExecucao">,
-  ) => {
+  ): Promise<string | null> => {
     const exercicioId = engagementExerciseIdRef.current;
-    if (!sessionId || !exercicioId) return;
+    if (!sessionId || !exercicioId) return null;
     ordemRef.current += 1;
     try {
-      await persistExecutions(sessionId, [
+      const inserted = await persistExecutions(sessionId, [
         {
           exercicioId,
           ordemExecucao: ordemRef.current,
           ...record,
         },
       ]);
+      return inserted[0]?.id ?? null;
     } catch (err) {
       console.error("Erro ao salvar atividade de engajamento:", err);
+      return null;
     }
   };
 
-  const handleResult = (
+  const handleResult = async (
     status: "concluido" | "nao_realizada" | "adiado",
     options?: { motivo?: string; descricao?: string; result?: ActivityResultData },
   ) => {
     const duracao = lastElapsedSecondsRef.current;
 
     if (status === "concluido") {
-      void persistEngagement({
+      const execId = await persistEngagement({
         statusRealizacao: "realizada",
         nivelDesenvolvimento: options?.result?.nivelDesenvolvimento ?? null,
         registroAjuda: options?.result?.registroAjuda ?? null,
         complementosAjuda: options?.result?.subCategorias ?? null,
         duracaoRealSegundos: duracao,
       });
+      // Toda atividade de engajamento realizada gera um comportamento do tipo
+      // "engajamento", vinculado à execução (e, por ela, à sessão).
+      if (sessionId && execId) {
+        const { error } = await supabase.from("comportamentos_sessao").insert({
+          sessao_id: sessionId,
+          execucao_id: execId,
+          tipo: "engajamento",
+          duracao_segundos: duracao != null ? Math.round(duracao) : null,
+        });
+        if (error) {
+          console.error("Erro ao registrar comportamento de engajamento:", error);
+        }
+      }
     } else if (status === "nao_realizada") {
       void persistEngagement({
         statusRealizacao: "nao_realizada",

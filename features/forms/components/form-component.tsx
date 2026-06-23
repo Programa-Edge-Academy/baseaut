@@ -253,6 +253,15 @@ export const FormComponent = forwardRef(function FormComponent(
           .upsert(payloadRespostas, { onConflict: "sessao_id, pergunta_id" });
 
         if (error) throw error;
+
+        // RC salvo sem pendências (chegou até aqui) → (re)sincroniza os
+        // comportamentos derivados do RC (contato visual, estereotipias,
+        // inaptos, atividades preferenciais) na tabela comportamentos_sessao.
+        const { error: syncError } = await supabase.rpc(
+          "sincronizar_comportamentos_rc",
+          { p_sessao_id: sessaoId },
+        );
+        if (syncError) console.error("Erro ao sincronizar comportamentos do RC:", syncError);
       } else {
         // ATA/CARS (vinculados só ao aluno): sessao_id é nulo, então a constraint
         // acima não deduplica. Substituímos todas as respostas da instância.
