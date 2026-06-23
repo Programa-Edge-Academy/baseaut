@@ -117,14 +117,17 @@ export function ObservedBehaviorsScreen() {
       lastOccurrence: string;
     }[] = [];
 
-    const keys: BehaviorType[] = ["stereotypy", "eye_contact", "engagement", "escape", "crisis"];
+    const keys: BehaviorType[] = ["stereotypy", "eye_contact_people", "eye_contact_objects", "engagement", "escape", "crisis", "unfit", "preferred_activity"];
 
     const configMap: Record<BehaviorType, { label: string; color: string }> = {
       stereotypy: { label: "Estereotipias", color: "#09CDDB" },
-      eye_contact: { label: "Contato visual", color: "#DBBF09" },
+      eye_contact_people: { label: "Contato visual (Pessoas)", color: "#DBBF09" },
+      eye_contact_objects: { label: "Contato visual (Objetos)", color: "#A6900A" },
       engagement: { label: "Engajamento", color: "#34C759" },
       escape: { label: "Fuga", color: "#CB30E0" },
       crisis: { label: "Crises", color: "#FF383C" },
+      unfit: { label: "Comportamentos inaptos", color: "#FF8A00" },
+      preferred_activity: { label: "Atividades preferenciais", color: "#1E88E5" },
     };
 
     keys.forEach((key) => {
@@ -225,8 +228,9 @@ export function ObservedBehaviorsScreen() {
     );
   }
 
-  // Cenario: Sem comportamentos observados no período
-  if (showResults && filteredRecords.length === 0) {
+  // Cenario: Sem comportamentos observados no período (apenas após o loading
+  // confirmar que não há registros).
+  if (showResults && !isLoading && !hasError && filteredRecords.length === 0) {
     return (
       <View className="flex-1 bg-level1">
         <NoRecordsScreen

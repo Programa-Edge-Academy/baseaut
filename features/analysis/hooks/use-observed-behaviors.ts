@@ -17,11 +17,29 @@ import {
  */
 const TIPO_TO_BEHAVIOR_TYPE: Record<string, BehaviorType | undefined> = {
   estereotipia: "stereotypy",
-  contato_visual: "eye_contact",
   engajamento: "engagement",
   fuga: "escape",
   crise: "crisis",
+  inapto: "unfit",
+  atividade_preferencial: "preferred_activity",
 };
+
+/**
+ * Resolve o BehaviorType de uma linha de comportamento. O contato visual é
+ * separado em "pessoas" e "objetos" através da coluna `observacao`.
+ */
+function resolveBehaviorType(
+  tipo: string,
+  observacao: string | null,
+): BehaviorType | undefined {
+  if (tipo === "contato_visual") {
+    const obs = (observacao ?? "").toLowerCase();
+    if (obs.includes("objeto")) return "eye_contact_objects";
+    if (obs.includes("pessoa")) return "eye_contact_people";
+    return undefined;
+  }
+  return TIPO_TO_BEHAVIOR_TYPE[tipo];
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -78,11 +96,14 @@ export function useObservedBehaviors(
       endPlusOne.setDate(endPlusOne.getDate() + 1);
       const endISO = toISODate(endPlusOne);
 
-      // 1. Sessões do aluno no período selecionado
+      // 1. Sessões concluídas do aluno no período selecionado.
+      //    Sessões canceladas/desativadas são ignoradas, de modo que seus
+      //    comportamentos não são contabilizados em nenhum lugar.
       const { data: sessionsData, error: sessionsError } = await supabase
         .from("sessoes")
         .select("id, data_inicio")
         .eq("aluno_id", studentId)
+        .eq("status", "concluida")
         .gte("data_inicio", startISO)
         .lt("data_inicio", endISO);
 
@@ -104,7 +125,7 @@ export function useObservedBehaviors(
       // 2. Comportamentos dessas sessões (excluindo "outro")
       const { data: behaviorsData, error: behaviorsError } = await supabase
         .from("comportamentos_sessao")
-        .select("id, tipo, execucao_id, sessao_id")
+        .select("id, tipo, execucao_id, sessao_id, observacao")
         .in("sessao_id", sessionIds)
         .neq("tipo", "outro");
 
@@ -156,7 +177,7 @@ export function useObservedBehaviors(
       >();
 
       behaviorsList.forEach((b: any) => {
-        const behaviorType = TIPO_TO_BEHAVIOR_TYPE[b.tipo];
+        const behaviorType = resolveBehaviorType(b.tipo, b.observacao);
         if (!behaviorType) return;
 
         const sessionDate = sessionDateMap.get(b.sessao_id);
@@ -188,7 +209,7 @@ export function useObservedBehaviors(
       const exercisesMap: Record<string, string[]> = {};
 
       behaviorsList.forEach((b: any) => {
-        const behaviorType = TIPO_TO_BEHAVIOR_TYPE[b.tipo];
+        const behaviorType = resolveBehaviorType(b.tipo, b.observacao);
         if (!behaviorType || !b.execucao_id) return;
 
         const exerciseName = exerciseNameByExecId.get(b.execucao_id);

@@ -13,10 +13,13 @@ export interface BehaviorPeriodData {
 export type ComparisonBehaviorsProps = {
   data?: {
     estereotipia?: BehaviorPeriodData | null;
-    contato_visual?: BehaviorPeriodData | null;
+    contato_visual_pessoas?: BehaviorPeriodData | null;
+    contato_visual_objetos?: BehaviorPeriodData | null;
     engajamento?: BehaviorPeriodData | null;
     fuga?: BehaviorPeriodData | null;
     crise?: BehaviorPeriodData | null;
+    inapto?: BehaviorPeriodData | null;
+    atividade_preferencial?: BehaviorPeriodData | null;
   } | null;
 };
 
@@ -60,9 +63,15 @@ export function ComparisonBehaviors({ data }: ComparisonBehaviorsProps) {
         />
 
         <ComparisonCard
-          title="Contato visual"
-          period1={{ value: data?.contato_visual?.p1 ?? 0 }}
-          period2={{ value: data?.contato_visual?.p2 ?? 0 }}
+          title="Contato visual (Pessoas)"
+          period1={{ value: data?.contato_visual_pessoas?.p1 ?? 0 }}
+          period2={{ value: data?.contato_visual_pessoas?.p2 ?? 0 }}
+        />
+
+        <ComparisonCard
+          title="Contato visual (Objetos)"
+          period1={{ value: data?.contato_visual_objetos?.p1 ?? 0 }}
+          period2={{ value: data?.contato_visual_objetos?.p2 ?? 0 }}
         />
 
         <ComparisonCard
@@ -81,6 +90,18 @@ export function ComparisonBehaviors({ data }: ComparisonBehaviorsProps) {
           title="Crises"
           period1={{ value: data?.crise?.p1 ?? 0 }}
           period2={{ value: data?.crise?.p2 ?? 0 }}
+        />
+
+        <ComparisonCard
+          title="Comportamentos inaptos"
+          period1={{ value: data?.inapto?.p1 ?? 0 }}
+          period2={{ value: data?.inapto?.p2 ?? 0 }}
+        />
+
+        <ComparisonCard
+          title="Atividades preferenciais"
+          period1={{ value: data?.atividade_preferencial?.p1 ?? 0 }}
+          period2={{ value: data?.atividade_preferencial?.p2 ?? 0 }}
         />
       </View>
 
