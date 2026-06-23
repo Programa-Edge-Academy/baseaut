@@ -1,7 +1,9 @@
 import { colors } from "@/assets/colors";
 import { Header } from "@/components/header";
+import { useGlobalToast } from "@/components/global-toast";
+import { FormComponent } from "@/features/forms/components/form-component";
 import { ClipboardList } from "lucide-react-native";
-import React from "react";
+import React, { useRef, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 
 import { Mabc2MotorDevelopmentCard } from "../components/mabc2-motor-development-card";
@@ -68,22 +70,10 @@ function RecordHeaderCard({
   );
 }
 
-function ScoreBadge({ label }: { label: string }) {
-  return (
-    <View
-      className="min-w-[34px] items-center justify-center rounded-lg px-2 py-1"
-      style={{ backgroundColor: `${colors.secondary}26` }}
-    >
-      <Text className="text-sm font-bold" style={{ color: colors.secondary }}>
-        {label}
-      </Text>
-    </View>
-  );
-}
-
 export type ProtocolVisualizationScreenProps = {
   tipo: ProtocolTipo;
   recordId: string;
+  studentId?: string;
   studentName: string;
   label?: string;
   dateLabel?: string;
@@ -94,6 +84,7 @@ export type ProtocolVisualizationScreenProps = {
 export function ProtocolVisualizationScreen({
   tipo,
   recordId,
+  studentId,
   studentName,
   label,
   dateLabel,
@@ -102,7 +93,92 @@ export function ProtocolVisualizationScreen({
 }: ProtocolVisualizationScreenProps) {
   const { detail, isLoading, error } = useProtocolRecordDetail(tipo, recordId);
   const protocolLabel = PROTOCOL_LABELS[tipo];
+  const { showToast } = useGlobalToast();
+  const formRef = useRef<any>(null);
+  const [saving, setSaving] = useState(false);
 
+  // ATA/CARS são vinculados ao aluno e podem ser visualizados e editados aqui
+  // mesmo (cada pergunta com sua nota e observação). MABC-2 segue somente leitura.
+  const isEditable = tipo === "ata" || tipo === "cars";
+
+  const handleSave = async () => {
+    if (!formRef.current || saving) return;
+    setSaving(true);
+    const result = await formRef.current.handleSave(true);
+    setSaving(false);
+
+    if (result?.success) {
+      onPressBack?.();
+      showToast({
+        mode: "success",
+        title: "Formulário salvo",
+        description: "As respostas foram salvas com sucesso!",
+      });
+    } else if (result) {
+      showToast({
+        mode: "error",
+        title: result.title || "Erro ao salvar",
+        description: result.description,
+      });
+    }
+  };
+
+  // ── Caminho editável: ATA/CARS ────────────────────────────────────────────
+  if (isEditable) {
+    const totalLabel =
+      tipo === "ata"
+        ? detail?.ata?.total != null
+          ? String(detail.ata.total)
+          : scoreLabel ?? "—"
+        : detail?.cars?.total != null
+          ? String(detail.cars.total).replace(".", ",")
+          : scoreLabel ?? "—";
+
+    return (
+      <View className="flex-1 bg-level1">
+        <Header
+          variant="form"
+          onPressBack={onPressBack}
+          onPressSave={handleSave}
+        />
+
+        <View className="mx-8 mt-5">
+          <Text className="text-header-1 text-white">
+            {protocolLabel} - {studentName}
+          </Text>
+        </View>
+
+        <View className="flex-1 mt-5 px-8">
+          {isLoading ? (
+            <View className="py-16 items-center justify-center">
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : error ? (
+            <Text className="mt-10 text-center text-default-2 text-extra">
+              {error.message || "Erro ao carregar o registro."}
+            </Text>
+          ) : (
+            <>
+              <RecordHeaderCard
+                label={label ?? `Formulário ${protocolLabel}`}
+                dateLabel={dateLabel ?? ""}
+                scoreLabel={totalLabel}
+              />
+              <View className="flex-1 mt-5">
+                <FormComponent
+                  ref={formRef}
+                  formularioId={recordId}
+                  alunoId={studentId ?? ""}
+                />
+              </View>
+            </>
+          )}
+        </View>
+      </View>
+    );
+  }
+
+  // ── Caminho somente leitura: MABC-2 ───────────────────────────────────────
   const renderBody = () => {
     if (isLoading) {
       return (
@@ -117,70 +193,6 @@ export function ProtocolVisualizationScreen({
         <Text className="mt-10 text-center text-default-2 text-extra">
           {error.message || "Erro ao carregar o registro."}
         </Text>
-      );
-    }
-
-    if (tipo === "ata" && detail?.ata) {
-      const totalLabel =
-        detail.ata.total != null ? String(detail.ata.total) : scoreLabel ?? "—";
-      return (
-        <>
-          <RecordHeaderCard
-            label={label ?? `Formulário ${protocolLabel}`}
-            dateLabel={dateLabel ?? ""}
-            scoreLabel={totalLabel}
-          />
-          <View className="mt-5 gap-3">
-            {detail.ata.sections.map((section) => (
-              <View
-                key={section.id}
-                className="flex-row items-center gap-3 rounded-2xl border border-outline bg-level2 p-4"
-              >
-                <Text className="flex-1 text-default-2 text-white">
-                  {section.title}
-                </Text>
-                <ScoreBadge label={section.valueLabel} />
-              </View>
-            ))}
-          </View>
-        </>
-      );
-    }
-
-    if (tipo === "cars" && detail?.cars) {
-      const totalLabel =
-        detail.cars.total != null
-          ? String(detail.cars.total).replace(".", ",")
-          : scoreLabel ?? "—";
-      return (
-        <>
-          <RecordHeaderCard
-            label={label ?? `Formulário ${protocolLabel}`}
-            dateLabel={dateLabel ?? ""}
-            scoreLabel={totalLabel}
-          />
-          <View className="mt-5 gap-3">
-            {detail.cars.domains.map((domain) => (
-              <View
-                key={domain.id}
-                className="rounded-2xl border border-outline bg-level2 p-4"
-              >
-                <View className="flex-row items-center gap-3">
-                  <Text className="flex-1 text-default-2 font-medium text-white">
-                    {domain.title}
-                  </Text>
-                  <ScoreBadge label={domain.scoreLabel} />
-                </View>
-                <View className="mt-3 rounded-xl border border-outline bg-level1 p-3">
-                  <Text className="text-xs text-muted">Observações</Text>
-                  <Text className="mt-1 text-sm text-white">
-                    {domain.observation ?? "Sem observações registradas."}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </>
       );
     }
 
