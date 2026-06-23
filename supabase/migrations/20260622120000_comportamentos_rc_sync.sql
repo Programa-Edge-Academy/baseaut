@@ -49,7 +49,7 @@ BEGIN
   -- Remove apenas os comportamentos derivados do RC desta sessão.
   DELETE FROM public.comportamentos_sessao
   WHERE sessao_id = p_sessao_id
-    AND tipo IN ('contato_visual', 'estereotipia', 'inapto', 'atividade_preferencial');
+    AND tipo IN ('contato_visual', 'estereotipia', 'inapto', 'atividade_preferencial')
     AND execucao_id IS NULL;
 
   -- Sim/Não → contato_visual / atividade_preferencial.
