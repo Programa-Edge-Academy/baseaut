@@ -133,93 +133,94 @@ export default function HistoryDetailsScreen() {
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
-        <DataList
-          className="mx-8 mt-5"
-          data={filteredSessions}
-          keyExtractor={(item) => item.id}
-          onRefresh={refetch}
-          refreshing={isLoading}
-          emptyMessage={
-            selectedDate
-              ? "Nenhum registro encontrado nesta data."
-              : "Nenhum registro encontrado para este aluno."
-          }
-          renderItem={({ item }) => {
-            const { iconColor, bgColor, IconComponent, subtitle } = getCardVisuals(item);
+        <View className="mx-8 mt-5">
+          <DataList
+            data={filteredSessions}
+            keyExtractor={(item) => item.id}
+            onRefresh={refetch}
+            refreshing={isLoading}
+            emptyMessage={
+              selectedDate
+                ? "Nenhum registro encontrado nesta data."
+                : "Nenhum registro encontrado para este aluno."
+            }
+            renderItem={({ item }) => {
+              const { iconColor, bgColor, IconComponent, subtitle } = getCardVisuals(item);
 
-            return (
-              <ListCard
-                title={item.title}
-                subtitle={subtitle}
-                className={
-                  item.isResumable
-                    ? "border-2 border-primary"
-                    : item.hasPendency
-                      ? "border-2 border-extra"
-                      : ""
-                }
-                rightActionColor={item.hasPendency ? colors.extra : undefined}
-                icon={<IconComponent size={22} color={iconColor} />}
-                iconBgColor={bgColor}
-                onPress={() => {
-                  if (item.isResumable) {
-                    router.push({
-                      pathname: "/session/structured",
-                      params: {
-                        sessionId: item.id,
-                        studentId: studentId as string,
-                        studentName: profile?.name ?? "Aluno",
-                        circuitId: item.circuitId ?? "",
-                        circuitType: item.circuitType ?? "padrao",
-                        circuitName: item.title,
-                        exercises: JSON.stringify(
-                          (item.resumeExercises ?? []).map((e) => ({
-                            id: e.id,
-                            name: e.name,
-                            description: e.description,
-                          })),
-                        ),
-                      },
-                    });
-                  } else if (item.type === "mabc") {
-                    router.push({
-                      pathname: "/mabc2-record-form",
-                      params: {
-                        mode: "view",
-                        studentId: studentId as string,
-                        studentName: profile?.name ?? "Aluno",
-                        recordId: item.id,
-                      },
-                    } as any);
-                  } else if (item.type === "session") {
-                    router.push({
-                      pathname: "/history/session-detail",
-                      params: {
-                        sessionId: item.id,
-                        studentId: studentId as string,
-                        studentName: profile?.name ?? "Aluno",
-                        sessionTitle: item.title,
-                      },
-                    } as any);
-                  } else if (item.type === "form") {
-                    router.push({
-                      pathname: "/form",
-                      params: {
-                        mode: "editar",
-                        formularioId: item.id,
-                        circuitName: item.title,
-                        circuitType: item.formType ?? "registro_controle",
-                        studentId: studentId as string,
-                      },
-                    } as any);
+              return (
+                <ListCard
+                  title={item.title}
+                  subtitle={subtitle}
+                  className={
+                    item.isResumable
+                      ? "border-2 border-primary"
+                      : item.hasPendency
+                        ? "border-2 border-extra"
+                        : ""
                   }
-                }}
-                enableRipple={true}
-                rightAction="chevron"
-              />
-            );
-          }}
-        />
+                  rightActionColor={item.hasPendency ? colors.extra : undefined}
+                  icon={<IconComponent size={22} color={iconColor} />}
+                  iconBgColor={bgColor}
+                  onPress={() => {
+                    if (item.isResumable) {
+                      router.push({
+                        pathname: "/session/structured",
+                        params: {
+                          sessionId: item.id,
+                          studentId: studentId as string,
+                          studentName: profile?.name ?? "Aluno",
+                          circuitId: item.circuitId ?? "",
+                          circuitType: item.circuitType ?? "padrao",
+                          circuitName: item.title,
+                          exercises: JSON.stringify(
+                            (item.resumeExercises ?? []).map((e) => ({
+                              id: e.id,
+                              name: e.name,
+                              description: e.description,
+                            })),
+                          ),
+                        },
+                      });
+                    } else if (item.type === "mabc") {
+                      router.push({
+                        pathname: "/mabc2-record-form",
+                        params: {
+                          mode: "view",
+                          studentId: studentId as string,
+                          studentName: profile?.name ?? "Aluno",
+                          recordId: item.id,
+                        },
+                      } as any);
+                    } else if (item.type === "session") {
+                      router.push({
+                        pathname: "/history/session-detail",
+                        params: {
+                          sessionId: item.id,
+                          studentId: studentId as string,
+                          studentName: profile?.name ?? "Aluno",
+                          sessionTitle: item.title,
+                        },
+                      } as any);
+                    } else if (item.type === "form") {
+                      router.push({
+                        pathname: "/form",
+                        params: {
+                          mode: "editar",
+                          formularioId: item.id,
+                          circuitName: item.title,
+                          circuitType: item.formType ?? "registro_controle",
+                          studentId: studentId as string,
+                        },
+                      } as any);
+                    }
+                  }}
+                  enableRipple={true}
+                  rightAction="chevron"
+                />
+              );
+            }}
+          />
+        </View>
       )}
 
       {showDatePicker && (
