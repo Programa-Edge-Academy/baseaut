@@ -60,7 +60,8 @@ export function ProtocolRecordsListScreen({
         ) : error ? (
           <View className="mt-16 items-center px-8">
             <Text className="text-center text-default-2 text-extra">
-              {error.message || "Erro ao carregar os registros."}
+              Não foi possível carregar os protocolos/testes aplicados. Tente
+              novamente.
             </Text>
           </View>
         ) : records.length === 0 ? (
