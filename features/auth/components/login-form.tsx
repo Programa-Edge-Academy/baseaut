@@ -142,6 +142,7 @@ export function LoginForm() {
             <Text className="text-secondary text-header-3">Cadastre-se</Text>
           </Pressable>
         </View>
+        {/*
         <Pressable>
           <Text
             className="text-header-3 text-primary"
@@ -150,6 +151,7 @@ export function LoginForm() {
             Esqueci a senha
           </Text>
         </Pressable>
+        */}
       </View>
     </View>
   );
