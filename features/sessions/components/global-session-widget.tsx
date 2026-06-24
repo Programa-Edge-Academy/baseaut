@@ -108,9 +108,25 @@ export function GlobalSessionWidget() {
     }
   };
 
+  // Exercícios ainda não realizados desta sessão (para o modal de finalização).
+  const pendingExercises = (() => {
+    try {
+      const exs = JSON.parse(sessionData.exercisesJson ?? "[]") as {
+        id: string;
+        name: string;
+      }[];
+      const hist = sessionData.historico ?? {};
+      return exs
+        .filter((e) => hist[e.id] !== "concluido" && hist[e.id] !== "adiado")
+        .map((e) => e.name);
+    } catch {
+      return [];
+    }
+  })();
+
   // Finaliza pelo widget como uma finalização NORMAL de sessão (concluida),
   // usando o mesmo modal de motivo da execução — não cancela mais a sessão.
-  const handleConfirmFinish = (motivo: string) => {
+  const handleConfirmFinish = (motivo: string, descricao?: string) => {
     setIsFinishOpen(false);
     const sid = sessionData.sessionId;
     const total = sessionData.totalElapsed ?? 0;
@@ -118,7 +134,7 @@ export function GlobalSessionWidget() {
     const motivoEnum = MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro";
     void (async () => {
       // Conclui a sessão (salvando exercícios não realizados no estruturado).
-      await finishSessionAndSaveUnexecuted(sid, motivoEnum, motivo);
+      await finishSessionAndSaveUnexecuted(sid, motivoEnum, descricao ?? motivo);
       // Replica tempo total e fugas (do contexto global) no RC.
       await finalizeSessionAutoFill(sid, total, fugas);
     })();
@@ -143,6 +159,7 @@ export function GlobalSessionWidget() {
       <FinishSessionModal
         visible={isFinishOpen}
         motivos={DEFAULT_FINISH_MOTIVOS}
+        pendingExercises={pendingExercises}
         onClose={() => setIsFinishOpen(false)}
         onConfirm={handleConfirmFinish}
       />
