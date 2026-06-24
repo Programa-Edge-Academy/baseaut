@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Pressable, Text, View } from "react-native";
+import { View } from "react-native";
 import { YesNoQuestion } from "../types";
 import { DefaultButton } from "@/components/default-button";
 
@@ -17,6 +17,12 @@ interface Props {
 
 /**
  * Renders a yes/no question with optional conditional sub-question.
+ *
+ * O `key` de cada botão muda junto com o estado de seleção. Isso força o
+ * react-native-css-interop (NativeWind) a remontar o botão a cada mudança de
+ * className em vez de "atualizá-lo" no lugar — evitando o aviso de upgrade do
+ * css-interop cujo serializador acessa o contexto do react-navigation e lança
+ * "Couldn't find a navigation context". Mantém o design original (DefaultButton).
  */
 export function YesNoQuestionUI({
   question,
@@ -42,6 +48,7 @@ export function YesNoQuestionUI({
     <View className="self-stretch flex flex-col mt-2">
       <View className="flex-row gap-4">
         <DefaultButton
+          key={`nao-${selected === "nao"}`}
           sizeClass="flex-1 h-[44px]"
           className="rounded-[10px]"
           label="Não"
@@ -52,8 +59,9 @@ export function YesNoQuestionUI({
           hasShadow={selected === "nao"}
           bgColorClass={selected === "nao" ? "bg-error" : "bg-level1"}
           shadowClass={selected === "nao" ? "shadow-errorShadow" : ""}
-          />
+        />
         <DefaultButton
+          key={`sim-${selected === "sim"}`}
           sizeClass="flex-1 h-[44px]"
           className="rounded-[10px]"
           label="Sim"
