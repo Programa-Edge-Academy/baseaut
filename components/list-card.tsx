@@ -111,23 +111,22 @@ export function ListCard({
         {/* O Quadrado de Fundo do Ícone */}
         <View
           className="h-full w-full items-center justify-center rounded-2xl"
-          style={{ backgroundColor: iconBgColor }}
+          style={{
+            backgroundColor: iconBgColor,
+            ...(pendencyAlert
+              ? { borderWidth: 2, borderColor: colors.extra }
+              : null),
+          }}
         >
           {icon}
         </View>
-
-        {/* Alerta de Pendência */}
-        {pendencyAlert && (
-          <View className="absolute -right-0.5 -top-1 rounded-full p-0.5">
-            <AlertCircle size={16} color={colors.extra} />
-          </View>
-        )}
       </View>
 
       <View className="flex-1 flex-col justify-center pr-2">
         <View className="flex-row items-center">
           <Text
             className="text-base font-medium text-white flex-shrink"
+            style={pendencyAlert ? { color: colors.extra } : undefined}
             numberOfLines={1}
           >
             {title}
