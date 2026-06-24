@@ -28,6 +28,8 @@ export type PageHeaderProps = {
   onHistoryPress?: () => void;
   onCalendarPress?: () => void;
   onEditPress?: () => void;
+  /** Destaca o botão de edição (lápis) em amarelo, ex.: RC com pendências. */
+  editPending?: boolean;
   onDeletePress?: () => void;
   onCheckPress?: () => void;
   onFormPress?: () => void;
@@ -48,6 +50,7 @@ export function PageHeader({
   onHistoryPress,
   onCalendarPress,
   onEditPress,
+  editPending = false,
   onDeletePress,
   onCheckPress,
   onFormPress,
@@ -236,11 +239,14 @@ export function PageHeader({
                 onPress={onEditPress}
                 className="items-center justify-center rounded-[10px] border p-2.5 active:opacity-70"
                 style={{
-                  borderColor: colors.primary,
-                  backgroundColor: withOpacity(colors.primary, 0.1),
+                  borderColor: editPending ? colors.extra : colors.primary,
+                  backgroundColor: withOpacity(
+                    editPending ? colors.extra : colors.primary,
+                    0.1,
+                  ),
                 }}
               >
-                <Edit2 size={16} color={colors.primary} />
+                <Edit2 size={16} color={editPending ? colors.extra : colors.primary} />
               </Pressable>
             )}
 
