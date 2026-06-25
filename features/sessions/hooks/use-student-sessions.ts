@@ -189,8 +189,10 @@ export function useStudentSessions(studentId?: string) {
           date: item.created_at
             ? new Date(item.created_at).toLocaleDateString("pt-BR")
             : "Data não definida",
-          status: item.tem_respostas ? "Preenchido" : "Pendente",
-          hasPendency: !item.tem_respostas,
+          // Pendência real = faltam respostas obrigatórias (campo `pendente` da
+          // RPC corrigida), e não apenas "tem alguma resposta".
+          status: item.pendente ? "Pendente" : "Preenchido",
+          hasPendency: item.pendente === true,
           type: "form",
           rawDate: item.created_at,
           isResumable: false,
