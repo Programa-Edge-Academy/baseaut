@@ -24,18 +24,31 @@ DECLARE
   v_perguntas_pendentes JSONB;
   v_resultado JSONB;
 BEGIN
-  -- 1. Execuções pendentes: iniciadas, não marcadas como "não realizada",
-  --    mas sem o resultado da atividade (nível/registro de ajuda).
+  -- 1. Cláusula de Guarda: Valida se a sessão e o formulário associado estão ativos/válidos
+  IF EXISTS (
+    SELECT 1 
+    FROM public.sessoes s
+    LEFT JOIN public.formularios f ON f.id = s.formulario_id
+    WHERE s.id = p_sessao_id 
+      AND (s.status = 'cancelada' OR f.ativo = false)
+  ) THEN
+    RETURN jsonb_build_object(
+      'tem_pendencias', false,
+      'exercicios_pendentes', '[]'::jsonb,
+      'perguntas_pendentes', '[]'::jsonb
+    );
+  END IF;
+
+  -- 2. Execuções pendentes: Considera exclusivamente o status 'adiado'
   SELECT COALESCE(jsonb_agg(
            jsonb_build_object('exercicio_id', ex.exercicio_id)
          ), '[]'::jsonb)
   INTO v_exercicios_pendentes
   FROM public.execucoes_exercicio ex
   WHERE ex.sessao_id = p_sessao_id
-    AND ex.status_realizacao IS DISTINCT FROM 'nao_realizada'
-    AND (ex.nivel_desenvolvimento IS NULL OR ex.registro_ajuda IS NULL);
+    AND ex.status_realizacao = 'adiado';
 
-  -- 2. Perguntas obrigatórias do RC sem resposta preenchida.
+  -- 3. Perguntas obrigatórias do RC sem resposta (ou respondidas como 'adiado')
   SELECT COALESCE(jsonb_agg(
            jsonb_build_object('pergunta_id', p.id, 'ordem', p.ordem)
          ), '[]'::jsonb)
@@ -49,11 +62,13 @@ BEGIN
       SELECT 1
       FROM public.respostas_formulario rf
       WHERE rf.pergunta_id = p.id
-        AND rf.sessao_id = p_sessao_id
+        AND rf.formulario_id = f.id
         AND rf.valor_preenchido IS NOT NULL
         AND btrim(rf.valor_preenchido) <> ''
+        AND rf.status_item IS DISTINCT FROM 'adiado'
     );
 
+  -- 4. Construção do resultado consolidado
   v_resultado := jsonb_build_object(
     'tem_pendencias', (
       jsonb_array_length(v_exercicios_pendentes) > 0
