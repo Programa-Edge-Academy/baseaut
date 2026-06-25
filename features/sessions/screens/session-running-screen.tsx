@@ -504,13 +504,7 @@ export function SessionRunningScreen({
   // Notifica o usuário se houver campos obrigatórios pendentes.
   const trySaveForm = () => {
     if (!formRef.current) return;
-    void (formRef.current.handleSave() as Promise<any>).then((result: any) => {
-      if (result && !result.success) {
-        Alert.alert(
-          "Atenção",
-          "O registro de controle ficou pendente pois há campos obrigatórios não preenchidos.",
-        );
-      }
+    void (formRef.current.handleSave(true, true) as Promise<any>).then((result: any) => {
     });
   };
 
@@ -591,6 +585,17 @@ export function SessionRunningScreen({
   const currentExercise = order[currentIndex];
   const subtitle = `${effectiveCircuitName} - ${currentIndex + 1}/${total} - ${formatSessionClock(currentSessionData?.totalElapsed ?? 0)}`;
 
+  // Apenas exercícios ainda não realizados podem ser reordenados; os já
+  // executados (concluído/não realizado) ficam fixos em suas posições.
+  const isRealized = (id: string) =>
+    historicoExercicios[id] === "concluido" ||
+    historicoExercicios[id] === "nao_realizada";
+  const reorderableExercises = order.filter((ex) => !isRealized(ex.id));
+  const handleReorderPending = (reordered: SessionExercise[]) => {
+    let i = 0;
+    setOrder(order.map((ex) => (isRealized(ex.id) ? ex : reordered[i++])));
+  };
+
   const handleStart = async () => {
     setStage("running");
     const sid = await ensureSessionId();
@@ -625,13 +630,13 @@ export function SessionRunningScreen({
     setIsResultModalOpen(true);
   };
 
-  const handleConfirmFinish = (motivo: string) => {
+  const handleConfirmFinish = (motivo: string, descricao?: string) => {
     // Encerra crise/fuga eventualmente ativas antes de finalizar a sessão.
     finalizeActiveCrise();
     finalizeActiveFuga();
 
     if (formRef.current) {
-      formRef.current.handleSave();
+      formRef.current.handleSave(true, true);
     }
 
     const pendentes = order.filter(
@@ -641,7 +646,10 @@ export function SessionRunningScreen({
     );
     const temPendencias = pendentes.length > 0;
 
-    void persistAndFinish(MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro", motivo);
+    void persistAndFinish(
+      MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro",
+      descricao ?? motivo,
+    );
     onFinishSession?.(motivo);
     onCompleteSession?.(
       temPendencias,
@@ -673,11 +681,10 @@ export function SessionRunningScreen({
             />
           </View>
 
-          <ScrollView
-            className="mt-5 px-8"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 24 }}
-          >
+          {/* A atividade (StartActivity quando pronta, Stopwatch durante a
+              execução) fica fixa no topo — mesmo com o cronômetro parado — para
+              iniciar/controlar sem rolar a tela. Só o RC rola abaixo. */}
+          <View className="mt-5 px-8">
             {stage === "ready" ? (
               <StartActivity
                 title={currentExercise.name}
@@ -691,6 +698,7 @@ export function SessionRunningScreen({
               <Stopwatch
                 title={currentExercise.name}
                 subtitle={currentExercise.description}
+                imageUrl={currentExercise.mediaUrls?.[0]}
                 autoStart
                 variant="form"
                 onPressCrise={handleCrisePress}
@@ -712,12 +720,13 @@ export function SessionRunningScreen({
                 }}
               />
             )}
+          </View>
 
-            {/*
-            TODO: form questions section (Contato visual com pessoas, etc.)
-            is out of scope here — wire to features/forms once available.
-            Placeholder block kept so the layout reflects the design intent.
-          */}
+          <ScrollView
+            className="mt-5 px-8"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 24 }}
+          >
             {/* Circuitos MABC não usam o Registro de Controle dentro da sessão. */}
             {!isMabc && rcFormId && (
               <View style={{ display: isFormVisible ? "flex" : "none" }}>
@@ -735,15 +744,22 @@ export function SessionRunningScreen({
 
         <ReorderModal
           visible={isReorderOpen}
-          items={order}
-          currentIndex={currentIndex}
+          items={reorderableExercises}
+          currentIndex={0}
           onClose={() => setIsReorderOpen(false)}
-          onReorder={setOrder}
+          onReorder={handleReorderPending}
         />
 
         <FinishSessionModal
           visible={isFinishOpen}
           motivos={DEFAULT_FINISH_MOTIVOS}
+          pendingExercises={order
+            .filter(
+              (ex) =>
+                historicoExercicios[ex.id] !== "concluido" &&
+                historicoExercicios[ex.id] !== "adiado",
+            )
+            .map((ex) => ex.name)}
           onClose={() => setIsFinishOpen(false)}
           onConfirm={handleConfirmFinish}
         />

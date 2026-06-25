@@ -147,13 +147,7 @@ export function SessionRunningSemiStructuredScreen({
 
   const trySaveForm = () => {
     if (!formRef.current) return;
-    void (formRef.current.handleSave() as Promise<any>).then((result: any) => {
-      if (result && !result.success) {
-        Alert.alert(
-          "Atenção",
-          "O registro de controle ficou pendente pois há campos obrigatórios não preenchidos.",
-        );
-      }
+    void (formRef.current.handleSave(true, true) as Promise<any>).then((result: any) => {
     });
   };
 
@@ -452,7 +446,15 @@ export function SessionRunningSemiStructuredScreen({
     }
   };
 
-  const handleFinishSession = (motivo: string) => {
+  // Exercícios ainda não realizados (para exibir no modal de finalização).
+  const pendentesNomes = exercises
+    .filter((ex) => {
+      const status = historicoExercicios[ex.id];
+      return status !== "concluido" && status !== "adiado";
+    })
+    .map((ex) => ex.name);
+
+  const handleFinishSession = (motivo: string, descricao?: string) => {
     setIsFinishOpen(false);
 
     // Encerra crise/fuga eventualmente ativas e salva o RC antes de finalizar.
@@ -473,7 +475,7 @@ export function SessionRunningSemiStructuredScreen({
         await saveSession(finalSid, [], crisesRef.current, {
           status: "concluida",
           motivoFinalizacao: MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro",
-          descricaoMotivo: motivo,
+          descricaoMotivo: descricao ?? motivo,
         });
         await finalizeSessionAutoFill(finalSid, totalAtFinish, fugasAtFinish);
       })();
@@ -509,63 +511,82 @@ export function SessionRunningSemiStructuredScreen({
     );
   }
 
+  // Estágio "ready": cabeçalho + StartActivity, fixos no topo (não rolam).
   const renderExecutionView = () => {
-    if (!activeExercise) return null;
+    if (!activeExercise || stage !== "ready") return null;
 
     return (
-      <View className="flex-1 mt-5 px-8">
+      <View className="mt-5 px-8">
         <PageHeader
           mode="execucao"
           title={`Sessão de ${safeStudentName}`}
           subtitle={`Exercício Semi-estruturado - ${formatSessionClock(currentSessionData?.totalElapsed ?? 0)}`}
           totalExercises={1}
           completedExercises={0}
-          isExecuting={stage === "running"}
+          isExecuting={false}
         />
         <View className="mt-5">
-          {stage === "ready" ? (
-            <StartActivity
-              title={activeExercise.name}
-              subtitle={activeExercise.description}
-              mediaUrls={activeExercise.mediaUrls ?? []}
-              onStart={async () => {
-                setStage("running");
-                // Cria a sessão no banco de forma lazy (somente no primeiro "Começar")
-                const newSid = await ensureSessionId();
-                if (newSid) {
-                  // Cada exercício tem seu próprio cronômetro — resetar antes de iniciar
-                  updateTimeElapsed(newSid, 0);
-                  toggleTimer(newSid, true);
-                  updateSessionState(newSid, { activeExerciseId: activeExercise.id });
-                }
-              }}
-              onStartAndRecord={null}
-            />
-          ) : (
-            <Stopwatch
-              title={activeExercise.name}
-              subtitle={activeExercise.description}
-              autoStart
-              variant="form"
-              onPressCrise={handleCrisePress}
-              isCriseActive={isCriseActive}
-              onPressFuga={handleFugaPress}
-              isFugaActive={isFugaActive}
-              onStop={handleStop}
-              onRestart={() => {
-                if (resolvedSid) updateTimeElapsed(resolvedSid, 0);
-              }}
-              controlledSeconds={controlledSeconds}
-              controlledIsRunning={controlledIsRunning}
-              onToggleRunning={(isRunning) => {
-                if (resolvedSid) toggleTimer(resolvedSid, isRunning);
-              }}
-              isFormVisible={isFormVisible}
-              onPressCorner={() => {
-                if (resolvedSid) setFormVisible(resolvedSid, !isFormVisible);
-              }}
-            />
-          )}
+          <StartActivity
+            title={activeExercise.name}
+            subtitle={activeExercise.description}
+            mediaUrls={activeExercise.mediaUrls ?? []}
+            onStart={async () => {
+              setStage("running");
+              // Cria a sessão no banco de forma lazy (somente no primeiro "Começar")
+              const newSid = await ensureSessionId();
+              if (newSid) {
+                // Cada exercício tem seu próprio cronômetro — resetar antes de iniciar
+                updateTimeElapsed(newSid, 0);
+                toggleTimer(newSid, true);
+                updateSessionState(newSid, { activeExerciseId: activeExercise.id });
+              }
+            }}
+            onStartAndRecord={null}
+          />
+        </View>
+      </View>
+    );
+  };
+
+  // Estágio "running": cabeçalho + cronômetro fixos no topo (não rolam com o RC).
+  const renderRunningHeader = () => {
+    if (!activeExercise || stage !== "running") return null;
+
+    return (
+      <View className="mt-5 px-8">
+        <PageHeader
+          mode="execucao"
+          title={`Sessão de ${safeStudentName}`}
+          subtitle={`Exercício Semi-estruturado - ${formatSessionClock(currentSessionData?.totalElapsed ?? 0)}`}
+          totalExercises={1}
+          completedExercises={0}
+          isExecuting={true}
+        />
+        <View className="mt-5">
+          <Stopwatch
+            title={activeExercise.name}
+            subtitle={activeExercise.description}
+            imageUrl={activeExercise.mediaUrls?.[0]}
+            autoStart
+            variant="form"
+            onPressCrise={handleCrisePress}
+            isCriseActive={isCriseActive}
+            onPressFuga={handleFugaPress}
+            isFugaActive={isFugaActive}
+            onStop={handleStop}
+            onRestart={() => {
+              if (resolvedSid) updateTimeElapsed(resolvedSid, 0);
+            }}
+            controlledSeconds={controlledSeconds}
+            controlledIsRunning={controlledIsRunning}
+            onToggleRunning={(isRunning) => {
+              if (resolvedSid) toggleTimer(resolvedSid, isRunning);
+            }}
+            isFormVisible={isFormVisible}
+            onPressCorner={() => {
+              if (resolvedSid) setFormVisible(resolvedSid, !isFormVisible);
+            }}
+          />
         </View>
       </View>
     );
@@ -678,11 +699,15 @@ export function SessionRunningSemiStructuredScreen({
           onPressFinish={() => setIsFinishOpen(true)}
         />
 
+        {/* Atividade fixa no topo (pronta ou em execução) — só o RC rola. */}
+        {renderRunningHeader()}
+        {renderExecutionView()}
+
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 40 }}
         >
-          {activeExercise ? renderExecutionView() : renderListView()}
+          {!activeExercise && renderListView()}
 
           {/*
             Registro de Controle único da sessão: fica sempre montado para
@@ -708,6 +733,7 @@ export function SessionRunningSemiStructuredScreen({
         <FinishSessionModal
           visible={isFinishOpen}
           motivos={DEFAULT_FINISH_MOTIVOS}
+          pendingExercises={pendentesNomes}
           onClose={() => setIsFinishOpen(false)}
           onConfirm={handleFinishSession}
         />

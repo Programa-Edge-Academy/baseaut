@@ -189,7 +189,10 @@ export const FormComponent = forwardRef(function FormComponent(
     loadQuestions();
   }, [formularioId, sessaoId, alunoId, hideAutoFilledSessionFields]);
 
-  const handleSave = async (silent = true) => {
+  // `allowPartial` permite salvar respostas parciais (sem bloquear por campos
+  // obrigatórios vazios). Usado no salvamento automático do RC durante a sessão,
+  // para que as respostas já preenchidas persistam e possam ser retomadas/editadas.
+  const handleSave = async (silent = true, allowPartial = false) => {
     setSaving(true);
 
     try {
@@ -208,12 +211,12 @@ export const FormComponent = forwardRef(function FormComponent(
         return !isFilled;
       });
 
-      if (missingRequired) {
+      if (missingRequired && !allowPartial) {
         setSaving(false);
-        return { 
-          success: false, 
-          title: "Erro ao salvar formulário", 
-          description: "Não é possível salvar formulários com campos vazios" 
+        return {
+          success: false,
+          title: "Erro ao salvar formulário",
+          description: "Não é possível salvar formulários com campos vazios"
         };
       }
 
@@ -282,7 +285,7 @@ export const FormComponent = forwardRef(function FormComponent(
       if (!silent) Alert.alert("Sucesso", "Avaliação salva com sucesso!");
       if (onSuccess) onSuccess();
 
-      return { success: true };
+      return { success: true, hadPending: missingRequired };
     } catch (error) {
       console.error(error);
       if (!silent) Alert.alert("Erro", "Ocorreu um erro ao salvar as respostas.");
