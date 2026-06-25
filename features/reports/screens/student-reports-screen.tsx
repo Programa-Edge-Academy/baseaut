@@ -17,6 +17,7 @@ import { FileText, X } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -30,7 +31,7 @@ function FormatPicker({
 }: {
   visible: boolean;
   onClose: () => void;
-  onExport: (formats: { pdf: boolean; csv: boolean }) => void;
+  onExport: (formats: { pdf: boolean; csv: boolean }, mode: "share" | "download") => void;
 }) {
   const [pdf, setPdf] = useState(true);
   const [csv, setCsv] = useState(false);
@@ -70,23 +71,37 @@ function FormatPicker({
             </Pressable>
           </View>
 
-          <View className="flex-row gap-3">
-            <DefaultButton
-              label="Cancelar"
-              onPress={onClose}
-              bgColorClass="bg-level1"
-              shadowClass=""
-              sizeClass="flex-1 h-11"
-              className="border border-outline"
-              textClassName="text-muted"
-            />
-            <DefaultButton
-              label="Exportar"
-              onPress={() => onExport({ pdf, csv })}
-              sizeClass="flex-1 h-11"
-              bgColorClass="bg-primary"
-              hasShadow
-            />
+          <View className="gap-3">
+            <View className="flex-row gap-3">
+              <DefaultButton
+                label="Cancelar"
+                onPress={onClose}
+                bgColorClass="bg-level1"
+                shadowClass=""
+                sizeClass="flex-1 h-11"
+                className="border border-outline"
+                textClassName="text-muted"
+              />
+              <DefaultButton
+                label="Exportar"
+                onPress={() => onExport({ pdf, csv }, "share")}
+                sizeClass="flex-1 h-11"
+                bgColorClass="bg-primary"
+                hasShadow
+              />
+            </View>
+
+            {Platform.OS === "android" && (
+              <DefaultButton
+                label="Baixar"
+                onPress={() => onExport({ pdf, csv }, "download")}
+                sizeClass="w-full h-11"
+                bgColorClass="bg-secondary"
+                hasShadow={false}
+                className="border border-secondary"
+                textClassName="text-white"
+              />
+            )}
           </View>
         </Pressable>
       </Pressable>
@@ -245,16 +260,21 @@ export function StudentReportsScreen() {
     setIsFormatPickerOpen(true);
   };
 
-  const handleExport = async (formats: { pdf: boolean; csv: boolean }) => {
+  const handleExport = async (
+    formats: { pdf: boolean; csv: boolean },
+    deliveryMode: "share" | "download" = "share",
+  ) => {
     setIsFormatPickerOpen(false);
     const selected = reports.filter((r) => selectedIds.includes(r.id));
     try {
       setExporting(true);
-      await exportReports(selected, formats, studentName ?? "", studentId ?? "");
+      await exportReports(selected, formats, studentName ?? "", studentId ?? "", deliveryMode);
       showToast(
         "success",
-        "Relatório salvo!",
-        `O relatório de ${studentName} foi exportado e encaminhado ao compartilhamento.`
+        deliveryMode === "download" ? "Relatório baixado!" : "Relatório salvo!",
+        deliveryMode === "download"
+          ? `O relatório de ${studentName} foi baixado no dispositivo.`
+          : `O relatório de ${studentName} foi exportado e encaminhado ao compartilhamento.`
       );
       setIsExportMode(false);
       setSelectedIds([]);

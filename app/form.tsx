@@ -407,14 +407,12 @@ function FormFormatPicker({
 
         {Platform.OS === "android" && (
           <DefaultButton
-            label="Apenas baixar"
+            label="Baixar"
             onPress={() => onExport({ pdf, csv }, "download")}
             sizeClass="w-full h-11"
-            bgColorClass="bg-level1"
-            isOutline={true}
-            outlineBorderClass="border-outline"
+            bgColorClass="bg-secondary"
             hasShadow={false}
-            className="border border-outline"
+            className="border border-secondary"
             textClassName="text-white"
           />
         )}
