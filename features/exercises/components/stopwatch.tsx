@@ -10,13 +10,15 @@ import {
   Timer,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, View } from "react-native";
 
 export type StopwatchVariant = "minimize" | "form";
 
 export type StopwatchProps = {
   title: string;
   subtitle: string;
+  /** Foto do exercício (URI). Quando presente, é exibida à esquerda do título. */
+  imageUrl?: string;
   /** Whether the stopwatch starts ticking on mount. Defaults to true. */
   autoStart?: boolean;
   /** Starting value in seconds. Defaults to 0. */
@@ -68,6 +70,7 @@ function formatTime(seconds: number): string {
 export function Stopwatch({
   title,
   subtitle,
+  imageUrl,
   autoStart = true,
   initialSeconds = 0,
   controlledSeconds,
@@ -134,13 +137,22 @@ export function Stopwatch({
       className={`w-full rounded-2xl border border-outline bg-level2 p-4 ${className ?? ""}`}
     >
       <View className="flex-row items-start justify-between">
-        <View className="flex-1 pr-3">
-          <Text className="text-header-3 text-white" numberOfLines={1}>
-            {title}
-          </Text>
-          <Text className="mt-1 text-default-2 text-muted" numberOfLines={2}>
-            {subtitle}
-          </Text>
+        <View className="flex-1 pr-3 flex-row items-center gap-3">
+          {imageUrl ? (
+            <Image
+              source={{ uri: imageUrl }}
+              style={{ width: 44, height: 44, borderRadius: 8 }}
+              resizeMode="cover"
+            />
+          ) : null}
+          <View className="flex-1">
+            <Text className="text-header-3 text-white" numberOfLines={1}>
+              {title}
+            </Text>
+            <Text className="mt-1 text-default-2 text-muted" numberOfLines={2}>
+              {subtitle}
+            </Text>
+          </View>
         </View>
 
         <View className="items-end gap-1.5">
