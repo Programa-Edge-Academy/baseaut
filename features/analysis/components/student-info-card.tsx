@@ -64,7 +64,7 @@ export function StudentInfoCard({
 
       {/* Foto de perfil centralizada */}
       <View className="items-center mb-4">
-        <View className="w-[100px] h-[100px] rounded-[15px] bg-level1 overflow-hidden items-center justify-center">
+        <View className={`w-[100px] h-[100px] rounded-[15px] bg-level1 overflow-hidden items-center justify-center ${avatarUrl ? '' : 'border border-outline'}`}>
           {avatarUrl ? (
             <Image
               source={{ uri: avatarUrl }}
@@ -82,18 +82,23 @@ export function StudentInfoCard({
         {/* Linha 1 */}
         <View className="flex-row gap-2">
           <InfoChip label="Nome" value={name} />
-          <InfoChip label="Altura" value={height != null ? `${height} cm` : null} />
+          <InfoChip label="Idade" value={ageStr} />
         </View>
 
         {/* Linha 2 */}
         <View className="flex-row gap-2">
-          <InfoChip label="Idade" value={ageStr} />
           <InfoChip label="Nível de suporte do TEA" value={supportLevel} />
+          <InfoChip label="Massa" value={weight != null ? `${weight} kg` : null} />
         </View>
 
         {/* Linha 3 */}
         <View className="flex-row gap-2">
-          <InfoChip label="Peso" value={weight != null ? `${weight} kg` : null} />
+          <InfoChip label="Estatura" value={height != null ? `${height} cm` : null} />
+          <InfoChip label="Cintura" value={waist != null ? `${waist} cm` : null} />
+        </View>
+
+        {/* Linha 4 — cintura em coluna única à esquerda */}
+        <View className="flex-row gap-2">
           {/* Observações ocupa a coluna da direita e se expande verticalmente */}
           <View className="flex-1 bg-level1 border border-outline rounded-[10px] px-[10px] py-[5px]">
             <Text
@@ -109,16 +114,6 @@ export function StudentInfoCard({
               {observations || "—"}
             </Text>
           </View>
-        </View>
-
-        {/* Linha 4 — cintura em coluna única à esquerda */}
-        <View className="flex-row gap-2">
-          <InfoChip
-            label="Circunferência da cintura"
-            value={waist != null ? `${waist} cm` : null}
-          />
-          {/* Espaço em branco para manter a grade alinhada */}
-          <View className="flex-1" />
         </View>
       </View>
     </View>
