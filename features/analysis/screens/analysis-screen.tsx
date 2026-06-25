@@ -96,7 +96,7 @@ export default function AnalysisScreen() {
                             keyExtractor={(item) => item.id}
                             emptyMessage="Nenhum aluno encontrado."
                             onRefresh={refreshStudents}
-                            contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
+                            contentContainerStyle={{ flexGrow: 1 }}
                             renderItem={({ item }) => {
                                 const count = sessionsCounts[item.id] || 0;
                                 return (
