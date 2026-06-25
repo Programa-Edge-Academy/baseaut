@@ -3,7 +3,7 @@ import { DefaultButton } from "@/components/default-button";
 import { Calendar, ChevronDown, ImageUp, Pencil, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { AppModal } from "@/components/app-modal";
-import { Image, Pressable, Text, View } from "react-native";
+import { Image, Keyboard, Pressable, Text, View } from "react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { ActionButtons } from "../../../components/action-buttons";
 import { ConfirmationModal } from "../../../components/confirmation-modal";
@@ -204,10 +204,26 @@ export function NewStudent({
    * Measures the trigger and opens the support level dropdown.
    */
   const openSupportLevelDropdown = () => {
-    supportLevelRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      setSupportLevelLayout({ top: pageY + height, left: pageX, width });
-      setDropdownVisible(true);
-    });
+    // Mede o gatilho e abre o dropdown.
+    const measureAndOpen = () => {
+      supportLevelRef.current?.measure((x, y, width, height, pageX, pageY) => {
+        setSupportLevelLayout({ top: pageY + height, left: pageX, width });
+        setDropdownVisible(true);
+      });
+    };
+
+    // Se o teclado estiver aberto, fecha-o primeiro e só mede depois que ele
+    // termina de esconder — caso contrário o formulário reposiciona após a
+    // medição e o dropdown abre deslocado do gatilho.
+    if (Keyboard.isVisible?.()) {
+      const sub = Keyboard.addListener("keyboardDidHide", () => {
+        sub.remove();
+        measureAndOpen();
+      });
+      Keyboard.dismiss();
+    } else {
+      measureAndOpen();
+    }
   };
 
   /**
