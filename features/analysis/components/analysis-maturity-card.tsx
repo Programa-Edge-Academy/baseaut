@@ -115,7 +115,7 @@ export function AnalysisMaturityCard({
                 </View>
 
                 {/* Período 1 */}
-                <View style={{ flex: 1.4, alignItems: "center" }}>
+                <View style={{ flex: 1.4, alignItems: "center", paddingHorizontal: 6 }}>
                     {previous?.status ? (
                         <View
                             className="rounded-sm border px-2 py-1"
@@ -134,7 +134,7 @@ export function AnalysisMaturityCard({
                 </View>
 
                 {/* Período 2 */}
-                <View style={{ flex: 1.4, alignItems: "center" }}>
+                <View style={{ flex: 1.4, alignItems: "center", paddingHorizontal: 6 }}>
                     {current?.status ? (
                         <View
                             className="rounded-sm border px-2 py-1"

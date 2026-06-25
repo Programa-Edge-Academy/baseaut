@@ -155,7 +155,8 @@ export function ProtocolVisualizationScreen({
             </View>
           ) : error ? (
             <Text className="mt-10 text-center text-default-2 text-extra">
-              {error.message || "Erro ao carregar o registro."}
+              Não foi possível carregar os protocolos/testes aplicados. Tente
+              novamente.
             </Text>
           ) : (
             <>
@@ -191,7 +192,8 @@ export function ProtocolVisualizationScreen({
     if (error) {
       return (
         <Text className="mt-10 text-center text-default-2 text-extra">
-          {error.message || "Erro ao carregar o registro."}
+          Não foi possível carregar os protocolos/testes aplicados. Tente
+          novamente.
         </Text>
       );
     }

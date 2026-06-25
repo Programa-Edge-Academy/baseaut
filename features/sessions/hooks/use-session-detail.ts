@@ -12,6 +12,8 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
   const [data, setData] = useState<SessionDetailData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  // RC com perguntas obrigatórias ainda não preenchidas (para o lápis amarelo).
+  const [rcPending, setRcPending] = useState(false);
 
   const fetchDetail = useCallback(async () => {
     if (!sessionId) return;
@@ -71,6 +73,13 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
       }));
 
       setData({ sessionTitle, sessionDate, executions });
+
+      // Pendência do RC desta sessão (perguntas obrigatórias não preenchidas).
+      const { data: pend } = await supabase.rpc("verificar_pendencias_sessao", {
+        p_sessao_id: sessionId,
+      });
+      const parsedPend = typeof pend === "string" ? JSON.parse(pend) : pend;
+      setRcPending((parsedPend?.perguntas_pendentes?.length ?? 0) > 0);
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Erro ao carregar sessão"));
     } finally {
@@ -122,13 +131,15 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
   }
 
   async function deleteSession() {
-    const { error } = await supabase
-      .from("sessoes")
-      .update({ status: "cancelada" })
-      .eq("id", sessionId);
+    // Cancela via RPC (SECURITY DEFINER): a policy de UPDATE em `sessoes` só
+    // permite ao monitor dono alterar a própria sessão, então um UPDATE direto
+    // falhava para coordenadores e sessões de outros monitores.
+    const { error } = await supabase.rpc("rpc_cancelar_sessao", {
+      p_sessao_id: sessionId,
+    });
 
     if (error) throw error;
   }
 
-  return { data, isLoading, error, updateExecution, deleteSession, refetch: fetchDetail };
+  return { data, isLoading, error, rcPending, updateExecution, deleteSession, refetch: fetchDetail };
 }

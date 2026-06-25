@@ -16,7 +16,7 @@ export function AppliedProtocolsCard({
   onAtaPress,
 }: AppliedProtocolsCardProps) {
   return (
-    <View className="w-full bg-level2 border border-outline rounded-lg p-[15px] mb-4">
+    <View className="w-full bg-level2 border border-outline rounded-lg p-[15px]">
       {/* Título */}
       <Text className="text-[16px] font-bold text-white mb-[15px]" style={{ fontFamily: "Inter-Bold" }}>
         Protocolos/Testes aplicados

@@ -34,7 +34,7 @@ export default function SessionDetailScreen() {
     }>();
 
   const safeName = studentName || "Aluno";
-  const { data, isLoading, error, updateExecution, deleteSession } =
+  const { data, isLoading, error, rcPending, updateExecution, deleteSession } =
     useSessionDetail(sessionId as string, sessionTitle);
 
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
@@ -154,6 +154,7 @@ export default function SessionDetailScreen() {
           title={title}
           subtitle={subtitle}
           mode="historico-estudante"
+          editPending={rcPending}
           onEditPress={() =>
             router.push({
               pathname: "/form",

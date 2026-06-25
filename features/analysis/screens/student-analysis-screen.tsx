@@ -153,21 +153,19 @@ export function StudentAnalysisScreen() {
                   onAtaPress={() => openProtocol("ata")}
                 />
 
-                {isAuthorized && (
-                  <AnalysisOptionCard
-                    title="Registros de desenvolvimento motor"
-                    description="Visualize e registre avaliações motoras do aluno."
-                    onPress={() => {
-                      router.push({
-                        pathname: "/mabc2-records",
-                        params: {
-                          studentId: String(studentId ?? ""),
-                          studentName: profile?.name ?? "Aluno",
-                        },
-                      } as any);
-                    }}
-                  />
-                )}
+                <AnalysisOptionCard
+                  title="Registros de desenvolvimento motor"
+                  description="Visualize e registre avaliações motoras do aluno."
+                  onPress={() => {
+                    router.push({
+                      pathname: "/mabc2-records",
+                      params: {
+                        studentId: String(studentId ?? ""),
+                        studentName: profile?.name ?? "Aluno",
+                      },
+                    } as any);
+                  }}
+                />
               </View>
             </>
           )}
