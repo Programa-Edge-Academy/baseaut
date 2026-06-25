@@ -68,7 +68,7 @@ BEGIN
 
   INSERT INTO public.formularios (
     id, titulo, descricao, tipo, equipe_id, aluno_id,
-    protegido, ativo, template_origem_id, data_avaliacao
+    protegido, ativo, template_origem_id, data_avaliacao, avaliador_id
   )
   VALUES (
     v_nova_inst_id,
@@ -80,7 +80,8 @@ BEGIN
     false,
     true,
     v_template.id,
-    CURRENT_DATE
+    CURRENT_DATE,
+    NEW.monitor_id
   );
 
   NEW.formulario_id := v_nova_inst_id;
