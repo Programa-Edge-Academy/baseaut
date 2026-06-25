@@ -1,5 +1,6 @@
 import { Check } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
+import { colors } from "@/assets/colors";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { ChoiceListQuestion } from "../types";
 
@@ -47,7 +48,8 @@ export function ChoiceListQuestionUI({ question, value, onChange }: Props) {
               className="flex flex-row items-center gap-3"
             >
               <View
-                className={`w-8 h-8 rounded-xl border border-outline justify-center items-center ${isSelected ? "bg-primary outline-transparent" : "bg-level1 outline-outline"}`}
+                className="w-8 h-8 rounded-xl border border-outline justify-center items-center"
+                style={{ backgroundColor: isSelected ? colors.primary : colors.level1 }}
               >
                 {isSelected && <Check color="#fff" size={18} />}
               </View>
