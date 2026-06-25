@@ -64,6 +64,7 @@ export function useProtocolRecords(studentId?: string, tipo?: ProtocolTipo) {
         .eq("aluno_id", alunoId)
         .eq("tipo", protocolo)
         .eq("protegido", false)
+        .eq("ativo", true)
         .order("created_at", { ascending: true });
       if (formsError) throw formsError;
 
