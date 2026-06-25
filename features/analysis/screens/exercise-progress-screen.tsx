@@ -11,6 +11,7 @@ import RangeCalendar from "../../../components/range-calendar";
 import { PeriodSelector } from "../components/period-selector";
 import ProgressExerciseCard from "../components/progress-exercise-card";
 import { useExerciseProgress } from "../hooks/use-exercise-progress";
+import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile";
 
 /**
  * Tela que exibe o progresso dos exercícios de um aluno específico.
@@ -24,11 +25,13 @@ export function ExerciseProgressScreen() {
   const { studentId, studentName } = useLocalSearchParams<{ studentId: string; studentName: string }>();
 
   // Hook personalizado integrado ao banco de dados Supabase para obter os exercícios e status de carregamento
-  const { exercises, isLoading } = useExerciseProgress(studentId ?? "");
+  const { exercises, isLoading, error, refetch } = useExerciseProgress(studentId ?? "");
 
-  // Estados locais da tela para gerenciar feedbacks de sucesso, erro ou ausência de dados
-  const [screenState, setScreenState] = useState<"success" | "empty" | "error">("success");
-  
+  // Nome do aluno buscado direto do banco (como nas demais telas de análise),
+  // já que a rota nem sempre recebe o studentName por parâmetro.
+  const { profile } = useStudentProfile(studentId as string);
+  const displayName = profile?.name ?? studentName ?? "Aluno";
+
   // Armazena as informações do exercício selecionado para detalhamento
   const [selectedExercise, setSelectedExercise] = useState<{ id: string; title: string; sessions: number } | null>(null);
   
@@ -47,9 +50,15 @@ export function ExerciseProgressScreen() {
     endDate: null,
   });
 
-  // Define o estado visual baseado no carregamento das informações ou se a lista de exercícios está vazia
-  const currentStatus = isLoading 
-    ? "loading" : screenState === "empty" || exercises.length === 0 ? "error" : screenState; 
+  // Estado visual: erro só quando a busca falha de fato; lista vazia → "empty"
+  // (tela de "sem registros"); caso contrário, "success".
+  const currentStatus = isLoading
+    ? "loading"
+    : error
+      ? "error"
+      : exercises.length === 0
+        ? "empty"
+        : "success";
 
   // Configuração visual para as telas de feedback de erro e de estado vazio (ícones, mensagens e ações)
   const stateConfig = {
@@ -166,7 +175,7 @@ export function ExerciseProgressScreen() {
 
       <View className="mt-5 w-full">
         <Text className="text-xl font-bold text-white pl-8 mb-4" style={{ fontFamily: "Inter-Bold" }}>
-          Progresso por exercício - {studentName ?? "Aluno"}
+          Progresso por exercício - {displayName}
         </Text>
       </View>
 
@@ -186,7 +195,7 @@ export function ExerciseProgressScreen() {
             <Text className="text-center text-[22px] font-bold text-white" style={{ fontFamily: "Inter-Bold" }}>{stateConfig[currentStatus as "empty" | "error"].title}</Text>
             <Text className="mt-3 text-center text-[14px] leading-6 text-muted" style={{ fontFamily: "Inter-Medium" }}>{stateConfig[currentStatus as "empty" | "error"].message}</Text>
             <View className="mt-6">
-              <Pressable onPress={() => setScreenState("success")} className="items-center rounded-2xl px-4 py-3" style={{ backgroundColor: colors.primary }}>
+              <Pressable onPress={() => refetch()} className="items-center rounded-2xl px-4 py-3" style={{ backgroundColor: colors.primary }}>
                 <Text className="text-[14px] font-semibold text-white">{stateConfig[currentStatus as "empty" | "error"].buttonLabel}</Text>
               </Pressable>
             </View>
