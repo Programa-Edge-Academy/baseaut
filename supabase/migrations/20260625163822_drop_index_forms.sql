@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.uq_formularios_aluno_tipo;
