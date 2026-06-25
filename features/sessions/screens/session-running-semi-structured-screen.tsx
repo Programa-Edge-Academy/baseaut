@@ -165,7 +165,7 @@ export function SessionRunningSemiStructuredScreen({
         timeElapsed: 0,
         isRunning: false,
         exerciseProgress: "Retomando...",
-        exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description }))),
+        exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description, iconUrl: e.iconUrl ?? null }))),
         circuitId: circuitId || undefined,
         circuitName: circuitName || undefined,
       });
@@ -193,7 +193,7 @@ export function SessionRunningSemiStructuredScreen({
           timeElapsed: 0,
           isRunning: false,
           exerciseProgress: `Exercício 1/${exercises.length}`,
-          exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description }))),
+          exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description, iconUrl: e.iconUrl ?? null }))),
           circuitId: circuitId || undefined,
           circuitName: circuitName || undefined,
         });
@@ -529,7 +529,7 @@ export function SessionRunningSemiStructuredScreen({
           <StartActivity
             title={activeExercise.name}
             subtitle={activeExercise.description}
-            mediaUrls={activeExercise.mediaUrls ?? []}
+            iconUrl={activeExercise.iconUrl}
             onStart={async () => {
               setStage("running");
               // Cria a sessão no banco de forma lazy (somente no primeiro "Começar")
@@ -566,7 +566,7 @@ export function SessionRunningSemiStructuredScreen({
           <Stopwatch
             title={activeExercise.name}
             subtitle={activeExercise.description}
-            imageUrl={activeExercise.mediaUrls?.[0]}
+            imageUrl={activeExercise.iconUrl ?? undefined}
             autoStart
             variant="form"
             onPressCrise={handleCrisePress}
