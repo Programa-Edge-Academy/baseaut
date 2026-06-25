@@ -30,6 +30,10 @@ BEGIN
       RAISE EXCEPTION 'Aluno não encontrado.';
   END IF;
 
+  IF NOT public.can_access_team(v_equipe_id) THEN
+      RAISE EXCEPTION 'Acesso negado: Você não pertence à equipe deste aluno.';
+  END IF;
+
   SELECT id INTO v_template_id
   FROM public.formularios
   WHERE tipo = p_tipo::tipo_formulario
