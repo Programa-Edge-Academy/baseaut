@@ -311,7 +311,7 @@ export function StudentReportsScreen() {
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" />
+      <Header variant="back" onPressBack={() => router.back()} />
 
       <View className="flex-1 mx-8">
         <View className="mt-5 w-full">

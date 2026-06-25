@@ -33,10 +33,13 @@ export interface ComparisonData {
   }>;
   comportamentos: {
     estereotipia: { p1: number; p2: number; diferenca_absoluta: number };
-    contato_visual: { p1: number; p2: number; diferenca_absoluta: number };
+    contato_visual_pessoas: { p1: number; p2: number; diferenca_absoluta: number };
+    contato_visual_objetos: { p1: number; p2: number; diferenca_absoluta: number };
     engajamento: { p1: number; p2: number; diferenca_absoluta: number };
     fuga: { p1: number; p2: number; diferenca_absoluta: number };
     crise: { p1: number; p2: number; diferenca_absoluta: number };
+    inapto: { p1: number; p2: number; diferenca_absoluta: number };
+    atividade_preferencial: { p1: number; p2: number; diferenca_absoluta: number };
   };
 }
 

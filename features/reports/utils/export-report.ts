@@ -124,6 +124,7 @@ async function fetchComportamentos(studentId: string, inicio: string, fim: strin
     .from("sessoes")
     .select("id")
     .eq("aluno_id", studentId)
+    .eq("status", "concluida")
     .gte("data_inicio", inicio)
     .lte("data_inicio", fim);
 
@@ -132,18 +133,27 @@ async function fetchComportamentos(studentId: string, inicio: string, fim: strin
 
   const { data } = await supabase
     .from("comportamentos_sessao")
-    .select("tipo")
+    .select("tipo, observacao")
     .in("sessao_id", ids)
     .neq("tipo", "outro");
 
   const counts: Record<string, number> = {
     estereotipia: 0,
-    contato_visual: 0,
+    contato_visual_pessoas: 0,
+    contato_visual_objetos: 0,
     engajamento: 0,
     fuga: 0,
     crise: 0,
+    inapto: 0,
+    atividade_preferencial: 0,
   };
   (data ?? []).forEach((b: any) => {
+    if (b.tipo === "contato_visual") {
+      const obs = String(b.observacao ?? "").toLowerCase();
+      if (obs.includes("objeto")) counts.contato_visual_objetos++;
+      else if (obs.includes("pessoa")) counts.contato_visual_pessoas++;
+      return;
+    }
     if (b.tipo in counts) counts[b.tipo]++;
   });
   return counts;
@@ -284,8 +294,8 @@ function svgAjudaSessao(sessoes: { ajuda_intrusiva: number; autonomo: number }[]
 }
 
 function svgComportamentos(counts: Record<string, number>): string {
-  const labels: Record<string, string> = { estereotipia: "Estereotipia", contato_visual: "Contato visual", engajamento: "Engajamento", fuga: "Fuga", crise: "Crise" };
-  const barColors = ["#09CDDB", "#DBBF09", "#34C759", "#CB30E0", "#FF383C"];
+  const labels: Record<string, string> = { estereotipia: "Estereotipia", contato_visual_pessoas: "C. visual (Pessoas)", contato_visual_objetos: "C. visual (Objetos)", engajamento: "Engajamento", fuga: "Fuga", crise: "Crise", inapto: "Inaptos", atividade_preferencial: "Ativ. pref." };
+  const barColors = ["#09CDDB", "#DBBF09", "#A6900A", "#34C759", "#CB30E0", "#FF383C", "#FF8A00", "#1E88E5"];
   const keys = Object.keys(labels);
   const maxVal = Math.max(...keys.map((k) => counts[k] ?? 0), 1);
   const chartH = 80;
@@ -394,7 +404,7 @@ async function buildSections(dataMap: Record<string, any>, inicio: string, fim: 
 
     // 4d. Comportamentos
     if (compComps) {
-      const behaviorLabels: Record<string, string> = { estereotipia: "Estereotipias", contato_visual: "Contato visual", engajamento: "Engajamento", fuga: "Fuga", crise: "Crises" };
+      const behaviorLabels: Record<string, string> = { estereotipia: "Estereotipias", contato_visual_pessoas: "Contato visual (Pessoas)", contato_visual_objetos: "Contato visual (Objetos)", engajamento: "Engajamento", fuga: "Fuga", crise: "Crises", inapto: "Comportamentos inaptos", atividade_preferencial: "Atividades preferenciais" };
       html += sectionCard("Comparação dos comportamentos observados", `
         <table style="border-collapse:collapse;width:100%">
           ${tableRow(["Comportamento", "Período 1", "Período 2", "Variação"], true)}

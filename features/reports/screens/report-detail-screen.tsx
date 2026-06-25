@@ -145,7 +145,7 @@ export function ReportDetailScreen() {
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back"/>
+      <Header variant="back" onPressBack={() => router.back()} />
 
       <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}>
         <View className="mx-6 mt-4">

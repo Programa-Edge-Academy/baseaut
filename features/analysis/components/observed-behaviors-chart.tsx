@@ -3,7 +3,15 @@ import { View, Text, LayoutChangeEvent } from "react-native";
 import Svg, { Rect, Line, Text as SvgText } from "react-native-svg";
 import { colors } from "@/assets/colors";
 
-export type BehaviorType = "stereotypy" | "eye_contact" | "engagement" | "escape" | "crisis";
+export type BehaviorType =
+  | "stereotypy"
+  | "eye_contact_people"
+  | "eye_contact_objects"
+  | "engagement"
+  | "escape"
+  | "crisis"
+  | "unfit"
+  | "preferred_activity";
 
 export interface BehaviorRecord {
   id: string;
@@ -28,10 +36,15 @@ export const BEHAVIOR_CONFIG: Record<
     legendLabel: "Estereotipias",
     color: "#09CDDB", // Cyan
   },
-  eye_contact: {
-    label: "Contato\nvisual",
-    legendLabel: "Contato visual",
+  eye_contact_people: {
+    label: "Contato\nvisual\n(Pessoas)",
+    legendLabel: "Contato visual (Pessoas)",
     color: "#DBBF09", // Yellow
+  },
+  eye_contact_objects: {
+    label: "Contato\nvisual\n(Objetos)",
+    legendLabel: "Contato visual (Objetos)",
+    color: "#A6900A", // Dark gold
   },
   engagement: {
     label: "Engajamento",
@@ -47,6 +60,16 @@ export const BEHAVIOR_CONFIG: Record<
     label: "Crises",
     legendLabel: "Crises",
     color: "#FF383C", // Red (Figma)
+  },
+  unfit: {
+    label: "Comporta-\nmentos\ninaptos",
+    legendLabel: "Comportamentos inaptos",
+    color: "#FF8A00", // Orange
+  },
+  preferred_activity: {
+    label: "Atividades\npreferenciais",
+    legendLabel: "Atividades preferenciais",
+    color: "#1E88E5", // Blue
   },
 };
 
@@ -83,10 +106,13 @@ export function ObservedBehaviorsChart({
   const aggregatedData = useMemo(() => {
     const counts: Record<BehaviorType, number> = {
       stereotypy: 0,
-      eye_contact: 0,
+      eye_contact_people: 0,
+      eye_contact_objects: 0,
       engagement: 0,
       escape: 0,
       crisis: 0,
+      unfit: 0,
+      preferred_activity: 0,
     };
 
     filteredRecords.forEach((rec) => {
@@ -152,10 +178,13 @@ export function ObservedBehaviorsChart({
 
   const behaviorKeys: BehaviorType[] = [
     "stereotypy",
-    "eye_contact",
+    "eye_contact_people",
+    "eye_contact_objects",
     "engagement",
     "escape",
     "crisis",
+    "unfit",
+    "preferred_activity",
   ];
 
   // Cálculo de largura proporcional e centralização das barras
