@@ -30,7 +30,7 @@ BEGIN
     RAISE EXCEPTION 'Sessão não encontrada.';
   END IF;
 
-  IF NOT public.is_team_member(v_equipe_id) THEN
+  IF NOT public.can_access_team(v_equipe_id) THEN
     RAISE EXCEPTION 'Acesso negado para remover esta sessão.';
   END IF;
 
