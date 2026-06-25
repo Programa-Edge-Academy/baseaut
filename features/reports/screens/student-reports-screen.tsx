@@ -413,6 +413,7 @@ export function StudentReportsScreen() {
         visible={isNewOpen}
         onClose={() => setIsNewOpen(false)}
         onSave={handleCreate}
+        defaultTitle={`Relatório ${reports.length + 1}`}
       />
 
       {/* Modal: renomear */}

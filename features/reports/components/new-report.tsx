@@ -21,9 +21,10 @@ export type NewReportProps = {
   onClose: () => void;
   onSave: (data: ReportFormData) => Promise<void>;
   initialData?: Report | null;
+  defaultTitle?: string;
 };
 
-export function NewReport({ visible, onClose, onSave, initialData }: NewReportProps) {
+export function NewReport({ visible, onClose, onSave, initialData, defaultTitle }: NewReportProps) {
   const { width, height } = useWindowDimensions();
   const isEdit = !!initialData;
 
@@ -44,14 +45,14 @@ export function NewReport({ visible, onClose, onSave, initialData }: NewReportPr
         setDataInicio(initialData.data_inicio);
         setDataFim(initialData.data_fim);
       } else {
-        setTitulo("");
+        setTitulo(defaultTitle ?? "");
         setDataInicio("");
         setDataFim("");
       }
       setSaving(false);
       setErrors({});
     }
-  }, [visible, initialData]);
+  }, [visible, initialData, defaultTitle]);
 
   const openCalendar = () => {
     setTempInicio(dataInicio);
