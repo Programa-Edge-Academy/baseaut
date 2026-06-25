@@ -1,5 +1,6 @@
 import { AppModal } from "@/components/app-modal";
 import { colors } from "@/assets/colors";
+import { ConfirmationModal } from "@/components/confirmation-modal";
 import { DataList } from "@/components/data-list";
 import { DefaultButton } from "@/components/default-button";
 import { DefaultTextInput } from "@/components/default-text-input";
@@ -146,14 +147,18 @@ function RenameModal({
             value={name}
             onChangeText={setName}
           />
-          <DefaultButton
-            label="Salvar"
+          <Pressable
             onPress={() => { if (name.trim()) onSave(name.trim()); }}
             disabled={!name.trim()}
-            bgColorClass={name.trim() ? "bg-primary" : "bg-muted/30"}
-            hasShadow={!!name.trim()}
-            sizeClass="w-full h-11"
-          />
+            className={`w-full h-11 items-center justify-center rounded-2xl active:opacity-70 ${name.trim() ? "bg-primary" : "bg-muted/30"}`}
+          >
+            <Text 
+              className="text-white text-base font-bold" 
+              style={{ fontFamily: "Inter-Bold", opacity: name.trim() ? 1 : 0.5 }}
+            >
+              Salvar
+            </Text>
+          </Pressable>
         </Pressable>
       </Pressable>
     </AppModal>
@@ -187,6 +192,7 @@ export function StudentReportsScreen() {
 
   // Rename modal
   const [renamingReport, setRenamingReport] = useState<Report | null>(null);
+  const [reportToDelete, setReportToDelete] = useState<Report | null>(null);
 
   // Export mode
   const [isExportMode, setIsExportMode] = useState(false);
@@ -384,7 +390,7 @@ export function StudentReportsScreen() {
                     rightAction={isExportMode ? "none" : "more"}
                     editLabel="Renomear"
                     onEdit={!isExportMode ? () => setRenamingReport(item) : undefined}
-                    onDelete={!isExportMode ? () => handleDelete(item.id) : undefined}
+                    onDelete={!isExportMode ? () => setReportToDelete(item) : undefined}
                     enableRipple
                     onPress={isExportMode ? () => toggleSelect(item.id) : () => openReport(item)}
                     className={isSelected ? "border border-primary" : undefined}
@@ -398,11 +404,9 @@ export function StudentReportsScreen() {
         {isExportMode && (
           <View className="absolute bottom-8 left-0 right-0">
             <DefaultButton
-              label={exporting ? "Exportando..." : `Confirmar (${selectedIds.length})`}
+              label={`Confirmar (${selectedIds.length})`}
               onPress={handleConfirmExport}
-              disabled={exporting}
-              bgColorClass={exporting ? "bg-muted/30" : "bg-primary"}
-              hasShadow={!exporting}
+              bgColorClass="bg-primary"
             />
           </View>
         )}
@@ -467,6 +471,19 @@ export function StudentReportsScreen() {
           </Pressable>
         </Pressable>
       </AppModal>
+
+      <ConfirmationModal
+        visible={!!reportToDelete}
+        onClose={() => setReportToDelete(null)}
+        onConfirm={() => {
+          if (reportToDelete) {
+            handleDelete(reportToDelete.id);
+          }
+          setReportToDelete(null);
+        }}
+        title="Excluir relatório?"
+        message="O relatório será excluído permanentemente. Esta ação não poderá ser desfeita."
+      />
 
       <Toast
         visible={toast.visible}
