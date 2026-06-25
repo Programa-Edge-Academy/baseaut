@@ -194,7 +194,7 @@ export function ExercisesScreen() {
     }
 
     return (
-      <View className="mt-5 px-8">
+      <View className="flex-1 mt-5 px-8">
         <DataList
           data={filteredExercises}
           emptyMessage="Nenhum exercício encontrado."

@@ -30,7 +30,7 @@ export function DataList<T>({
     <FlatList
       data={data || []}
       ListEmptyComponent={renderEmptyComponent}
-      contentContainerStyle={contentContainerStyle ?? { paddingBottom: 24, flexGrow: 1 }}
+      contentContainerStyle={contentContainerStyle ?? { flexGrow: 1 }}
       showsVerticalScrollIndicator={false}
       refreshControl={
         onRefresh ? (

@@ -65,7 +65,7 @@ export function StudentsScreen() {
           />
         </View>
 
-        <View className="mx-8 mt-5">
+        <View className="flex-1 mx-8 mt-5">
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color={colors.primary} />
@@ -75,7 +75,6 @@ export function StudentsScreen() {
             data={filteredStudents}
             keyExtractor={(item) => item.id}
             emptyMessage="Nenhum aluno encontrado."
-            contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
             onRefresh={refresh}
             renderItem={({ item }) => (
               <ListCard
