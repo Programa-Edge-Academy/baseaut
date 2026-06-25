@@ -20,6 +20,7 @@ export type CircuitSelectionExercise = {
   id: string;
   name: string;
   description: string;
+  iconUrl?: string | null;
 };
 
 export type CircuitItem = {

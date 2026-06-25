@@ -387,7 +387,7 @@ function FormatPicker({ onExport, onClose }: { onExport: (f: { pdf: boolean; csv
           <DefaultButton label="Exportar" onPress={() => onExport({ pdf, csv }, "share")} sizeClass="flex-1 h-11" bgColorClass="bg-primary" hasShadow />
         </View>
         {Platform.OS === "android" && (
-          <DefaultButton label="Apenas baixar" onPress={() => onExport({ pdf, csv }, "download")} sizeClass="w-full h-11" bgColorClass="bg-level1" isOutline={true} outlineBorderClass="border-outline" hasShadow={false} className="border border-outline" textClassName="text-white" />
+          <DefaultButton label="Baixar" onPress={() => onExport({ pdf, csv }, "download")} sizeClass="w-full h-11" bgColorClass="bg-secondary" hasShadow={false} className="border border-secondary" textClassName="text-white" />
         )}
       </View>
     </Pressable>

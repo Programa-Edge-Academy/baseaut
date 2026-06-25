@@ -58,7 +58,7 @@ export function ListCard({
   const handleMorePress = () => {
     if (hasMenuOptions) {
       buttonRef.current?.measure((x, y, width, height, pageX, pageY) => {
-        setMenuLayout({ top: pageY + height, left: pageX, width });
+        setMenuLayout({ top: pageY - height / 2, left: pageX, width });
         setMenuVisible(true);
       });
     }

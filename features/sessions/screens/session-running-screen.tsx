@@ -40,6 +40,7 @@ export type SessionExercise = {
   name: string;
   description: string;
   mediaUrls?: string[];
+  iconUrl?: string | null;
 };
 
 type ExerciseStage = "ready" | "running";
@@ -184,7 +185,7 @@ export function SessionRunningScreen({
         timeElapsed: 0,
         isRunning: false,
         exerciseProgress: "Retomando...",
-        exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description }))),
+        exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description, iconUrl: e.iconUrl ?? null }))),
         circuitId: circuitId || undefined,
         circuitName: circuitName || undefined,
       });
@@ -211,7 +212,7 @@ export function SessionRunningScreen({
           timeElapsed: 0,
           isRunning: false,
           exerciseProgress: `Exercício 1/${exercises.length}`,
-          exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description }))),
+          exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description, iconUrl: e.iconUrl ?? null }))),
           circuitId: effectiveCircuitId || undefined,
           circuitName: effectiveCircuitName || undefined,
         });
@@ -264,6 +265,7 @@ export function SessionRunningScreen({
           name: e.name,
           description: e.description,
           mediaUrls: [],
+          iconUrl: e.iconUrl ?? null,
         }));
       } catch (err) {
         console.error("Failed to parse exercises from context fallback", err);
@@ -689,7 +691,7 @@ export function SessionRunningScreen({
               <StartActivity
                 title={currentExercise.name}
                 subtitle={currentExercise.description}
-                mediaUrls={currentExercise.mediaUrls ?? []}
+                iconUrl={currentExercise.iconUrl}
                 onStart={handleStart}
                 onStartAndRecord={handleStartAndRecord}
                 onPressInfo={() => setIsReorderOpen(true)}
@@ -698,7 +700,7 @@ export function SessionRunningScreen({
               <Stopwatch
                 title={currentExercise.name}
                 subtitle={currentExercise.description}
-                imageUrl={currentExercise.mediaUrls?.[0]}
+                imageUrl={currentExercise.iconUrl ?? undefined}
                 autoStart
                 variant="form"
                 onPressCrise={handleCrisePress}

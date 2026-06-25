@@ -24,12 +24,14 @@ export default function SessionSemiStructuredRoute() {
         id: string;
         name: string;
         description?: string;
+        iconUrl?: string | null;
       }[];
       return parsed.map((e) => ({
         id: e.id,
         name: e.name,
         description: e.description ?? "",
         mediaUrls: [],
+        iconUrl: e.iconUrl ?? null,
       }));
     } catch {
       return [];

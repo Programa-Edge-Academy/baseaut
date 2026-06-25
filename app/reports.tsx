@@ -84,7 +84,7 @@ export default function ReportsRoute() {
               keyExtractor={(item) => item.id}
               emptyMessage="Nenhum aluno encontrado."
               onRefresh={refreshStudents}
-              contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
+              contentContainerStyle={{ flexGrow: 1 }}
               renderItem={({ item }) => {
                 const count = reportCounts[item.id] || 0;
                 return (

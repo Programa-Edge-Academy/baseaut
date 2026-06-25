@@ -158,6 +158,7 @@ export default function CircuitSelectionRoute() {
         id: exercise.id,
         name: exercise.name,
         description: exercise.description,
+        iconUrl: exercise.iconUrl ?? null,
       })),
     }));
 
@@ -271,6 +272,7 @@ export default function CircuitSelectionRoute() {
           id: e.id,
           name: e.name,
           description: e.description,
+          iconUrl: e.iconUrl ?? null,
         }))
       );
 
