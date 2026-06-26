@@ -8,6 +8,15 @@ Antes de começar a implementar novas telas, componentes ou fluxos, leia o guia 
 
 Este repositório ainda segue a estrutura inicial gerada pelo `create-expo-app`, então o guia acima serve como base para manter o código consistente desde o início.
 
+## Documentação da API
+
+A documentação de referência do Frontend (`app/`, `components/`, `features/`) é gerada com [TypeDoc](https://typedoc.org/) a partir dos comentários do código.
+
+- **Site online:** https://programa-edge-academy.github.io/baseaut/
+- **Gerar localmente:** `npm run docs` (saída em `docs/api/`, abra `docs/api/index.html`)
+
+A publicação no GitHub Pages é automática via GitHub Actions a cada atualização das branches `main` e `develop`.
+
 ## Get started
 
 1. Install dependencies
