@@ -39,7 +39,6 @@ export function SessionCompletion({
 
   return (
     <View className={`w-full max-w-md items-center p-6 ${className}`}>
-      {/* Ícone de Sucesso Verde Circular */}
       <View
         className="h-20 w-20 items-center justify-center rounded-full mb-6"
         style={{ backgroundColor: colors.secondary + "15" }}
@@ -47,7 +46,6 @@ export function SessionCompletion({
         <Check size={40} color={colors.secondary} strokeWidth={3} />
       </View>
 
-      {/* Textos Informativos Centralizados */}
       <Text className="text-[24px] font-bold text-white text-center mb-2">
         {title}
       </Text>
@@ -63,11 +61,9 @@ export function SessionCompletion({
 
       {hasWarnings ? <WarningBanner className="mb-8" /> : null}
 
-      {/* Linha de Botões de Ação */}
       <View className="w-full flex-row" style={{ gap: 12 }}>
-        {/* Botão Continuar */}
         <RipplePressable
-          onPress={() => setShowOptions(true)} //
+          onPress={() => setShowOptions(true)}
           className="flex-1 flex-row items-center justify-center rounded-[16px] bg-level1 border border-outline py-4 active:opacity-70"
           style={{ gap: 8 }}
         >
@@ -77,7 +73,6 @@ export function SessionCompletion({
           </Text>
         </RipplePressable>
 
-        {/* Botão Voltar ao Início */}
         <DefaultButton
           label="Voltar ao início"
           sizeClass="flex-1 py-4"

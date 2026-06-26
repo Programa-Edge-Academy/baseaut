@@ -6,33 +6,32 @@ import React, { useEffect, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
+/** Motor development level recorded for a completed activity. */
 export type NivelDesenvolvimento = "inicial" | "intermediario" | "maduro";
+/** Whether the student performed the activity autonomously or with intrusive help. */
 export type RegistroAjuda = "autonomo" | "ajuda_intrusiva";
+/** Help sub-category recorded when the student was autonomous. */
 export type SubCategoria = "verbal" | "modelo";
 
+/** Result captured when an activity is completed. */
 export type ActivityResultData = {
   nivelDesenvolvimento: NivelDesenvolvimento;
   registroAjuda: RegistroAjuda;
   subCategorias: SubCategoria[];
 };
 
+/** Props for {@link ActivityResultModal}. */
 export type ActivityResultModalProps = {
   visible: boolean;
   exerciseTitle: string;
   elapsedTime?: string;
   onClose: () => void;
+  /** Called to defer the result and answer it later. */
   onDefer?: () => void;
+  /** Called when the activity was not completed, with the reason and optional description. */
   onNotCompleted?: (motivo: string, descricao?: string) => void;
   onConfirm: (result: ActivityResultData) => void;
 };
-
-// ---------------------------------------------------------------------------
-// SVG XML Content
-// ---------------------------------------------------------------------------
 
 const SAD_FACE_XML = `
 <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -72,10 +71,11 @@ const MOTIVOS = [
   "Outro",
 ];
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
+/**
+ * Modal that records the outcome of an in-session activity: motor development
+ * level and help registration when completed, or a reason (with optional
+ * description) when not completed. Supports deferring the answer for later.
+ */
 export function ActivityResultModal({
   visible,
   exerciseTitle,
@@ -91,8 +91,7 @@ export function ActivityResultModal({
   const [subCategorias, setSubCategorias] = useState<SubCategoria[]>([]);
   const [selectedMotivo, setSelectedMotivo] = useState<string | null>(null);
   const [outroDescricao, setOutroDescricao] = useState<string>("");
-  
-  // Controle de submissão para exibir erros nas duas views (US 8.6 e 8.7)
+
   const [submittedResult, setSubmittedResult] = useState(false);
   const [submittedReasons, setSubmittedReasons] = useState(false);
 
@@ -121,7 +120,6 @@ export function ActivityResultModal({
     );
   };
 
-  // Lógica de Conclusão Positiva (US 8.6)
   const handleConfirm = () => {
     setSubmittedResult(true);
     const nivelOk = nivel !== null;
@@ -137,10 +135,9 @@ export function ActivityResultModal({
     }
   };
 
-  // (US 8.7)
   const handleConfirmNotCompleted = () => {
     setSubmittedReasons(true);
-    
+
     const isMotivoOk = selectedMotivo !== null;
     const isOutroOk = selectedMotivo === "Outro" ? outroDescricao.trim() !== "" : true;
 
@@ -152,16 +149,13 @@ export function ActivityResultModal({
     }
   };
 
-  // Flags US 8.6
   const nivelError = submittedResult && nivel === null;
   const ajudaError = submittedResult && ajuda === null;
   const subError   = submittedResult && ajuda === "autonomo" && subCategorias.length === 0;
 
-  // Flags  US 8.7
   const motivoError = submittedReasons && selectedMotivo === null;
   const outroError = submittedReasons && selectedMotivo === "Outro" && outroDescricao.trim() === "";
 
-  // button visual disabled state logic for "Registrar" in US 8.7
   const isRegistrarApparentDisabled = selectedMotivo === null || (selectedMotivo === "Outro" && outroDescricao.trim() === "");
 
   return (
@@ -198,7 +192,6 @@ export function ActivityResultModal({
           }}
           onPress={(e) => e.stopPropagation()}
         >
-          {/* ---- Header ---- */}
           <View
             style={{
               flexDirection: "row",
@@ -219,7 +212,6 @@ export function ActivityResultModal({
             </Text>
 
             <RipplePressable
-              
               onPress={onDefer}
               style={{
                 backgroundColor: "#372620",
@@ -265,7 +257,6 @@ export function ActivityResultModal({
 
           {viewMode === "result" ? (
             <>
-              {/* ---- Section 1 — develop level ---- */}
               <View style={{ gap: 8 }}>
                 <Text
                   style={{
@@ -286,7 +277,7 @@ export function ActivityResultModal({
                         key={item.id}
                         onPress={() => {
                           setNivel(item.id);
-                          setSubmittedResult(false); //issue clear 
+                          setSubmittedResult(false);
                         }}
                         style={{
                           flex: 1,
@@ -299,7 +290,7 @@ export function ActivityResultModal({
                           borderColor: hasErr
                             ? colors.error
                             : isSelected
-                            ? colors.primary // US 8.6: 
+                            ? colors.primary
                             : colors.outline,
                           backgroundColor: isSelected
                             ? `${colors.level2}22`
@@ -348,7 +339,6 @@ export function ActivityResultModal({
                 )}
               </View>
 
-              {/* ---- Seção 2 — Registro de Ajuda ---- */}
               <View style={{ gap: 8, marginTop: 5 }}>
                 <Text
                   style={{
@@ -413,7 +403,6 @@ export function ActivityResultModal({
                 )}
               </View>
 
-              {/* ---- Rodapé ---- */}
               <View style={{ flexDirection: "row", gap: 10, marginTop: 15 }}>
                 <RipplePressable
                   onPress={() => setViewMode("reasons")}
@@ -464,7 +453,6 @@ export function ActivityResultModal({
             </>
           ) : (
             <>
-              {/* ---- Seção 3 — Motivos de Não Realização (US 8.7) ---- */}
               <View style={{ gap: 8 }}>
                 <Text
                   style={{
@@ -493,7 +481,7 @@ export function ActivityResultModal({
                       isSelected={selectedMotivo === motivo}
                       onToggle={() => {
                         setSelectedMotivo(motivo);
-                        setSubmittedReasons(false); // Remove o erro ao clicar
+                        setSubmittedReasons(false);
                       }}
                     />
                   ))}
@@ -520,7 +508,7 @@ export function ActivityResultModal({
                       value={outroDescricao}
                       onChangeText={(text) => {
                         setOutroDescricao(text);
-                        setSubmittedReasons(false); // Remove o erro ao digitar
+                        setSubmittedReasons(false);
                       }}
                       placeholder="Descreva o motivo..."
                       placeholderTextColor={colors.placeholder}
@@ -548,7 +536,6 @@ export function ActivityResultModal({
                 )}
               </View>
 
-              {/* ---- Rodapé Motivos ---- */}
               <View style={{ flexDirection: "row", gap: 10, marginTop: 15 }}>
                 <RipplePressable
                   onPress={() => {

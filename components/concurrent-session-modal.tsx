@@ -5,10 +5,13 @@ import { X } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 
+/** Props for {@link ConcurrentSessionModal}. */
 interface ConcurrentSessionModalProps {
   visible: boolean;
   onRequestClose: () => void;
+  /** Called to resume the session already in progress. */
   onContinueCurrent: () => void;
+  /** Called to finish the current session and start a new one. */
   onFinishAndStartNew: () => void;
   title?: string;
   message?: string;
@@ -16,6 +19,10 @@ interface ConcurrentSessionModalProps {
   finishLabel?: string;
 }
 
+/**
+ * Modal shown when a session is already in progress for a student, letting the
+ * user resume it or finish it before starting a new one.
+ */
 export function ConcurrentSessionModal({
   visible,
   onRequestClose,

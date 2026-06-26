@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../../lib/supabase";
 import { ExerciseProgressRecord } from "../components/exercise-progress-chart";
 
+/** Per-exercise progress summary with status, evolution, and history records. */
 export type ExerciseProgress = {
   id: string;
   title: string;
@@ -13,6 +14,7 @@ export type ExerciseProgress = {
   records: ExerciseProgressRecord[];
 };
 
+/** Loads a student's per-exercise motor progress (computed in the database). */
 export function useExerciseProgress(studentId: string) {
   const [exercises, setExercises] = useState<ExerciseProgress[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,13 +24,11 @@ export function useExerciseProgress(studentId: string) {
     setIsLoading(true);
     setError(null);
 
-    // Chama a RPC criada na migration para buscar e processar a evolução motora direto no banco de dados Supabase
     const { data, error: rpcError } = await supabase.rpc("rpc_get_progresso_exercicios", {
       p_aluno_id: studentId,
     });
 
     if (rpcError) {
-      console.error("Erro ao buscar progresso:", rpcError);
       setError(rpcError instanceof Error ? rpcError : new Error(String(rpcError)));
       setExercises([]);
       setIsLoading(false);
@@ -45,7 +45,7 @@ export function useExerciseProgress(studentId: string) {
         const recordDate = new Date(record.data);
         return {
           id: `${item.exercicio_id}-${index}-${record.data}`,
-          sessionId: "", // RPC não retorna o ID da sessão
+          sessionId: "",
           date: `${String(recordDate.getDate()).padStart(2, "0")}/${String(recordDate.getMonth() + 1).padStart(2, "0")}`,
           rawDate: record.data.split("T")[0],
           executionStatus: "realizada",
@@ -53,7 +53,6 @@ export function useExerciseProgress(studentId: string) {
         };
       });
 
-      // "Último desempenho": nível de desenvolvimento do registro mais recente.
       const ultimoNivel = [...historico]
         .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
         .map((r) => r.nivel_desenvolvimento)
@@ -91,7 +90,7 @@ export function useExerciseProgress(studentId: string) {
   };
 }
 
-/** Rótulo do "Último desempenho" a partir do nível de desenvolvimento. */
+/** Maps a development level to the "last performance" label and tone. */
 function mapLastPerformance(
   nivel: string | null,
 ): { label: string; tone: "green" | "yellow" | "red" | "gray" } {
@@ -109,8 +108,7 @@ function mapLastPerformance(
   }
 }
 
-// ==================== AUXILIARES DE MAPEAMENTO DE ENUMS ====================
-
+/** Maps a database development-level enum to the chart's level union. */
 function mapDevelopmentLevel(level: string): "inicial" | "intermediario" | "maduro" {
   switch (level) {
     case "maduro":
@@ -124,6 +122,7 @@ function mapDevelopmentLevel(level: string): "inicial" | "intermediario" | "madu
   }
 }
 
+/** Maps an evolution label to its display label and tone. */
 function mapEvolution(evolucao: string): { label: string; tone: "green" | "yellow" | "red" | "gray" } {
   switch (evolucao) {
     case "Melhorou":

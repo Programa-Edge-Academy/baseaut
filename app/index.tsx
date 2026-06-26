@@ -5,6 +5,11 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 
+/**
+ * Entry route and auth gate. Checks for an existing session, signs out pending
+ * non-coordinator users, and redirects authenticated users to `/students`;
+ * otherwise renders the login screen.
+ */
 export default function Index() {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);

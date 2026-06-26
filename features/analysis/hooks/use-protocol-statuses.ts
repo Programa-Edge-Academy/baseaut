@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { ProtocolStatus, ProtocolTipo } from "./use-protocol-records";
 
+/** Registration status of each protocol type for a student. */
 export type ProtocolStatuses = Record<ProtocolTipo, ProtocolStatus>;
 
 const INITIAL_STATUSES: ProtocolStatuses = {
@@ -56,8 +57,7 @@ export function useProtocolStatuses(studentId?: string) {
         }
 
         if (active) setStatuses(next);
-      } catch (error) {
-        console.error("Erro ao carregar status dos protocolos:", error);
+      } catch {
       } finally {
         if (active) setIsLoading(false);
       }

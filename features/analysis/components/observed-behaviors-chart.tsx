@@ -3,6 +3,7 @@ import { View, Text, LayoutChangeEvent } from "react-native";
 import Svg, { Rect, Line, Text as SvgText } from "react-native-svg";
 import { colors } from "@/assets/colors";
 
+/** A charted behavior category. */
 export type BehaviorType =
   | "stereotypy"
   | "eye_contact_people"
@@ -13,13 +14,16 @@ export type BehaviorType =
   | "unfit"
   | "preferred_activity";
 
+/** A single observed-behavior record for a given date. */
 export interface BehaviorRecord {
   id: string;
   behaviorType: BehaviorType;
-  date: string; // Formato "AAAA-MM-DD"
+  /** "YYYY-MM-DD" date. */
+  date: string;
   frequency: number;
 }
 
+/** Props for {@link ObservedBehaviorsChart}. */
 export interface ObservedBehaviorsChartProps {
   records: BehaviorRecord[];
   startDate?: Date | null;
@@ -27,6 +31,7 @@ export interface ObservedBehaviorsChartProps {
   hideShadow?: boolean;
 }
 
+/** Display labels and colors for each behavior type. */
 export const BEHAVIOR_CONFIG: Record<
   BehaviorType,
   { label: string; legendLabel: string; color: string }
@@ -34,45 +39,49 @@ export const BEHAVIOR_CONFIG: Record<
   stereotypy: {
     label: "Estereotipias",
     legendLabel: "Estereotipias",
-    color: "#09CDDB", // Cyan
+    color: "#09CDDB",
   },
   eye_contact_people: {
     label: "Contato\nvisual\n(Pessoas)",
     legendLabel: "Contato visual (Pessoas)",
-    color: "#DBBF09", // Yellow
+    color: "#DBBF09",
   },
   eye_contact_objects: {
     label: "Contato\nvisual\n(Objetos)",
     legendLabel: "Contato visual (Objetos)",
-    color: "#A6900A", // Dark gold
+    color: "#A6900A",
   },
   engagement: {
     label: "Engajamento",
     legendLabel: "Engajamento",
-    color: "#34C759", // Green (Figma)
+    color: "#34C759",
   },
   escape: {
     label: "Fuga",
     legendLabel: "Fuga",
-    color: "#CB30E0", // Purple (Figma)
+    color: "#CB30E0",
   },
   crisis: {
     label: "Crises",
     legendLabel: "Crises",
-    color: "#FF383C", // Red (Figma)
+    color: "#FF383C",
   },
   unfit: {
     label: "Comporta-\nmentos\ninaptos",
     legendLabel: "Comportamentos inaptos",
-    color: "#FF8A00", // Orange
+    color: "#FF8A00",
   },
   preferred_activity: {
     label: "Atividades\npreferenciais",
     legendLabel: "Atividades preferenciais",
-    color: "#1E88E5", // Blue
+    color: "#1E88E5",
   },
 };
 
+/**
+ * Bar chart of accumulated observed-behavior frequencies over a date range, one
+ * bar per behavior type.
+ */
 export function ObservedBehaviorsChart({
   records,
   startDate,
@@ -81,10 +90,8 @@ export function ObservedBehaviorsChart({
 }: ObservedBehaviorsChartProps) {
   const [containerWidth, setContainerWidth] = useState<number>(340);
 
-  // 1. Filtragem por data no período selecionado
   const filteredRecords = useMemo(() => {
     return records.filter((rec) => {
-      // Usar a parte da data apenas (AAAA-MM-DD) para comparações mais limpas
       const recDate = new Date(rec.date);
       const compDate = new Date(recDate.getFullYear(), recDate.getMonth(), recDate.getDate());
 
@@ -102,7 +109,6 @@ export function ObservedBehaviorsChart({
     });
   }, [records, startDate, endDate]);
 
-  // 2. Agrupamento e acumulação de frequência por tipo de comportamento
   const aggregatedData = useMemo(() => {
     const counts: Record<BehaviorType, number> = {
       stereotypy: 0,
@@ -124,32 +130,26 @@ export function ObservedBehaviorsChart({
     return counts;
   }, [filteredRecords]);
 
-  // Total acumulado para verificar estado vazio (se for zero, o gráfico não aparece)
   const totalFrequency = useMemo(() => {
     return Object.values(aggregatedData).reduce((sum, val) => sum + val, 0);
   }, [aggregatedData]);
 
-  // Se não houver dados, o gráfico de barras não é exibido
   if (filteredRecords.length === 0 || totalFrequency === 0) {
     return null;
   }
 
-  // 3. Cálculo dinâmico do eixo Y (Frequência máxima do gráfico, com mínimo de 9 conforme o Figma)
   const maxFrequencia = Math.max(...Object.values(aggregatedData));
   const yMax = Math.max(9, maxFrequencia);
 
-  // Determinar o intervalo das linhas horizontais no grid de plotagem (geralmente de 1 em 1 para máximo 9, ou proporcional)
   const step = Math.max(1, Math.ceil(yMax / 9));
   const yLines: number[] = [];
   for (let i = 0; i <= yMax; i += step) {
     yLines.push(i);
   }
-  // Forçar a linha do valor máximo a aparecer no topo da grade
   if (yLines[yLines.length - 1] !== yMax) {
     yLines.push(yMax);
   }
 
-  // Capturar largura física para responsividade
   const handleLayout = (event: LayoutChangeEvent) => {
     const { width } = event.nativeEvent.layout;
     if (width > 0) {
@@ -157,21 +157,18 @@ export function ObservedBehaviorsChart({
     }
   };
 
-  // Dimensões do gráfico SVG
   const chartHeight = 220; 
   const leftAxisWidth = 20; 
   const rightMargin = 10;
   
-  // Largura útil disponível para plotagem
-  const paddingX = 40; // 20px padding left + 20px padding right do card contêiner
+  const paddingX = 40;
   const innerWidth = containerWidth - paddingX;
   const leftMargin = leftAxisWidth + 10;
   const plotWidth = innerWidth - leftMargin - rightMargin;
 
   const gridHeight = 180;
-  const gridBottomY = 195; // Posição Y da linha correspondente ao valor zero
+  const gridBottomY = 195;
 
-  // Função para mapear o valor da frequência na coordenada Y correspondente no canvas SVG
   const getGridY = (value: number) => {
     return gridBottomY - (value / yMax) * gridHeight;
   };
@@ -187,7 +184,6 @@ export function ObservedBehaviorsChart({
     "preferred_activity",
   ];
 
-  // Cálculo de largura proporcional e centralização das barras
   const columnWidth = plotWidth / behaviorKeys.length;
   const barWidth = Math.min(35, Math.max(16, columnWidth - 12));
 
@@ -196,7 +192,6 @@ export function ObservedBehaviorsChart({
       onLayout={handleLayout}
       className={`w-full bg-level2 rounded-[20px] border border-outline p-5 flex-col gap-5 mt-5 ${hideShadow ? "" : "shadow-panelShadow"}`}
     >
-      {/* Título e Legendas */}
       <View className="flex-col gap-3">
         <Text className="text-white font-bold" style={{ fontSize: 16 }}>
           Frequência de comportamentos observados
@@ -220,10 +215,8 @@ export function ObservedBehaviorsChart({
         </View>
       </View>
 
-      {/* Gráfico SVG */}
       <View style={{ height: chartHeight, width: "100%" }}>
         <Svg width={innerWidth} height={chartHeight} pointerEvents="none">
-          {/* 1. Desenho das Barras Verticais (Camada inferior) */}
           {behaviorKeys.map((key, index) => {
             const config = BEHAVIOR_CONFIG[key];
             const frequency = aggregatedData[key];
@@ -245,7 +238,6 @@ export function ObservedBehaviorsChart({
             );
           })}
 
-          {/* 2. Desenho das Linhas Pontilhadas do Grid (Camada intermediária - passa por cima das barras) */}
           {yLines.map((val) => {
             const y = getGridY(val);
             return (
@@ -262,7 +254,6 @@ export function ObservedBehaviorsChart({
             );
           })}
 
-          {/* 3. Desenho dos Rótulos do Eixo Y (Camada superior - texto legível) */}
           {yLines.map((val) => {
             const y = getGridY(val);
             return (
@@ -282,7 +273,6 @@ export function ObservedBehaviorsChart({
         </Svg>
       </View>
 
-      {/* Rótulos do Eixo X (Categorias alinhadas usando Flexbox) */}
       <View className="flex-row w-full" style={{ paddingLeft: leftMargin }}>
         {behaviorKeys.map((key) => {
           const config = BEHAVIOR_CONFIG[key];
@@ -307,7 +297,6 @@ export function ObservedBehaviorsChart({
         })}
       </View>
 
-      {/* Descrição Textual do Figma */}
       <Text className="text-[#66758a] text-[12px] font-medium leading-[20px] mt-2">
         A frequência dos comportamentos observados ajuda a identificar padrões durante as sessões e
         apoiar decisões de acompanhamento.

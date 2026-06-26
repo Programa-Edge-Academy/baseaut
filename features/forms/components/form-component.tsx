@@ -4,19 +4,23 @@ import { supabase } from "@/lib/supabase";
 import { forwardRef, useImperativeHandle, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, Text, View } from "react-native";
 
-// Returns the value the UI already displays as default, or undefined if there is no default.
+/** Returns the value the UI already displays as default, or undefined when there is none. */
 function getDefaultAnswer(question: { type: string; min?: number }): any {
   if (question.type === "linear_scale") return question.min ?? null;
   return undefined;
 }
 
-// Perguntas do RC preenchidas automaticamente pela sessão — ocultadas durante
-// a execução (o app as preenche ao encerrar; editáveis depois no histórico).
+/**
+ * Control Record questions auto-filled by the session and hidden during
+ * execution: the app fills them when the session ends, and they remain editable
+ * later from the history.
+ */
 const RC_AUTO_FILLED_TITLES = [
   "Tempo da sessão",
   "Fugas (número de fugas e tempo do ocorrido)",
 ];
 
+/** Normalizes a title for comparison by removing accents and casing. */
 function normalizeTitle(s: string) {
   return s
     .normalize("NFD")
@@ -25,15 +29,21 @@ function normalizeTitle(s: string) {
     .trim();
 }
 
+/** Props for {@link FormComponent}. */
 export interface FormComponentProps {
   formularioId: string;
   sessaoId?: string;
   alunoId?: string;
   onSuccess?: () => void;
-  /** Oculta as perguntas auto-preenchidas do RC (uso inline durante a sessão). */
+  /** Hides the auto-filled Control Record questions (inline use during a session). */
   hideAutoFilledSessionFields?: boolean;
 }
 
+/**
+ * Renders and persists a dynamic form instance. Loads its questions from the
+ * linked template (`template_origem_id`), pre-fills saved answers in edit mode,
+ * and exposes an imperative `handleSave` (supporting partial saves) via ref.
+ */
 export const FormComponent = forwardRef(function FormComponent(
   { formularioId, sessaoId, alunoId, onSuccess, hideAutoFilledSessionFields }: FormComponentProps,
   ref
@@ -50,9 +60,6 @@ export const FormComponent = forwardRef(function FormComponent(
         return;
       }
 
-      // Instâncias de formulário (RC/ATA/CARS criadas por sessão/avaliação) não
-      // copiam as perguntas: elas apontam para o template via template_origem_id.
-      // As perguntas vivem no template; as respostas, na instância.
       const { data: formulario } = await supabase
         .from("formularios")
         .select("template_origem_id, tipo")
@@ -60,9 +67,8 @@ export const FormComponent = forwardRef(function FormComponent(
         .maybeSingle();
 
       const questionSourceId = formulario?.template_origem_id ?? formularioId;
-      // MABC: todas as perguntas abertas aceitam apenas números (single-line).
       const isMabc = formulario?.tipo === "mabc2";
-      
+
       const { data, error } = await supabase
         .from("perguntas")
         .select("id, texto_pergunta, tipo_resposta, opcoes, descricao, obrigatoria, ordem")
@@ -117,13 +123,10 @@ export const FormComponent = forwardRef(function FormComponent(
           multiple,
           obrigatoria: q.obrigatoria,
           helpText,
-          // Em formulários MABC, perguntas abertas viram numéricas (single-line).
           numeric: isMabc && type === "open",
         };
       });
 
-      // Durante a execução da sessão, oculta as perguntas auto-preenchidas
-      // (tempo da sessão e fugas) — elas são gravadas ao encerrar a sessão.
       const visibleQuestions = hideAutoFilledSessionFields
         ? mappedQuestions.filter(
             (q) =>
@@ -135,16 +138,12 @@ export const FormComponent = forwardRef(function FormComponent(
 
       setQuestions(visibleQuestions);
 
-      // Seed visual defaults so untouched questions are saved as answered.
       const defaultAnswers: Record<string, any> = {};
       for (const q of mappedQuestions) {
         const def = getDefaultAnswer(q);
         if (def !== undefined) defaultAnswers[q.id] = def;
       }
 
-      // Modo edição: pré-carrega as respostas já salvas deste formulário no
-      // contexto atual (sessão ou aluno), parseando os tipos que guardam
-      // objeto. Loaded answers override defaults to preserve edit-mode state.
       let loadedAnswers: Record<string, any> = {};
       if (sessaoId || alunoId) {
         let answersQuery = supabase
@@ -189,9 +188,14 @@ export const FormComponent = forwardRef(function FormComponent(
     loadQuestions();
   }, [formularioId, sessaoId, alunoId, hideAutoFilledSessionFields]);
 
-  // `allowPartial` permite salvar respostas parciais (sem bloquear por campos
-  // obrigatórios vazios). Usado no salvamento automático do RC durante a sessão,
-  // para que as respostas já preenchidas persistam e possam ser retomadas/editadas.
+  /**
+   * Persists the current answers. When `allowPartial` is true, empty required
+   * fields do not block saving (used for the Control Record's auto-save during a
+   * session so partial answers persist and can be resumed/edited later).
+   *
+   * @param silent - When false, shows success/error alerts.
+   * @param allowPartial - When true, allows saving with empty required fields.
+   */
   const handleSave = async (silent = true, allowPartial = false) => {
     setSaving(true);
 
@@ -249,25 +253,17 @@ export const FormComponent = forwardRef(function FormComponent(
       });
 
       if (sessaoId) {
-        // Registro de Controle: a constraint UNIQUE (sessao_id, pergunta_id)
-        // permite upsert idempotente por sessão.
         const { error } = await supabase
           .from("respostas_formulario")
           .upsert(payloadRespostas, { onConflict: "sessao_id, pergunta_id" });
 
         if (error) throw error;
 
-        // RC salvo sem pendências (chegou até aqui) → (re)sincroniza os
-        // comportamentos derivados do RC (contato visual, estereotipias,
-        // inaptos, atividades preferenciais) na tabela comportamentos_sessao.
-        const { error: syncError } = await supabase.rpc(
+        await supabase.rpc(
           "sincronizar_comportamentos_rc",
           { p_sessao_id: sessaoId },
         );
-        if (syncError) console.error("Erro ao sincronizar comportamentos do RC:", syncError);
       } else {
-        // ATA/CARS (vinculados só ao aluno): sessao_id é nulo, então a constraint
-        // acima não deduplica. Substituímos todas as respostas da instância.
         const { error: deleteError } = await supabase
           .from("respostas_formulario")
           .delete()
@@ -286,8 +282,7 @@ export const FormComponent = forwardRef(function FormComponent(
       if (onSuccess) onSuccess();
 
       return { success: true, hadPending: missingRequired };
-    } catch (error) {
-      console.error(error);
+    } catch {
       if (!silent) Alert.alert("Erro", "Ocorreu um erro ao salvar as respostas.");
       return { 
         success: false, 
@@ -331,16 +326,6 @@ export const FormComponent = forwardRef(function FormComponent(
             </View>
           ))
         )}
-        
-        {/* {questions.length > 0 && (
-          <View className="w-full mt-8">
-            <DefaultButton
-              label={saving ? "Salvando..." : "Salvar Avaliação"}
-              onPress={handleSave}
-              disabled={saving}
-            />
-          </View>
-        )} */}
       </View>
     </ScrollView>
   );

@@ -2,36 +2,51 @@ import { colors } from "@/assets/colors";
 import { CardMenu } from "@/components/card-menu";
 import { withOpacity } from "@/components/color-opacity";
 import { RipplePressable } from "@/components/ripple-pressable";
-import { AlertCircle, ChevronRight, MoreVertical } from "lucide-react-native";
+import { ChevronRight, MoreVertical } from "lucide-react-native";
 import React, { useRef, useState } from "react";
-import { Pressable, Text, View, ViewProps } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
+/** Trailing affordance rendered on the right side of a {@link ListCard}. */
 export type RightActionType = "more" | "chevron" | "none";
 
+/** Small colored badge shown next to a {@link ListCard} title. */
 export type ListCardBadge = {
   label: string;
   color: string;
 };
 
+/** Props for {@link ListCard}. */
 export type ListCardProps = {
   title: string;
   subtitle?: string;
+  /** Leading icon node rendered inside the colored square. */
   icon: React.ReactNode;
+  /** Background color for the icon square. */
   iconBgColor?: string;
+  /** Trailing action affordance. Defaults to "more". */
   rightAction?: RightActionType;
-  rightActionColor?: string; // Novo opcional para pendencias
+  /** Color override for the trailing action icon. */
+  rightActionColor?: string;
   badge?: ListCardBadge;
+  /** Highlights the card to flag a pending item. */
   pendencyAlert?: boolean;
   className?: string;
   onPress?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onDuplicate?: () => void;
+  /** Shows the duplicate option in the context menu. Defaults to false. */
   showDuplicate?: boolean;
   editLabel?: string;
+  /** Uses {@link RipplePressable} instead of {@link Pressable}. Defaults to false. */
   enableRipple?: boolean;
 };
 
+/**
+ * Generic list row with a leading icon, title/subtitle, optional badge and
+ * pendency highlight, and a trailing action that opens an edit/duplicate/delete
+ * context menu.
+ */
 export function ListCard({
   title,
   subtitle,
@@ -80,7 +95,6 @@ export function ListCard({
       case "chevron":
         return (
           <View className="h-10 w-10 items-center justify-center">
-            {/* 🛠️ APLICAÇÃO AQUI */}
             <ChevronRight size={24} color={rightActionColor || colors.muted} />
           </View>
         );
@@ -95,20 +109,17 @@ export function ListCard({
     ? enableRipple ? RipplePressable : Pressable
     : View;
 
-  // 🛠️ NOVO: Remove a borda padrão se o className injetado já tiver comandos de borda
   const defaultBorder = className?.includes("border") ? "" : "border border-outline";
 
   return (
     <PressableComponent
       onPress={onPress}
-      // 🛠️ Substitua a linha do className por esta:
       className={`mb-4 h-20 w-full flex-row items-center rounded-2xl bg-level2 p-3.5 ${defaultBorder} ${
         onPress && !enableRipple ? "active:opacity-80" : ""
       } ${className ?? ""}`}
       style={{ zIndex: menuVisible ? 10 : 1 }}
     >
       <View className="relative mr-3.5 h-11 w-11">
-        {/* O Quadrado de Fundo do Ícone */}
         <View
           className="h-full w-full items-center justify-center rounded-2xl"
           style={{

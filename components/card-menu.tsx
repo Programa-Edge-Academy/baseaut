@@ -4,17 +4,27 @@ import { Copy, Edit2, Trash2 } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 
+/** Props for {@link CardMenu}. */
 export type CardMenuProps = {
+  /** Whether the menu is visible. */
   visible: boolean;
+  /** Called when the menu requests to close. */
   onClose: () => void;
+  /** Anchor position used to align the menu's right edge to the trigger button. */
   layout: { top: number; left: number; width: number };
+  /** Whether to show the duplicate action. Defaults to false. */
   showDuplicate?: boolean;
+  /** Label for the edit action. Defaults to "Editar". */
   editLabel?: string;
   onEdit?: () => void;
   onDuplicate?: () => void;
   onDelete?: () => void;
 };
 
+/**
+ * Contextual popover menu anchored to a card, exposing edit, duplicate, and
+ * delete actions. Its right edge is aligned with the trigger button.
+ */
 export function CardMenu({
   visible,
   onClose,
@@ -25,8 +35,6 @@ export function CardMenu({
   onDuplicate,
   onDelete,
 }: CardMenuProps) {
-  // We want the menu to align its right edge with the button's right edge
-  // The menu width is 140. So left = layout.left + layout.width - 140
   const menuWidth = 140;
   const left = layout.left + layout.width - menuWidth;
 

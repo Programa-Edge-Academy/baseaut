@@ -2,12 +2,17 @@ import { colors } from "@/assets/colors";
 import React from "react";
 import { TextInput, TextInputProps } from "react-native";
 
+/** Props for {@link DefaultTextInput}. */
 export interface DefaultTextInputProps extends TextInputProps {
   className?: string;
-  bgColorClass?: string;
+  /** Border color class. Defaults to "border-outline". */
   outLineBorderClass?: string;
 }
 
+/**
+ * Themed {@link TextInput} with the app's background, border, and placeholder
+ * styling. Aligns multiline content to the top.
+ */
 export function DefaultTextInput({
   className,
   multiline,

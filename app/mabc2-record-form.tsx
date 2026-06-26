@@ -20,6 +20,7 @@ import { ActivityIndicator, Platform, Pressable, Text, View } from "react-native
 
 type ScreenMode = "create" | "view" | "edit";
 
+/** Parses a user-entered string into a finite number, accepting commas as decimal separators. Returns null when empty or invalid. */
 function parseNumber(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return null;
@@ -27,6 +28,12 @@ function parseNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/**
+ * Route for creating, viewing, and editing a MABC-2 assessment record. Guards
+ * access to coordinators and monitors, manages the editable draft, validates
+ * required fields before saving, prompts to discard unsaved changes on exit, and
+ * supports deleting and exporting (PDF/CSV) the record.
+ */
 export default function Mabc2RecordFormRoute() {
   const { mode, studentId, studentName, recordId } = useLocalSearchParams<{
     mode?: ScreenMode;
@@ -282,6 +289,7 @@ export default function Mabc2RecordFormRoute() {
 
   const recordCount = draft?.sections.length ?? 0;
 
+  /** Returns whether every required score and percentile in the draft is filled in. */
   function validateDraft(draftData: Mabc2Draft) {
     if (draftData.totalScore === null || draftData.totalScore as any === "") return false;
     if (draftData.totalPercentile === null || draftData.totalPercentile.trim() === "") return false;
@@ -371,9 +379,6 @@ export default function Mabc2RecordFormRoute() {
     try {
       await deleteMabc2Record(targetRecordId);
       shouldBypassExit.current = true;
-      // Mesmo comportamento de apagar os demais formulários: volta direto para
-      // a tela anterior (que refaz o fetch no foco), sem toast nem redirecionar
-      // para a lista de MABC.
       router.back();
     } catch {
       setIsSubmitting(false);
@@ -479,7 +484,6 @@ export default function Mabc2RecordFormRoute() {
         iconType="alert"
       />
 
-      {/* Format picker */}
       <AppModal
         visible={isFormatPickerOpen}
         transparent
@@ -500,6 +504,10 @@ export default function Mabc2RecordFormRoute() {
   );
 }
 
+/**
+ * Modal content for choosing MABC-2 export formats (PDF/CSV) and, on Android,
+ * the delivery mode (share or direct download).
+ */
 function MabcFormatPicker({
   onExport,
   onClose,

@@ -7,82 +7,51 @@ import Svg, {
   Text as SvgText,
 } from "react-native-svg";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Dados de uma sessão para o gráfico de registros de ajuda.
- */
+/** Per-session data point for the help-records bar chart. */
 export interface HelpSessionRecord {
-  /** Identificador único da sessão */
+  /** Unique session identifier. */
   sessionId: string;
-  /** Rótulo exibido no eixo X (ex: "1", "2", "3") */
+  /** Label shown on the X axis (e.g. "1", "2", "3"). */
   sessionLabel: string;
-  /** Quantidade de registros de Ajuda Intrusiva nesta sessão */
+  /** Number of intrusive-help records in this session. */
   intrusiveCount: number;
-  /** Quantidade de registros Autônomos nesta sessão */
+  /** Number of autonomous records in this session. */
   autonomousCount: number;
 }
 
+/** Props for {@link HelpRecordsBarChart}. */
 export interface HelpRecordsBarChartProps {
-  /** Sessões em ordem cronológica */
+  /** Sessions in chronological order. */
   sessions: HelpSessionRecord[];
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Constantes de design
-// ─────────────────────────────────────────────────────────────────────────────
+/** Intrusive-help bar color (theme cyan). */
+const COLOR_INTRUSIVE = colors.verbal;
 
-/** Cor da barra de Ajuda Intrusiva — ciano do tema */
-const COLOR_INTRUSIVE = colors.verbal; // #09CDDB
+/** Autonomous bar color (theme yellow). */
+const COLOR_AUTONOMOUS = colors.extra;
 
-/** Cor da barra Autônomo — amarelo do tema */
-const COLOR_AUTONOMOUS = colors.extra; // #F0BD02
-
-/** Altura fixa da área de plot das barras em px */
+/** Fixed height of the bar plot area in px. */
 const CHART_HEIGHT = 190;
 
-/** Largura reservada para o eixo Y à esquerda */
+/** Width reserved for the left Y axis. */
 const Y_AXIS_WIDTH = 30;
 
-/** Padding inferior dentro do SVG (para rótulos de sessão) */
+/** Bottom padding inside the SVG (for session labels). */
 const BOTTOM_PADDING = 28;
 
-/** Padding superior dentro do SVG (folga acima da barra mais alta) */
+/** Top padding inside the SVG (headroom above the tallest bar). */
 const TOP_PADDING = 10;
 
-/** Altura útil para as barras */
+/** Usable height for the bars. */
 const BAR_AREA_HEIGHT = CHART_HEIGHT - BOTTOM_PADDING - TOP_PADDING;
 
-/** Largura de cada barra individual */
-const BAR_WIDTH = 18;
-
-/** Espaço entre a barra intrusiva e a autônoma dentro do mesmo grupo */
-const BAR_GAP = 4;
-
-/** Espaço entre grupos de sessões diferentes */
-const GROUP_SPACING = 24;
-
-/** Largura total de um grupo (par de barras) */
-const GROUP_WIDTH = BAR_WIDTH * 2 + BAR_GAP;
-
-/** Largura de cada slot de sessão no eixo X */
-const SESSION_SLOT_WIDTH = GROUP_WIDTH + GROUP_SPACING;
-
-/** Padding horizontal inicial antes do primeiro grupo */
-const X_START_PADDING = 15;
-
-/** Padding interno do card (corresponde ao p-[15px] do contêiner) */
+/** Card inner padding (matches the container's p-[15px]). */
 const CARD_PADDING = 15;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
 /**
- * Calcula o valor máximo do eixo Y arredondado para cima.
- * Garante um mínimo de 1 para evitar divisão por zero.
+ * Returns the rounded-up Y-axis maximum, with a floor of 1 to avoid division by
+ * zero.
  */
 function calcYMax(sessions: HelpSessionRecord[]): number {
   if (sessions.length === 0) return 1;
@@ -92,23 +61,20 @@ function calcYMax(sessions: HelpSessionRecord[]): number {
   return Math.max(max, 1);
 }
 
-/**
- * Calcula os ticks do eixo Y de forma legível (máximo 6 linhas).
- */
+/** Computes readable Y-axis ticks (up to ~6 lines). */
 function calcYTicks(yMax: number): number[] {
   const step = Math.ceil(yMax / 5);
   const ticks: number[] = [];
   for (let v = 0; v <= yMax; v += step) {
     ticks.push(v);
   }
-  // Garante que o valor máximo esteja sempre incluído
   if (ticks[ticks.length - 1] < yMax) ticks.push(yMax);
   return ticks;
 }
 
 /**
- * Converte um valor de dado na coordenada Y dentro do SVG.
- * Valor zero resulta em altura mínima de 2px para permanecer visível.
+ * Converts a data value to its Y coordinate inside the SVG. A zero value yields
+ * a 0 height (no bar drawn).
  */
 function valueToY(value: number, yMax: number): number {
   const minBarHeight = value > 0 ? 2 : 0;
@@ -119,23 +85,15 @@ function valueToY(value: number, yMax: number): number {
   return CHART_HEIGHT - BOTTOM_PADDING - barHeight;
 }
 
-/**
- * Retorna a altura visual de uma barra.
- */
+/** Returns the visual height of a bar for a value. */
 function valueToBarHeight(value: number, yMax: number): number {
   if (value <= 0) return 0;
   return Math.max((value / yMax) * BAR_AREA_HEIGHT, 2);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Componente
-// ─────────────────────────────────────────────────────────────────────────────
-
 /**
- * Gráfico de barras agrupadas que exibe, por sessão, a contagem de registros
- * de Ajuda Intrusiva e Autônomo em ordem cronológica.
- *
- * Segue o design definido no Figma (node 3389:135633).
+ * Grouped bar chart showing, per session in chronological order, the count of
+ * intrusive-help and autonomous records.
  */
 export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
   const [containerWidth, setContainerWidth] = useState<number>(340);
@@ -145,22 +103,17 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
     if (width > 0) setContainerWidth(width);
   };
 
-  // Sem dados: não renderiza o card
   if (sessions.length === 0) return null;
 
   const yMax = calcYMax(sessions);
   const yTicks = calcYTicks(yMax);
 
-  // Largura disponível para a área de barras (descontando eixo Y e padding do card)
   const availableWidth = containerWidth - Y_AXIS_WIDTH - CARD_PADDING * 2;
   const N = sessions.length;
 
-  // Padding simétrico: reserva espaço no início e no fim para que o primeiro e
-  // último grupo de barras não sejam cortados pela borda do SVG
   const X_START_PADDING = 15;
   const X_END_PADDING = X_START_PADDING;
 
-  // Parâmetros base da barra
   const baseBarWidth = 18;
   const baseBarGap = 4;
   const baseGroupWidth = baseBarWidth * 2 + baseBarGap;
@@ -168,7 +121,6 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
   const usableWidth = availableWidth - X_START_PADDING - X_END_PADDING;
   const slotWidth = N > 0 ? usableWidth / N : usableWidth;
 
-  // Se a largura do slot for menor do que a largura do grupo base + margem de 6px, reduzimos as barras
   const needsReduction = baseGroupWidth + 6 > slotWidth;
 
   let groupWidth = baseGroupWidth;
@@ -182,13 +134,10 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
     groupWidth = barWidth * 2 + barGap;
   }
 
-  // Largura total do SVG — sempre fixa no espaço disponível (sem rolagem)
   const svgWidth = availableWidth;
 
-  // Tamanho adaptativo da fonte do eixo X
   const labelFontSize = slotWidth < 25 ? Math.max(8, Math.round(slotWidth * 0.5)) : 12;
 
-  // Define o espaçamento dos rótulos do eixo X se houver muitas sessões
   let labelStep = 1;
   if (N > 7) {
     if (N <= 14) {
@@ -202,7 +151,6 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
     }
   }
 
-  // Coordenada Y de um tick no SVG
   const tickToSvgY = (tick: number) =>
     CHART_HEIGHT -
     BOTTOM_PADDING -
@@ -213,7 +161,6 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
       onLayout={handleLayout}
       className="w-full bg-level2 rounded-[8px] border border-outline p-[15px] flex-col gap-[10px]"
     >
-      {/* ── Título ─────────────────────────────────────────────────────────── */}
       <Text
         className="text-white font-bold"
         style={{ fontSize: 16, lineHeight: 20 }}
@@ -221,9 +168,7 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
         Registros de ajuda por sessão
       </Text>
 
-      {/* ── Legenda ────────────────────────────────────────────────────────── */}
       <View className="flex-row items-center gap-[10px]">
-        {/* Ajuda Intrusiva */}
         <View className="flex-row items-center gap-[6px]">
           <View
             className="w-[10px] h-[10px] rounded-full"
@@ -237,7 +182,6 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
           </Text>
         </View>
 
-        {/* Autônomo */}
         <View className="flex-row items-center gap-[6px]">
           <View
             className="w-[10px] h-[10px] rounded-full"
@@ -252,10 +196,8 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
         </View>
       </View>
 
-      {/* ── Área do gráfico ────────────────────────────────────────────────── */}
       <View className="flex-row" style={{ height: CHART_HEIGHT }}>
 
-        {/* Eixo Y fixo à esquerda */}
         <View style={{ width: Y_AXIS_WIDTH, height: CHART_HEIGHT }}>
           <Svg width={Y_AXIS_WIDTH} height={CHART_HEIGHT} pointerEvents="none">
             {yTicks.map((tick) => (
@@ -274,11 +216,9 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
           </Svg>
         </View>
 
-        {/* Área adaptativa com barras + grade (sem scroll) */}
         <View className="flex-1" style={{ height: CHART_HEIGHT }}>
           <Svg width={svgWidth} height={CHART_HEIGHT} pointerEvents="none">
 
-            {/* Linhas de grade horizontais (dashed) */}
             {yTicks.map((tick) => {
               const y = tickToSvgY(tick);
               return (
@@ -295,7 +235,6 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
               );
             })}
 
-            {/* Barras agrupadas + rótulo de sessão */}
             {sessions.map((session, index) => {
               const groupX = X_START_PADDING + index * slotWidth + (slotWidth - groupWidth) / 2;
               const xIntrusive = groupX;
@@ -312,7 +251,6 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
 
               return (
                 <React.Fragment key={session.sessionId}>
-                  {/* Barra Ajuda Intrusiva */}
                   {intrusiveH > 0 && (
                     <Rect
                       x={xIntrusive}
@@ -325,7 +263,6 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
                     />
                   )}
 
-                  {/* Barra Autônomo */}
                   {autonomousH > 0 && (
                     <Rect
                       x={xAutonomous}
@@ -338,7 +275,6 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
                     />
                   )}
 
-                  {/* Rótulo de sessão no eixo X */}
                   {shouldShowLabel && (
                     <SvgText
                       x={groupCenterX}
@@ -359,7 +295,6 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
         </View>
       </View>
 
-      {/* Label "Sessão" centralizado abaixo da área rolável */}
       <Text
         className="text-center text-muted font-medium"
         style={{ fontSize: 12, lineHeight: 20 }}
@@ -367,7 +302,6 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
         Sessão
       </Text>
 
-      {/* ── Texto explicativo ──────────────────────────────────────────────── */}
       <Text
         className="text-muted font-medium"
         style={{ fontSize: 12, lineHeight: 20 }}

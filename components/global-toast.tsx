@@ -8,12 +8,14 @@ import React, {
 
 import { Toast, type ToastMode } from "@/components/toast";
 
+/** Input accepted by {@link GlobalToastContextValue.showToast}. */
 type ShowToastInput = {
   mode?: ToastMode;
   title: string;
   description?: string;
 };
 
+/** Value exposed by the global toast context. */
 type GlobalToastContextValue = {
   showToast: (input: ShowToastInput) => void;
 };
@@ -23,9 +25,9 @@ const GlobalToastContext = createContext<GlobalToastContextValue>({
 });
 
 /**
- * Toast global montado no layout raiz. Como vive acima da navegação, permite
- * disparar uma mensagem em uma tela e exibi-la já na tela seguinte (ex.: salvar
- * um formulário e navegar antes do toast aparecer).
+ * Global toast mounted at the root layout. Living above navigation, it lets a
+ * screen trigger a message that remains visible after navigating to the next
+ * screen (e.g. saving a form and navigating before the toast appears).
  */
 export function GlobalToastProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<{
@@ -37,7 +39,6 @@ export function GlobalToastProvider({ children }: { children: ReactNode }) {
   }>({ key: 0, visible: false, mode: "success", title: "" });
 
   const showToast = useCallback((input: ShowToastInput) => {
-    // Incrementa a key para forçar reanimação mesmo em toasts consecutivos.
     setState((prev) => ({
       key: prev.key + 1,
       visible: true,
@@ -62,6 +63,7 @@ export function GlobalToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** Returns the global toast controller from context. */
 export function useGlobalToast() {
   return useContext(GlobalToastContext);
 }

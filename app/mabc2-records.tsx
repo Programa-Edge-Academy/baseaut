@@ -9,6 +9,11 @@ import { useMabc2Records } from "@/features/analysis/hooks/use-mabc2-records";
 import { Mabc2RecordsListScreen } from "@/features/analysis/screens/mabc2-records-list-screen";
 import { supabase } from "@/lib/supabase";
 
+/**
+ * Route listing a student's MABC-2 records. Guards access to coordinators and
+ * monitors, surfaces load/success toasts, and navigates to the record form for
+ * creating or viewing records.
+ */
 export default function Mabc2RecordsRoute() {
   const { studentId, studentName, toastSuccess } = useLocalSearchParams<{
     studentId: string;

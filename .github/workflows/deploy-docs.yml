@@ -1,0 +1,58 @@
+name: CD - Documentação (GitHub Pages)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Permissões exigidas pelo deploy oficial do GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Garante um único deploy de Pages por vez, sem cancelar um já em andamento.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Gerar documentação
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar documentação (TypeDoc)
+        run: npm run docs
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Enviar artefato do site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/api
+
+  deploy:
+    name: Publicar no GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy para o GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

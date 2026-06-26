@@ -12,7 +12,6 @@ interface ContinuationOptionsProps {
   className?: string;
 }
 
-// 2. Subcomponente local para os itens da lista
 /**
  * Props for a single option item in the list.
  */
@@ -39,7 +38,6 @@ function OptionItem({ title, description, onPress }: OptionItemProps) {
   );
 }
 
-// 3. Componente Principal
 /**
  * Renders the continuation options and a cancel action.
  */
@@ -78,7 +76,6 @@ export function ContinuationOptions({
   );
   return (
     <View className={`w-full max-w-md p-4 ${className}`}>
-      {/* Container das opções com espaçamento (gap) entre elas */}
       <View className="flex-col" style={{ gap: 12 }}>
         {CONTINUATION_OPTIONS.map((option) => (
           <OptionItem
@@ -90,7 +87,6 @@ export function ContinuationOptions({
         ))}
       </View>
 
-      {/* Botão de Cancelar centralizado ao fundo */}
       <Pressable
         onPress={onCancel}
         className="mt-5 w-full py-3 items-center justify-center active:opacity-60"

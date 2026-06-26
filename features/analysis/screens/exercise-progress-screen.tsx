@@ -6,7 +6,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { AlertCircle, ChartNoAxesCombined, CircleAlert } from "lucide-react-native";
 import React, { useState } from "react";
 import { AppModal } from "@/components/app-modal";
-import { ActivityIndicator, Pressable, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import RangeCalendar from "../../../components/range-calendar";
 import { PeriodSelector } from "../components/period-selector";
 import ProgressExerciseCard from "../components/progress-exercise-card";
@@ -14,44 +14,34 @@ import { useExerciseProgress } from "../hooks/use-exercise-progress";
 import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile";
 
 /**
- * Tela que exibe o progresso dos exercícios de um aluno específico.
- * Busca os dados do Supabase, permite selecionar exercícios individuais,
- * filtrar por período utilizando um calendário e visualizar a evolução em um gráfico.
+ * Screen showing a student's exercise progress. Loads the data, lets the user
+ * select individual exercises, filter by a date range via a calendar, and view
+ * the evolution in a chart.
  */
 export function ExerciseProgressScreen() {
   const router = useRouter();
   
-  // Captura os parâmetros dinâmicos passados pela rota do Expo Router (ID e nome do aluno)
   const { studentId, studentName } = useLocalSearchParams<{ studentId: string; studentName: string }>();
 
-  // Hook personalizado integrado ao banco de dados Supabase para obter os exercícios e status de carregamento
   const { exercises, isLoading, error, refetch } = useExerciseProgress(studentId ?? "");
 
-  // Nome do aluno buscado direto do banco (como nas demais telas de análise),
-  // já que a rota nem sempre recebe o studentName por parâmetro.
   const { profile } = useStudentProfile(studentId as string);
   const displayName = profile?.name ?? studentName ?? "Aluno";
 
-  // Armazena as informações do exercício selecionado para detalhamento
   const [selectedExercise, setSelectedExercise] = useState<{ id: string; title: string; sessions: number } | null>(null);
   
-  // Controla a exibição do modal do calendário
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   
-  // Guarda o intervalo de datas (início/fim) selecionado e salvo pelo usuário
   const [selectedRange, setSelectedRange] = useState<{ startDate: string | null; endDate: string | null }>({
     startDate: null,
     endDate: null,
   });
 
-  // Guarda o intervalo de datas temporário no modal antes de ser de fato aplicado/salvo pelo usuário
   const [tempRange, setTempRange] = useState<{ startDate: string | null; endDate: string | null }>({
     startDate: null,
     endDate: null,
   });
 
-  // Estado visual: erro só quando a busca falha de fato; lista vazia → "empty"
-  // (tela de "sem registros"); caso contrário, "success".
   const currentStatus = isLoading
     ? "loading"
     : error
@@ -60,7 +50,6 @@ export function ExerciseProgressScreen() {
         ? "empty"
         : "success";
 
-  // Configuração visual para as telas de feedback de erro e de estado vazio (ícones, mensagens e ações)
   const stateConfig = {
     empty: { 
       title: "Ainda não há registros de sessão", 
@@ -78,7 +67,6 @@ export function ExerciseProgressScreen() {
     }
   };
 
-  // Retorna o rótulo de texto descritivo do período selecionado para exibição na interface
   const getPeriodLabel = () => {
     if (selectedRange.startDate && selectedRange.endDate) {
       if (selectedRange.startDate === selectedRange.endDate) {
@@ -89,21 +77,18 @@ export function ExerciseProgressScreen() {
     return undefined;
   };
 
-  // Converte a string de data (AAAA-MM-DD) para formato legível brasileiro (DD/MM/AAAA)
   function formatDateToShow(dateStr: any): string {
     if (!dateStr || typeof dateStr !== "string" || !dateStr.includes("-")) return "";
     const [year, month, day] = dateStr.split("-");
     return `${day}/${month}/${year}`;
   }
 
-  // Converte uma string de data formatada em um objeto de data JavaScript nativo
   function parseStringToDate(dateStr: string | null): Date | null {
     if (!dateStr) return null;
     const [year, month, day] = dateStr.split("-").map(Number);
     return new Date(year, month - 1, day);
   }
 
-  // Atualiza o estado temporário do período conforme o usuário interage com o RangeCalendar
   const handleRangeSelected = (start: any, end: any) => {
     const startDateStr = typeof start === "string" ? start : start?.dateString || null;
     const endDateStr = typeof end === "string" ? end : end?.dateString || null;
@@ -114,7 +99,6 @@ export function ExerciseProgressScreen() {
     });
   };
 
-  // Salva o período temporário definido pelo usuário no estado de filtragem real e fecha o calendário
   const handleSaveDate = () => {
     if (tempRange.startDate) {
       setSelectedRange({
@@ -125,11 +109,9 @@ export function ExerciseProgressScreen() {
     }
   };
 
-  // Filtra dinamicamente os registros reais do exercício selecionado no banco
   const currentExerciseData = exercises.find(ex => ex.id === selectedExercise?.id);
   const fullChartRecords = currentExerciseData ? currentExerciseData.records : [];
 
-  // Filtra os registros do gráfico de acordo com o intervalo de datas selecionado pelo usuário
   const filteredChartRecords = fullChartRecords.filter(record => {
     if (!selectedRange.startDate || !selectedRange.endDate) return true;
     
@@ -140,32 +122,19 @@ export function ExerciseProgressScreen() {
     return recordTime >= startTime && recordTime <= endTime;
   });
 
-  // Determina a data inicial para renderização da escala horizontal do gráfico
   const chartStartDate = selectedRange.startDate === selectedRange.endDate && filteredChartRecords.length > 0
     ? parseStringToDate(filteredChartRecords[0].rawDate)
     : parseStringToDate(selectedRange.startDate);
 
-  // Determina a data final para renderização da escala horizontal do gráfico
   const chartEndDate = parseStringToDate(selectedRange.endDate);
-
-  // Prepara a marcação visual de períodos para passar para o RangeCalendar
-  const markedDates: any = {};
-  if (tempRange.startDate) {
-    markedDates[tempRange.startDate] = { startingDay: true, color: '#F04D23', textColor: '#FFFFFF', selected: true };
-  }
-  if (tempRange.endDate) {
-    markedDates[tempRange.endDate] = { endingDay: true, color: '#F04D23', textColor: '#FFFFFF', selected: true };
-  }
 
   return (
     <View className="flex-1 bg-level1">
-      {/* Botão de navegação superior, com ação condicional para fechar modais/desmarcar itens */}
       <Header 
         variant="back" 
         onPressBack={() => {
           if (isCalendarOpen) setIsCalendarOpen(false);
           else if (selectedExercise) {
-            // Se um exercício estiver aberto, limpa a seleção e volta à listagem de exercícios
             setSelectedExercise(null);
             setSelectedRange({ startDate: null, endDate: null });
             setTempRange({ startDate: null, endDate: null });
@@ -179,14 +148,11 @@ export function ExerciseProgressScreen() {
         </Text>
       </View>
 
-      {/* Exibição condicional de acordo com o status atual dos dados */}
       {currentStatus === "loading" ? (
-        // Componente de loading
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : currentStatus !== "success" ? (
-        // Estado alternativo: Mensagem informativa de erro ou lista sem registros
         <View className="flex-1 justify-center px-8 py-4">
           <View className="w-full rounded-[32px] border border-outline bg-level2 p-6">
             <View className="mb-5 items-center justify-center rounded-[24px] p-5 self-center" style={{ backgroundColor: `${stateConfig[currentStatus as "empty" | "error"].accentColor}14` }}>
@@ -202,7 +168,6 @@ export function ExerciseProgressScreen() {
           </View>
         </View>
       ) : (
-        // Listagem dos exercícios do aluno
         <ScrollView className="flex-1 px-8" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
           <View className="mt-6 gap-4">
             {exercises.map((exercise) => {
@@ -212,7 +177,6 @@ export function ExerciseProgressScreen() {
 
               return (
                 <View key={exercise.id} className="gap-4">
-                  {/* Card do exercício */}
                   <ProgressExerciseCard
                     title={exercise.title}
                     statusLabel={exercise.statusLabel}
@@ -234,16 +198,13 @@ export function ExerciseProgressScreen() {
                     }}
                   />
 
-                  {/* Seção adicional visível apenas quando o card correspondente estiver selecionado */}
                   {isSelected && (
                     <View className="gap-3 -mt-2 mb-2 px-1">
-                      {/* Seletor de período */}
                       <PeriodSelector 
                         label={getPeriodLabel()} 
                         onPress={() => setIsCalendarOpen(true)}
                       />
 
-                      {/* Exibição do gráfico e alertas se houver período válido selecionado */}
                       {hasSavedRange && (
                         <View className="gap-3">
                           <ExerciseProgressChart
@@ -253,7 +214,6 @@ export function ExerciseProgressScreen() {
                             endDate={chartEndDate}     
                           />
                           
-                          {/* Alerta indicando que o exercício tem apenas um registro disponível */}
                           {hasOnlyOneSession && (
                             <View className="flex-row items-center gap-3 p-4 rounded-xl border mt-1" style={{ backgroundColor: colors.level2, borderColor: '#464646' }}>
                               <CircleAlert size={20} color="#B5BEC6" />
@@ -273,7 +233,6 @@ export function ExerciseProgressScreen() {
         </ScrollView>
       )}
 
-      {/* Modal para seleção do intervalo de datas */}
       <AppModal visible={isCalendarOpen} transparent animationType="fade" onRequestClose={() => setIsCalendarOpen(false)}>
         <Pressable className="flex-1 bg-black/60 justify-center items-center px-6" onPress={() => setIsCalendarOpen(false)}>
           <Pressable className="w-full max-w-[380px]" onPress={(e) => e.stopPropagation()}>

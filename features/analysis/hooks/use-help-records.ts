@@ -3,8 +3,8 @@ import { supabase } from "@/lib/supabase";
 import { HelpSessionRecord } from "../components/help-records-bar-chart";
 
 /**
- * Hook para buscar a evolução dos registros de ajuda (autonomia) de um aluno.
- * Consome a RPC rpc_get_grafico_autonomia_aluno do Supabase.
+ * Loads a student's help/autonomy records over a date range, returning the
+ * per-session chart data plus an explanatory text.
  */
 export function useHelpRecords(
   studentId?: string,
@@ -48,7 +48,7 @@ export function useHelpRecords(
           (session: any, index: number) => {
             return {
               sessionId: session.sessao_id,
-              sessionLabel: String(index + 1), // Rótulo sequencial do gráfico (ex: "1", "2", "3")
+              sessionLabel: String(index + 1),
               intrusiveCount: Number(session.ajuda_intrusiva || 0),
               autonomousCount: Number(session.autonomo || 0),
             };
@@ -61,7 +61,6 @@ export function useHelpRecords(
         setExplanatoryText("");
       }
     } catch (err: any) {
-      console.error("Erro ao buscar registros de ajuda:", err);
       setError(err instanceof Error ? err : new Error(String(err)));
       setRecords([]);
       setExplanatoryText("");

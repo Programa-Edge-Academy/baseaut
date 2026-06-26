@@ -8,6 +8,7 @@ import { ClipboardEdit, Layers } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 
+/** Selectable item type on the circuit selection screen (circuit or form). */
 export type CircuitType =
   | "estruturado"
   | "semi-estruturado"
@@ -16,6 +17,7 @@ export type CircuitType =
   | "mabc"
   | "mabc2";
 
+/** Exercise data carried by a selectable circuit. */
 export type CircuitSelectionExercise = {
   id: string;
   name: string;
@@ -23,6 +25,7 @@ export type CircuitSelectionExercise = {
   iconUrl?: string | null;
 };
 
+/** A selectable entry (circuit or form) on the circuit selection screen. */
 export type CircuitItem = {
   id: string;
   name: string;
@@ -32,11 +35,14 @@ export type CircuitItem = {
   exercises?: CircuitSelectionExercise[];
 };
 
+/** Props for {@link CircuitSelectionScreen}. */
 export type CircuitSelectionScreenProps = {
   studentName: string;
   circuits?: CircuitItem[];
-  /** Enquanto true, mostra spinner em vez da lista (evita exibir os formulários
-   * antes dos circuitos terminarem de carregar). */
+  /**
+   * While true, shows a spinner instead of the list (avoids showing the forms
+   * before the circuits finish loading).
+   */
   isLoading?: boolean;
   onPressBack?: () => void;
   onPressCircuit?: (circuit: CircuitItem) => void;

@@ -20,6 +20,7 @@ const monthsPt = [
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ];
 
+/** Formats a date as "D Month YYYY" in Portuguese. */
 function formatSingleDate(date: Date): string {
   const day = date.getDate();
   const month = monthsPt[date.getMonth()];
@@ -27,15 +28,18 @@ function formatSingleDate(date: Date): string {
   return `${day} ${month} ${year}`;
 }
 
+/** Formats a date range as "start - end". */
 function formatDateRange(start: Date, end: Date): string {
   return `${formatSingleDate(start)} - ${formatSingleDate(end)}`;
 }
 
+/** Parses a "YYYY-MM-DD" string into a local Date. */
 function parseDateString(dateStr: string): Date {
   const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day);
 }
 
+/** Formats a Date as a "YYYY-MM-DD" string, or undefined when absent. */
 function formatToISODate(date: Date | undefined | null): string | undefined {
   if (!date) return undefined;
   const year = date.getFullYear();
@@ -44,25 +48,28 @@ function formatToISODate(date: Date | undefined | null): string | undefined {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Screen for comparing a student's performance between two date ranges. Validates
+ * the selected periods (no overlap, no future dates) and renders the summary,
+ * per-exercise, help, and behavior comparisons.
+ */
 export function PerformanceComparisonScreen() {
   const router = useRouter();
   const { studentId: rawStudentId } = useLocalSearchParams();
   const studentId = Array.isArray(rawStudentId) ? rawStudentId[0] : rawStudentId ?? "";
   const { profile, isLoading } = useStudentProfile(studentId);
 
-  // Ranges
   const [period1Range, setPeriod1Range] = useState<{ start: Date; end: Date } | null>(null);
   const [period2Range, setPeriod2Range] = useState<{ start: Date; end: Date } | null>(null);
 
   const [showResults, setShowResults] = useState(false);
   const [compareError, setCompareError] = useState<string | null>(null);
 
-  // Modal States
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [activePeriod, setActivePeriod] = useState<1 | 2 | null>(null);
   const [tempStart, setTempStart] = useState<Date | null>(null);
   const [tempEnd, setTempEnd] = useState<Date | null>(null);
-  const [modalError, setModalError] = useState<string | null>(null); // Estado para erros no modal
+  const [modalError, setModalError] = useState<string | null>(null);
 
   const {
     data: comparisonData,
@@ -78,7 +85,7 @@ export function PerformanceComparisonScreen() {
   );
 
   const handlePeriodPress = (periodNum: 1 | 2) => {
-    setModalError(null); // Limpa o erro ao abrir o modal
+    setModalError(null);
     setActivePeriod(periodNum);
     const range = periodNum === 1 ? period1Range : period2Range;
     setTempStart(range?.start || null);
@@ -94,7 +101,6 @@ export function PerformanceComparisonScreen() {
       return;
     }
 
-    // Convertendo para getTime() para garantir precisão matemática
     const startMs = tempStart.getTime();
     const endMs = tempEnd.getTime();
     const nowMs = new Date().setHours(23, 59, 59, 999);
@@ -104,7 +110,6 @@ export function PerformanceComparisonScreen() {
       return;
     }
 
-    // Validações cruzadas de Período 1 e Período 2
     if (activePeriod === 1 && period2Range) {
       const p2StartMs = period2Range.start.getTime();
       const p2EndMs = period2Range.end.getTime();
@@ -133,7 +138,6 @@ export function PerformanceComparisonScreen() {
       }
     }
 
-    // Passou em tudo: salva os dados e fecha o modal
     const range = { start: tempStart, end: tempEnd };
     if (activePeriod === 1) {
       setPeriod1Range(range);
@@ -141,13 +145,13 @@ export function PerformanceComparisonScreen() {
       setPeriod2Range(range);
     }
 
-    setCompareError(null); // Limpa eventuais erros da tela principal
+    setCompareError(null);
     setShowResults(false);
     setIsModalVisible(false);
   };
 
   const handleRangeSelected = (start: string, end: string | null) => {
-    setModalError(null); // Limpa o erro ao interagir com o calendário
+    setModalError(null);
     if (start) {
       setTempStart(parseDateString(start));
     } else {
@@ -264,7 +268,6 @@ export function PerformanceComparisonScreen() {
               onPress={() => handlePeriodPress(2)}
             />
 
-            {/* Mensagem de Erro da Tela Principal (Inline) */}
             {compareError && (
               <Text className="text-red-400 text-sm font-medium text-center mt-4 px-6">
                 {compareError}
@@ -275,7 +278,7 @@ export function PerformanceComparisonScreen() {
               <DefaultButton
                 label="Comparar"
                 sizeClass="w-[168px] h-[44px]"
-                disabled={false} // Mantido false para capturar o clique e gerar o erro inline
+                disabled={false}
                 style={{ opacity: isCompareDisabled ? 0.5 : 1 }}
                 onPress={handleComparePress}
               />
@@ -324,7 +327,6 @@ export function PerformanceComparisonScreen() {
               />
             </View>
 
-            {/* Mensagem de Erro do Modal (Inline) - Substitui o Alert com maestria */}
             {modalError && (
               <View className="bg-red-500/10 border border-red-500/50 rounded-lg p-2 mb-4 mx-2">
                  <Text className="text-red-400 text-xs font-medium text-center">

@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 
+/** Default list of session finalization reasons. */
 export const DEFAULT_FINISH_MOTIVOS = [
   "Recusa do aluno",
   "Comportamento disruptivo",
@@ -20,6 +21,7 @@ export const DEFAULT_FINISH_MOTIVOS = [
   "Outro",
 ];
 
+/** Props for {@link FinishSessionModal}. */
 export type FinishSessionModalProps = {
   visible: boolean;
   onClose: () => void;
@@ -29,7 +31,7 @@ export type FinishSessionModalProps = {
   message?: string;
   cancelLabel?: string;
   confirmLabel?: string;
-  /** Nomes dos exercícios pendentes que serão registrados como não realizados. */
+  /** Names of pending exercises that will be recorded as not performed. */
   pendingExercises?: string[];
 };
 
@@ -134,8 +136,6 @@ export function FinishSessionModal({
             </View>
           </ScrollView>
 
-          {/* Campo de descrição do "Outro": fora do ScrollView dos motivos para
-              aparecer imediatamente, sem exigir rolagem do modal. */}
           {isOutro && (
             <View className="gap-1.5">
               <Text className="text-default-2 text-muted">

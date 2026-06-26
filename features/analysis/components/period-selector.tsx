@@ -3,12 +3,14 @@ import { Calendar } from "lucide-react-native";
 import React from "react";
 import { Pressable, StyleProp, Text, View, ViewStyle } from "react-native";
 
+/** Props for {@link PeriodSelector}. */
 export type PeriodSelectorProps = {
   label?: string;
   onPress?: () => void;
   containerStyle?: StyleProp<ViewStyle>;
 };
 
+/** Calendar-icon row that opens a date-range picker; static when no handler is given. */
 export function PeriodSelector({ label = "Selecione o período para visualizar o progresso", onPress, containerStyle }: PeriodSelectorProps) {
   const Container: any = onPress ? Pressable : View;
 

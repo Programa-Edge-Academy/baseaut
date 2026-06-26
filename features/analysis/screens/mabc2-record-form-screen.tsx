@@ -10,6 +10,7 @@ import { Pressable, View } from "react-native";
 import { Mabc2MotorDevelopmentCard } from "../components/mabc2-motor-development-card";
 import { Mabc2SectionProps } from "../components/mabc2-section";
 
+/** Props for {@link Mabc2RecordFormScreen}. */
 export type Mabc2RecordFormScreenProps = {
   studentName: string;
   recordCount: number;
@@ -30,6 +31,11 @@ export type Mabc2RecordFormScreenProps = {
   onShare?: () => void;
 };
 
+/**
+ * Presentational screen for viewing or editing a MABC-2 record: total scores and
+ * sections, plus edit/share/delete actions and a delete confirmation in
+ * read-only mode.
+ */
 export function Mabc2RecordFormScreen({
   studentName,
   recordCount,

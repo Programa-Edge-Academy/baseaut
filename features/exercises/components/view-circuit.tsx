@@ -8,9 +8,11 @@ import { Exercise } from "../hooks/use-exercises";
 
 type ExecutionMode = "estruturado" | "semi-estruturado";
 
+/** Props for {@link ViewCircuit}. */
 interface ViewCircuitProps {
   visible: boolean;
   onClose: () => void;
+  /** Circuit to display, or null to render nothing. */
   circuitData: {
     name: string;
     executionMode: ExecutionMode;
@@ -51,6 +53,10 @@ const STYLES = StyleSheet.create({
   }
 });
 
+/**
+ * Read-only modal showing a circuit's name, execution mode, and its exercises
+ * (numbered when structured).
+ */
 export function ViewCircuit({
   visible,
   onClose,

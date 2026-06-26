@@ -13,6 +13,10 @@ import { User } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, View } from "react-native";
 
+/**
+ * Analysis landing screen. Lists students with their session/form counts,
+ * supports name search, and navigates to a student's analysis overview.
+ */
 export default function AnalysisScreen() {
     const router = useRouter();
     const { students, isLoading: isStudentsLoading, refresh: refreshStudents } = useStudents();
@@ -42,8 +46,7 @@ export default function AnalysisScreen() {
                     if (f.aluno_id) counts[f.aluno_id] = (counts[f.aluno_id] || 0) + 1;
                 });
                 setSessionsCounts(counts);
-            } catch (err) {
-                console.error("Erro ao buscar contagem de sessões:", err);
+            } catch {
             } finally {
                 setIsCountsLoading(false);
             }

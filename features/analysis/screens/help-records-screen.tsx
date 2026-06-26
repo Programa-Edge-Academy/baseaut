@@ -34,6 +34,7 @@ const months = [
   "Dezembro",
 ];
 
+/** Formats a "YYYY-MM-DD" date as "DD Month YYYY" in Portuguese. */
 function formatDate(date: string) {
   const parsedDate = new Date(`${date}T00:00:00`);
   const day = String(parsedDate.getDate()).padStart(2, "0");
@@ -43,6 +44,7 @@ function formatDate(date: string) {
   return `${day} ${month} ${year}`;
 }
 
+/** Returns the first value of a possibly-array route param. */
 function normalizeParam(value: string | string[] | undefined) {
   if (Array.isArray(value)) {
     return value[0];
@@ -51,6 +53,7 @@ function normalizeParam(value: string | string[] | undefined) {
   return value;
 }
 
+/** Empty state shown when there are no help records for the period. */
 function EmptyHelpRecordsState() {
   return (
     <View style={styles.stateCard}>
@@ -66,6 +69,7 @@ function EmptyHelpRecordsState() {
   );
 }
 
+/** Error state shown when help records fail to load. */
 function ErrorHelpRecordsState() {
   return (
     <View style={styles.stateCard}>
@@ -86,6 +90,10 @@ function ErrorHelpRecordsState() {
   );
 }
 
+/**
+ * Screen showing a student's help/autonomy records as a bar chart for a selected
+ * date range, with empty and error states and a date-range picker.
+ */
 export function HelpRecordsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();

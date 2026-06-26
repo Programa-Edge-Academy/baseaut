@@ -3,16 +3,23 @@ import { Check, X } from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 
+/** Intent of a {@link Toast}, driving its border, icon, and title color. */
 export type ToastMode = "success" | "error";
 
+/** Props for {@link Toast}. */
 export interface ToastProps {
   visible: boolean;
   mode: ToastMode;
   title: string;
   description?: string;
+  /** Called after the toast finishes its auto-dismiss animation. */
   onHide?: () => void;
 }
 
+/**
+ * Animated toast that slides in, stays for 3 seconds, then slides out and calls
+ * {@link ToastProps.onHide}. Styled by success/error mode.
+ */
 export function Toast({
   visible,
   mode,
@@ -64,7 +71,6 @@ export function Toast({
 
   const isSuccess = mode === "success";
 
-  // Fundo opaco (surface escura) com borda/ícone coloridos indicando sucesso/erro.
   const backgroundColor = colors.level2;
   const borderColor = isSuccess ? colors.secondary : colors.error;
   const titleColor = isSuccess ? colors.secondary : colors.error;
@@ -121,13 +127,6 @@ const styles = StyleSheet.create({
     zIndex: 9999,
   },
   iconContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
   },

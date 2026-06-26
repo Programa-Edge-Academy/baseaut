@@ -10,10 +10,15 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SvgXml } from "react-native-svg";
 
+/** Props for {@link Header}. */
 type HeaderProps = {
+  /** Selects which actions and layout the header renders. Defaults to "default". */
   variant?: "default" | "back" | "finish" | "finishEngagement" | "form";
+  /** Called when the back button is pressed. */
   onPressBack?: () => void;
+  /** Called when a finish button is pressed. */
   onPressFinish?: () => void;
+  /** Called when the form save button is pressed. */
   onPressSave?: () => void;
 };
 
@@ -21,13 +26,13 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.level2,
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
 });
 
+/**
+ * App top bar with the logo and variant-driven actions: default (team/logout),
+ * back, session/engagement finish, and form save. Owns the logout confirmation
+ * flow.
+ */
 export function Header({
   variant = "default",
   onPressBack,

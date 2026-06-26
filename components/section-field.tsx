@@ -3,13 +3,19 @@ import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { colors } from "../assets/colors";
 
+/** Which pair of sibling routes a {@link SectionField} toggles between. */
 export type SectionFieldMode = "exercises" | "circuits" | "analysis" | "reports";
 
+/** Props for {@link SectionField}. */
 interface SectionFieldProps {
   mode: SectionFieldMode;
   className?: string;
 }
 
+/**
+ * Segmented control that switches between two sibling routes (exercises/circuits
+ * or analysis/reports). Tapping the already active side is a no-op.
+ */
 export function SectionField({ mode, className }: SectionFieldProps) {
   const router = useRouter();
 
@@ -36,7 +42,6 @@ export function SectionField({ mode, className }: SectionFieldProps) {
     },
   }[mode];
 
-  // Navega para o lado pressionado; tocar no lado já ativo não faz nada.
   const goToLeft = () => {
     if (config.isRightActive) router.replace(config.left.route as any);
   };

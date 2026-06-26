@@ -3,6 +3,7 @@ import { Check, ChevronDown } from "lucide-react-native";
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
+/** Props for {@link ExerciseSelectionCard}. */
 export type ExerciseSelectionCardProps = {
   options: string[];
   selectedIndex: number;
@@ -15,6 +16,7 @@ const PADDING_HORIZONTAL = 16;
 const PADDING_VERTICAL = 10;
 const OPTION_HEIGHT = 44;
 
+/** Dropdown selector for filtering analysis views by a single exercise (or all). */
 export function ExerciseSelectionCard({
   options = ["Todos"],
   selectedIndex = 0,
@@ -30,7 +32,6 @@ export function ExerciseSelectionCard({
 
   return (
     <View className={`w-full ${className ?? ""}`} style={{ backgroundColor: "transparent" }}>
-      {/* Header */}
       <Pressable
         onPress={() => setIsOpen((prev) => !prev)}
         className="flex-row items-center justify-between"
@@ -49,7 +50,6 @@ export function ExerciseSelectionCard({
         <ChevronDown size={24} color={colors.muted} />
       </Pressable>
 
-      {/* Dropdown */}
       {isOpen && (
         <View
           style={{

@@ -16,6 +16,7 @@ import { Circuit, CircuitType, ExecutionMode, useCircuits } from "../hooks/use-c
 import { Exercise } from "../hooks/use-exercises";
 import { ViewCircuit } from "../components/view-circuit";
 
+/** Payload emitted by the circuit modal when creating or updating a circuit. */
 export interface SaveCircuitPayload {
   name: string;
   type: CircuitType;
@@ -100,8 +101,7 @@ export function CircuitsScreen() {
   const handleDuplicate = async (circuit: Circuit) => {
     try {
       await duplicateCircuit(circuit);
-    } catch (caught) {
-      console.error("Erro ao duplicar circuito:", caught);
+    } catch {
     }
   };
 
@@ -109,8 +109,7 @@ export function CircuitsScreen() {
     if (!circuitToDelete) return;
     try {
       await deleteCircuit(circuitToDelete.id);
-    } catch (caught) {
-      console.error("Error deleting circuit:", caught);
+    } catch {
     } finally {
       setCircuitToDelete(null);
     }

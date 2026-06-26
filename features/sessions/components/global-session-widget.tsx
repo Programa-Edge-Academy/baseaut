@@ -11,7 +11,7 @@ import {
 } from "./finish-session-modal";
 import { SessionResumeWidget } from "@/components/session-resume-widget";
 
-/** Mapeia os rótulos do modal de finalização para o motivo_nao_realizacao_enum. */
+/** Maps the finish modal's labels to the `motivo_nao_realizacao_enum` values. */
 const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
   "Recusa do aluno": "recusa_aluno",
   "Comportamento disruptivo": "comportamento_disruptivo",
@@ -21,25 +21,25 @@ const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
   Outro: "outro",
 };
 
+/**
+ * Floating mini-player shown on the main tabs and the circuit selection screen
+ * for any active session not currently displaying its own on-screen stopwatch.
+ * Lets the user switch between concurrent sessions, resume one, or finish it.
+ */
 export function GlobalSessionWidget() {
   const { activeSessions, toggleTimer, closeSession } = useSessionGlobalContext();
   const { finishSessionAndSaveUnexecuted, finalizeSessionAutoFill } = useSessionFlow();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Usar estado local para navegar entre as sessões múltiplas
-  // MUST be before any conditional returns (Rules of Hooks)
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFinishOpen, setIsFinishOpen] = useState(false);
 
-  // Restringir a exibição apenas nas telas iniciais (abas principais) e na tela de seleção de circuito
   const isRootScreen = pathname === "/students" || pathname === "/exercises" || pathname === "/analysis" || pathname === "/circuit-selection";
   if (!isRootScreen) {
     return null;
   }
 
-  // Consider only sessions where the timer is NOT visible natively on screen.
-  // The session is inherently active if it is in the activeSessions context.
   const sessionIds = Object.keys(activeSessions).filter((id) => {
     const session = activeSessions[id];
     return !session.isTimerVisibleOnScreen;
@@ -51,7 +51,6 @@ export function GlobalSessionWidget() {
 
   const mode = sessionIds.length > 1 ? "multiple" : "single";
 
-  // Garantir que o index é válido caso uma sessão seja fechada
   const safeIndex = currentIndex >= sessionIds.length ? 0 : currentIndex;
   const currentSessionId = sessionIds[safeIndex];
   const sessionData = activeSessions[currentSessionId];
@@ -108,7 +107,6 @@ export function GlobalSessionWidget() {
     }
   };
 
-  // Exercícios ainda não realizados desta sessão (para o modal de finalização).
   const pendingExercises = (() => {
     try {
       const exs = JSON.parse(sessionData.exercisesJson ?? "[]") as {
@@ -124,8 +122,6 @@ export function GlobalSessionWidget() {
     }
   })();
 
-  // Finaliza pelo widget como uma finalização NORMAL de sessão (concluida),
-  // usando o mesmo modal de motivo da execução — não cancela mais a sessão.
   const handleConfirmFinish = (motivo: string, descricao?: string) => {
     setIsFinishOpen(false);
     const sid = sessionData.sessionId;
@@ -133,9 +129,7 @@ export function GlobalSessionWidget() {
     const fugas = sessionData.fugaIntervals ?? [];
     const motivoEnum = MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro";
     void (async () => {
-      // Conclui a sessão (salvando exercícios não realizados no estruturado).
       await finishSessionAndSaveUnexecuted(sid, motivoEnum, descricao ?? motivo);
-      // Replica tempo total e fugas (do contexto global) no RC.
       await finalizeSessionAutoFill(sid, total, fugas);
     })();
     closeSession(sid);

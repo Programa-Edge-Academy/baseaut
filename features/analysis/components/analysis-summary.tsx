@@ -27,12 +27,17 @@ const defaultCards: AnalysisSummaryCardProps[] = [
   }
 ];
 
+/** Props for {@link AnalysisSummary}. */
 export type AnalysisSummaryProps = {
   title?: string;
   cards?: AnalysisSummaryCardProps[];
   showNote?: boolean;
 };
 
+/**
+ * Comparison summary panel listing per-metric cards for two periods, with an
+ * optional explanatory footer note.
+ */
 export function AnalysisSummary({
   title = "Resumo da comparação",
   cards = defaultCards,
@@ -48,19 +53,16 @@ export function AnalysisSummary({
       className="w-full rounded-2xl p-6"
     >
       <View className="flex-col gap-3">
-        {/* Title */}
         <Text className="text-white text-[20px] font-bold mb-1">
           {title}
         </Text>
 
-        {/* Rows */}
         <View className="gap-3">
           {cards.map((card, index) => (
             <AnalysisSummaryCard key={index} {...card} />
           ))}
         </View>
 
-        {/* Footer Note */}
         {showNote && (
           <View className="mt-2 flex-row items-start">
             <AlertCircle

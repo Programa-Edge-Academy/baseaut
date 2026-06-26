@@ -19,8 +19,10 @@ import { YesNoQuestionUI } from "./yes-no-question";
 interface Props {
   question: FormQuestionProps;
   isSubQuestion?: boolean;
-  value?: any; // <-- ADICIONADO: Recebe a resposta atual do pai
-  onChange?: (val: any) => void; // <-- ADICIONADO: Envia a nova resposta pro pai
+  /** Current answer value supplied by the parent. */
+  value?: any;
+  /** Called with the new answer value. */
+  onChange?: (val: any) => void;
 }
 
 /**
@@ -39,10 +41,7 @@ export function FormQuestion({
     <FormQuestion question={subQuestion} isSubQuestion={true} />
   );
 
-  /**
-   * Selects the appropriate question UI based on type.
-   * Repassando value e onChange para que as UIs internas atualizem o estado.
-   */
+  /** Selects the appropriate question UI based on the question type. */
   const renderQuestionUI = () => {
     switch (question.type) {
       case "open":
@@ -102,14 +101,12 @@ export function FormQuestion({
   const content = (
     <>
     <View className="self-stretch px-0.7 rounded-[10px] flex flex-row items-center gap-2.5">
-      {/* Container do título com alinhamento centralizado */}
       <View className="flex-1 min-h-[44px] px-3.5 py-2.5 justify-center">
         <Text className="text-white text-default-2">
           {question.title}
         </Text>
       </View>
 
-      {/* Ícone de ajuda com tamanho fixo para não distorcer o layout */}
       {question.helpText && (
         <Pressable
           onPress={() => setIsHelpModalVisible(true)}

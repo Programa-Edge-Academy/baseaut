@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 
+/** Student profile fields used across session screens. */
 export interface StudentProfile {
   name: string;
   avatarUrl: string | null;
@@ -12,6 +13,7 @@ export interface StudentProfile {
   observations: string | null;
 }
 
+/** Maps a stored support level code to its display label. */
 function formatSupportLevel(level: string | null): string | null {
   if (!level) return null;
   if (level === "nivel_1") return "Nível 1";
@@ -20,6 +22,7 @@ function formatSupportLevel(level: string | null): string | null {
   return level;
 }
 
+/** Loads a student's profile by id, returning it with a loading flag. */
 export function useStudentProfile(studentId?: string) {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,8 +57,7 @@ export function useStudentProfile(studentId?: string) {
           supportLevel: formatSupportLevel(data.nivel_suporte),
           observations: data.observacoes_clinicas ?? null,
         } : null);
-      } catch (err) {
-        console.error("Erro ao carregar perfil:", err);
+      } catch {
       } finally {
         if (!cancelled) setIsLoading(false);
       }

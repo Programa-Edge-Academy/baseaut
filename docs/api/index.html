@@ -1,0 +1,56 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>BaseAut — Frontend API</title><meta name="description" content="Documentation for BaseAut — Frontend API"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script><script async src="assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><a href="index.html" class="title">BaseAut — Frontend API</a><div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/><ul role="listbox" id="tsd-search-results"></ul><div id="tsd-search-status" aria-live="polite" aria-atomic="true"><div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h1>BaseAut — Frontend API</h1></div><div class="tsd-panel tsd-typography"><h1 id="baseaut" class="tsd-anchor-link">Baseaut<a href="#baseaut" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
+<p>Este projeto usa <a href="https://docs.expo.dev/router/introduction">Expo Router</a> com <a href="https://www.nativewind.dev/">NativeWind</a>.</p>
+<p>Antes de começar a implementar novas telas, componentes ou fluxos, leia o guia de boas práticas do projeto:</p>
+<ul>
+<li><a href="media/guia-boas-praticas.md">Guia de boas práticas</a></li>
+</ul>
+<p>Este repositório ainda segue a estrutura inicial gerada pelo <code>create-expo-app</code>, então o guia acima serve como base para manter o código consistente desde o início.</p>
+<h2 id="get-started" class="tsd-anchor-link">Get started<a href="#get-started" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ol>
+<li>
+<p>Install dependencies</p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span>
+</code><button type="button">Copy</button></pre>
+
+</li>
+<li>
+<p>Start the app</p>
+<pre><code class="bash"><span class="hl-0">npx</span><span class="hl-1"> </span><span class="hl-2">expo</span><span class="hl-1"> </span><span class="hl-2">start</span>
+</code><button type="button">Copy</button></pre>
+
+</li>
+<li>
+<p>Configure environment variables</p>
+<pre><code class="bash"><span class="hl-0">cp</span><span class="hl-1"> </span><span class="hl-2">.env.example</span><span class="hl-1"> </span><span class="hl-2">.env</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The app reads the Supabase connection through <code>EXPO_PUBLIC_SUPABASE_URL</code> and <code>EXPO_PUBLIC_SUPABASE_ANON_KEY</code>.</p>
+</li>
+</ol>
+<p>In the output, you'll find options to open the app in a</p>
+<ul>
+<li><a href="https://docs.expo.dev/develop/development-builds/introduction/">development build</a></li>
+<li><a href="https://docs.expo.dev/workflow/android-studio-emulator/">Android emulator</a></li>
+<li><a href="https://docs.expo.dev/workflow/ios-simulator/">iOS simulator</a></li>
+<li><a href="https://expo.dev/go">Expo Go</a>, a limited sandbox for trying out app development with Expo</li>
+</ul>
+<p>You can start developing by editing the files inside the <strong>app</strong> directory. This project uses <a href="https://docs.expo.dev/router/introduction">file-based routing</a>.</p>
+<h2 id="get-a-fresh-project" class="tsd-anchor-link">Get a fresh project<a href="#get-a-fresh-project" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>When you're ready, run:</p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">reset-project</span>
+</code><button type="button">Copy</button></pre>
+
+<p>This command will move the starter code to the <strong>app-example</strong> directory and create a blank <strong>app</strong> directory where you can start developing.</p>
+<h2 id="learn-more" class="tsd-anchor-link">Learn more<a href="#learn-more" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>To learn more about developing your project with Expo, look at the following resources:</p>
+<ul>
+<li><a href="https://docs.expo.dev/">Expo documentation</a>: Learn fundamentals, or go into advanced topics with our <a href="https://docs.expo.dev/guides">guides</a>.</li>
+<li><a href="https://docs.expo.dev/tutorial/introduction/">Learn Expo tutorial</a>: Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.</li>
+</ul>
+<h2 id="join-the-community" class="tsd-anchor-link">Join the community<a href="#join-the-community" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Join our community of developers creating universal apps.</p>
+<ul>
+<li><a href="https://github.com/expo/expo">Expo on GitHub</a>: View our open source platform and contribute.</li>
+<li><a href="https://chat.expo.dev">Discord community</a>: Chat with Expo users and ask questions.</li>
+</ul>
+</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#baseaut"><span>Baseaut</span></a><ul><li><a href="#get-started"><span>Get started</span></a></li><li><a href="#get-a-fresh-project"><span>Get a fresh project</span></a></li><li><a href="#learn-more"><span>Learn more</span></a></li><li><a href="#join-the-community"><span>Join the community</span></a></li></ul></div></details></div><div class="site-menu"><nav class="tsd-navigation"><a href="modules.html">BaseAut — Frontend API</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer></footer><div class="overlay"></div></body></html>

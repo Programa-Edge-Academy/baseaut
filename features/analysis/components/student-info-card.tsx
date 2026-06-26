@@ -4,11 +4,13 @@ import { User } from "lucide-react-native";
 import React from "react";
 import { Image, Text, View } from "react-native";
 
+/** Props for {@link InfoChip}. */
 type InfoChipProps = {
   label: string;
   value: string | null | undefined;
 };
 
+/** Small labeled value chip used in the student info grid. */
 function InfoChip({ label, value }: InfoChipProps) {
   return (
     <View className="flex-1 bg-level1 border border-outline rounded-[10px] px-[10px] py-[5px]">
@@ -29,6 +31,7 @@ function InfoChip({ label, value }: InfoChipProps) {
   );
 }
 
+/** Props for {@link StudentInfoCard}. */
 export type StudentInfoCardProps = {
   name: string;
   avatarUrl: string | null | undefined;
@@ -40,6 +43,7 @@ export type StudentInfoCardProps = {
   observations: string | null | undefined;
 };
 
+/** Profile card showing a student's photo and clinical/anthropometric details. */
 export function StudentInfoCard({
   name,
   avatarUrl,

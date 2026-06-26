@@ -16,7 +16,6 @@ async function extractFunctionError(error: unknown): Promise<string> {
       const body = await error.context.json();
       if (typeof body?.error === "string") return body.error;
     } catch {
-      // Body was not JSON; fall back to the generic message.
     }
   }
   return genericErrorMessage;

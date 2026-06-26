@@ -18,6 +18,7 @@ const monthsPt = [
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ];
 
+/** Formats a date as "D Month YYYY" in Portuguese. */
 function formatSingleDate(date: Date): string {
   const day = date.getDate();
   const month = monthsPt[date.getMonth()];
@@ -25,23 +26,28 @@ function formatSingleDate(date: Date): string {
   return `${day} ${month} ${year}`;
 }
 
+/** Formats a date range as "start - end". */
 function formatDateRange(start: Date, end: Date): string {
   return `${formatSingleDate(start)} - ${formatSingleDate(end)}`;
 }
 
+/** Parses a "YYYY-MM-DD" string into a local Date. */
 function parseDateString(dateStr: string): Date {
   const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day);
 }
 
+/**
+ * Screen showing a student's observed behaviors for a selected period: a
+ * frequency bar chart and per-behavior detail cards, with empty and error
+ * states and a date-range picker.
+ */
 export function ObservedBehaviorsScreen() {
   const router = useRouter();
   const { studentId } = useLocalSearchParams();
 
-  // Busca dados reais do banco, se disponíveis
   const { profile: dbProfile, isLoading: isDbLoading } = useStudentProfile(studentId as string);
 
-  // Estados de data selecionados (Período)
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
 
@@ -57,7 +63,6 @@ export function ObservedBehaviorsScreen() {
   const isLoading = isDbLoading || isBehaviorsLoading;
   const hasError = !!behaviorsError;
 
-  // Estados do Modal do Calendário
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [tempStart, setTempStart] = useState<Date | null>(null);
   const [tempEnd, setTempEnd] = useState<Date | null>(null);
@@ -102,10 +107,8 @@ export function ObservedBehaviorsScreen() {
     return "Selecione o período para visualizar os comportamentos";
   }, [startDate, endDate]);
 
-  // Filtragem dos registros baseada no intervalo de datas selecionado (agora vindo do hook/banco)
   const filteredRecords = records;
 
-  // Agrega dados filtrados para gerar a lista de detalhamento de comportamentos
   const aggregatedBehaviors = useMemo(() => {
     const result: {
       type: BehaviorType;
@@ -137,12 +140,10 @@ export function ObservedBehaviorsScreen() {
       if (recsForType.length > 0) {
         const occurrences = recsForType.reduce((sum, r) => sum + r.frequency, 0);
 
-        // Extrai datas únicas das sessões de ocorrência e ordena do mais recente ao mais antigo
         const uniqueDates = Array.from(new Set(recsForType.map((r) => r.date))).sort(
           (a, b) => new Date(b).getTime() - new Date(a).getTime()
         );
 
-        // Formato de lista numerada para as sessões (ex: "1. Sessão de 12/06", "2. Sessão de 10/06")
         const formattedSessions = uniqueDates.map((dateStr, index) => {
           const [, month, day] = dateStr.split("-").map(Number);
           const formattedMonth = String(month).padStart(2, "0");
@@ -150,7 +151,6 @@ export function ObservedBehaviorsScreen() {
           return `${index + 1}. Sessão de ${formattedDay}/${formattedMonth}`;
         });
 
-        // Formata a última ocorrência no padrão DD/MM/AAAA
         const lastDateStr = uniqueDates[0];
         const [year, month, day] = lastDateStr.split("-").map(Number);
         const lastOccurrence = `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year}`;
@@ -169,13 +169,11 @@ export function ObservedBehaviorsScreen() {
       }
     });
 
-    // Ordena por ocorrências decrescente
     return result.sort((a, b) => b.occurrences - a.occurrences);
   }, [filteredRecords, exercises]);
 
   const showResults = startDate && endDate;
 
-  // Cenario: Erro de conexão ou erro desconhecido
   if (showResults && hasError) {
     return (
       <View className="flex-1 bg-level1">
@@ -188,7 +186,6 @@ export function ObservedBehaviorsScreen() {
           primaryActionLabel="Tentar novamente"
         />
 
-        {/* Modal Overlay do Calendário (acessível no estado de erro) */}
         <AppModal
           visible={isModalVisible}
           transparent
@@ -203,7 +200,6 @@ export function ObservedBehaviorsScreen() {
               className="w-full max-w-[380px]"
               onPress={(e) => e.stopPropagation()}
             >
-              {/* Calendário */}
               <View className="w-full mb-4">
                 <RangeCalendar
                   key={`${isModalVisible}`}
@@ -211,7 +207,6 @@ export function ObservedBehaviorsScreen() {
                 />
               </View>
 
-              {/* Botão de Salvar */}
               <View className="items-center">
                 <DefaultButton
                   label="Salvar"
@@ -228,8 +223,6 @@ export function ObservedBehaviorsScreen() {
     );
   }
 
-  // Cenario: Sem comportamentos observados no período (apenas após o loading
-  // confirmar que não há registros).
   if (showResults && !isLoading && !hasError && filteredRecords.length === 0) {
     return (
       <View className="flex-1 bg-level1">
@@ -243,7 +236,6 @@ export function ObservedBehaviorsScreen() {
           primaryActionLabel="Alterar Período"
         />
 
-        {/* Modal Overlay do Calendário (acessível no estado vazio) */}
         <AppModal
           visible={isModalVisible}
           transparent
@@ -258,7 +250,6 @@ export function ObservedBehaviorsScreen() {
               className="w-full max-w-[380px]"
               onPress={(e) => e.stopPropagation()}
             >
-              {/* Calendário */}
               <View className="w-full mb-4">
                 <RangeCalendar
                   key={`${isModalVisible}`}
@@ -266,7 +257,6 @@ export function ObservedBehaviorsScreen() {
                 />
               </View>
 
-              {/* Botão de Salvar */}
               <View className="items-center">
                 <DefaultButton
                   label="Salvar"
@@ -294,7 +284,6 @@ export function ObservedBehaviorsScreen() {
           </View>
         ) : (
           <View className="mt-5">
-            {/* Nome do Aluno no Header da Página */}
             <Text
               className="text-xl font-bold text-white"
               style={{ marginHorizontal: 22, marginBottom: 16, fontFamily: "Inter-Bold" }}
@@ -302,16 +291,13 @@ export function ObservedBehaviorsScreen() {
               Comportamentos Observados - {profile?.name || "Aluno"}
             </Text>
 
-            {/* Seletor de Período */}
             <PeriodSelector
               label={periodLabel}
               onPress={handlePeriodPress}
             />
 
-            {/* Conteúdo Dinâmico */}
             {showResults ? (
               <View className="mt-2">
-                {/* Gráfico de Barras */}
                 <View style={{ marginHorizontal: 22 }}>
                   <ObservedBehaviorsChart
                     records={records}
@@ -320,7 +306,6 @@ export function ObservedBehaviorsScreen() {
                   />
                 </View>
 
-                {/* Título da Lista de Detalhes */}
                 <Text
                   className="text-white text-lg font-bold mt-8 mb-4"
                   style={{ marginHorizontal: 22, fontFamily: "Inter-Bold" }}
@@ -328,7 +313,6 @@ export function ObservedBehaviorsScreen() {
                   Detalhamento dos comportamentos
                 </Text>
 
-                {/* Lista de Cards de Detalhe */}
                 <View style={{ marginHorizontal: 22 }} className="gap-4">
                   {aggregatedBehaviors.map((item) => (
                     <BehaviorDetailCard
@@ -357,7 +341,6 @@ export function ObservedBehaviorsScreen() {
         )}
       </ScrollView>
 
-      {/* Modal Overlay do Calendário */}
       <AppModal
         visible={isModalVisible}
         transparent
@@ -372,7 +355,6 @@ export function ObservedBehaviorsScreen() {
             className="w-full max-w-[380px]"
             onPress={(e) => e.stopPropagation()}
           >
-            {/* Calendário */}
             <View className="w-full mb-4">
               <RangeCalendar
                 key={`${isModalVisible}`}
@@ -380,7 +362,6 @@ export function ObservedBehaviorsScreen() {
               />
             </View>
 
-            {/* Botão de Salvar */}
             <View className="items-center">
               <DefaultButton
                 label="Salvar"

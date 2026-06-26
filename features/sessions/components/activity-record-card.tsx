@@ -7,19 +7,19 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
+/** Motor development level recorded for an execution. */
 export type NivelDesenvolvimento = "inicial" | "intermediario" | "maduro";
 
+/** Whether the student performed autonomously, with intrusive help, or not applicable. */
 export type RegistroAjuda =
   | "autonomo"
   | "ajuda_intrusiva"
   | "nao_se_aplica";
 
+/** Whether the exercise was performed, not performed, or deferred. */
 export type StatusRealizacao = "realizada" | "nao_realizada" | "adiado";
 
+/** Reason an exercise was not completed. */
 export type MotivoNaoRealizacao =
   | "recusa_aluno"
   | "comportamento_disruptivo"
@@ -28,6 +28,7 @@ export type MotivoNaoRealizacao =
   | "dificuldade_fisica"
   | "outro";
 
+/** A single recorded exercise execution displayed by the card. */
 export type ActivityRecordItem = {
   id: string;
   title: string;
@@ -40,6 +41,7 @@ export type ActivityRecordItem = {
   descricaoAdicional?: string | null;
 };
 
+/** Edited values submitted when saving an activity record. */
 export type ActivityRecordUpdate = {
   statusRealizacao: StatusRealizacao;
   durationSeconds: number | null;
@@ -50,6 +52,7 @@ export type ActivityRecordUpdate = {
   descricaoAdicional: string | null;
 };
 
+/** Props for {@link ActivityRecordCard}. */
 type ActivityRecordCardProps = {
   record: ActivityRecordItem;
   onSave?: (
@@ -57,10 +60,6 @@ type ActivityRecordCardProps = {
     values: ActivityRecordUpdate
   ) => Promise<void> | void;
 };
-
-// ---------------------------------------------------------------------------
-// SVG faces — same as ActivityResultModal
-// ---------------------------------------------------------------------------
 
 const SAD_FACE_XML = `
 <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -100,11 +99,6 @@ const MOTIVOS: { id: MotivoNaoRealizacao; label: string }[] = [
   { id: "outro",                    label: "Outro" },
 ];
 
-// ---------------------------------------------------------------------------
-// Estilos compartilhados pelas 3 linhas de informação (Duração para baixo):
-// mesmo estilo de texto e mesma distância entre si.
-// ---------------------------------------------------------------------------
-
 const INFO_LABEL_STYLE = {
   color: colors.muted,
   fontSize: 14,
@@ -116,12 +110,12 @@ const INFO_VALUE_STYLE = {
   fontSize: 14,
 } as const;
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
+/**
+ * Returns whether a record is still missing required fields: a reason (and
+ * description for "Outro") when not performed, or duration, development level,
+ * and help registration when performed.
+ */
 export function hasActivityRecordPendency(record: ActivityRecordItem) {
-  // Não realizado: precisa do motivo (e da descrição quando o motivo é "Outro").
   if (record.statusRealizacao === "nao_realizada") {
     if (!record.motivoNaoRealizacao) return true;
     if (
@@ -140,6 +134,7 @@ export function hasActivityRecordPendency(record: ActivityRecordItem) {
   );
 }
 
+/** Formats seconds as mm:ss, or a placeholder when unset. */
 function formatDuration(seconds: number | null | undefined) {
   if (seconds === null || seconds === undefined) {
     return "Não selecionado";
@@ -150,6 +145,7 @@ function formatDuration(seconds: number | null | undefined) {
   return `${String(minutes).padStart(2, "0")}:${String(remaining).padStart(2, "0")}`;
 }
 
+/** Returns the display label for a help registration value. */
 function getHelpLabel(value: RegistroAjuda | null) {
   if (value === "autonomo") return "Autônomo";
   if (value === "ajuda_intrusiva") return "Ajuda intrusiva";
@@ -157,14 +153,16 @@ function getHelpLabel(value: RegistroAjuda | null) {
   return "Não selecionado";
 }
 
+/** Returns the display label for a non-completion reason. */
 function getMotivoLabel(value: MotivoNaoRealizacao | null) {
   return MOTIVOS.find((m) => m.id === value)?.label ?? "Não selecionado";
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
+/**
+ * Card that displays a recorded execution and lets the user edit it inline:
+ * status, duration, development level, and help (or a reason when not
+ * performed). Highlights pending records and blocks saving until complete.
+ */
 export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<StatusRealizacao>(
@@ -180,13 +178,10 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
   );
   const [selectedMotivo, setSelectedMotivo] =
     useState<MotivoNaoRealizacao | null>(record.motivoNaoRealizacao);
-  // Duração em segundos (campo único); exibida como mm:ss quando salva.
   const [durationInput, setDurationInput] = useState<string>("");
-  // Descrição livre exigida quando o motivo for "Outro".
   const [descricaoInput, setDescricaoInput] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
 
-  // Mantém os campos de edição sincronizados com o registro mais recente.
   const syncFromRecord = () => {
     setSelectedStatus(
       record.statusRealizacao === "nao_realizada" ? "nao_realizada" : "realizada"
@@ -216,7 +211,6 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
     record.durationSeconds,
   ]);
 
-  // Campo único de duração, em segundos (ou null se vazio).
   const editedDurationSeconds = useMemo<number | null>(() => {
     if (durationInput.trim() === "") return null;
     return Math.max(0, parseInt(durationInput, 10) || 0);
@@ -230,7 +224,6 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
     if (!isEditing) return hasActivityRecordPendency(record);
     if (selectedStatus === "nao_realizada") {
       if (!selectedMotivo) return true;
-      // "Outro" exige uma descrição preenchida.
       if (selectedMotivo === "outro" && descricaoInput.trim() === "") return true;
       return false;
     }
@@ -251,7 +244,6 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
   ]);
 
   async function handleSave() {
-    // Bloqueia o salvamento enquanto houver campos obrigatórios pendentes.
     if (isPending || isSaving) return;
     try {
       setIsSaving(true);
@@ -259,7 +251,6 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
       await onSave?.(record.id, {
         statusRealizacao: selectedStatus,
         durationSeconds: editedDurationSeconds,
-        // Não realizado não carrega nível/ajuda; realizado não carrega motivo.
         nivelDesenvolvimento: isNao ? null : selectedDevelopment,
         registroAjuda: isNao ? null : selectedHelp,
         complementosAjuda:
@@ -267,7 +258,6 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
             ? selectedComplementos
             : null,
         motivoNaoRealizacao: isNao ? selectedMotivo : null,
-        // descricao_adicional só faz sentido para o motivo "Outro".
         descricaoAdicional:
           isNao && selectedMotivo === "outro" ? descricaoInput.trim() : null,
       });
@@ -296,7 +286,6 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
         marginBottom: 16,
       }}
     >
-      {/* ---- Header: título + botões de ação ---- */}
       <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
         <View style={{ flex: 1 }}>
           <Text
@@ -358,12 +347,10 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
         )}
       </View>
 
-      {/* ---- View mode: linhas com mesmo estilo e espaçamento ---- */}
       {!isEditing && (
         <View style={{ marginTop: 20, gap: 16 }}>
           {isNaoRealizada ? (
             <>
-              {/* Não realizado: sem duração — apenas status e motivo. */}
               <Text style={INFO_LABEL_STYLE}>
                 Status:{" "}
                 <Text style={[INFO_VALUE_STYLE, { color: colors.error }]}>
@@ -411,12 +398,10 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
         </View>
       )}
 
-      {/* ---- Edit mode ---- */}
       {isEditing && (
         <View style={{ marginTop: 18 }}>
           <View style={{ height: 1, backgroundColor: colors.outline, marginBottom: 16 }} />
 
-          {/* Status: Realizado / Não realizado */}
           <View style={{ gap: 8 }}>
             <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: colors.muted }}>
               Status do exercício
@@ -457,7 +442,6 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
           </View>
 
           {selectedStatus === "nao_realizada" ? (
-            /* Motivo da não realização */
             <View style={{ gap: 8, marginTop: 16 }}>
               <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: colors.muted }}>
                 Motivo
@@ -502,7 +486,6 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
             </View>
           ) : (
             <>
-              {/* Duração editável — campo único, em segundos (só no modo realizado) */}
               <View style={{ gap: 8, marginTop: 16 }}>
                 <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: colors.muted }}>
                   Duração (segundos)
@@ -534,7 +517,6 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
                 </View>
               </View>
 
-              {/* Nível de desenvolvimento — igual ao modal */}
               <View style={{ gap: 8, marginTop: 16 }}>
                 <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: colors.muted }}>
                   Nível de desenvolvimento
@@ -584,7 +566,6 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
                 </View>
               </View>
 
-              {/* Nível de ajuda — igual ao modal */}
               <View style={{ gap: 8, marginTop: 16 }}>
                 <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: colors.muted }}>
                   Nível de ajuda oferecida

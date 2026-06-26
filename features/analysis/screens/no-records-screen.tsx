@@ -6,8 +6,10 @@ import { AlertCircle, ChartNoAxesColumnIncreasingIcon, ChartNoAxesCombined, Clip
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 
+/** Preset that selects the empty/error copy and iconography for {@link NoRecordsScreen}. */
 export type NoRecordsScreenVariant = "sessions" | "protocol" | "help" | "behavior" | "loadRecords" | "loadEvolution" | "loadBehavior";
 
+/** Props for {@link NoRecordsScreen}. */
 export type NoRecordsScreenProps = {
   variant?: NoRecordsScreenVariant;
   studentName?: string;
@@ -73,6 +75,10 @@ const VARIANT_CONFIG: Record<
   },
 };
 
+/**
+ * Reusable empty/error state screen for analysis views, with preset copy and
+ * icon per variant plus optional primary/secondary actions.
+ */
 export function NoRecordsScreen({
   variant = "sessions",
   studentName = "Aluno",

@@ -3,6 +3,11 @@ import { useLocalSearchParams } from "expo-router";
 import { SessionRunningSemiStructuredScreen } from "../../features/sessions/screens/session-running-semi-structured-screen";
 import type { SessionExercise } from "../../features/sessions/screens/session-running-screen";
 
+/**
+ * Route for a semi-structured session run. Accepts either an `exercises` param
+ * (when starting) or a `queue` param (when resuming from the completion screen)
+ * and normalizes both into the session exercise list.
+ */
 export default function SessionSemiStructuredRoute() {
   const {
     exercises,
@@ -14,8 +19,6 @@ export default function SessionSemiStructuredRoute() {
     circuitName,
   } = useLocalSearchParams<any>();
 
-  // Início do circuito semi-estruturado envia "exercises"; retomada (tela de
-  // conclusão) envia "queue". Aceitamos ambos para evitar a lista vazia.
   const sessionExercises = useMemo<SessionExercise[]>(() => {
     const raw = exercises ?? queue;
     if (!raw) return [];

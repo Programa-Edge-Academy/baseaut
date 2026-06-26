@@ -4,18 +4,28 @@ import React from "react";
 import { Text, View } from "react-native";
 import { RipplePressable } from "./ripple-pressable";
 
+/** A selectable option in a {@link FilterMenu}. */
 export type FilterOption = {
   id: string;
   label: string;
 };
 
+/** Props for {@link FilterMenu}. */
 export type FilterMenuProps = {
   options: FilterOption[];
   selectedIds: string[];
   onSelect: (selectedIds: string[]) => void;
+  /**
+   * Selection behaviour. "multiple-with-all" treats the first option as an
+   * exclusive "all" entry. Defaults to "single".
+   */
   mode?: "single" | "multiple" | "multiple-with-all";
 };
 
+/**
+ * Floating filter menu supporting single, multiple, and "all"-aware multiple
+ * selection modes.
+ */
 export function FilterMenu({
   options,
   selectedIds,

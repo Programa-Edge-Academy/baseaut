@@ -2,6 +2,7 @@ import { colors } from "@/assets/colors";
 import React from "react";
 import { Text, TextInput, View } from "react-native";
 
+/** Props for {@link Mabc2ExerciseItem}. */
 export type Mabc2ExerciseItemProps = {
   id?: string;
   name: string;
@@ -17,6 +18,7 @@ export type Mabc2ExerciseItemProps = {
   accessibilityLabel?: string;
 };
 
+/** Maps a measurement unit code to its display label. */
 function formatMeasuredUnit(unit: string) {
   if (unit === "tentativas") return "Medido em sucessos";
   if (unit === "seg") return "Medido em segundos";
@@ -24,6 +26,10 @@ function formatMeasuredUnit(unit: string) {
   return unit;
 }
 
+/**
+ * Single MABC-2 exercise row with attempt-count and score fields, editable or
+ * read-only.
+ */
 export function Mabc2ExerciseItem({
   name,
   unit,

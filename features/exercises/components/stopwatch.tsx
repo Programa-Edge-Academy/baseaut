@@ -17,7 +17,7 @@ export type StopwatchVariant = "minimize" | "form";
 export type StopwatchProps = {
   title: string;
   subtitle: string;
-  /** Foto do exercício (URI). Quando presente, é exibida à esquerda do título. */
+  /** Exercise photo URI. When present, it is shown to the left of the title. */
   imageUrl?: string;
   /** Whether the stopwatch starts ticking on mount. Defaults to true. */
   autoStart?: boolean;
@@ -34,8 +34,10 @@ export type StopwatchProps = {
    * seconds before the internal counter is reset to zero.
    */
   onStop?: (elapsedSeconds: number) => void;
-  /** Fired when the user taps restart. Em modo controlado, o pai deve zerar o
-   * tempo (o estado interno é ignorado quando `controlledSeconds` é usado). */
+  /**
+   * Fired when the user taps restart. In controlled mode the parent must reset
+   * the time (internal state is ignored when `controlledSeconds` is used).
+   */
   onRestart?: () => void;
   /** Fired when the user taps the "Crise" pill. */
   onPressCrise?: () => void;
@@ -115,19 +117,15 @@ export function Stopwatch({
       setInternalIsRunning(false);
     }
     onStop?.(seconds);
-    //setSeconds(0); Estava zerando o cronômetro, então se esbarrar o dedo e sair do modal, vocÊ perde o tempo registrado.
   };
 
-  // Zera o contador e mantém a contagem em andamento.
   const handleRestart = () => {
-    // Modo não-controlado: zera o estado interno.
     if (controlledSeconds === undefined) {
       setInternalSeconds(0);
     }
     if (controlledIsRunning === undefined) {
       setInternalIsRunning(true);
     }
-    // Modo controlado: o pai zera o tempo (updateTimeElapsed) e garante rodando.
     onRestart?.();
     onToggleRunning?.(true);
   };

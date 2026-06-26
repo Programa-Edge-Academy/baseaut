@@ -4,12 +4,14 @@ import React from "react";
 import { Text, View } from "react-native";
 import ComparisonCard from "./comparison-card";
 
+/** Counts of a behavior in each compared period. */
 export interface BehaviorPeriodData {
   p1: number;
   p2: number;
   diferenca_absoluta?: number;
 }
 
+/** Props for {@link ComparisonBehaviors}. */
 export type ComparisonBehaviorsProps = {
   data?: {
     estereotipia?: BehaviorPeriodData | null;
@@ -23,6 +25,7 @@ export type ComparisonBehaviorsProps = {
   } | null;
 };
 
+/** Table comparing observed-behavior counts between two periods. */
 export function ComparisonBehaviors({ data }: ComparisonBehaviorsProps) {
   return (
     <View
@@ -33,12 +36,10 @@ export function ComparisonBehaviors({ data }: ComparisonBehaviorsProps) {
       }}
       className="w-full rounded-2xl p-6"
     >
-      {/* Title */}
       <Text className="text-white text-lg font-bold mb-4" style={{ fontFamily: "Inter" }}>
         Comparação dos comportamentos observados
       </Text>
 
-      {/* Header labels aligned with ComparisonCard columns */}
       <View className="flex-row items-center px-1 mb-3">
         <View className="flex-[2]">
           <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 11 }}>Comportamento</Text>
@@ -54,7 +55,6 @@ export function ComparisonBehaviors({ data }: ComparisonBehaviorsProps) {
         </View>
       </View>
 
-      {/* Rows */}
       <View className="space-y-3">
         <ComparisonCard
           title="Estereotipias"
@@ -105,7 +105,6 @@ export function ComparisonBehaviors({ data }: ComparisonBehaviorsProps) {
         />
       </View>
 
-      {/* Footer note */}
       <View className="flex-row items-start mt-4 pt-3" style={{ borderTopWidth: 1, borderTopColor: colors.outline }}>
         <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.level1, borderWidth: 1, borderColor: colors.outline, alignItems: "center", justifyContent: "center", marginRight: 12 }}>
           <AlertCircle color={colors.muted} size={18} />

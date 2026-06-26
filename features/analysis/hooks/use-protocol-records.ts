@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 /** Supported protocol types for the US10.6 visualization. */
 export type ProtocolTipo = "ata" | "cars" | "mabc2";
 
+/** Whether a protocol has at least one answered record for a student. */
 export type ProtocolStatus = "registrado" | "nao_registrado";
 
 /** A single saved protocol record (one `formularios` instance for a student). */
@@ -20,12 +21,14 @@ export type ProtocolRecord = {
   percentile: string | null;
 };
 
+/** Display labels for each protocol type. */
 const PROTOCOL_LABELS: Record<ProtocolTipo, string> = {
   ata: "ATA",
   cars: "CARS",
   mabc2: "MABC-2",
 };
 
+/** Formats an ISO date as a Brazilian short date, or a placeholder when null. */
 function formatDate(value: string | null): string {
   if (!value) return "Data não definida";
   return new Date(value).toLocaleDateString("pt-BR");
@@ -181,7 +184,6 @@ export function useProtocolRecords(studentId?: string, tipo?: ProtocolTipo) {
         tipo === "mabc2"
           ? await fetchMabc2(studentId)
           : await fetchAtaCars(studentId, tipo);
-      // Mais recentes primeiro na exibição.
       const sorted = [...result].sort((a, b) => {
         const dateA = a.rawDate ? new Date(a.rawDate).getTime() : 0;
         const dateB = b.rawDate ? new Date(b.rawDate).getTime() : 0;

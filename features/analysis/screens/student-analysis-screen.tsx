@@ -12,6 +12,12 @@ import { User } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, ScrollView, Text, View } from "react-native";
 
+/**
+ * Analysis overview for a single student: profile info plus entry points to
+ * exercise progress, help records, observed behaviors, period comparison,
+ * applied protocols, and motor development records. Guards access to coordinators
+ * and monitors.
+ */
 export function StudentAnalysisScreen() {
   const router = useRouter();
   const { studentId } = useLocalSearchParams();

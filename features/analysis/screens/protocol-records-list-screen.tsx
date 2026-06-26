@@ -13,12 +13,14 @@ import {
   type ProtocolTipo,
 } from "../hooks/use-protocol-records";
 
+/** Display labels for each protocol type. */
 const PROTOCOL_LABELS: Record<ProtocolTipo, string> = {
   ata: "ATA",
   cars: "CARS",
   mabc2: "MABC-2",
 };
 
+/** Props for {@link ProtocolRecordsListScreen}. */
 export type ProtocolRecordsListScreenProps = {
   studentId: string;
   studentName: string;
@@ -27,6 +29,7 @@ export type ProtocolRecordsListScreenProps = {
   onPressRecord?: (record: ProtocolRecord) => void;
 };
 
+/** Lists a student's records for a protocol type, navigating to each on press. */
 export function ProtocolRecordsListScreen({
   studentId,
   studentName,

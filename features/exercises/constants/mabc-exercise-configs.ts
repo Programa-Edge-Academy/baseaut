@@ -1,17 +1,22 @@
+/** Kind of value captured for a MABC-2 exercise field. */
 export type MabcFieldType = "tempo" | "falhas" | "acertos" | "passos";
 
+/** Configuration of a single input field within a MABC-2 exercise. */
 export interface MabcFieldConfig {
   type: MabcFieldType;
   label: string;
+  /** Maximum accepted value, used for validation. */
   max?: number;
   placeholder?: string;
 }
 
+/** A side (e.g. hand/leg) for which an exercise records separate values. */
 export interface MabcSideConfig {
   key: string;
   label: string;
 }
 
+/** Full configuration of a MABC-2 exercise: its section, sides, trials, and fields. */
 export interface MabcExerciseConfig {
   section: "destreza_manual" | "pegar_lancar" | "equilibrio";
   sectionLabel: string;
@@ -20,6 +25,10 @@ export interface MabcExerciseConfig {
   fields: MabcFieldConfig[];
 }
 
+/**
+ * MABC-2 exercise field configurations keyed by age band and exercise name,
+ * driving the dynamic score inputs in {@link MabcResultModal}.
+ */
 export const MABC_EXERCISE_CONFIGS: Record<
   "mabc_1" | "mabc_2" | "mabc_3",
   Record<string, MabcExerciseConfig>

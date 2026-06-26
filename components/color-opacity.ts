@@ -1,3 +1,12 @@
+/**
+ * Converts a hex color to an `rgba()` string with the given opacity.
+ *
+ * Accepts 3- or 6-digit hex (with or without a leading `#`).
+ *
+ * @param hex - Source hex color, e.g. `#fff` or `#ffffff`.
+ * @param opacity - Alpha value between 0 and 1.
+ * @returns The color as an `rgba(r, g, b, opacity)` string.
+ */
 export const withOpacity = (hex: string, opacity: number): string => {
   const cleanedHex = hex.replace("#", "");
   const normalizedHex = cleanedHex.length === 3

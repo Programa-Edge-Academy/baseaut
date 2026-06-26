@@ -26,9 +26,10 @@ import {
 } from "../hooks/use-session-flow";
 import { formatSessionClock, useSessionGlobalContext } from "../contexts/session-global-context";
 
+/** Whether the active exercise is awaiting start or actively running. */
 type ExerciseStage = "ready" | "running";
 
-/** Mapeia os rótulos do modal/finalização para o motivo_nao_realizacao_enum. */
+/** Maps the result modal/finish reason labels to the `motivo_nao_realizacao_enum` values. */
 const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
   "Recusa do aluno": "recusa_aluno",
   "Comportamento disruptivo": "comportamento_disruptivo",
@@ -38,6 +39,7 @@ const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
   Outro: "outro",
 };
 
+/** Props for {@link SessionRunningSemiStructuredScreen}. */
 export type SessionRunningSemiStructuredProps = {
   studentName: string;
   exercises: SessionExercise[];
@@ -47,6 +49,12 @@ export type SessionRunningSemiStructuredProps = {
   circuitName?: string;
 };
 
+/**
+ * Drives a semi-structured session where the user freely picks the next exercise
+ * from a list (or launches an engagement activity). Each resolved exercise is
+ * saved as its own execution, with crisis/flight timing and an inline Control
+ * Record; finishing routes to the completion screen.
+ */
 export function SessionRunningSemiStructuredScreen({
   studentName,
   exercises,
@@ -60,25 +68,19 @@ export function SessionRunningSemiStructuredScreen({
   const { createSession, persistExecutions, saveSession, finalizeSessionAutoFill } = useSessionFlow();
   const { registerSession, updateSessionProgress, updateSessionState, toggleTimer, closeSession, activeSessions, updateTimeElapsed, setTimerVisible, setFormVisible, addFugaInterval } = useSessionGlobalContext();
 
-  // ID efetivo da sessão: usa o recebido (retomada) ou cria um na montagem.
   const [effectiveSessionId, setEffectiveSessionId] = useState<string>(sessionId || "");
   const effectiveSessionIdRef = useRef<string>(sessionId || "");
   const createSessionPromiseRef = useRef<Promise<string> | null>(null);
-  // Template/instância de RC para o formulário inline.
   const [rcFormId, setRcFormId] = useState<string>("");
   const formRef = useRef<any>(null);
-  // Contador de ordem de execução para gravar cada exercício realizado.
   const ordemRef = useRef(0);
-  // Segundos do cronômetro capturados na última parada.
   const lastElapsedSecondsRef = useRef<number | null>(null);
 
-  // Botões de crise/fuga: episódios cronometrados de forma oculta, por exercício.
   const [isCriseActive, setIsCriseActive] = useState(false);
   const criseStartRef = useRef<number | null>(null);
   const [isFugaActive, setIsFugaActive] = useState(false);
   const fugaStartRef = useRef<number | null>(null);
   const crisesRef = useRef<CrisisRecord[]>([]);
-  // Início/fim de cada fuga no cronômetro total da sessão (para a resposta do RC).
   const fugaStartTotalRef = useRef<number | null>(null);
   const fugaIntervalsRef = useRef<{ start: number; end: number }[]>([]);
 
@@ -120,14 +122,12 @@ export function SessionRunningSemiStructuredScreen({
       ...crisesRef.current,
       { exercicioId: activeExercise.id, durationSeconds, tipo: "fuga" },
     ];
-    // Registra o intervalo no cronômetro total (início → fim) para o RC.
     if (fugaStartTotalRef.current != null) {
       const interval = {
         start: fugaStartTotalRef.current,
         end: currentSessionData?.totalElapsed ?? 0,
       };
       fugaIntervalsRef.current = [...fugaIntervalsRef.current, interval];
-      // Também persiste no contexto global (para finalização pelo widget).
       if (resolvedSid) addFugaInterval(resolvedSid, interval);
       fugaStartTotalRef.current = null;
     }
@@ -147,15 +147,12 @@ export function SessionRunningSemiStructuredScreen({
 
   const trySaveForm = () => {
     if (!formRef.current) return;
-    void (formRef.current.handleSave(true, true) as Promise<any>).then((result: any) => {
-    });
+    void (formRef.current.handleSave(true, true) as Promise<any>);
   };
 
-  // Para retomada via widget: o sessionId já existe, apenas garante o registro no contexto
   useEffect(() => {
     if (!sessionId) return;
     const existing = activeSessions[sessionId];
-    // Só registra novamente se não existe no contexto (ex: app reiniciado)
     if (!existing) {
       registerSession({
         sessionId,
@@ -173,8 +170,6 @@ export function SessionRunningSemiStructuredScreen({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
-  // Cria a sessão no banco e registra no contexto de forma lazy (apenas no primeiro "Começar").
-  // Retorna o sessionId criado ou o já existente.
   const ensureSessionId = async (): Promise<string | null> => {
     if (effectiveSessionIdRef.current) return effectiveSessionIdRef.current;
     if (!createSessionPromiseRef.current) {
@@ -200,8 +195,7 @@ export function SessionRunningSemiStructuredScreen({
         return id;
       })();
       createSessionPromiseRef.current = promise.catch((err) => {
-        createSessionPromiseRef.current = null; // allow retry on failure
-        console.error("Erro ao criar sessão (semi-estruturado):", err);
+        createSessionPromiseRef.current = null;
         throw err;
       });
     }
@@ -212,7 +206,6 @@ export function SessionRunningSemiStructuredScreen({
     }
   };
 
-  // Resolve a instância de RC da sessão para o formulário inline.
   useEffect(() => {
     if (!effectiveSessionId) return;
     let active = true;
@@ -238,7 +231,6 @@ export function SessionRunningSemiStructuredScreen({
     return () => { active = false; };
   }, [effectiveSessionId]);
 
-  // Persiste um exercício realizado/não realizado/adiado na sessão atual.
   const persistResult = async (
     exercise: SessionExercise,
     record: Omit<ExecutionRecord, "exercicioId" | "ordemExecucao">,
@@ -253,17 +245,11 @@ export function SessionRunningSemiStructuredScreen({
     };
     try {
       await persistExecutions(resolvedSid, [fullRecord]);
-    } catch (err) {
-      console.error("Erro ao salvar execução (semi-estruturado):", err);
-    }
+    } catch {}
   };
 
-  // Inicializa o histórico e o exercício ativo restaurando do contexto global (retomada)
-  // O sid síncrono pode estar vazio para novas sessões (antes do primeiro "Começar").
-  // Usamos o ref como fallback após criação assíncrona.
   const resolvedSid = sessionId || effectiveSessionIdRef.current || "";
   const currentSessionData = activeSessions[resolvedSid];
-  // Visibilidade do RC por sessão (default visível; toggle persiste na sessão).
   const isFormVisible = currentSessionData?.isFormVisible ?? true;
   const [activeExercise, setActiveExercise] = useState<SessionExercise | null>(() => {
     if (!currentSessionData?.activeExerciseId) return null;
@@ -285,19 +271,16 @@ export function SessionRunningSemiStructuredScreen({
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
   const [isFinishOpen, setIsFinishOpen] = useState(false);
 
-  // Sincroniza a visibilidade do widget: oculta se a tela estiver exibindo a execução do exercício
   useEffect(() => {
     if (!resolvedSid) return;
     setTimerVisible(resolvedSid, !!activeExercise);
   }, [activeExercise, resolvedSid, setTimerVisible]);
 
-  // Sincroniza o histórico de volta ao contexto global ao mudar
   useEffect(() => {
     if (!resolvedSid) return;
     updateSessionState(resolvedSid, { historico: historicoExercicios });
   }, [historicoExercicios, resolvedSid]);
 
-  // Atualiza o progresso globalmente quando o histórico muda
   useEffect(() => {
     if (!resolvedSid) return;
     const completed = Object.keys(historicoExercicios).length;
@@ -371,15 +354,10 @@ export function SessionRunningSemiStructuredScreen({
     const exercise = activeExercise;
     const duracao = lastElapsedSecondsRef.current;
 
-    // Atribui crise/fuga em andamento a este exercício antes de avançar.
     finalizeActiveCrise();
     finalizeActiveFuga();
 
-    // Cada exercício resolvido vira uma execução gravada na mesma sessão.
-    // Aguardamos a gravação para que as crises/fugas possam ser vinculadas
-    // à execução correspondente ao finalizar a sessão.
     if (status === "concluido") {
-      // Dados clínicos coletados no modal (nível, ajuda e complementos).
       await persistResult(exercise, {
         statusRealizacao: "realizada",
         nivelDesenvolvimento: options?.result?.nivelDesenvolvimento ?? null,
@@ -446,7 +424,6 @@ export function SessionRunningSemiStructuredScreen({
     }
   };
 
-  // Exercícios ainda não realizados (para exibir no modal de finalização).
   const pendentesNomes = exercises
     .filter((ex) => {
       const status = historicoExercicios[ex.id];
@@ -457,7 +434,6 @@ export function SessionRunningSemiStructuredScreen({
   const handleFinishSession = (motivo: string, descricao?: string) => {
     setIsFinishOpen(false);
 
-    // Encerra crise/fuga eventualmente ativas e salva o RC antes de finalizar.
     finalizeActiveCrise();
     finalizeActiveFuga();
     trySaveForm();
@@ -511,7 +487,6 @@ export function SessionRunningSemiStructuredScreen({
     );
   }
 
-  // Estágio "ready": cabeçalho + StartActivity, fixos no topo (não rolam).
   const renderExecutionView = () => {
     if (!activeExercise || stage !== "ready") return null;
 
@@ -532,10 +507,8 @@ export function SessionRunningSemiStructuredScreen({
             iconUrl={activeExercise.iconUrl}
             onStart={async () => {
               setStage("running");
-              // Cria a sessão no banco de forma lazy (somente no primeiro "Começar")
               const newSid = await ensureSessionId();
               if (newSid) {
-                // Cada exercício tem seu próprio cronômetro — resetar antes de iniciar
                 updateTimeElapsed(newSid, 0);
                 toggleTimer(newSid, true);
                 updateSessionState(newSid, { activeExerciseId: activeExercise.id });
@@ -548,7 +521,6 @@ export function SessionRunningSemiStructuredScreen({
     );
   };
 
-  // Estágio "running": cabeçalho + cronômetro fixos no topo (não rolam com o RC).
   const renderRunningHeader = () => {
     if (!activeExercise || stage !== "running") return null;
 
@@ -636,7 +608,6 @@ export function SessionRunningSemiStructuredScreen({
               const status = historicoExercicios[exercise.id];
               const isConcluido = status === "concluido" || status === "adiado";
 
-              // Bloqueia outros exercícios se um já estiver rodando
               const hasActiveExercise = !!currentSessionData?.activeExerciseId;
               const isRunningThis = exercise.id === currentSessionData?.activeExerciseId;
               const isBlocked = hasActiveExercise && !isRunningThis;
@@ -699,7 +670,6 @@ export function SessionRunningSemiStructuredScreen({
           onPressFinish={() => setIsFinishOpen(true)}
         />
 
-        {/* Atividade fixa no topo (pronta ou em execução) — só o RC rola. */}
         {renderRunningHeader()}
         {renderExecutionView()}
 
@@ -709,11 +679,6 @@ export function SessionRunningSemiStructuredScreen({
         >
           {!activeExercise && renderListView()}
 
-          {/*
-            Registro de Controle único da sessão: fica sempre montado para
-            preservar as respostas ao alternar entre a lista e a execução,
-            e é ocultável pelo botão de formulário do stopwatch (isFormVisible).
-          */}
           {rcFormId && (
             <View
               className="mx-5 mt-4"

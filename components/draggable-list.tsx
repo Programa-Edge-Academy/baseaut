@@ -17,6 +17,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { colors } from "@/assets/colors";
 
+/** A single reorderable entry rendered by {@link DraggableList}. */
 export type DraggableItem = { id: string; name: string };
 
 const ITEM_HEIGHT = 56;
@@ -27,11 +28,16 @@ const LONG_PRESS_MS = 50;
 const RIPPLE_TIME_MULTIPLIER = 4;
 const RIPPLE_DURATION = LONG_PRESS_MS * RIPPLE_TIME_MULTIPLIER;
 
+/** Clamps a value into the inclusive `[min, max]` range. Runs on the UI thread. */
 function clamp(val: number, min: number, max: number) {
   "worklet";
   return Math.min(Math.max(val, min), max);
 }
 
+/**
+ * Returns a new position map reflecting an item moving from index `from` to
+ * index `to`, shifting the affected items by one. Runs on the UI thread.
+ */
 function shiftPositions(
   positions: Record<string, number>,
   from: number,
@@ -54,15 +60,23 @@ function shiftPositions(
   return result;
 }
 
+/** Props for {@link DraggableRow}. */
 interface DraggableRowProps {
   item: DraggableItem;
   index: number;
   itemCount: number;
+  /** Shared map of item id to its current index, mutated during drag. */
   positions: SharedValue<Record<string, number>>;
+  /** Shared id of the row currently being dragged, or null. */
   activeId: SharedValue<string | null>;
+  /** Called with the final position map when a drag ends. */
   onFinish: (positions: Record<string, number>) => void;
 }
 
+/**
+ * A single draggable row with a long-press handle, ripple feedback, and spring
+ * animation that reorders the shared position map as it is dragged.
+ */
 function DraggableRow({
   item,
   index,
@@ -77,7 +91,6 @@ function DraggableRow({
   const rippleX = useSharedValue(0);
   const rippleY = useSharedValue(0);
   const rippleProgress = useSharedValue(0);
-  // Diâmetro calculado por toque (cobre o canto mais distante) e largura medida.
   const rippleDiameter = useSharedValue(0);
   const cardWidth = useSharedValue(0);
   useAnimatedReaction(
@@ -95,8 +108,6 @@ function DraggableRow({
     .activateAfterLongPress(LONG_PRESS_MS)
     .maxPointers(1)
     .onBegin((e) => {
-      // Raio = distância até o canto mais distante, garantindo cobrir o card
-      // inteiro a partir de qualquer ponto de toque (independe da largura).
       const w = cardWidth.value;
       const h = ITEM_HEIGHT;
       const x = e.x;
@@ -226,12 +237,20 @@ function DraggableRow({
   );
 }
 
+/** Props for {@link DraggableList}. */
 interface DraggableListProps {
   items: DraggableItem[];
+  /** Called with the reordered items when a drag completes. */
   onReorder: (items: DraggableItem[]) => void;
+  /** Called when a drag starts (true) or ends (false). */
   onDragActiveChange?: (active: boolean) => void;
 }
 
+/**
+ * Gesture-driven reorderable list built on Reanimated and gesture-handler.
+ * Items are dragged by a long-press handle and reordered via a shared position
+ * map, calling {@link DraggableListProps.onReorder} on completion.
+ */
 export function DraggableList({
   items,
   onReorder,

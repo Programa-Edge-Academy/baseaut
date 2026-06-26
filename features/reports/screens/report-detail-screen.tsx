@@ -23,10 +23,12 @@ import { BarChart3 } from "lucide-react-native";
 import React, { useState } from "react";
 import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from "react-native";
 
+/** Formats an ISO date as a Brazilian short date. */
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("pt-BR");
 }
 
+/** Maps a stored support level code to its display label. */
 function fmtSupportLevel(raw: string | null | undefined): string | null {
   if (!raw) return null;
   if (raw === "nivel_1") return "Nível 1";
@@ -35,6 +37,7 @@ function fmtSupportLevel(raw: string | null | undefined): string | null {
   return raw;
 }
 
+/** Bold section title with a bottom divider. */
 function SectionHeader({ title }: { title: string }) {
   return (
     <View className="mb-3 mt-6 pb-2" style={{ borderBottomWidth: 2, borderBottomColor: colors.outline }}>
@@ -45,6 +48,7 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
+/** Placeholder card shown when a report section has no data. */
 function EmptySection({ message }: { message: string }) {
   return (
     <View className="items-center justify-center py-8 border border-outline rounded-xl bg-level2">
@@ -56,6 +60,11 @@ function EmptySection({ message }: { message: string }) {
   );
 }
 
+/**
+ * Detailed report view for a date range: student info, exercise progress, help
+ * records, observed behaviors, period comparison, applied protocols, and motor
+ * development records. Supports exporting (PDF/CSV) and deleting the report.
+ */
 export function ReportDetailScreen() {
   const params = useLocalSearchParams<{
     studentId: string;
@@ -120,7 +129,6 @@ export function ReportDetailScreen() {
   const startDate = dataInicio ? new Date(dataInicio) : null;
   const endDate = dataFim ? new Date(dataFim) : null;
 
-  // Comparison summary card data
   const buildSummaryCards = () => {
     if (!data?.comparacao) return [];
     const c = data.comparacao;
@@ -157,7 +165,6 @@ export function ReportDetailScreen() {
             onDeletePress={() => setIsDeleteOpen(true)}
           />
 
-          {/* Student info */}
           {snapshot ? (
             <View className="mt-4">
               <StudentInfoCard
@@ -184,7 +191,6 @@ export function ReportDetailScreen() {
             </View>
           ) : data ? (
             <>
-              {/* ── 1. Progresso por exercício ── */}
               <SectionHeader title="Progresso por exercício" />
               {data.progresso && data.progresso.length > 0 ? (
                 data.progresso.map((ex: any) => {
@@ -213,7 +219,6 @@ export function ReportDetailScreen() {
                 <EmptySection message="Nenhum exercício registrado no período." />
               )}
 
-              {/* ── 2. Registros de ajuda por sessão ── */}
               <SectionHeader title="Registros de ajuda por sessão" />
               {data.ajuda && data.ajuda.length > 0 ? (
                 <HelpRecordsBarChart
@@ -228,7 +233,6 @@ export function ReportDetailScreen() {
                 <EmptySection message="Nenhum registro de ajuda no período." />
               )}
 
-              {/* ── 3. Comportamentos observados ── */}
               <SectionHeader title="Comportamentos observados" />
               {data.comportamentos && data.comportamentos.length > 0 ? (
                 <ObservedBehaviorsChart
@@ -241,7 +245,6 @@ export function ReportDetailScreen() {
                 <EmptySection message="Nenhum comportamento registrado no período." />
               )}
 
-              {/* ── 4. Comparação de desempenho ── */}
               <SectionHeader title="Comparação de desempenho" />
               {data.comparacao ? (
                 <View className="gap-4">
@@ -262,7 +265,6 @@ export function ReportDetailScreen() {
                 <EmptySection message="Dados insuficientes para comparação no período." />
               )}
 
-              {/* ── 5. Protocolos/Testes aplicados ── */}
               <SectionHeader title="Protocolos/Testes aplicados" />
               {hasProtocols ? (
                 <View>
@@ -298,7 +300,6 @@ export function ReportDetailScreen() {
                 <EmptySection message="Nenhum protocolo ou teste aplicado no período." />
               )}
 
-              {/* ── 6. Desenvolvimento motor ── */}
               <SectionHeader title="Desenvolvimento motor" />
               {data.consolidado?.registros_controle?.length > 0 ? (
                 data.consolidado.registros_controle.map((rc: any, idx: number) => (
@@ -334,14 +335,12 @@ export function ReportDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* Format picker */}
       <AppModal visible={isFormatPickerOpen} transparent animationType="fade" onRequestClose={() => setIsFormatPickerOpen(false)}>
         <Pressable className="flex-1 bg-black/60 justify-center items-center px-6" onPress={() => setIsFormatPickerOpen(false)}>
           <FormatPicker onExport={handleExport} onClose={() => setIsFormatPickerOpen(false)} />
         </Pressable>
       </AppModal>
 
-      {/* Delete confirmation */}
       <ConfirmationModal
         visible={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}
@@ -361,6 +360,7 @@ export function ReportDetailScreen() {
   );
 }
 
+/** Modal content for choosing report export formats (PDF/CSV) and delivery mode. */
 function FormatPicker({ onExport, onClose }: { onExport: (f: { pdf: boolean; csv: boolean }, mode: "share" | "download") => void; onClose: () => void }) {
   const [pdf, setPdf] = useState(true);
   const [csv, setCsv] = useState(false);

@@ -93,24 +93,11 @@ export function useTeamData() {
         .eq("equipe_id", resolvedId)
         .neq("status", "removido");
 
-      if (membrosError) {
-        console.error("Erro ao buscar membros_equipe:", membrosError);
-      }
-
-      // Scoping relies on RLS. Ideally this would be filtered by a
-      // team-join request table when one exists.
       const { data: pendentesData, error: pendentesError } = await supabase
         .from("profiles")
         .select("id, nome_completo, email, status_conta")
         .eq("role", "monitor")
         .eq("status_conta", "pendente");
-
-      if (pendentesError) {
-        console.error(
-          "Erro ao buscar profiles pendentes (Verifique o RLS no Supabase!):",
-          pendentesError,
-        );
-      }
 
       const listaMonitores: CompanionData[] = [];
       const addedProfileIds = new Set<string>();
@@ -145,8 +132,7 @@ export function useTeamData() {
       }
 
       setCompanions(listaMonitores);
-    } catch (err) {
-      console.error("Erro ao carregar dados da equipe:", err);
+    } catch {
     } finally {
       setIsLoading(false);
     }
@@ -169,7 +155,6 @@ export function useTeamData() {
     });
 
     if (error) {
-      console.error(error);
       Alert.alert("Erro", "Não foi possível aprovar o monitor.");
     }
 
@@ -188,7 +173,6 @@ export function useTeamData() {
     });
 
     if (error) {
-      console.error(error);
       Alert.alert("Erro", "Não foi possível rejeitar o monitor.");
     }
 
@@ -207,7 +191,6 @@ export function useTeamData() {
     });
 
     if (error) {
-      console.error(error);
       Alert.alert("Erro", "Não foi possível remover o monitor.");
     }
 
@@ -287,7 +270,6 @@ export function useTeamData() {
 
       await fetchData();
     } catch (error: any) {
-      console.error("Erro ao salvar aluno:", error);
       Alert.alert(
         "Erro ao Salvar",
         `Não foi possível salvar o aluno. Detalhes: ${error.message}`,

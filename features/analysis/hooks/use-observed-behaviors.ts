@@ -6,14 +6,9 @@ import {
   BehaviorType,
 } from "@/features/analysis/components/observed-behaviors-chart";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Mapeamento banco → front-end
-// ─────────────────────────────────────────────────────────────────────────────
-
 /**
- * Converte os tipos de comportamento armazenados no banco (português)
- * para os tipos usados no front-end (inglês).
- * O tipo "outro" é ignorado (não aparece no gráfico).
+ * Maps the behavior types stored in the database (Portuguese) to the frontend
+ * types (English). The "outro" type is intentionally omitted (not charted).
  */
 const TIPO_TO_BEHAVIOR_TYPE: Record<string, BehaviorType | undefined> = {
   estereotipia: "stereotypy",
@@ -25,8 +20,8 @@ const TIPO_TO_BEHAVIOR_TYPE: Record<string, BehaviorType | undefined> = {
 };
 
 /**
- * Resolve o BehaviorType de uma linha de comportamento. O contato visual é
- * separado em "pessoas" e "objetos" através da coluna `observacao`.
+ * Resolves the BehaviorType for a behavior row. Eye contact is split into
+ * "people" and "objects" using the `observacao` column.
  */
 function resolveBehaviorType(
   tipo: string,
@@ -41,11 +36,7 @@ function resolveBehaviorType(
   return TIPO_TO_BEHAVIOR_TYPE[tipo];
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** Formata uma Date como string ISO "YYYY-MM-DD" sem considerar timezone. */
+/** Formats a Date as an ISO "YYYY-MM-DD" string, ignoring timezone. */
 function toISODate(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -53,21 +44,13 @@ function toISODate(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Hook
-// ─────────────────────────────────────────────────────────────────────────────
-
 /**
- * Busca os comportamentos observados de um aluno em um período,
- * diretamente das tabelas do Supabase.
+ * Loads a student's observed behaviors over a date range directly from the
+ * Supabase tables.
  *
- * Retorna:
- * - `records`   — lista de BehaviorRecord agrupados por (tipo, data)
- * - `exercises` — mapa de exercícios associados por BehaviorType
- * - `isLoading` / `error` / `refetch`
- *
- * Quando a RPC `rpc_get_comportamentos_observados` estiver disponível no banco,
- * este hook poderá ser migrado para utilizá-la em vez de consultas diretas.
+ * @returns `records` (BehaviorRecord list grouped by type and date),
+ * `exercises` (associated exercises keyed by BehaviorType), and
+ * `isLoading` / `error` / `refetch`.
  */
 export function useObservedBehaviors(
   studentId?: string,
@@ -90,15 +73,11 @@ export function useObservedBehaviors(
     setError(null);
 
     try {
-      // Intervalo inclusivo: start..end (end+1 dia para cobrir o dia inteiro)
       const startISO = toISODate(startDate);
       const endPlusOne = new Date(endDate);
       endPlusOne.setDate(endPlusOne.getDate() + 1);
       const endISO = toISODate(endPlusOne);
 
-      // 1. Sessões concluídas do aluno no período selecionado.
-      //    Sessões canceladas/desativadas são ignoradas, de modo que seus
-      //    comportamentos não são contabilizados em nenhum lugar.
       const { data: sessionsData, error: sessionsError } = await supabase
         .from("sessoes")
         .select("id, data_inicio")
@@ -122,7 +101,6 @@ export function useObservedBehaviors(
         sessionDateMap.set(s.id, s.data_inicio);
       });
 
-      // 2. Comportamentos dessas sessões (excluindo "outro")
       const { data: behaviorsData, error: behaviorsError } = await supabase
         .from("comportamentos_sessao")
         .select("id, tipo, execucao_id, sessao_id, observacao")
@@ -133,7 +111,6 @@ export function useObservedBehaviors(
 
       const behaviorsList = behaviorsData ?? [];
 
-      // 3. Nomes dos exercícios associados (via execucao_id → exercicio_id → titulo)
       const execucaoIds = [
         ...new Set(
           behaviorsList.map((b: any) => b.execucao_id).filter(Boolean),
@@ -170,7 +147,6 @@ export function useObservedBehaviors(
         }
       }
 
-      // 4. Agrupa por (tipo, data) → BehaviorRecord[]
       const groupMap = new Map<
         string,
         { tipo: string; date: string; count: number }
@@ -183,7 +159,7 @@ export function useObservedBehaviors(
         const sessionDate = sessionDateMap.get(b.sessao_id);
         if (!sessionDate) return;
 
-        const dateOnly = sessionDate.substring(0, 10); // "YYYY-MM-DD"
+        const dateOnly = sessionDate.substring(0, 10);
         const key = `${behaviorType}::${dateOnly}`;
 
         const existing = groupMap.get(key);
@@ -205,7 +181,6 @@ export function useObservedBehaviors(
         });
       });
 
-      // 5. Monta mapa de exercícios por tipo de comportamento
       const exercisesMap: Record<string, string[]> = {};
 
       behaviorsList.forEach((b: any) => {

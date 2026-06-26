@@ -2,34 +2,48 @@ import React from "react";
 import { Text, PressableProps } from "react-native";
 import { RipplePressable } from "./ripple-pressable";
 
+/** Props for {@link DefaultButton}. */
 type DefaultButtonProps = Omit<PressableProps, 'children'> & {
+  /** Text rendered inside the button. */
   label: string;
-  bgColorClass?: string;       
+  /** Background utility class. Defaults to "bg-primary". */
+  bgColorClass?: string;
+  /** Whether to apply the shadow class. Defaults to true. */
   hasShadow?: boolean;
-  shadowClass?: string;        
-  isOutline?: boolean;         
-  sizeClass?: string;          
-  textClassName?: string;      
-  outlineBorderClass?: string; 
+  /** Shadow utility class. Defaults to "shadow-primaryShadow". */
+  shadowClass?: string;
+  /** Renders the button with a border and transparent-style fill. */
+  isOutline?: boolean;
+  /** Width/height utility classes. Defaults to "w-40 h-11". */
+  sizeClass?: string;
+  /** Overrides the default text color class. */
+  textClassName?: string;
+  /** Border color class used when {@link isOutline} is set. */
+  outlineBorderClass?: string;
+  /** Ripple color for the press feedback. */
   rippleColor?: string;
+  /** Overrides the default text size class. */
   customTextSize?: string;
 };
 
+/**
+ * Primary app button built on {@link RipplePressable}, with configurable
+ * background, shadow, outline, size, and text styling.
+ */
 export function DefaultButton({
   label,
   bgColorClass = "bg-primary",
   hasShadow = true,
   shadowClass = "shadow-primaryShadow",
   isOutline = false,
-  sizeClass = "w-40 h-11", 
+  sizeClass = "w-40 h-11",
   textClassName,
   outlineBorderClass = "border-primary",
   rippleColor,
   customTextSize,
   className,
-  ...rest 
-}: DefaultButtonProps) { 
-  
+  ...rest
+}: DefaultButtonProps) {
   const baseClasses = "items-center justify-center rounded-2xl flex-row";
   const outlineClasses = isOutline ? `border-2 ${outlineBorderClass} ${bgColorClass}` : bgColorClass;
   const appliedShadow = hasShadow && shadowClass ? shadowClass : "";

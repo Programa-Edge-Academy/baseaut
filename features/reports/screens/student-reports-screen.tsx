@@ -25,6 +25,7 @@ import {
   View,
 } from "react-native";
 
+/** Modal for choosing export formats (PDF/CSV) and, on Android, the delivery mode. */
 function FormatPicker({
   visible,
   onClose,
@@ -110,6 +111,7 @@ function FormatPicker({
   );
 }
 
+/** Modal for renaming a report. */
 function RenameModal({
   visible,
   currentName,
@@ -165,6 +167,7 @@ function RenameModal({
   );
 }
 
+/** Formats an ISO date as a Brazilian `DD/MM/YYYY` string. */
 function formatDateBR(iso: string) {
   return new Date(iso).toLocaleDateString("pt-BR", {
     day: "2-digit",
@@ -173,10 +176,15 @@ function formatDateBR(iso: string) {
   });
 }
 
+/** Formats a date range, collapsing equal start/end into a single date. */
 function formatDateRange(start: string, end: string): string {
   return start === end ? formatDateBR(start) : `${formatDateBR(start)} – ${formatDateBR(end)}`;
 }
 
+/**
+ * Screen listing a student's reports with period filtering, creation, rename,
+ * deletion, and a multi-select batch export flow (PDF/CSV).
+ */
 export function StudentReportsScreen() {
   const router = useRouter();
   const { studentId, studentName } = useLocalSearchParams<{
@@ -187,27 +195,22 @@ export function StudentReportsScreen() {
   const { reports, isLoading, refresh, createReport, renameReport, deleteReport } =
     useStudentReports(studentId ?? "");
 
-  // New report modal
   const [isNewOpen, setIsNewOpen] = useState(false);
 
-  // Rename modal
   const [renamingReport, setRenamingReport] = useState<Report | null>(null);
   const [reportToDelete, setReportToDelete] = useState<Report | null>(null);
 
-  // Export mode
   const [isExportMode, setIsExportMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isFormatPickerOpen, setIsFormatPickerOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  // Filter calendar
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterStart, setFilterStart] = useState<string | null>(null);
   const [filterEnd, setFilterEnd] = useState<string | null>(null);
   const [tempFilterStart, setTempFilterStart] = useState<string | null>(null);
   const [tempFilterEnd, setTempFilterEnd] = useState<string | null>(null);
 
-  // Toast
   const [toast, setToast] = useState<{
     visible: boolean;
     mode: "success" | "error";
@@ -354,7 +357,6 @@ export function StudentReportsScreen() {
           />
         </View>
 
-        {/* Filtro de período */}
         <View className="mt-2 w-full">
           <PeriodSelector
             label={filterLabel ?? "Filtrar por período"}
@@ -412,7 +414,6 @@ export function StudentReportsScreen() {
         )}
       </View>
 
-      {/* Modal: novo relatório */}
       <NewReport
         visible={isNewOpen}
         onClose={() => setIsNewOpen(false)}
@@ -420,7 +421,6 @@ export function StudentReportsScreen() {
         defaultTitle={`Relatório ${reports.length + 1}`}
       />
 
-      {/* Modal: renomear */}
       <RenameModal
         visible={!!renamingReport}
         currentName={renamingReport?.titulo ?? ""}
@@ -428,14 +428,12 @@ export function StudentReportsScreen() {
         onSave={handleRename}
       />
 
-      {/* Modal: formato de exportação */}
       <FormatPicker
         visible={isFormatPickerOpen}
         onClose={() => setIsFormatPickerOpen(false)}
         onExport={handleExport}
       />
 
-      {/* Modal: filtro de período */}
       <AppModal
         visible={isFilterOpen}
         transparent

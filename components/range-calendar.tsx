@@ -22,12 +22,22 @@ const HEADER_TEXT = colors.muted;
 const MONTH_TEXT = '#FFFFFF';
 const ARROW_COLOR = colors.muted;
 
+/** Props for {@link RangeCalendar}. */
 interface RangeCalendarProps {
+    /**
+     * Called when a selection changes. In single mode `end` is null; in range
+     * mode it is the inclusive end of the selected interval.
+     */
     onRangeSelected: (start: string, end: string | null) => void;
+    /** Selection mode. Defaults to "range". */
     mode?: 'range' | 'single';
-    style?: StyleProp<ViewStyle>; // Mantido da versão antiga para não quebrar o [studentID].tsx -> MUDAR RÁPIDO
+    style?: StyleProp<ViewStyle>;
 }
 
+/**
+ * Calendar with single-day or date-range selection, localized to pt-BR and
+ * themed to match the app. Dates after today are disabled.
+ */
 const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected, mode = 'range', style }) => {
     const [markedDates, setMarkedDates] = useState<MarkedDates>({});
     const [startDate, setStartDate] = useState<string | null>(null);
@@ -35,7 +45,6 @@ const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected, mode = '
     const handleDayPress = (day: DateData) => {
         const dateString = day.dateString;
 
-        // Modo Seleção Única
         if (mode === 'single') {
             setMarkedDates({
                 [dateString]: { selected: true, selectedColor: ACCENT_COLOR, textColor: DAY_TEXT }
@@ -44,7 +53,6 @@ const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected, mode = '
             return;
         }
 
-        // Modo Intervalo (Range)
         const keys = Object.keys(markedDates);
 
         if (!startDate || (startDate && keys.length > 1)) {

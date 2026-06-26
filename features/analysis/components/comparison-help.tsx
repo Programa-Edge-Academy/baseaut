@@ -4,6 +4,7 @@ import React from "react";
 import { Text, View } from "react-native";
 import ComparisonCard from "./comparison-card";
 
+/** Help counts for each compared period. */
 export interface HelpPeriodData {
   p1: number;
   p2: number;
@@ -11,6 +12,7 @@ export interface HelpPeriodData {
   variacao_percentual?: number;
 }
 
+/** Props for {@link ComparisonHelp}. */
 export type ComparisonHelpProps = {
   data?: {
     autonomo?: HelpPeriodData | null;
@@ -18,6 +20,7 @@ export type ComparisonHelpProps = {
   } | null;
 };
 
+/** Table comparing autonomous vs intrusive help counts between two periods. */
 export default function ComparisonHelp({ data }: ComparisonHelpProps) {
   const autonomoP1 = data?.autonomo?.p1 ?? 0;
   const autonomoP2 = data?.autonomo?.p2 ?? 0;

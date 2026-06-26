@@ -64,7 +64,6 @@ export function useExercises() {
       }
     } catch (caught: any) {
       setError(caught);
-      console.error("Erro ao carregar exercícios:", caught);
     } finally {
       if (showLoader) setIsLoading(false);
     }
@@ -106,7 +105,6 @@ export function useExercises() {
 
       await loadExercises(false);
     } catch (err: any) {
-      console.error("Erro ao adicionar exercício:", err);
       Alert.alert(
         "Erro ao Criar",
         `Não foi possível salvar o exercício: ${err.message}`,
@@ -145,7 +143,6 @@ export function useExercises() {
 
       await loadExercises(false);
     } catch (err: any) {
-      console.error("Erro ao atualizar exercício:", err);
       Alert.alert(
         "Erro ao Editar",
         `Não foi possível atualizar o exercício: ${err.message}`,
@@ -166,7 +163,6 @@ export function useExercises() {
       if (deleteError) throw deleteError;
       await loadExercises(false);
     } catch (err: any) {
-      console.error("Erro ao inativar exercício:", err);
       Alert.alert("Erro ao Remover", err.message);
     }
   };
@@ -196,7 +192,6 @@ export function useExercises() {
 
       await loadExercises(false);
     } catch (err: any) {
-      console.error("Erro ao duplicar exercício:", err);
       Alert.alert(
         "Erro ao Duplicar",
         `Não foi possível duplicar o exercício: ${err.message}`,
@@ -215,10 +210,8 @@ export function useExercises() {
         .eq("exercicio_id", id);
 
       if (error) throw error;
-      // prefer count when available, fallback to data length
       return typeof count === "number" ? count : data ? data.length : 0;
-    } catch (err) {
-      console.error("Erro ao verificar vínculos do exercício:", err);
+    } catch {
       return 0;
     }
   }

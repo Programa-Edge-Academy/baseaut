@@ -22,8 +22,11 @@ const FORM_SUBTITLES: Record<string, string> = {
 };
 
 /**
- * Resolve o template global (aluno_id NULL) de um tipo de formulário pelo tipo,
- * sem depender de IDs fixos no código. Usado apenas como fallback de leitura.
+ * Resolves the global template (with a NULL `aluno_id`) for a form type without
+ * relying on hardcoded IDs. Used only as a read fallback.
+ *
+ * @param tipo - The form type to resolve.
+ * @returns The template's id, or null when none exists.
  */
 async function resolveTemplateId(tipo: string): Promise<string | null> {
   const { data } = await supabase
@@ -38,6 +41,13 @@ async function resolveTemplateId(tipo: string): Promise<string | null> {
   return data?.id ?? null;
 }
 
+/**
+ * Route that renders and persists a form (Control Record, ATA, CARS, or MABC-2).
+ * It resolves the concrete form instance to fill — using an explicit id when
+ * editing, the session-linked instance for the Control Record, or creating a new
+ * per-record instance for ATA/CARS/MABC-2 — and supports saving, deleting, and
+ * exporting (ATA/CARS only).
+ */
 export default function FormRoute() {
   const {
     circuitType,
@@ -50,23 +60,19 @@ export default function FormRoute() {
   const sessaoAtualId = sessionId || "";
   const alunoSelecionadoId = studentId || "";
   const isEditing = mode === "editar";
-  // RC é vinculado à sessão; ATA/CARS, ao aluno.
   const isRegistroControle =
     circuitType === "registro_controle" || circuitType === "rc";
 
-  // Instância real do formulário (não o template global) a ser preenchida.
   const [formId, setFormId] = useState<string | null>(
     formularioIdParam ?? null,
   );
   const [resolvingForm, setResolvingForm] = useState(true);
-  // Evita criar instâncias ATA/CARS/MABC duplicadas em re-renders.
   const creatingInstanceRef = useRef(false);
 
   useEffect(() => {
     let active = true;
 
     async function resolveFormInstance() {
-      // 1. Instância explícita (ex.: edição vinda do histórico).
       if (formularioIdParam) {
         if (active) {
           setFormId(formularioIdParam);
@@ -75,7 +81,6 @@ export default function FormRoute() {
         return;
       }
 
-      // 2. Registro de Controle: usa a instância criada por trigger na sessão.
       if (isRegistroControle) {
         let instanceId: string | null = null;
 
@@ -88,7 +93,6 @@ export default function FormRoute() {
           instanceId = data?.formulario_id ?? null;
         }
 
-        // Fallback de leitura: template do RC resolvido por tipo.
         if (!instanceId) {
           instanceId = await resolveTemplateId("registro_controle");
         }
@@ -100,7 +104,6 @@ export default function FormRoute() {
         return;
       }
 
-      // 3. ATA/CARS: cria uma nova instância por registro (uma única vez).
       if (
         (circuitType === "ata" || circuitType === "cars") &&
         alunoSelecionadoId
@@ -122,7 +125,6 @@ export default function FormRoute() {
         return;
       }
 
-      // 4. MABC-2: cria instância via rpc_iniciar_mabc2 (determina faixa pela idade).
       if (circuitType === "mabc2" && alunoSelecionadoId) {
         if (creatingInstanceRef.current) return;
         creatingInstanceRef.current = true;
@@ -149,7 +151,6 @@ export default function FormRoute() {
         return;
       }
 
-      // 5. Fallback genérico: template global resolvido por tipo.
       if (active) {
         const fallbackId = await resolveTemplateId(circuitType);
         setFormId(fallbackId);
@@ -174,7 +175,6 @@ export default function FormRoute() {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isFormatPickerOpen, setIsFormatPickerOpen] = useState(false);
-  // Exportação só faz sentido para ATA/CARS (RC vai junto com a sessão).
   const isAtaCars = circuitType === "ata" || circuitType === "cars";
   const [toastConfig, setToastConfig] = useState<{visible: boolean, mode: ToastMode, title: string, description?: string}>({
     visible: false,
@@ -183,14 +183,11 @@ export default function FormRoute() {
   });
 
   const handleSaveForm = async () => {
-    // Impede salvar enquanto a instância ainda está sendo resolvida/carregada
-    // (evita gravar um formulário sem respostas).
     if (resolvingForm || !formId) return;
     if (formRef.current) {
       const result = await formRef.current.handleSave(true);
 
       if (result && result.success) {
-        // Navega primeiro; o toast de sucesso é global e aparece na tela seguinte.
         router.back();
         showToast({
           mode: "success",
@@ -198,7 +195,6 @@ export default function FormRoute() {
           description: "As respostas foram salvas com sucesso!",
         });
       } else if (result) {
-        // Erros mantêm o toast local (o usuário permanece na tela do formulário).
         setToastConfig({
           visible: true,
           mode: "error",
@@ -258,8 +254,6 @@ export default function FormRoute() {
   };
 
   const handleToastHide = () => {
-    // O toast local agora só exibe erros (o sucesso usa o toast global após
-    // navegar), então aqui basta ocultá-lo.
     setToastConfig((prev) => ({ ...prev, visible: false }));
   };
 
@@ -279,8 +273,6 @@ export default function FormRoute() {
                 circuitName
               }
               subtitle={FORM_SUBTITLES[circuitType] ?? ""}
-              // O RC (registro_controle) é vinculado à sessão — pode ser editado,
-              // mas não excluído isoladamente; por isso não exibe o lixo.
               mode={isEditing && !isRegistroControle ? "historico-estudante" : undefined}
               onSharePress={
                 isEditing && isAtaCars ? () => setIsFormatPickerOpen(true) : undefined
@@ -348,6 +340,10 @@ export default function FormRoute() {
   );
 }
 
+/**
+ * Modal content for choosing form export formats (PDF/CSV) and, on Android, the
+ * delivery mode (share or direct download).
+ */
 function FormFormatPicker({
   onExport,
   onClose,

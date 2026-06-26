@@ -1,6 +1,7 @@
 import React from "react";
 import { Text, View } from "react-native";
 
+/** Props for {@link BehaviorDetailCard}. */
 export type BehaviorDetailCardProps = {
   behaviorName: string;
   color: string;
@@ -10,12 +11,14 @@ export type BehaviorDetailCardProps = {
   lastOccurrence: string;
 };
 
+/** Props for {@link DetailRow}. */
 type DetailRowProps = {
   label: string;
   value: string | number;
   color: string;
 };
 
+/** A labeled value row inside the behavior detail card. */
 function DetailRow({ label, value, color }: DetailRowProps) {
   return (
     <View className="rounded-lg border border-outline bg-level1 p-3">
@@ -29,6 +32,10 @@ function DetailRow({ label, value, color }: DetailRowProps) {
   );
 }
 
+/**
+ * Detail card for a single observed behavior, listing its occurrences, sessions,
+ * associated exercises, and last occurrence.
+ */
 export function BehaviorDetailCard({
   behaviorName,
   color,

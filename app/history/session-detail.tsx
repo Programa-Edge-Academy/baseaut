@@ -5,7 +5,6 @@ import { DefaultButton } from "@/components/default-button";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { Toast } from "@/components/toast";
-import { withOpacity } from "@/components/color-opacity";
 import {
   ActivityRecordCard,
   hasActivityRecordPendency,
@@ -24,6 +23,11 @@ import {
   View,
 } from "react-native";
 
+/**
+ * Route showing the executions recorded in a single session. Allows editing
+ * each execution, opening the linked control record, deleting the session, and
+ * exporting it (PDF/CSV) once no executions remain pending.
+ */
 export default function SessionDetailScreen() {
   const { sessionId, studentId, studentName, sessionTitle } =
     useLocalSearchParams<{
@@ -126,8 +130,6 @@ export default function SessionDetailScreen() {
 
   const subtitle = data?.sessionDate ?? "";
 
-  // Só é possível exportar quando todas as execuções estão resolvidas
-  // (nenhuma pendente / com fundo amarelo).
   const hasPendingExecutions = (data?.executions ?? []).some(
     hasActivityRecordPendency,
   );
@@ -204,7 +206,6 @@ export default function SessionDetailScreen() {
         </ScrollView>
       )}
 
-      {/* Format picker */}
       <AppModal
         visible={isFormatPickerOpen}
         transparent
@@ -244,6 +245,10 @@ export default function SessionDetailScreen() {
   );
 }
 
+/**
+ * Modal content for choosing export formats (PDF/CSV) and, on Android, the
+ * delivery mode (share or direct download).
+ */
 function FormatPicker({
   onExport,
   onClose,

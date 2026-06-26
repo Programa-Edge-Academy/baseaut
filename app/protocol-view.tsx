@@ -4,6 +4,11 @@ import { router, useLocalSearchParams } from "expo-router";
 import { ProtocolVisualizationScreen } from "@/features/analysis/screens/protocol-visualization-screen";
 import type { ProtocolTipo } from "@/features/analysis/hooks/use-protocol-records";
 
+/**
+ * Route for viewing a single protocol record (ATA, CARS, etc.). Reads the
+ * record identifiers from the route params and forwards them to the
+ * visualization screen.
+ */
 export default function ProtocolViewRoute() {
   const { studentId, studentName, tipo, recordId, label, dateLabel, scoreLabel } =
     useLocalSearchParams<{
