@@ -4,19 +4,29 @@ import React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+/** Props for {@link SessionResumeWidget}. */
 export type SessionResumeWidgetProps = {
+  /** "multiple" renders prev/next navigation arrows for multi-student sessions. */
   mode: "single" | "multiple";
   studentName: string;
-  exerciseProgress: string; // e.g. "Exercício 1/3"
-  timeElapsed: string; // e.g. "00:12"
+  /** Current exercise progress label, e.g. "Exercício 1/3". */
+  exerciseProgress: string;
+  /** Elapsed time label, e.g. "00:12". */
+  timeElapsed: string;
   isPlaying: boolean;
   onTogglePlay: () => void;
-  onPress: () => void; // To maximize/return to session
-  onClose: () => void; // To dismiss/close the widget
+  /** Called to maximize and return to the session. */
+  onPress: () => void;
+  /** Called to dismiss the widget. */
+  onClose: () => void;
   onPrev?: () => void;
   onNext?: () => void;
 };
 
+/**
+ * Floating mini-player anchored above the tab bar that shows the active session,
+ * exposes play/pause, optional prev/next navigation, and tap-to-maximize.
+ */
 export function SessionResumeWidget({
   mode,
   studentName,
@@ -30,7 +40,6 @@ export function SessionResumeWidget({
   onNext,
 }: SessionResumeWidgetProps) {
   const insets = useSafeAreaInsets();
-  // A barra inferior tem aprox 84px de altura + padding/insets
   const TAB_BAR_HEIGHT = 84;
   const bottomOffset = TAB_BAR_HEIGHT + insets.bottom + 16;
 
@@ -40,7 +49,6 @@ export function SessionResumeWidget({
       className="absolute self-center w-[92%] max-w-[400px] h-[74px] bg-level2 border border-primary rounded-[15px] flex-row items-center px-3"
       pointerEvents="box-none"
     >
-      {/* Play/Pause Button */}
       <Pressable
         onPress={(e) => {
           e.stopPropagation();
@@ -55,7 +63,6 @@ export function SessionResumeWidget({
         )}
       </Pressable>
 
-      {/* Multiple Mode: Prev Arrow */}
       {mode === "multiple" && (
         <Pressable
           onPress={(e) => {
@@ -68,7 +75,6 @@ export function SessionResumeWidget({
         </Pressable>
       )}
 
-      {/* Center Content (Clickable to maximize) */}
       <Pressable
         onPress={onPress}
         className="flex-1 justify-center active:opacity-70 py-1"
@@ -81,7 +87,6 @@ export function SessionResumeWidget({
         </Text>
       </Pressable>
 
-      {/* Multiple Mode: Next Arrow */}
       {mode === "multiple" && (
         <Pressable
           onPress={(e) => {
@@ -94,7 +99,6 @@ export function SessionResumeWidget({
         </Pressable>
       )}
 
-      {/* Close Button (always shown) */}
       <Pressable
         onPress={(e) => {
           e.stopPropagation();

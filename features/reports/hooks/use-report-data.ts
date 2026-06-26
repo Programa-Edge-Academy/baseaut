@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 
+/** Aggregated data sets that compose a student's report. */
 export type ReportData = {
   progresso: any[] | null;
   ajuda: any[] | null;
@@ -9,16 +10,45 @@ export type ReportData = {
   consolidado: any | null;
 };
 
-function toIso(date: string) {
+/** Converts a `YYYY-MM-DD` date into an ISO string at start of day (UTC-3). */
+function toIsoStart(date: string) {
   return `${date}T00:00:00.000-03:00`;
 }
 
+/** Converts a `YYYY-MM-DD` date into an ISO string at end of day (UTC-3). */
+function toIsoEnd(date: string) {
+  return `${date}T23:59:59.999-03:00`;
+}
+
+/** Returns the midpoint date between two dates, used to split comparison periods. */
 function midDate(start: string, end: string): string {
   const s = new Date(start).getTime();
   const e = new Date(end).getTime();
   return new Date(Math.floor((s + e) / 2)).toISOString().split("T")[0];
 }
 
+/** Returns the very next day (YYYY-MM-DD) to prevent period overlap. */
+function nextDay(dateStr: string): string {
+  const d = new Date(dateStr);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().split("T")[0];
+}
+
+/**
+ * Loads and aggregates the data needed for a student's report over a date range:
+ * exercise progress, autonomy/help, observed behaviors, period comparison, and
+ * the consolidated record (filtered to the range).
+ *
+ * @remarks
+ * The range is inclusive of both ends: start dates use {@link toIsoStart}
+ * (00:00) and end dates use {@link toIsoEnd} (23:59), so records on `dataFim`
+ * are counted. For the period comparison, the second period starts on the day
+ * after the midpoint ({@link nextDay}) so the two halves never overlap.
+ *
+ * @param studentId - Student whose data is aggregated.
+ * @param dataInicio - Inclusive start date (`YYYY-MM-DD`).
+ * @param dataFim - Inclusive end date (`YYYY-MM-DD`).
+ */
 export function useReportData(studentId: string, dataInicio: string, dataFim: string) {
   const [data, setData] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,6 +61,7 @@ export function useReportData(studentId: string, dataInicio: string, dataFim: st
       setIsLoading(true);
       try {
         const meio = midDate(dataInicio, dataFim);
+        const inicioPeriodo2 = nextDay(meio);
 
         const [progresso, ajuda, comportamentos, comparacao, consolidado] =
           await Promise.all([
@@ -45,8 +76,8 @@ export function useReportData(studentId: string, dataInicio: string, dataFim: st
             supabase
               .rpc("rpc_get_grafico_autonomia_aluno", {
                 p_aluno_id: studentId,
-                p_data_inicio: toIso(dataInicio),
-                p_data_fim: toIso(dataFim),
+                p_data_inicio: toIsoStart(dataInicio),
+                p_data_fim: toIsoEnd(dataFim),
               })
               .then((r) => {
                 const d = r.data as any;
@@ -58,10 +89,10 @@ export function useReportData(studentId: string, dataInicio: string, dataFim: st
             supabase
               .rpc("rpc_comparar_desempenho_periodos", {
                 p_aluno_id: studentId,
-                p_p1_inicio: toIso(dataInicio),
-                p_p1_fim: toIso(meio),
-                p_p2_inicio: toIso(meio),
-                p_p2_fim: toIso(dataFim),
+                p_p1_inicio: toIsoStart(dataInicio),
+                p_p1_fim: toIsoEnd(meio),
+                p_p2_inicio: toIsoStart(inicioPeriodo2),
+                p_p2_fim: toIsoEnd(dataFim),
               })
               .then((r) => {
                 const d = r.data;
@@ -101,8 +132,7 @@ export function useReportData(studentId: string, dataInicio: string, dataFim: st
               }
             : null,
         });
-      } catch (err) {
-        console.error("Erro ao carregar dados do relatório:", err);
+      } catch {
       } finally {
         if (active) setIsLoading(false);
       }
@@ -115,6 +145,7 @@ export function useReportData(studentId: string, dataInicio: string, dataFim: st
   return { data, isLoading };
 }
 
+/** Maps database behavior types to the chart's frontend behavior keys. */
 const BEHAVIOR_MAP: Record<string, string> = {
   estereotipia: "stereotypy",
   engajamento: "engagement",
@@ -124,7 +155,7 @@ const BEHAVIOR_MAP: Record<string, string> = {
   atividade_preferencial: "preferred_activity",
 };
 
-/** Resolve o tipo de gráfico, separando contato visual por pessoas/objetos. */
+/** Resolves the chart behavior type, splitting eye contact into people/objects. */
 function resolveBehaviorType(tipo: string, observacao: string | null): string | undefined {
   if (tipo === "contato_visual") {
     const obs = (observacao ?? "").toLowerCase();
@@ -135,14 +166,15 @@ function resolveBehaviorType(tipo: string, observacao: string | null): string | 
   return BEHAVIOR_MAP[tipo];
 }
 
+/** Loads observed behaviors for completed sessions in range, grouped by type and date. */
 async function fetchBehaviors(studentId: string, inicio: string, fim: string) {
   const { data: sessoes } = await supabase
     .from("sessoes")
     .select("id, data_inicio")
     .eq("aluno_id", studentId)
     .eq("status", "concluida")
-    .gte("data_inicio", inicio)
-    .lte("data_inicio", fim);
+    .gte("data_inicio", toIsoStart(inicio))
+    .lte("data_inicio", toIsoEnd(fim));
 
   const ids = (sessoes ?? []).map((s: any) => s.id);
   if (!ids.length) return [];

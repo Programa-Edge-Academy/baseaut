@@ -13,6 +13,10 @@ import { User } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, View } from "react-native";
 
+/**
+ * Route for the reports landing screen. Lists students with their report counts,
+ * supports name search, and navigates to a student's reports.
+ */
 export default function ReportsRoute() {
   const router = useRouter();
   const { students, isLoading: isStudentsLoading, refresh: refreshStudents } = useStudents();
@@ -30,8 +34,7 @@ export default function ReportsRoute() {
           if (r.aluno_id) counts[r.aluno_id] = (counts[r.aluno_id] || 0) + 1;
         });
         setReportCounts(counts);
-      } catch (err) {
-        console.error("Erro ao buscar contagem de relatórios:", err);
+      } catch {
       } finally {
         setIsCountsLoading(false);
       }

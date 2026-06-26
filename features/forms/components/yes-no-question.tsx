@@ -16,13 +16,14 @@ interface Props {
 }
 
 /**
- * Renders a yes/no question with optional conditional sub-question.
+ * Renders a yes/no question with an optional conditional sub-question.
  *
- * O `key` de cada botão muda junto com o estado de seleção. Isso força o
- * react-native-css-interop (NativeWind) a remontar o botão a cada mudança de
- * className em vez de "atualizá-lo" no lugar — evitando o aviso de upgrade do
- * css-interop cujo serializador acessa o contexto do react-navigation e lança
- * "Couldn't find a navigation context". Mantém o design original (DefaultButton).
+ * @remarks
+ * Each button's `key` changes together with the selection state. This forces
+ * react-native-css-interop (NativeWind) to remount the button on every
+ * `className` change instead of updating it in place, which avoids the
+ * css-interop upgrade path whose serializer reaches into the react-navigation
+ * context and throws "Couldn't find a navigation context".
  */
 export function YesNoQuestionUI({
   question,

@@ -2,12 +2,14 @@ import { supabase } from "@/lib/supabase";
 import { calculateAge } from "@/lib/date-utils";
 import { useCallback, useEffect, useState } from "react";
 
+/** Minimal exercise data used to resume an in-progress session. */
 export type ResumeExercise = {
   id: string;
   name: string;
   description: string;
 };
 
+/** A single history entry (session, form, or MABC-2 assessment) for a student. */
 export interface SessionItem {
   id: string;
   title: string;
@@ -28,6 +30,7 @@ export interface SessionItem {
   formType?: string | null;
 }
 
+/** Student profile fields shown alongside the session history. */
 export interface StudentProfile {
   name: string;
   avatarUrl: string | null;
@@ -39,6 +42,11 @@ export interface StudentProfile {
   observations: string | null;
 }
 
+/**
+ * Loads a student's profile and combined record history (sessions, ATA/CARS
+ * forms, and MABC-2 assessments), resolving pendencies and execution progress,
+ * sorted from newest to oldest.
+ */
 export function useStudentSessions(studentId?: string) {
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
@@ -50,7 +58,6 @@ export function useStudentSessions(studentId?: string) {
     try {
       setIsLoading(true);
 
-      // 1. Busca o perfil do aluno
       const { data: studentData, error: studentError } = await supabase
         .from("alunos")
         .select("nome_completo, avatar_url, altura, peso, cintura, data_nascimento, nivel_suporte, observacoes_clinicas")
@@ -63,6 +70,7 @@ export function useStudentSessions(studentId?: string) {
 
       if (studentData) {
         birthDateStr = studentData.data_nascimento ?? null;
+
         const formatSupportLevel = (level: string | null) => {
           if (!level) return null;
           if (level === "nivel_1") return "Nível 1";
@@ -83,8 +91,7 @@ export function useStudentSessions(studentId?: string) {
         });
       }
 
-      // 2. Busca as Sessões (direto na tabela)
-      const { data: sessionsData, error: sessionsError } = await supabase
+      const { data: sessionsData } = await supabase
         .from("sessoes")
         .select(`
           id,
@@ -97,31 +104,20 @@ export function useStudentSessions(studentId?: string) {
         .eq("aluno_id", studentId)
         .neq("status", "cancelada");
 
-      if (sessionsError) console.error("Erro ao buscar sessões", sessionsError);
-
-      // 3. Busca Formulários (via RPC unificada — retorna todos os tipos ativos)
-      const { data: formsData, error: formsError } = await supabase
+      const { data: formsData } = await supabase
         .rpc("listar_formularios_aluno", { p_aluno_id: studentId });
 
-      if (formsError) console.error("Erro ao buscar formulários", formsError);
-
-      // 4. Busca Histórico MABC-2
-      const { data: mabcData, error: mabcError } = await supabase
+      const { data: mabcData } = await supabase
         .rpc("rpc_get_historico_mabc2_aluno", { p_aluno_id: studentId });
 
-      if (mabcError) console.error("Erro ao buscar histórico MABC", mabcError);
-
-      // 4.5. Busca Progresso de Execução dos Exercícios da Sessão
-      const { data: progressData, error: progressError } = await supabase
+      const { data: progressData } = await supabase
         .rpc("rpc_get_progresso_sessoes_aluno", { p_aluno_id: studentId });
 
-      if (progressError) console.error("Erro ao buscar progresso das sessões", progressError);
       let parsedProgress: any[] = [];
       try {
         parsedProgress = typeof progressData === "string" ? JSON.parse(progressData) : (progressData || []);
-      } catch { /* JSON corrupto */ }
+      } catch {}
 
-      // 5. Formata as Sessões (com pendências e exercícios recuperáveis)
       const mappedSessions: SessionItem[] = await Promise.all(
         (sessionsData || []).map(async (item: any) => {
           let temPendencia = false;
@@ -131,9 +127,7 @@ export function useStudentSessions(studentId?: string) {
             { p_sessao_id: item.id }
           );
 
-          if (rpcError) {
-            console.error(`Erro ao verificar pendência da sessão ${item.id}:`, rpcError);
-          } else if (rpcData) {
+          if (!rpcError && rpcData) {
             const result = typeof rpcData === "string" ? JSON.parse(rpcData) : rpcData;
             temPendencia = result?.tem_pendencias || false;
           }
@@ -178,9 +172,6 @@ export function useStudentSessions(studentId?: string) {
         })
       );
 
-      // 6. Formata os Formulários. A RPC unificada retorna todos os tipos ativos;
-      // aqui o histórico exibe apenas ATA/CARS (MABC vem por RPC própria e o RC
-      // é preenchido junto à sessão, não como formulário avulso).
       const mappedForms: SessionItem[] = (formsData || [])
         .filter((item: any) => item.tipo === "ata" || item.tipo === "cars")
         .map((item: any) => ({
@@ -189,8 +180,6 @@ export function useStudentSessions(studentId?: string) {
           date: item.created_at
             ? new Date(item.created_at).toLocaleDateString("pt-BR")
             : "Data não definida",
-          // Pendência real = faltam respostas obrigatórias (campo `pendente` da
-          // RPC corrigida), e não apenas "tem alguma resposta".
           status: item.pendente ? "Pendente" : "Preenchido",
           hasPendency: item.pendente === true,
           type: "form",
@@ -202,11 +191,10 @@ export function useStudentSessions(studentId?: string) {
           formType: item.tipo ?? null,
         }));
 
-      // 7. Formata o MABC-2 com cálculo de idade
       let parsedMabcData: any[] = [];
       try {
         parsedMabcData = typeof mabcData === "string" ? JSON.parse(mabcData) : (mabcData || []);
-      } catch { /* JSON corrupto */ }
+      } catch {}
 
       const mappedMabc: SessionItem[] = (parsedMabcData || []).map((item: any) => {
         const eventDate = item.data_avaliacao || item.created_at || new Date().toISOString();
@@ -230,7 +218,6 @@ export function useStudentSessions(studentId?: string) {
         };
       });
 
-      // 8. Une todas as listas e ordena da mais recente para a mais antiga
       const combinedHistory = [...mappedSessions, ...mappedForms, ...mappedMabc].sort((a, b) => {
         const dateA = a.rawDate ? new Date(a.rawDate).getTime() : 0;
         const dateB = b.rawDate ? new Date(b.rawDate).getTime() : 0;
@@ -239,8 +226,7 @@ export function useStudentSessions(studentId?: string) {
 
       setSessions(combinedHistory);
 
-    } catch (error) {
-      console.error("Erro na estruturação do histórico do aluno:", error);
+    } catch {
     } finally {
       setIsLoading(false);
     }

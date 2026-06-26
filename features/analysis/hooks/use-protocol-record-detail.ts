@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { ProtocolTipo } from "./use-protocol-records";
 
+/** A scored section of an ATA record. */
 export type AtaSection = {
   id: string;
   title: string;
@@ -10,11 +11,13 @@ export type AtaSection = {
   valueLabel: string;
 };
 
+/** Full ATA record detail: its sections and total score. */
 export type AtaDetail = {
   sections: AtaSection[];
   total: number | null;
 };
 
+/** A scored domain of a CARS record, with an optional observation. */
 export type CarsDomain = {
   id: string;
   title: string;
@@ -23,11 +26,13 @@ export type CarsDomain = {
   observation: string | null;
 };
 
+/** Full CARS record detail: its domains and total score. */
 export type CarsDetail = {
   domains: CarsDomain[];
   total: number | null;
 };
 
+/** A single scored item within a MABC-2 component. */
 export type Mabc2Item = {
   id: string;
   name: string;
@@ -35,6 +40,7 @@ export type Mabc2Item = {
   rawScore: string;
 };
 
+/** A MABC-2 component (e.g. manual dexterity) with its items and category scores. */
 export type Mabc2Component = {
   title: string;
   categoryScore: number | null;
@@ -42,6 +48,7 @@ export type Mabc2Component = {
   items: Mabc2Item[];
 };
 
+/** Full MABC-2 record detail, including evaluator, scores, and components. */
 export type Mabc2Detail = {
   titulo: string;
   ageGroupLabel: string | null;
@@ -53,12 +60,14 @@ export type Mabc2Detail = {
   components: Mabc2Component[];
 };
 
+/** Detail of a protocol record, populated for exactly one protocol type. */
 export type ProtocolRecordDetail = {
   ata?: AtaDetail;
   cars?: CarsDetail;
   mabc2?: Mabc2Detail;
 };
 
+/** Parses a value into a finite number (accepting commas), or null. */
 function parseNumber(value: any): number | null {
   if (value == null || value === "") return null;
   const parsed = parseFloat(String(value).replace(",", "."));
@@ -136,7 +145,6 @@ export function useProtocolRecordDetail(tipo?: ProtocolTipo, recordId?: string) 
 
         for (const q of perguntas) {
           if (q.tipo_resposta === "texto_opcional") {
-            // Observação do domínio anterior.
             const observation = answers.get(q.id);
             if (domains.length > 0) {
               domains[domains.length - 1].observation =
@@ -169,7 +177,6 @@ export function useProtocolRecordDetail(tipo?: ProtocolTipo, recordId?: string) 
         const meta = payload.formulario?.metadados ?? {};
         const itens = (payload.itens ?? []) as any[];
 
-        // Agrupa os itens por componente, preservando a ordem de aparição.
         const componentMap = new Map<string, Mabc2Component>();
         for (const item of itens) {
           const key = item.componente ?? "Outros";

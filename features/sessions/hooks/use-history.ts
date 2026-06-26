@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useState } from "react";
 
+/** A student row for the history list, with its record count and pendency flag. */
 export interface StudentHistoryData {
   id: string;
   name: string;
@@ -9,6 +10,10 @@ export interface StudentHistoryData {
   avatarUrl: string | null;
 }
 
+/**
+ * Loads all active students with their record counts (sessions plus non-control
+ * forms, excluding cancelled sessions) and pending-item flags.
+ */
 export function useHistory() {
   const [studentsHistory, setStudentsHistory] = useState<StudentHistoryData[]>(
     [],
@@ -21,7 +26,6 @@ export function useHistory() {
       setIsLoading(true);
       setError(null);
 
-      // 1. Busca de alunos.
       const { data: alunos, error: alunosError } = await supabase
         .from("alunos")
         .select(`id, nome_completo, avatar_url`)
@@ -30,9 +34,6 @@ export function useHistory() {
 
       if (alunosError) throw alunosError;
 
-      // 2. Contagem de registros = sessões + formulários do aluno (mesma regra
-      // da tela de Análises), excluindo sessões canceladas e formulários do tipo
-      // "registro_controle" (instâncias de RC por sessão).
       const [{ data: sessions }, { data: forms }] = await Promise.all([
         supabase.from("sessoes").select("aluno_id").neq("status", "cancelada"),
         supabase
@@ -50,7 +51,6 @@ export function useHistory() {
         if (f.aluno_id) counts[f.aluno_id] = (counts[f.aluno_id] || 0) + 1;
       });
 
-      // 3. Pendências de uma vez via view (otimizado), igual à tela de alunos.
       const { data: pendencias } = await supabase
         .from("vw_alunos_pendencias")
         .select("aluno_id, tem_pendencia");
@@ -74,7 +74,6 @@ export function useHistory() {
 
       setStudentsHistory(formattedData);
     } catch (err: any) {
-      console.error("Erro ao buscar histórico:", err);
       setError(err instanceof Error ? err : new Error("Erro ao carregar histórico"));
     } finally {
       setIsLoading(false);

@@ -11,22 +11,29 @@ import { ClipboardList, X } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Modal,
   Pressable,
   ScrollView,
   Text,
   View,
 } from "react-native";
 
+/** Props for {@link SessionCompletedScreen}. */
 interface SessionCompletedScreenProps {
   type: string;
   studentName: string;
+  /** JSON-encoded list of exercises still pending in the circuit. */
   queue?: string;
+  /** JSON-encoded list of all circuit exercises. */
   fullCircuit?: string;
   studentId?: string;
   sessionId?: string;
 }
 
+/**
+ * Post-session screen showing completion progress and continuation options:
+ * retry unrealized exercises, repeat selected ones, or run another team
+ * exercise — all within the same session.
+ */
 export function SessionCompletedScreen({
   type,
   studentName,
@@ -43,7 +50,6 @@ export function SessionCompletedScreen({
   const [isRepeatModalOpen, setIsRepeatModalOpen] = useState(false);
   const [selectedRepeatIds, setSelectedRepeatIds] = useState<string[]>([]);
 
-  // "Realizar outro exercício": escolher qualquer exercício da equipe (US08.9).
   const { exercises: teamExercises, isLoading: isExercisesLoading } =
     useExercises();
   const [isOtherModalOpen, setIsOtherModalOpen] = useState(false);
@@ -55,7 +61,6 @@ export function SessionCompletedScreen({
     );
   };
 
-  // Roda os exercícios escolhidos na MESMA sessão (mesmo sessionId).
   const handleConfirmOther = () => {
     const chosen = teamExercises
       .filter((ex) => selectedOtherIds.includes(ex.id))
@@ -103,8 +108,6 @@ export function SessionCompletedScreen({
   };
 
   const handleConfirmRepeat = () => {
-    // Mantém o exercicio_id real para que a execução seja gravada na sessão
-    // (o id mascarado quebraria a FK em execucoes_exercicio).
     const exercisesToRepeat = circuitoCompleto.filter((ex: any) =>
       selectedRepeatIds.includes(ex.id),
     );
@@ -219,7 +222,6 @@ export function SessionCompletedScreen({
           </View>
         </AppModal>
 
-        {/* Realizar outro exercício: qualquer exercício da equipe (US08.9) */}
         <AppModal visible={isOtherModalOpen} transparent animationType="fade">
           <View className="flex-1 bg-black/60 justify-center items-center px-4">
             <View className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[600px] overflow-hidden">

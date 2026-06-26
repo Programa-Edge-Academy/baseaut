@@ -3,15 +3,24 @@ import { ListFilter, Search } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, TextInput, TextInputProps, View } from "react-native";
 
+/** Props for {@link SearchInput}. */
 export interface SearchInputProps extends TextInputProps {
   containerClassName?: string;
   inputClassName?: string;
+  /** Search icon size. Defaults to 18. */
   iconSize?: number;
+  /** Search icon color. Defaults to the muted token. */
   iconColor?: string;
+  /** Renders an adjacent tags filter button. Defaults to false. */
   showTags?: boolean;
+  /** Called when the tags filter button is pressed. */
   onTagsPress?: () => void;
 }
 
+/**
+ * Single-line search field with a leading icon and an optional tags filter
+ * button rendered beside it.
+ */
 export function SearchInput({
   containerClassName,
   inputClassName,
@@ -22,7 +31,6 @@ export function SearchInput({
   onTagsPress,
   ...rest
 }: SearchInputProps) {
-  
   const searchBox = (
     <View
       className={`h-[44px] flex-row items-center rounded-[15px] border border-outline bg-level2 px-3 ${

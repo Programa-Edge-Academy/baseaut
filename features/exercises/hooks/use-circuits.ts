@@ -15,9 +15,11 @@ export type CircuitType = "padrao" | "mabc_1" | "mabc_2" | "mabc_3";
 export type ExecutionMode = "estruturado" | "semi-estruturado";
 
 /**
- * Resolve o template global do Registro de Controle pelo tipo (sem ID fixo).
- * Vinculá-lo ao circuito faz o trigger de sessão criar uma instância de RC por
- * sessão e preencher sessoes.formulario_id automaticamente.
+ * Resolves the global Control Record template by type (without a hardcoded ID).
+ * Linking it to a circuit makes the session trigger create a per-session Control
+ * Record instance and populate `sessoes.formulario_id` automatically.
+ *
+ * @returns The template's id, or null when none exists.
  */
 async function resolveRcTemplateId(): Promise<string | null> {
   const { data } = await supabase
@@ -61,7 +63,6 @@ async function seedMabcCircuits(teamId: string): Promise<void> {
       .in("tipo", ["mabc_1", "mabc_2", "mabc_3"]);
 
     if (checkError) {
-      console.error("[Seeding] Error checking existing MABC circuits:", checkError);
       return;
     }
 
@@ -120,9 +121,6 @@ async function seedMabcCircuits(teamId: string): Promise<void> {
         continue;
       }
 
-      console.log(`[Seeding] Starting seeding for MABC circuit type: ${band.tipo} in team: ${teamId}`);
-
-      // Insert exercises
       const exercisesPayload = band.exercicios.map((ex) => ({
         titulo: ex.titulo,
         descricao: ex.descricao,
@@ -139,16 +137,13 @@ async function seedMabcCircuits(teamId: string): Promise<void> {
         .select("id, titulo");
 
       if (excError) {
-        console.error(`[Seeding] Error inserting exercises for MABC circuit ${band.tipo}:`, excError);
         continue;
       }
 
       if (!insertedExercises || insertedExercises.length === 0) {
-        console.error(`[Seeding] No exercises were returned for MABC circuit ${band.tipo}`);
         continue;
       }
 
-      // Insert circuit
       const { data: insertedCircuit, error: circError } = await supabase
         .from("circuitos")
         .insert({
@@ -164,16 +159,12 @@ async function seedMabcCircuits(teamId: string): Promise<void> {
 
       if (circError) {
         if (circError.code === "23505") {
-          // Another client seeded this circuit concurrently; clean up orphaned exercises.
           const orphanIds = insertedExercises.map((ex) => ex.id);
           await supabase.from("exercicios").delete().in("id", orphanIds);
-        } else {
-          console.error(`[Seeding] Error inserting MABC circuit ${band.tipo}:`, circError);
         }
         continue;
       }
 
-      // Link exercises in circuit items
       const exerciseOrderMap = new Map(band.exercicios.map((ex, index) => [ex.titulo, index + 1]));
 
       const itemsPayload = insertedExercises.map((inserted) => {
@@ -185,18 +176,11 @@ async function seedMabcCircuits(teamId: string): Promise<void> {
         };
       });
 
-      const { error: itemsError } = await supabase
+      await supabase
         .from("itens_circuito")
         .insert(itemsPayload);
-
-      if (itemsError) {
-        console.error(`[Seeding] Error linking exercises to MABC circuit ${band.tipo}:`, itemsError);
-      } else {
-        console.log(`[Seeding] Successfully seeded MABC circuit ${band.tipo} with ${insertedExercises.length} exercises.`);
-      }
     }
-  } catch (err) {
-    console.error("[Seeding] Unexpected error during MABC seeding:", err);
+  } catch {
   }
 }
 
@@ -223,7 +207,6 @@ export function useCircuits() {
       }
       setEquipeId(teamId);
 
-      // Seed MABC circuits if missing
       await seedMabcCircuits(teamId);
 
       const { data, error: fetchError } = await supabase
@@ -290,7 +273,6 @@ export function useCircuits() {
       }
     } catch (caught: any) {
       setError(caught);
-      console.error("Error loading circuits:", caught);
     } finally {
       if (showLoader) setIsLoading(false);
     }
@@ -313,8 +295,6 @@ export function useCircuits() {
     try {
       if (!equipeId) throw new Error("Team ID not identified.");
 
-      // Circuitos comuns (padrão) recebem o template de RC para o trigger de
-      // sessão gerar a instância do registro de controle. MABC tem fluxo próprio.
       const formId =
         data.form ??
         (data.type === "padrao" ? await resolveRcTemplateId() : null);
@@ -353,7 +333,6 @@ export function useCircuits() {
 
       await loadCircuits(false);
     } catch (err: any) {
-      console.error("Error adding circuit:", err);
       Alert.alert("Erro ao Criar", `Não foi possível salvar o circuito: ${err.message}`);
       throw err;
     }
@@ -402,7 +381,6 @@ export function useCircuits() {
 
       await loadCircuits(false);
     } catch (err: any) {
-      console.error("Error updating circuit:", err);
       Alert.alert("Erro ao Editar", `Não foi possível atualizar o circuito: ${err.message}`);
       throw err;
     }
@@ -421,19 +399,17 @@ export function useCircuits() {
       if (deleteError) throw deleteError;
       await loadCircuits(false);
     } catch (err: any) {
-      console.error("Error disabling circuit:", err);
       Alert.alert("Erro ao Remover", err.message);
     }
   };
 
   /**
-     * Duplicates an existing circuit properties and rebuilds relational items.
-     */
+   * Duplicates an existing circuit, copying its properties and exercise items.
+   */
   const duplicateCircuit = async (circuit: Circuit) => {
     try {
       if (!equipeId) throw new Error("Team ID not identified.");
 
-      // Copia os dados principais do circuito com sufixo no nome
       const payload = {
         titulo: `${circuit.name} (Cópia)`,
         descricao: circuit.description,
@@ -452,7 +428,6 @@ export function useCircuits() {
 
       if (insertError) throw insertError;
 
-      // Duplica os vínculos com os exercícios se existirem
       if (circuit.exercises.length > 0) {
         const itemsPayload = circuit.exercises.map((ex, index) => ({
           circuito_id: insertedCircuit.id,
@@ -469,7 +444,6 @@ export function useCircuits() {
 
       await loadCircuits(false);
     } catch (err: any) {
-      console.error("Error duplicating circuit:", err);
       Alert.alert("Erro ao Duplicar", `Não foi possível duplicar o circuito: ${err.message}`);
       throw err;
     }

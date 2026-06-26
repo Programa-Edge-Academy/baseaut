@@ -6,17 +6,23 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Print from "expo-print";
 import { Platform } from "react-native";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 const TH = `border:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:11px;background:#f1f5f9;font-weight:bold;`;
 const TD = `border:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:11px;`;
 
+/** Stringifies a value for export, using an en dash for null/undefined. */
 function str(value: string | number | null | undefined): string {
   return value != null ? String(value) : "–";
 }
 
-// ─── Public export ────────────────────────────────────────────────────────────
-
+/**
+ * Exports a MABC-2 draft as PDF and/or CSV and delivers the files via share or
+ * direct download. On web it prints/downloads directly.
+ *
+ * @param draft - The MABC-2 record to export.
+ * @param formats - Which file formats to generate (at least one required).
+ * @param studentName - Student name shown in the export header.
+ * @param mode - Delivery mode for native platforms. Defaults to "share".
+ */
 export async function exportMabc(
   draft: Mabc2Draft,
   formats: { pdf: boolean; csv: boolean },

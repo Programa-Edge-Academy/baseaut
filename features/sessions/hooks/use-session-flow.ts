@@ -3,10 +3,13 @@ import { useCallback, useRef, useState } from "react";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { supabase } from "@/lib/supabase";
 
-// "adiado" depende da adição do valor ao enum status_realizacao_enum no backend.
+/** Execution status. "adiado" requires the matching value in the backend `status_realizacao_enum`. */
 export type StatusRealizacao = "realizada" | "nao_realizada" | "adiado";
+/** Motor development level recorded for an execution. */
 export type NivelDesenvolvimento = "inicial" | "intermediario" | "maduro";
+/** Whether the student performed autonomously, with intrusive help, or not applicable. */
 export type RegistroAjuda = "autonomo" | "ajuda_intrusiva" | "nao_se_aplica";
+/** Reason an exercise was not completed. */
 export type MotivoNaoRealizacao =
   | "recusa_aluno"
   | "comportamento_disruptivo"
@@ -14,6 +17,7 @@ export type MotivoNaoRealizacao =
   | "tempo_insuficiente"
   | "dificuldade_fisica"
   | "outro";
+/** Reason a whole session was ended early. */
 export type MotivoFinalizacao =
   | "comportamento_disruptivo"
   | "tempo_esgotado"
@@ -50,15 +54,17 @@ export type InsertedExecution = {
   exercicio_id: string;
 };
 
+/** Input for creating a session. */
 type CreateSessionInput = {
   alunoId: string;
   circuitoId?: string | null;
   formularioId?: string | null;
 };
 
+/** Input for finishing a session. */
 type FinishSessionInput = {
   status?: "concluida" | "cancelada";
-  // A coluna sessoes.motivo_finalizacao usa motivo_nao_realizacao_enum.
+  /** Stored in `sessoes.motivo_finalizacao`, which uses `motivo_nao_realizacao_enum`. */
   motivoFinalizacao?: MotivoNaoRealizacao | null;
   descricaoMotivo?: string | null;
 };
@@ -73,6 +79,7 @@ export function useSessionFlow() {
   const [error, setError] = useState<Error | null>(null);
   const savingRef = useRef(false);
 
+  /** Creates a new in-progress `sessoes` row and returns its id. */
   const createSession = useCallback(
     async ({
       alunoId,
@@ -107,6 +114,7 @@ export function useSessionFlow() {
     [],
   );
 
+  /** Inserts one row per execution record, allowing repeated/engagement entries. */
   const persistExecutions = useCallback(
     async (
       sessaoId: string,
@@ -114,8 +122,6 @@ export function useSessionFlow() {
     ): Promise<InsertedExecution[]> => {
       if (!records.length) return [];
 
-      // Cada execução vira uma linha nova (INSERT). Permite repetir o mesmo
-      // exercício na sessão e registrar várias atividades de engajamento.
       const payload = records.map((record) => ({
         sessao_id: sessaoId,
         exercicio_id: record.exercicioId,
@@ -168,6 +174,7 @@ export function useSessionFlow() {
     [],
   );
 
+  /** Marks a session as completed or cancelled with an optional reason. */
   const finishSession = useCallback(
     async (
       sessaoId: string,
@@ -193,9 +200,9 @@ export function useSessionFlow() {
   );
 
   /**
-   * Closes the session and links crises. As execuções já foram persistidas
-   * incrementalmente durante a sessão, então aqui apenas vinculamos as crises
-   * (buscando os ids das execuções já gravadas) e finalizamos.
+   * Closes the session and links crises. Executions are persisted incrementally
+   * during the session, so this only links the crises (looking up the ids of the
+   * already-saved executions) and finalizes the session.
    */
   const saveSession = useCallback(
     async (
@@ -233,11 +240,11 @@ export function useSessionFlow() {
   );
 
   /**
-   * Finaliza uma sessão em andamento "de fora" da tela de execução (ex.: ao
-   * iniciar uma nova sessão concorrente). Marca como concluída e, se o circuito
-   * for estruturado, grava os exercícios não realizados (sem execução) como
-   * 'nao_realizada' com motivo/descrição padrão. Lê tudo do banco — não depende
-   * do estado em memória da tela de sessão.
+   * Finishes an in-progress session from outside the execution screen (e.g. when
+   * starting a new concurrent session). Marks it as completed and, for structured
+   * circuits, records the unexecuted exercises as 'nao_realizada' with a default
+   * reason/description. Reads everything from the database — it does not depend on
+   * the session screen's in-memory state.
    */
   const finishSessionAndSaveUnexecuted = useCallback(
     async (
@@ -263,8 +270,6 @@ export function useSessionFlow() {
           .eq("id", circuitoId)
           .maybeSingle();
 
-        // Só circuitos estruturados têm um conjunto fixo de exercícios a marcar
-        // como não realizados; o semi-estruturado é de seleção livre.
         if (circuito?.modo_execucao === "estruturado") {
           const [{ data: itens }, { data: execs }] = await Promise.all([
             supabase
@@ -311,13 +316,13 @@ export function useSessionFlow() {
   );
 
   /**
-   * Ao encerrar a sessão, grava o tempo total em sessoes.tempo_total e replica
-   * os valores automáticos no RC da sessão:
-   *  • pergunta "Tempo da sessão"  → total em segundos;
-   *  • pergunta "Fugas (número de fugas e tempo do ocorrido)" →
-   *    "<n> - (mm:ss,mm:ss), ...", com início/fim no cronômetro total.
-   * Essas perguntas não são exibidas durante a execução (preenchidas aqui),
-   * mas podem ser editadas depois no RC pelo histórico.
+   * On session end, writes the total time to `sessoes.tempo_total` and replicates
+   * the auto-filled values into the session's Control Record:
+   *  - "Tempo da sessão" question → total in seconds;
+   *  - "Fugas (número de fugas e tempo do ocorrido)" question →
+   *    "<n> - (mm:ss,mm:ss), ...", using the total stopwatch start/end.
+   * These questions are not shown during execution (they are filled here) but can
+   * be edited later in the Control Record from the history.
    */
   const finalizeSessionAutoFill = useCallback(
     async (
@@ -327,13 +332,11 @@ export function useSessionFlow() {
     ): Promise<void> => {
       if (!sessaoId) return;
 
-      // 1. tempo_total na própria sessão.
       await supabase
         .from("sessoes")
         .update({ tempo_total: totalSeconds })
         .eq("id", sessaoId);
 
-      // 2. instância de RC da sessão.
       const { data: sessao } = await supabase
         .from("sessoes")
         .select("formulario_id")
@@ -424,7 +427,7 @@ export function useSessionFlow() {
   };
 }
 
-/** Títulos das perguntas de RC preenchidas automaticamente pela sessão. */
+/** Titles of the Control Record questions auto-filled by the session. */
 export const RC_AUTO_FILLED_TITLES = [
   "Tempo da sessão",
   "Fugas (número de fugas e tempo do ocorrido)",

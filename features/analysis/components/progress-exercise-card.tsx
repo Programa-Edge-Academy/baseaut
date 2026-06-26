@@ -3,6 +3,7 @@ import { CircleArrowRightIcon } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, StyleProp, Text, View, ViewStyle } from 'react-native';
 
+/** Props for {@link ProgressExerciseCard}. */
 export type ProgressExerciseCardProps = {
   title: string;
   statusLabel?: string;
@@ -23,6 +24,10 @@ const toneColors = {
   gray: colors.muted,
 };
 
+/**
+ * Tappable card summarizing a student's progress on one exercise: last
+ * performance, session count, and evolution trend.
+ */
 export default function ProgressExerciseCard({
   title,
   statusLabel = 'Sem registro',
@@ -54,8 +59,6 @@ export default function ProgressExerciseCard({
       style={[{ opacity: disabled ? 0.6 : 1 }, style]} 
     >
       <View className="flex-row items-center justify-between">
-        
-        {/* Coluna de Textos */}
         <View className="flex-1 pr-4 gap-y-2">
           <Text className="text-base font-bold text-white mb-1">{title}</Text>
           
@@ -70,11 +73,9 @@ export default function ProgressExerciseCard({
           </Text>
         </View>
 
-        {/* Coluna do Ícone */}
         <View className="justify-center items-center">
           <CircleArrowRightIcon size={50} color="#66758A" />
         </View>
-
       </View>
     </Pressable>
   );

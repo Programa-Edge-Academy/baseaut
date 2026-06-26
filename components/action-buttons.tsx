@@ -2,16 +2,26 @@ import React from "react";
 import { View } from "react-native";
 import { DefaultButton } from "./default-button";
 
+/** Props for {@link ActionButtons}. */
 export interface ActionButtonsProps {
+  /** Called when the cancel button is pressed. */
   onCancel: () => void;
+  /** Called when the save button is pressed. */
   onSave: () => void;
+  /** Label for the cancel button. Defaults to "Cancelar". */
   cancelLabel?: string;
+  /** Label for the save button. Defaults to "Salvar". */
   saveLabel?: string;
   className?: string;
+  /** Disables both buttons and mutes the save styling. */
   disabled?: boolean;
+  /** Visual intent of the save button. Defaults to "default". */
   mode?: "default" | "danger" | "warning";
 }
 
+/**
+ * Paired cancel/save action row with intent-based styling for the save button.
+ */
 export function ActionButtons({
   onCancel,
   onSave,

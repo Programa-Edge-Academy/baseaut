@@ -5,18 +5,33 @@ import { Pressable, Text, View } from "react-native";
 import { colors } from "@/assets/colors";
 import { ActionButtons } from "./action-buttons";
 
+/** Props for {@link ConfirmationModal}. */
 export interface ConfirmationModalProps {
+  /** Whether the modal is visible. */
   visible: boolean;
+  /** Called when the modal is dismissed without confirming. */
   onClose: () => void;
+  /** Called when the user confirms the action. */
   onConfirm: () => void;
+  /** Overrides the default title for the current mode. */
   title?: string;
+  /** Overrides the default message for the current mode. */
   message?: string;
+  /** Overrides the default confirm button label. */
   confirmLabel?: string;
+  /** Overrides the default cancel button label. */
   cancelLabel?: string;
+  /** Overrides the default icon for the current mode. */
   iconType?: "trash" | "alert" | "logout";
+  /** Preset that drives default copy, icon, and styling. Defaults to "delete". */
   mode?: "delete" | "finishSession" | "logout" | "finishEngagement";
 }
 
+/**
+ * Reusable confirmation dialog with presets for delete, session finish,
+ * engagement finish, and logout flows. Each preset supplies default copy and
+ * iconography that individual props can override.
+ */
 export function ConfirmationModal({
   visible,
   onClose,
@@ -28,7 +43,6 @@ export function ConfirmationModal({
   iconType,
   mode = "delete",
 }: ConfirmationModalProps) {
-  
   const isFinishMode = mode === "finishSession";
   const isLogoutMode = mode === "logout";
   const isFinishEngagementMode = mode === "finishEngagement";

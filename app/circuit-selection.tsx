@@ -15,7 +15,6 @@ import {
   CircuitItem,
   CircuitSelectionScreen,
 } from "../features/sessions/screens/circuit-selection-screen";
-import { useSessionGlobalContext } from "../features/sessions/contexts/session-global-context";
 
 type MabcCircuitType = "mabc_1" | "mabc_2" | "mabc_3";
 
@@ -40,10 +39,16 @@ const MABC_AGE_RANGES: Record<
   },
 };
 
+/** Type guard for the three age-banded MABC circuit types. */
 function isMabcCircuitType(type: CircuitType): type is MabcCircuitType {
   return type === "mabc_1" || type === "mabc_2" || type === "mabc_3";
 }
 
+/**
+ * Returns whether a circuit can be run for a student of the given age. Non-MABC
+ * circuits are always available; MABC circuits require the age to fall within
+ * their band.
+ */
 function isCircuitAvailableForStudentAge(
   circuit: Circuit,
   studentAge: number | null
@@ -61,6 +66,7 @@ function isCircuitAvailableForStudentAge(
   return studentAge >= range.min && studentAge <= range.max;
 }
 
+/** Builds the subtitle describing a circuit's exercises and, for MABC, its age band. */
 function getCircuitDescription(circuit: Circuit) {
   if (isMabcCircuitType(circuit.type)) {
     const range = MABC_AGE_RANGES[circuit.type];
@@ -81,6 +87,12 @@ type GuardModalType =
   | "form-conflict"
   | null;
 
+/**
+ * Route for choosing what to start for a student: a circuit session (structured
+ * or semi-structured) or a form (ATA/CARS/MABC-2), filtered by the student's
+ * age. Detects in-progress sessions and pending records via the start guard and
+ * prompts the user to resume or finish/replace before starting something new.
+ */
 export default function CircuitSelectionRoute() {
   const { studentId, studentName } = useLocalSearchParams<{
     studentId: string;
@@ -89,21 +101,13 @@ export default function CircuitSelectionRoute() {
 
   const { circuits, isLoading: circuitsLoading } = useCircuits();
   const { finishSessionAndSaveUnexecuted } = useSessionFlow();
-  const { activeSessions } = useSessionGlobalContext();
 
   const [studentAge, setStudentAge] = useState<number | null>(null);
-  // Idade do aluno carrega de forma assíncrona; só exibimos a lista (circuitos
-  // + formulários juntos) quando circuitos E idade terminaram de resolver.
   const [ageResolved, setAgeResolved] = useState(false);
   const [guardModal, setGuardModal] = useState<GuardModalType>(null);
   const [guardData, setGuardData] = useState<StartGuardState | null>(null);
   const pendingCircuitRef = useRef<CircuitItem | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const studentActiveSession = useMemo(() => {
-    if (!studentId) return undefined;
-    return Object.values(activeSessions).find((s) => s.studentId === studentId);
-  }, [activeSessions, studentId]);
 
   useEffect(() => {
     async function loadStudentAge() {
@@ -121,7 +125,6 @@ export default function CircuitSelectionRoute() {
           .single();
 
         if (error) {
-          console.error("Erro ao buscar data de nascimento do aluno:", error);
           setStudentAge(null);
           return;
         }
@@ -221,7 +224,6 @@ export default function CircuitSelectionRoute() {
 
   const navigateToForm = useCallback(
     (circuit: CircuitItem) => {
-      // CircuitType "mabc" maps to DB tipo "mabc2" for the form route.
       const formTipo = circuit.type === "mabc" ? "mabc2" : circuit.type;
       router.push({
         pathname: "/form",
@@ -307,7 +309,6 @@ export default function CircuitSelectionRoute() {
       const isForm = isFormType(circuit.type);
 
       if (!isForm) {
-        // Iniciando uma SESSÃO
         if (guard.inProgressSession) {
           pendingCircuitRef.current = circuit;
           setGuardData(guard);
@@ -321,8 +322,6 @@ export default function CircuitSelectionRoute() {
           return;
         }
       } else {
-        // Iniciando um FORMULÁRIO (ATA/CARS/MABC). A chave no guard usa o tipo
-        // do banco — "mabc" do circuito corresponde a "mabc2" no formulário.
         const guardKey = circuit.type === "mabc" ? "mabc2" : circuit.type;
         if (guard.pendingByType[guardKey]) {
           pendingCircuitRef.current = circuit;
@@ -332,7 +331,6 @@ export default function CircuitSelectionRoute() {
         }
       }
 
-      // Sem conflitos — prossegue
       if (isForm) {
         navigateToForm(circuit);
       } else {
@@ -378,7 +376,6 @@ export default function CircuitSelectionRoute() {
             .eq("id", oldFormId);
         }
       }
-      // rc-pending: o usuário escolheu iniciar nova sessão sem preencher o RC
 
       setGuardModal(null);
 

@@ -24,12 +24,10 @@ export function WarningBanner({
     <View
       className={`w-full max-w-md items-center justify-center rounded-[20px] bg-level1 p-5 border border-outline ${className}`}
     >
-      {/* Ícone de Alerta Amarelo/Amber */}
       <View className="mb-2">
         <AlertCircle size={24} color={colors.extra} strokeWidth={2.5} />
       </View>
 
-      {/* Conteúdo de Texto Centralizado */}
       <View className="items-center" style={{ gap: 4 }}>
         <Text className="text-[15px] font-semibold text-amber-500 text-center leading-5">
           {title}

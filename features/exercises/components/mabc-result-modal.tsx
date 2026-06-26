@@ -17,32 +17,31 @@ import {
   MabcExerciseConfig,
 } from "../constants/mabc-exercise-configs";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
+/** Whether the student performed autonomously or with intrusive help. */
 export type RegistroAjuda = "autonomo" | "ajuda_intrusiva";
+/** Help sub-category recorded when the student was autonomous. */
 export type SubCategoria = "verbal" | "modelo";
 
+/** Result captured for a completed MABC-2 exercise. */
 export type MabcResultData = {
   registroAjuda?: RegistroAjuda;
   subCategorias?: SubCategoria[];
+  /** Raw scores keyed by `<side>_<trialIndex>_<fieldType>`. */
   scores: Record<string, string>;
 };
 
+/** Props for {@link MabcResultModal}. */
 export interface MabcResultModalProps {
   visible: boolean;
   exerciseName: string;
   circuitType: "mabc_1" | "mabc_2" | "mabc_3";
   onClose: () => void;
+  /** Called to defer the result and answer it later. */
   onDefer: () => void;
+  /** Called when the exercise was not completed, with the reason and optional description. */
   onNotCompleted: (motivo: string, descricao?: string) => void;
   onConfirm: (result: MabcResultData) => void;
 }
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
 
 const MOTIVOS = [
   "Recusa do aluno",
@@ -53,6 +52,12 @@ const MOTIVOS = [
   "Outro",
 ];
 
+/**
+ * Modal for recording a MABC-2 exercise outcome. Renders the exercise's raw
+ * score inputs (per side, trial, and field) defined in
+ * {@link MABC_EXERCISE_CONFIGS}, validates them on confirm, or captures a reason
+ * when the exercise was not completed. Supports deferring the answer.
+ */
 export function MabcResultModal({
   visible,
   exerciseName,
@@ -67,25 +72,18 @@ export function MabcResultModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [, setSubmitted] = useState(false);
 
-  // Form states
-  const [, setAjuda] = useState<RegistroAjuda | null>(null);
-  const [, setSubCategorias] = useState<SubCategoria[]>([]);
   const [selectedMotivo, setSelectedMotivo] = useState<string | null>(null);
   const [outroDescricao, setOutroDescricao] = useState<string>("");
 
-  // Get configuration for current exercise
   const config: MabcExerciseConfig | undefined =
     MABC_EXERCISE_CONFIGS[circuitType]?.[exerciseName];
 
-  // Reset state when modal is opened/closed
   useEffect(() => {
     if (visible) {
       setValues({});
       setErrors({});
       setSubmitted(false);
       setViewMode("result");
-      setAjuda(null);
-      setSubCategorias([]);
       setSelectedMotivo(null);
       setOutroDescricao("");
     }
@@ -111,7 +109,6 @@ export function MabcResultModal({
     const newErrors: Record<string, string> = {};
     let hasValidationError = false;
 
-    // 1. Validate MABC scores
     for (const side of config.sides) {
       for (let tIndex = 0; tIndex < config.trials.length; tIndex++) {
         for (const field of config.fields) {
@@ -144,7 +141,6 @@ export function MabcResultModal({
       return;
     }
 
-    // MABC (US16): apenas os escores brutos; sem registro de ajuda.
     onConfirm({
       scores: values,
     });
@@ -205,7 +201,6 @@ export function MabcResultModal({
             }}
             onPress={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <View
               style={{
                 flexDirection: "row",
@@ -236,7 +231,6 @@ export function MabcResultModal({
                 </Text>
               </View>
 
-              {/* Defer Button - Only visible in result mode */}
               {viewMode === "result" && (
                 <RipplePressable
                   onPress={onDefer}
@@ -262,7 +256,6 @@ export function MabcResultModal({
               )}
             </View>
 
-            {/* Separator */}
             <View
               style={{
                 height: 1,
@@ -277,7 +270,6 @@ export function MabcResultModal({
                   showsVerticalScrollIndicator={false}
                   contentContainerStyle={{ paddingBottom: 10 }}
                 >
-                  {/* 1. MABC Numerical Inputs Section */}
                   <View style={{ marginBottom: 16 }}>
                     <Text
                       style={{
@@ -307,7 +299,6 @@ export function MabcResultModal({
                           </Text>
                         )}
 
-                        {/* Render trials side-by-side in a row */}
                         <View style={{ flexDirection: "row", gap: 10 }}>
                           {config.trials.map((trial, tIndex) => (
                             <View
@@ -332,7 +323,6 @@ export function MabcResultModal({
                                 {trial === "T1" ? "Tentativa 1" : "Tentativa 2"}
                               </Text>
 
-                              {/* Render fields side-by-side inside each trial */}
                               <View style={{ flexDirection: "row", gap: 8 }}>
                                 {config.fields.map((field) => {
                                   const key = `${side.key}_${tIndex}_${field.type}`;
@@ -396,7 +386,6 @@ export function MabcResultModal({
                   </View>
                 </ScrollView>
 
-                {/* Footer Buttons */}
                 <View
                   style={{
                     flexDirection: "row",
@@ -404,7 +393,6 @@ export function MabcResultModal({
                     marginTop: 12,
                   }}
                 >
-                  {/* Não realizada - Left button (red) */}
                   <RipplePressable
                     onPress={() => setViewMode("reasons")}
                     style={{
@@ -432,7 +420,6 @@ export function MabcResultModal({
                     </Text>
                   </RipplePressable>
 
-                  {/* Concluir - Right button (dark blue) */}
                   <RipplePressable
                     onPress={handleConfirm}
                     style={{
@@ -465,7 +452,6 @@ export function MabcResultModal({
               </>
             ) : (
               <>
-                {/* Reasons / Non-completion Selection View */}
                 <ScrollView
                   showsVerticalScrollIndicator={false}
                   contentContainerStyle={{ paddingBottom: 10 }}
@@ -493,7 +479,6 @@ export function MabcResultModal({
                       ))}
                     </View>
 
-                    {/* Additional details text area for "Outro" reason */}
                     {selectedMotivo === "Outro" && (
                       <View style={{ gap: 5, marginTop: 8 }}>
                         <Text
@@ -530,9 +515,7 @@ export function MabcResultModal({
                   </View>
                 </ScrollView>
 
-                {/* Footer Buttons for Reasons Mode */}
                 <View style={{ flexDirection: "row", gap: 12, marginTop: 12 }}>
-                  {/* Back button */}
                   <RipplePressable
                     onPress={() => {
                       setViewMode("result");
@@ -561,7 +544,6 @@ export function MabcResultModal({
                     </Text>
                   </RipplePressable>
 
-                  {/* Register button */}
                   <RipplePressable
                     onPress={handleConfirmNotCompleted}
                     disabled={isRegistrarDisabled}

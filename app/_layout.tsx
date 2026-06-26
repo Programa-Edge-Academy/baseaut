@@ -21,6 +21,19 @@ import "./global.css";
 
 SplashScreen.preventAutoHideAsync();
 
+/**
+ * Root layout for the app. Loads the Inter fonts, holds the splash screen until
+ * they resolve, and wraps the navigation stack with the safe-area, global toast,
+ * and global session providers plus the floating session widget.
+ *
+ * @remarks
+ * Screen transition animations are disabled globally to avoid a white flash when
+ * switching screens on native (matching the instant web behaviour); the dark
+ * `level1` background ensures no white frame appears mid-transition.
+ * {@link initialWindowMetrics} is passed to the provider so safe-area insets are
+ * available synchronously on the first render, preventing the content from
+ * jumping once insets are measured.
+ */
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     Inter: Inter_400Regular,
@@ -38,9 +51,6 @@ export default function RootLayout() {
     return null;
   }
 
-  // Animações de transição desativadas globalmente: evita o "flash branco"
-  // ao trocar de tela no nativo, deixando-o instantâneo como na web. O fundo
-  // escuro (level1) garante que nenhum frame branco apareça durante a troca.
   const stack = (
     <Stack
       screenOptions={{
@@ -52,10 +62,6 @@ export default function RootLayout() {
   );
 
   return (
-    // initialWindowMetrics fornece os safe-area insets de forma SÍNCRONA já no
-    // primeiro render. Sem isso, os insets começam em 0 e só são medidos depois,
-    // fazendo o conteúdo "pular" para a posição correta (o flicker percebido ao
-    // trocar de tela, agora que não há animação mascarando o primeiro frame).
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <GlobalToastProvider>
       <SessionGlobalProvider>

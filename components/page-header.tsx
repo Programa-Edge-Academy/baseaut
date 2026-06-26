@@ -4,6 +4,7 @@ import { Calendar, Check, ClipboardEdit, Download, Edit2, History, Trash2, Share
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 
+/** Identifies which screen a {@link PageHeader} belongs to, driving its right-side actions. */
 export type HeaderMode =
   | "inicio"
   | "inicio-pendente"
@@ -19,8 +20,10 @@ export type HeaderMode =
   | "historico-estudante"
   | "relatorio-detalhe";
 
+/** Props for {@link PageHeader}. */
 export type PageHeaderProps = {
   containerClassName?: string;
+  /** Selects the set of right-side actions to render. */
   mode?: HeaderMode;
   title: string;
   subtitle: string;
@@ -28,19 +31,28 @@ export type PageHeaderProps = {
   onHistoryPress?: () => void;
   onCalendarPress?: () => void;
   onEditPress?: () => void;
-  /** Destaca o botão de edição (lápis) em amarelo, ex.: RC com pendências. */
+  /** Highlights the edit (pencil) button in the warning color, e.g. a record with pending fields. */
   editPending?: boolean;
   onDeletePress?: () => void;
   onCheckPress?: () => void;
   onFormPress?: () => void;
   onSharePress?: () => void;
   onExportPress?: () => void;
+  /** Whether export mode is active, hiding the "new" button. */
   isExportActive?: boolean;
+  /** Total exercises in the running circuit (for the progress stepper). */
   totalExercises?: number;
+  /** Completed exercises in the running circuit (for the progress stepper). */
   completedExercises?: number;
+  /** Whether an exercise is currently running (for the progress stepper). */
   isExecuting?: boolean;
 };
 
+/**
+ * Screen title bar with a title/subtitle and a mode-driven set of right-side
+ * actions (new, history, calendar, edit/delete, form, export, share) plus a
+ * circuit progress stepper for the execution mode.
+ */
 export function PageHeader({
   containerClassName,
   mode,

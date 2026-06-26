@@ -114,8 +114,7 @@ export function ExercisesScreen() {
         await addExercise(data, photoUri);
         setIsCreateModalOpen(false);
       }
-    } catch (caught) {
-      console.error("Erro ao salvar exercício:", caught);
+    } catch {
     }
   };
 
@@ -133,8 +132,7 @@ export function ExercisesScreen() {
   const handleDuplicate = async (exercise: Exercise) => {
     try {
       await duplicateExercise(exercise);
-    } catch (caught) {
-      console.error("Erro ao duplicar exercício:", caught);
+    } catch {
     }
   };
 
@@ -145,8 +143,7 @@ export function ExercisesScreen() {
     if (!exerciseToDelete) return;
     try {
       await deleteExercise(exerciseToDelete.id);
-    } catch (caught) {
-      console.error("Erro ao excluir exercício:", caught);
+    } catch {
     } finally {
       setExerciseToDelete(null);
       setDeleteModalMessage(undefined);
@@ -164,8 +161,7 @@ export function ExercisesScreen() {
       } else {
         setDeleteModalMessage(undefined);
       }
-    } catch (err) {
-      console.error("Erro ao verificar vínculos de circuitos:", err);
+    } catch {
       setExerciseToDelete(exercise);
       setDeleteModalMessage(undefined);
     }

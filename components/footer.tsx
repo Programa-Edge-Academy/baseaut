@@ -5,6 +5,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, Text, View } from "react-native";
 import { usePathname, useRouter } from "expo-router";
 
+/**
+ * Bottom tab bar with Activities, Home, and Analysis destinations. Highlights
+ * the active tab based on the current route and navigates with
+ * `router.replace`.
+ */
 export function Footer() {
   const router = useRouter();
   const pathname = usePathname();

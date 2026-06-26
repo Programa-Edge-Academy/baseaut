@@ -6,6 +6,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { colors } from "@/assets/colors";
 import { SessionExercise } from "../screens/session-running-screen";
 
+/** Props for {@link ReorderModal}. */
 interface ReorderModalProps {
   visible: boolean;
   items: SessionExercise[];
@@ -14,6 +15,10 @@ interface ReorderModalProps {
   onReorder: (items: SessionExercise[]) => void;
 }
 
+/**
+ * Bottom-sheet modal that lets the user reorder the remaining session exercises
+ * via a drag-and-drop list.
+ */
 export function ReorderModal({
   visible,
   items,

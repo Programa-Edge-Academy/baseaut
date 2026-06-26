@@ -1,17 +1,24 @@
 import { Pressable, Text, View } from "react-native";
 
+/** Selection behaviour for a {@link TagGroup}. */
 export type TagGroupMode = "single" | "multiple";
 
+/** Props for {@link TagGroup}. */
 export type TagGroupProps = {
   availableTags: string[];
   availableSubtags: string[];
   mode: TagGroupMode;
   selectedTags: string[];
+  /** Active subtags keyed by their parent tag. */
   selectedSubtags: Record<string, string[]>;
   onChangeTags: (tags: string[]) => void;
   onChangeSubtags: (subtags: Record<string, string[]>) => void;
 };
 
+/**
+ * Grouped tag/subtag selector. Each tag is a card; selecting a subtag also
+ * selects its parent tag. Supports single- or multiple-tag selection.
+ */
 export function TagGroup({
   availableTags,
   availableSubtags,

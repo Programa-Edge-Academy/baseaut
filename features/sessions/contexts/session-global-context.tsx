@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
+/** Execution mode of an active session. */
 export type SessionType = "semi-structured" | "structured";
 
+/** Runtime state of a session tracked globally so it survives navigation. */
 export interface ActiveSessionInfo {
   sessionId: string;
   studentId: string;
@@ -13,26 +15,26 @@ export interface ActiveSessionInfo {
   exercisesJson?: string;
   circuitId?: string;
   circuitName?: string;
-  /** Histórico de execuções (exercicioId -> status) — persiste ao sair da tela */
+  /** Execution history (exerciseId -> status); persists when leaving the screen. */
   historico?: Record<string, "concluido" | "nao_realizada" | "adiado">;
-  /** ID do exercício ativo ao sair da tela */
+  /** Id of the active exercise when leaving the screen. */
   activeExerciseId?: string;
-  /** Flag para evitar conflito visual entre widget e cronômetro da tela */
+  /** Avoids a visual conflict between the widget and the on-screen stopwatch. */
   isTimerVisibleOnScreen?: boolean;
-  /** Indica se a atividade atual é um exercício de engajamento */
+  /** Whether the current activity is an engagement exercise. */
   isEngagementRunning?: boolean;
-  /** Visibilidade do Registro de Controle inline (toggle por sessão). */
+  /** Visibility of the inline Control Record (per-session toggle). */
   isFormVisible?: boolean;
-  /** Duração total da sessão em segundos (cronômetro contínuo, máx. 3h). */
+  /** Total session duration in seconds (continuous stopwatch, capped at 3h). */
   totalElapsed?: number;
-  /** Intervalos das fugas (início/fim no cronômetro total) para o RC. */
+  /** Flight intervals (start/end on the total stopwatch) used by the Control Record. */
   fugaIntervals?: { start: number; end: number }[];
 }
 
-/** Limite de contagem do cronômetro total da sessão: 3 horas. */
+/** Cap for the total session stopwatch: 3 hours. */
 export const SESSION_TOTAL_CAP_SECONDS = 3 * 60 * 60;
 
-/** Formata segundos como mm:ss (ou h:mm:ss a partir de 1h). */
+/** Formats seconds as mm:ss (or h:mm:ss from one hour on). */
 export function formatSessionClock(totalSeconds: number): string {
   const safe = Math.max(0, Math.floor(totalSeconds));
   const h = Math.floor(safe / 3600);
@@ -43,6 +45,7 @@ export function formatSessionClock(totalSeconds: number): string {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
+/** Value exposed by the global session context. */
 interface SessionGlobalContextData {
   activeSessions: Record<string, ActiveSessionInfo>;
   registerSession: (session: ActiveSessionInfo) => void;
@@ -68,10 +71,14 @@ interface SessionGlobalContextData {
 
 const SessionGlobalContext = createContext<SessionGlobalContextData>({} as SessionGlobalContextData);
 
+/**
+ * Provides the global registry of active sessions and a 1-second ticker that
+ * advances each session's exercise and total stopwatches (the total runs
+ * continuously up to {@link SESSION_TOTAL_CAP_SECONDS}).
+ */
 export function SessionGlobalProvider({ children }: { children: ReactNode }) {
   const [activeSessions, setActiveSessions] = useState<Record<string, ActiveSessionInfo>>({});
 
-  // Global ticking interval
   useEffect(() => {
     const id = setInterval(() => {
       setActiveSessions((prev) => {
@@ -81,14 +88,11 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
           let entry = next[key];
           let changed = false;
 
-          // Cronômetro do exercício: conta apenas quando "rodando".
           if (entry.isRunning) {
             entry = { ...entry, timeElapsed: entry.timeElapsed + 1 };
             changed = true;
           }
 
-          // Cronômetro TOTAL da sessão: conta sempre enquanto a sessão existe
-          // (independe de pausa/exercício), até o teto de 3h.
           const total = entry.totalElapsed ?? 0;
           if (total < SESSION_TOTAL_CAP_SECONDS) {
             entry = { ...entry, totalElapsed: total + 1 };
@@ -111,17 +115,13 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
       ...prev,
       [session.sessionId]: {
         ...session,
-        // Preserve runtime state if session already existed (navigation round-trip)
         timeElapsed: prev[session.sessionId]?.timeElapsed ?? session.timeElapsed ?? 0,
         isRunning: prev[session.sessionId]?.isRunning ?? session.isRunning ?? true,
         historico: prev[session.sessionId]?.historico ?? session.historico,
         activeExerciseId: prev[session.sessionId]?.activeExerciseId ?? session.activeExerciseId,
         isEngagementRunning: prev[session.sessionId]?.isEngagementRunning ?? session.isEngagementRunning ?? false,
-        // Default visível ao iniciar qualquer sessão; preserva o toggle ao retomar.
         isFormVisible: prev[session.sessionId]?.isFormVisible ?? session.isFormVisible ?? true,
-        // Cronômetro total contínuo; preserva o acumulado ao retomar.
         totalElapsed: prev[session.sessionId]?.totalElapsed ?? session.totalElapsed ?? 0,
-        // Fugas acumuladas; preserva ao retomar.
         fugaIntervals: prev[session.sessionId]?.fugaIntervals ?? session.fugaIntervals ?? [],
       },
     }));
@@ -241,6 +241,7 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** Returns the global session context, throwing if used outside its provider. */
 export function useSessionGlobalContext() {
   const context = useContext(SessionGlobalContext);
   if (!context) {

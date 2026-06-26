@@ -204,7 +204,6 @@ export function NewStudent({
    * Measures the trigger and opens the support level dropdown.
    */
   const openSupportLevelDropdown = () => {
-    // Mede o gatilho e abre o dropdown.
     const measureAndOpen = () => {
       supportLevelRef.current?.measure((x, y, width, height, pageX, pageY) => {
         setSupportLevelLayout({ top: pageY + height, left: pageX, width });
@@ -212,9 +211,6 @@ export function NewStudent({
       });
     };
 
-    // Se o teclado estiver aberto, fecha-o primeiro e só mede depois que ele
-    // termina de esconder — caso contrário o formulário reposiciona após a
-    // medição e o dropdown abre deslocado do gatilho.
     if (Keyboard.isVisible?.()) {
       const sub = Keyboard.addListener("keyboardDidHide", () => {
         sub.remove();

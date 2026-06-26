@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useState } from "react";
 
+/** Snapshot of the student's profile captured when a report is created. */
 export type StudentSnapshot = {
   nome_completo: string;
   altura: number | null;
@@ -11,6 +12,7 @@ export type StudentSnapshot = {
   observacoes_clinicas: string | null;
 };
 
+/** A saved report covering a date range for a student. */
 export type Report = {
   id: string;
   aluno_id: string;
@@ -21,12 +23,17 @@ export type Report = {
   created_at: string;
 };
 
+/** Form fields used to create a report. */
 export type ReportFormData = {
   titulo: string;
   data_inicio: string;
   data_fim: string;
 };
 
+/**
+ * Provides a student's reports plus create, rename, and delete actions, keeping
+ * a profile snapshot on each created report.
+ */
 export function useStudentReports(studentId: string) {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,8 +50,7 @@ export function useStudentReports(studentId: string) {
 
       if (error) throw error;
       setReports((data ?? []) as Report[]);
-    } catch (err) {
-      console.error("Erro ao carregar relatórios:", err);
+    } catch {
     } finally {
       if (showLoader) setIsLoading(false);
     }

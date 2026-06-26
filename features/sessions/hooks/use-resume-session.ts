@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import type { ExecutionRecord } from "./use-session-flow";
 
+/** Existing executions loaded for resuming a session. */
 export type ResumeData = {
   executions: ExecutionRecord[];
 };
@@ -28,7 +29,6 @@ export function useResumeSession(sessaoId: string | null) {
       .order("ordem_execucao", { ascending: true })
       .then(({ data: rows, error }) => {
         if (error) {
-          console.error("Erro ao carregar execuções para retomada:", error);
           setIsLoading(false);
           return;
         }

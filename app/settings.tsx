@@ -9,6 +9,7 @@ import { LogOut } from "lucide-react-native";
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
+/** Route for the settings screen, exposing account preferences and logout. */
 export default function SettingsRoute() {
   const router = useRouter();
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);

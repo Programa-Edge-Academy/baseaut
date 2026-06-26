@@ -4,9 +4,10 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Print from "expo-print";
 import { Platform } from "react-native";
 
+/** Data required to export a form instance. */
 export type FormExportData = {
   formularioId: string;
-  /** Nome exibido (ex.: "ATA", "CARS"). */
+  /** Display name (e.g. "ATA", "CARS"). */
   title: string;
   studentName: string;
 };
@@ -14,9 +15,10 @@ export type FormExportData = {
 const TH = `border:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:11px;background:#f1f5f9;font-weight:bold;`;
 const TD = `border:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:11px;`;
 
+/** A question/answer pair prepared for export. */
 type FormRow = { pergunta: string; resposta: string };
 
-/** Converte o valor salvo (texto ou JSON) em uma representação legível. */
+/** Converts a stored value (plain text or JSON) into a human-readable string. */
 function displayValue(valor: string | null | undefined): string {
   if (valor == null || valor === "") return "–";
   try {
@@ -36,6 +38,7 @@ function displayValue(valor: string | null | undefined): string {
   }
 }
 
+/** Loads a form's questions and their answers, joined into export rows. */
 async function fetchFormRows(formularioId: string): Promise<FormRow[]> {
   const { data: form } = await supabase
     .from("formularios")
@@ -67,6 +70,14 @@ async function fetchFormRows(formularioId: string): Promise<FormRow[]> {
   });
 }
 
+/**
+ * Exports a form instance as PDF and/or CSV and delivers the files via share or
+ * direct download. On web it prints/downloads directly.
+ *
+ * @param data - The form and student identifying the export.
+ * @param formats - Which file formats to generate (at least one required).
+ * @param mode - Delivery mode for native platforms. Defaults to "share".
+ */
 export async function exportForm(
   data: FormExportData,
   formats: { pdf: boolean; csv: boolean },

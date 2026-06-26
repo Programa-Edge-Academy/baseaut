@@ -7,8 +7,9 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Print from "expo-print";
 import { Platform } from "react-native";
 
+/** Data required to export a session. */
 export type SessionExportData = {
-  /** Necessário para anexar o Registro de Controle (RC) da sessão. */
+  /** Required to attach the session's Control Record. */
   sessionId?: string;
   sessionTitle: string;
   sessionDate: string;
@@ -16,11 +17,10 @@ export type SessionExportData = {
   executions: ActivityRecordItem[];
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 const TH = `border:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:11px;background:#f1f5f9;font-weight:bold;`;
 const TD = `border:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:11px;`;
 
+/** Formats seconds as mm:ss, or an en dash when null. */
 function fmtDuration(seconds: number | null): string {
   if (seconds === null) return "–";
   const m = Math.floor(seconds / 60);
@@ -28,6 +28,7 @@ function fmtDuration(seconds: number | null): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+/** Maps a development-level value to its display label. */
 function fmtNivel(nivel: string | null): string {
   if (nivel === "inicial") return "Inicial";
   if (nivel === "intermediario") return "Intermediário";
@@ -35,6 +36,7 @@ function fmtNivel(nivel: string | null): string {
   return "–";
 }
 
+/** Formats the help registration and its complements into a label. */
 function fmtAjuda(ajuda: string | null, complementos: string[] | null): string {
   if (ajuda === "autonomo") {
     const suffix =
@@ -47,11 +49,12 @@ function fmtAjuda(ajuda: string | null, complementos: string[] | null): string {
   return "–";
 }
 
+/** A Control Record question/answer pair prepared for export. */
 type RcRow = { pergunta: string; resposta: string };
 
 /**
- * Busca o Registro de Controle (RC) vinculado à sessão e suas respostas.
- * As perguntas vivem no template (template_origem_id); as respostas, na instância.
+ * Loads the session's Control Record and its answers. Questions live on the
+ * template (`template_origem_id`); answers live on the instance.
  */
 async function fetchRcForSession(sessionId: string): Promise<RcRow[]> {
   const { data: sessao } = await supabase
@@ -98,8 +101,15 @@ async function fetchRcForSession(sessionId: string): Promise<RcRow[]> {
   });
 }
 
-// ─── Public export ────────────────────────────────────────────────────────────
-
+/**
+ * Exports a session as PDF and/or CSV (including its Control Record when
+ * available) and delivers the files via share or direct download. On web it
+ * prints/downloads directly.
+ *
+ * @param data - The session and its executions to export.
+ * @param formats - Which file formats to generate (at least one required).
+ * @param mode - Delivery mode for native platforms. Defaults to "share".
+ */
 export async function exportSession(
   data: SessionExportData,
   formats: { pdf: boolean; csv: boolean },
@@ -196,7 +206,6 @@ export async function exportSession(
       .join("\n");
   };
 
-  // ── Web: mantém impressão/blob diretos (sem zip/SAF). ──
   if (Platform.OS === "web") {
     if (formats.pdf) {
       await Print.printAsync({ html: buildPdfHtml() });
@@ -213,7 +222,6 @@ export async function exportSession(
     return;
   }
 
-  // ── Nativo: gera os arquivos e entrega (compartilhar com zip / baixar). ──
   const files: ExportableFile[] = [];
 
   if (formats.pdf) {

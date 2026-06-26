@@ -3,6 +3,7 @@ import { ArrowDownCircle, ArrowUpCircle, MinusCircle } from "lucide-react-native
 import React from "react";
 import { Text, View } from "react-native";
 
+/** Props for {@link AnalysisSummaryCard}. */
 export type AnalysisSummaryCardProps = {
   title: string;
   period1: {
@@ -43,6 +44,7 @@ const statusToStyles = {
   },
 };
 
+/** Parses a value into a finite number (accepting commas), or null. */
 function parseNumber(value: string | number): number | null {
   if (typeof value === "number") {
     return value;
@@ -52,6 +54,7 @@ function parseNumber(value: string | number): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/** Formats the absolute and relative variation between two period values. */
 function getVariationText(period1Value: number, period2Value: number): string {
   const diff = period2Value - period1Value;
 
@@ -90,7 +93,6 @@ export function AnalysisSummaryCard({
   hasError,
   hasInsufficientData,
 }: AnalysisSummaryCardProps) {
-  // Trata estado de Erro crítico solicitado pelo QA
   if (hasError) {
     return (
       <View className={`rounded-2xl border border-outline bg-level2 p-4 justify-center items-center ${className ?? ""}`}>
@@ -104,7 +106,6 @@ export function AnalysisSummaryCard({
   const numericPeriod1 = parseNumber(period1.value);
   const numericPeriod2 = parseNumber(period2.value);
 
-  // Trata estado de Dados Insuficientes solicitado pelo QA (via prop ou fallback de parse falho)
   if (hasInsufficientData || numericPeriod1 === null || numericPeriod2 === null) {
     return (
       <View className={`rounded-2xl border border-outline bg-level2 p-4 justify-center items-center ${className ?? ""}`}>

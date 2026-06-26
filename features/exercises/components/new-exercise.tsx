@@ -7,7 +7,6 @@ import { ImageUp, Pencil, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   Image,
-  Modal,
   Pressable,
   Text,
   useWindowDimensions,

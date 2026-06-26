@@ -3,15 +3,21 @@ import { Modal, Text, Pressable, ScrollView } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { colors } from '@/assets/colors';
 
+/** Props for {@link DropdownModal}. */
 interface DropdownModalProps {
   visible: boolean;
   onClose: () => void;
   onSelect: (option: string) => void;
   options: string[];
   selectedValue: string | null;
+  /** Anchor position used to place the dropdown over its trigger. */
   layout: { top: number; left: number; width: number };
 }
 
+/**
+ * Absolutely positioned dropdown list anchored to a trigger, highlighting the
+ * selected option and closing on selection or outside tap.
+ */
 export function DropdownModal({
   visible,
   onClose,

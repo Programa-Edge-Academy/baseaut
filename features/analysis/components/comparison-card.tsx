@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 
+/** Props for {@link ComparisonCard}. */
 export type ComparisonCardProps = {
   title: string;
   period1: {
@@ -51,6 +52,7 @@ const statusToStyles = {
   },
 };
 
+/** Parses a value into a finite number (accepting commas), or null. */
 function parseNumber(value: string | number): number | null {
   if (typeof value === "number") {
     return value;
@@ -63,6 +65,7 @@ function parseNumber(value: string | number): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/** Formats the absolute and relative variation between two period values. */
 function getVariationText(period1Value: number, period2Value: number): string {
   const diff = period2Value - period1Value;
 
@@ -72,7 +75,6 @@ function getVariationText(period1Value: number, period2Value: number): string {
 
   let relPercentage: number;
 
-  // Intercepta divisões por zero e formata de acordo com a direção do fluxo
   if (period1Value === 0 && period2Value === 0) {
     relPercentage = 0;
   } else if (period1Value === 0 && period2Value > 0) {
@@ -93,6 +95,7 @@ function getVariationText(period1Value: number, period2Value: number): string {
   }
 }
 
+/** Single comparison row showing two period values and their variation. */
 export function ComparisonCard({
   title,
   period1,
@@ -105,7 +108,6 @@ export function ComparisonCard({
   const { width } = useWindowDimensions();
   const isMobile = width < 480;
 
-  // 1. Trata estado de Erro crítico solicitado pelo QA
   if (hasError) {
     return (
       <View
@@ -122,7 +124,6 @@ export function ComparisonCard({
   const numericPeriod1 = parseNumber(period1.value);
   const numericPeriod2 = parseNumber(period2.value);
 
-  // 2. Trata estado de Dados Insuficientes solicitado pelo QA (via prop ou falha de parse)
   if (hasInsufficientData || numericPeriod1 === null || numericPeriod2 === null) {
     return (
       <View
@@ -157,7 +158,6 @@ export function ComparisonCard({
         } ${className ?? ""}`}
     >
       <View className="flex-row items-center">
-        {/* Title */}
         <View style={{ flex: 2.2, minWidth: 0 }}>
           <Text
             numberOfLines={1}
@@ -171,7 +171,6 @@ export function ComparisonCard({
           </Text>
         </View>
 
-        {/* Period 1 */}
         <View style={{ flex: 0.8, alignItems: "center" }}>
           <Text
             style={{
@@ -183,7 +182,6 @@ export function ComparisonCard({
           </Text>
         </View>
 
-        {/* Divider */}
         <View
           style={{
             width: 1,
@@ -193,7 +191,6 @@ export function ComparisonCard({
           }}
         />
 
-        {/* Period 2 */}
         <View style={{ flex: 0.8, alignItems: "center" }}>
           <Text
             style={{
@@ -205,7 +202,6 @@ export function ComparisonCard({
           </Text>
         </View>
 
-        {/* Divider */}
         <View
           style={{
             width: 1,
@@ -215,7 +211,6 @@ export function ComparisonCard({
           }}
         />
 
-        {/* Variation */}
         <View
           style={{
             flex: 1.5,

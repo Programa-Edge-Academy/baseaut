@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 
+/** Summary of a MABC-2 record shown in a list. */
 export type Mabc2Record = {
   id: string;
   label: string;
@@ -11,11 +12,13 @@ export type Mabc2Record = {
   totalPercentile: string | null;
 };
 
+/** Props for {@link Mabc2RecordCard}. */
 export type Mabc2RecordCardProps = {
   record: Mabc2Record;
   onPress?: () => void;
 };
 
+/** Tappable list card summarizing a MABC-2 record's date and total scores. */
 export function Mabc2RecordCard({ record, onPress }: Mabc2RecordCardProps) {
   return (
     <Pressable

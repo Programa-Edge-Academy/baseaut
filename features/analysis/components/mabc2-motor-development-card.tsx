@@ -5,8 +5,10 @@ import React, { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { Mabc2Section, Mabc2SectionProps } from "./mabc2-section";
 
+/** Which part of a MABC-2 record to show, or null for everything. */
 export type Mabc2ViewFilter = "records" | "exercises" | null;
 
+/** Props for {@link Mabc2MotorDevelopmentCard}. */
 export type Mabc2MotorDevelopmentCardProps = {
   recordCount: number;
   totalScore: number | null;
@@ -26,6 +28,10 @@ export type Mabc2MotorDevelopmentCardProps = {
 const SELECTED_BORDER_COLOR = "#0E89E5";
 const SELECTED_BACKGROUND_COLOR = "#1A2836";
 
+/**
+ * MABC-2 motor development card: total score/percentile inputs plus per-section
+ * details, with category/exercise view filters and an optional submit button.
+ */
 export function Mabc2MotorDevelopmentCard({
   recordCount,
   totalScore,

@@ -9,6 +9,7 @@ import {
 import React, { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 
+/** Props for {@link StartActivity}. */
 export type StartActivityProps = {
   title: string;
   subtitle: string;
@@ -16,13 +17,11 @@ export type StartActivityProps = {
   onStartAndRecord?: (() => void) | null;
   onPressInfo?: () => void;
   /**
-   * Ordered list of media URLs (images) shown inside the preview carousel.
-   * When empty, the preview area is omitted even if the toggle is on.
+   * Media URL (image) shown inside the preview area. When absent, the preview
+   * toggle and area are omitted.
    */
   iconUrl?: string | null;
-  /**
-   * Initial state of the preview toggle. Defaults to `false` (collapsed).
-   */
+  /** Initial state of the preview toggle. Defaults to `false` (collapsed). */
   defaultPreviewVisible?: boolean;
   className?: string;
 };

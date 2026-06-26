@@ -45,7 +45,6 @@ const loadStudents = useCallback(async (showLoader = true) => {
       }
       setEquipeId(teamId);
 
-      // 1. Buscamos alunos
       const { data: alunos, error: fetchError } = await supabase
         .from("alunos")
         .select("id, nome_completo, data_nascimento, peso, altura, cintura, nivel_suporte, diagnostico_detalhado, observacoes_clinicas, avatar_url")
@@ -55,7 +54,6 @@ const loadStudents = useCallback(async (showLoader = true) => {
 
       if (fetchError) throw fetchError;
 
-      // 2. Buscamos as pendências separadamente
       const { data: pendencias } = await supabase
         .from("vw_alunos_pendencias")
         .select("aluno_id, tem_pendencia");
@@ -63,7 +61,6 @@ const loadStudents = useCallback(async (showLoader = true) => {
       if (alunos) {
         setStudents(
           alunos.map((aluno) => {
-            // Verifica pendência para este aluno específico
             const temPendencia = pendencias?.some(
               (p) => p.aluno_id === aluno.id && p.tem_pendencia
             ) ?? false;
@@ -91,7 +88,6 @@ const loadStudents = useCallback(async (showLoader = true) => {
       }
     } catch (caught: any) {
       setError(caught);
-      console.error("Erro ao carregar alunos:", caught);
     } finally {
       if (showLoader) setIsLoading(false);
     }
@@ -111,7 +107,6 @@ const loadStudents = useCallback(async (showLoader = true) => {
     try {
       if (!equipeId) throw new Error("ID da equipe não identificado.");
 
-      // photoUri é a fonte de verdade: URI local nova faz upload; null/ausente fica sem avatar.
       let finalAvatarUrl: string | null = null;
       if (photoUri) {
         finalAvatarUrl = photoUri.startsWith("http")
@@ -151,7 +146,6 @@ const loadStudents = useCallback(async (showLoader = true) => {
 
       await loadStudents(false);
     } catch (err: any) {
-      console.error("Erro ao adicionar aluno:", err);
       Alert.alert(
         "Erro ao Criar",
         `Não foi possível salvar o aluno: ${err.message}`,
@@ -178,10 +172,6 @@ const loadStudents = useCallback(async (showLoader = true) => {
       if (data.observations !== undefined)
         payload.observacoes_clinicas = data.observations;
 
-      // Imagem: photoUri é a fonte de verdade.
-      //   null            => foto removida   => avatar_url = null  (dispara trigger de limpeza)
-      //   URL http         => foto inalterada => mantém o mesmo valor (trigger não dispara)
-      //   URI local nova   => faz upload      => avatar_url = nova URL (trigger apaga a antiga)
       if (photoUri === null) {
         payload.avatar_url = null;
       } else if (photoUri !== undefined) {
@@ -215,7 +205,6 @@ const loadStudents = useCallback(async (showLoader = true) => {
 
       await loadStudents(false);
     } catch (err: any) {
-      console.error("Erro ao atualizar aluno:", err);
       Alert.alert(
         "Erro ao Editar",
         `Não foi possível atualizar o aluno: ${err.message}`,
@@ -236,7 +225,6 @@ const loadStudents = useCallback(async (showLoader = true) => {
       if (deleteError) throw deleteError;
       await loadStudents(false);
     } catch (err: any) {
-      console.error("Erro ao inativar aluno:", err);
       Alert.alert("Erro ao Remover", err.message);
     }
   };

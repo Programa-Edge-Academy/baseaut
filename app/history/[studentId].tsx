@@ -14,6 +14,10 @@ import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessio
 import RangeCalendar from "@/components/range-calendar";
 import { parseLocalDate } from "@/lib/date-utils";
 
+/**
+ * Route showing a single student's record history (sessions, forms, and MABC-2
+ * assessments) with date filtering and type-aware navigation into each record.
+ */
 export default function HistoryDetailsScreen() {
   const { studentId } = useLocalSearchParams();
   const { sessions, profile, isLoading, refetch } = useStudentSessions(
@@ -34,7 +38,7 @@ export default function HistoryDetailsScreen() {
     return sessions.filter((item) => item.date === formattedFilterDate);
   }, [selectedDate, sessions]);
 
-  // Auxiliar para definir propriedades visuais do card
+  /** Resolves the icon, colors, and subtitle for a history record card by type. */
   const getCardVisuals = (item: any) => {
     switch (item.type) {
       case "form":
@@ -52,16 +56,13 @@ export default function HistoryDetailsScreen() {
           iconColor: colors.secondary,
           bgColor: withOpacity(colors.secondary, 0.15),
           IconComponent: Route,
-          // Formato: {DATA} · {Feito}/{Total} realizado
           subtitle: `${item.date} · ${feita}/${total} realizado`,
         };
       }
       case "mabc": {
         const age = item.ageAtEvent || 0;
 
-        // Cor baseada na faixa etária do aluno no momento da avaliação
-        // 3–6 anos: laranja | 7–10 anos: verde | 11–16 anos: roxo
-        let mabcColor = colors.mabc3; // padrão: roxo (11-16)
+        let mabcColor = colors.mabc3;
         if (age !== undefined) {
           if (age >= 3 && age <= 6) mabcColor = colors.mabc1;
           else if (age >= 7 && age <= 10) mabcColor = colors.mabc2;
@@ -72,9 +73,6 @@ export default function HistoryDetailsScreen() {
           else if (item.faixaMabc === 3) mabcColor = colors.mabc3;
         }
 
-        // MABC agora é tratado como formulário: ícone de formulário e
-        // subtítulo apenas com a data (sem contagem de exercícios), mantendo
-        // apenas a paleta de cor por faixa etária.
         return {
           iconColor: mabcColor,
           bgColor: withOpacity(mabcColor, 0.15),

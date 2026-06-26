@@ -9,10 +9,12 @@ const COMPONENT_TITLES: Record<string, string> = {
   equilibrio: "Equilíbrio",
 };
 
+/** Returns a human-readable title for a MABC component key. */
 function fmtComponentTitle(raw: string): string {
   return COMPONENT_TITLES[raw] ?? raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Small pill displaying a score value. */
 function ScoreBadge({ label }: { label: string }) {
   return (
     <View className="bg-level1 border border-outline rounded-lg px-3 py-1">
@@ -21,6 +23,7 @@ function ScoreBadge({ label }: { label: string }) {
   );
 }
 
+/** A label/score row separated by a divider. */
 function SectionRow({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-center justify-between py-2.5 border-b border-outline">
@@ -30,12 +33,17 @@ function SectionRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+/** Placeholder shown when a protocol has no answers. */
 function EmptyProtocol() {
   return (
     <Text className="text-xs text-muted py-2">Nenhuma resposta preenchida neste formulário.</Text>
   );
 }
 
+/**
+ * Read-only view of a single protocol record (ATA, CARS, or MABC-2), rendering
+ * its scores and per-section/item answers based on the record type.
+ */
 export function ProtocolRecordView({
   tipo,
   recordId,
@@ -108,14 +116,12 @@ export function ProtocolRecordView({
     const m = detail.mabc2;
     return (
       <View className="border border-outline rounded-lg bg-level2 p-4 mb-3">
-        {/* Header */}
         <View className="mb-3">
           <Text className="text-sm font-bold text-white">MABC-2 — {dateLabel}</Text>
           {m.evaluatorName && <Text className="text-xs text-muted mt-0.5">Avaliador: {m.evaluatorName}</Text>}
           {m.ageGroupLabel && <Text className="text-xs text-muted">Faixa etária: {m.ageGroupLabel}</Text>}
         </View>
 
-        {/* Summary scores */}
         <View className="flex-row gap-3 mb-4">
           {m.totalScore != null && (
             <View className="flex-1 bg-level1 border border-outline rounded-lg py-2 items-center">
@@ -131,10 +137,8 @@ export function ProtocolRecordView({
           )}
         </View>
 
-        {/* Components */}
         {m.components.map((comp, ci) => (
           <View key={ci} className="mb-4">
-            {/* Component header with score/percentile */}
             <View className="flex-row items-center justify-between mb-2 pb-1.5 border-b border-outline">
               <Text className="text-sm font-bold text-white">{fmtComponentTitle(comp.title)}</Text>
               <View className="flex-row gap-2">
@@ -153,7 +157,6 @@ export function ProtocolRecordView({
               </View>
             </View>
 
-            {/* Items */}
             {comp.items.map((item) => (
               <View key={item.id} className="flex-row items-center justify-between py-2 border-b border-outline/40">
                 <Text className="text-[11px] text-white flex-1 mr-3" numberOfLines={2}>{item.name}</Text>

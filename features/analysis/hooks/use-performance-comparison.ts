@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+/** Aggregated performance comparison between two periods returned by the RPC. */
 export interface ComparisonData {
   resumo: {
     sessoes_p1: number;
@@ -43,6 +44,7 @@ export interface ComparisonData {
   };
 }
 
+/** Normalizes a date string to a full-day start or end ISO boundary (UTC-3). */
 function fixDateBoundaries(dateStr?: string | null, isEndOfDay = false): string | null {
   if (!dateStr) return null;
   if (dateStr.includes("T")) return dateStr;
@@ -51,6 +53,10 @@ function fixDateBoundaries(dateStr?: string | null, isEndOfDay = false): string 
     : `${dateStr}T00:00:00.000-03:00`;
 }
 
+/**
+ * Loads the performance comparison between two date ranges for a student. The
+ * request runs only when `enabled` is true and all dates are provided.
+ */
 export function usePerformanceComparison(
   alunoId: string,
   p1Inicio?: string | null,

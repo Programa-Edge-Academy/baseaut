@@ -4,6 +4,10 @@ import { router, useLocalSearchParams } from "expo-router";
 import { ProtocolRecordsListScreen } from "@/features/analysis/screens/protocol-records-list-screen";
 import type { ProtocolTipo } from "@/features/analysis/hooks/use-protocol-records";
 
+/**
+ * Route listing a student's protocol records of a given type, navigating to the
+ * protocol view on selection.
+ */
 export default function ProtocolRecordsRoute() {
   const { studentId, studentName, tipo } = useLocalSearchParams<{
     studentId: string;

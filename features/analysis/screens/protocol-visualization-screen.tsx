@@ -13,12 +13,14 @@ import {
 } from "../hooks/use-protocol-record-detail";
 import type { ProtocolTipo } from "../hooks/use-protocol-records";
 
+/** Display labels for each protocol type. */
 const PROTOCOL_LABELS: Record<ProtocolTipo, string> = {
   ata: "ATA",
   cars: "CARS",
   mabc2: "MABC-2",
 };
 
+/** Props for {@link RecordHeaderCard}. */
 type RecordHeaderProps = {
   label: string;
   dateLabel: string;
@@ -27,6 +29,7 @@ type RecordHeaderProps = {
   evaluatorName?: string | null;
 };
 
+/** Header card summarizing a protocol record's metadata. */
 function RecordHeaderCard({
   label,
   dateLabel,
@@ -70,6 +73,7 @@ function RecordHeaderCard({
   );
 }
 
+/** Props for {@link ProtocolVisualizationScreen}. */
 export type ProtocolVisualizationScreenProps = {
   tipo: ProtocolTipo;
   recordId: string;
@@ -81,6 +85,10 @@ export type ProtocolVisualizationScreenProps = {
   onPressBack?: () => void;
 };
 
+/**
+ * Shows a single protocol record: ATA/CARS are editable inline (each question
+ * with its score and notes), while MABC-2 is read-only.
+ */
 export function ProtocolVisualizationScreen({
   tipo,
   recordId,
@@ -97,8 +105,6 @@ export function ProtocolVisualizationScreen({
   const formRef = useRef<any>(null);
   const [saving, setSaving] = useState(false);
 
-  // ATA/CARS são vinculados ao aluno e podem ser visualizados e editados aqui
-  // mesmo (cada pergunta com sua nota e observação). MABC-2 segue somente leitura.
   const isEditable = tipo === "ata" || tipo === "cars";
 
   const handleSave = async () => {
@@ -123,7 +129,6 @@ export function ProtocolVisualizationScreen({
     }
   };
 
-  // ── Caminho editável: ATA/CARS ────────────────────────────────────────────
   if (isEditable) {
     const totalLabel =
       tipo === "ata"
@@ -179,7 +184,6 @@ export function ProtocolVisualizationScreen({
     );
   }
 
-  // ── Caminho somente leitura: MABC-2 ───────────────────────────────────────
   const renderBody = () => {
     if (isLoading) {
       return (

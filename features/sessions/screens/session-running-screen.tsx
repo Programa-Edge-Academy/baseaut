@@ -35,6 +35,7 @@ const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
   Outro: "outro",
 };
 
+/** An exercise within a running session. */
 export type SessionExercise = {
   id: string;
   name: string;
@@ -43,8 +44,10 @@ export type SessionExercise = {
   iconUrl?: string | null;
 };
 
+/** Whether the current exercise is awaiting start or actively running. */
 type ExerciseStage = "ready" | "running";
 
+/** Props for {@link SessionRunningScreen}. */
 export type SessionRunningScreenProps = {
   sessionId: string;
   studentId: string;
@@ -85,36 +88,25 @@ export function SessionRunningScreen({
   const formRef = useRef<any>(null);
   const { createSession, persistExecutions, saveSession, finalizeSessionAutoFill } = useSessionFlow();
 
-  // ID efetivo da sessão: usa o recebido por parâmetro ou cria um na montagem.
   const [effectiveSessionId, setEffectiveSessionId] = useState<string>(
     sessionId || "",
   );
   const effectiveSessionIdRef = useRef<string>(sessionId || "");
-  // Instância de Registro de Controle desta sessão (sessoes.formulario_id),
-  // criada por trigger. O form inline grava as respostas nela.
   const [rcFormId, setRcFormId] = useState<string>("");
-  // Promise da criação da sessão — usada por persistAndFinish para aguardar
-  // o insert caso o usuário finalize antes de ele resolver.
   const createSessionPromiseRef = useRef<Promise<string> | null>(null);
 
   const { registerSession, updateSessionProgress, updateSessionState, toggleTimer, closeSession, activeSessions, updateTimeElapsed, setTimerVisible, setFormVisible, addFugaInterval } = useSessionGlobalContext();
-  // Execuções acumuladas (status + dados clínicos) para gravar ao final.
   const executionsRef = useRef<ExecutionRecord[]>([]);
-  // Segundos do cronômetro capturados na última parada.
   const lastElapsedSecondsRef = useRef<number | null>(null);
 
-  // Botões de crise/fuga: episódios cronometrados de forma oculta, por exercício.
-  // Ambos são gravados em comportamentos_sessao (diferenciados pelo campo `tipo`).
   const [isCriseActive, setIsCriseActive] = useState(false);
   const criseStartRef = useRef<number | null>(null);
   const [isFugaActive, setIsFugaActive] = useState(false);
   const fugaStartRef = useRef<number | null>(null);
   const crisesRef = useRef<CrisisRecord[]>([]);
-  // Início/fim de cada fuga no cronômetro total da sessão (para a resposta do RC).
   const fugaStartTotalRef = useRef<number | null>(null);
   const fugaIntervalsRef = useRef<{ start: number; end: number }[]>([]);
 
-  // Encerra a crise em andamento (se houver), retendo a duração para o exercício atual.
   const finalizeActiveCrise = () => {
     if (criseStartRef.current == null) return;
     const durationSeconds = (Date.now() - criseStartRef.current) / 1000;
@@ -126,7 +118,6 @@ export function SessionRunningScreen({
     setIsCriseActive(false);
   };
 
-  // Alterna o botão de crise: inicia uma nova contagem ou pausa a atual.
   const handleCrisePress = () => {
     if (criseStartRef.current == null) {
       criseStartRef.current = Date.now();
@@ -136,7 +127,6 @@ export function SessionRunningScreen({
     }
   };
 
-  // Encerra a fuga em andamento (se houver), retendo a duração para o exercício atual.
   const finalizeActiveFuga = () => {
     if (fugaStartRef.current == null) return;
     const durationSeconds = (Date.now() - fugaStartRef.current) / 1000;
@@ -144,14 +134,12 @@ export function SessionRunningScreen({
       ...crisesRef.current,
       { exercicioId: currentExercise.id, durationSeconds, tipo: "fuga" },
     ];
-    // Registra o intervalo no cronômetro total (início → fim) para o RC.
     if (fugaStartTotalRef.current != null) {
       const interval = {
         start: fugaStartTotalRef.current,
         end: currentSessionData?.totalElapsed ?? 0,
       };
       fugaIntervalsRef.current = [...fugaIntervalsRef.current, interval];
-      // Também persiste no contexto global (para finalização pelo widget).
       if (resolvedSid) addFugaInterval(resolvedSid, interval);
       fugaStartTotalRef.current = null;
     }
@@ -159,7 +147,6 @@ export function SessionRunningScreen({
     setIsFugaActive(false);
   };
 
-  // Alterna o botão de fuga: inicia uma nova contagem ou pausa a atual.
   const handleFugaPress = () => {
     if (fugaStartRef.current == null) {
       fugaStartRef.current = Date.now();
@@ -172,7 +159,6 @@ export function SessionRunningScreen({
 
   const safeStudentName = studentName || "Aluno";
 
-  // Para retomada via widget ou selection: o sessionId já existe, apenas garante o registro no contexto
   useEffect(() => {
     if (!sessionId || exercises.length === 0) return;
     const existing = activeSessions[sessionId];
@@ -193,7 +179,6 @@ export function SessionRunningScreen({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, exercises.length]);
 
-  // Cria a sessão no banco e registra no contexto de forma lazy (apenas no primeiro "Começar").
   const ensureSessionId = async (): Promise<string | null> => {
     if (effectiveSessionIdRef.current) return effectiveSessionIdRef.current;
     if (!createSessionPromiseRef.current) {
@@ -220,7 +205,6 @@ export function SessionRunningScreen({
       })();
       createSessionPromiseRef.current = promise.catch((err) => {
         createSessionPromiseRef.current = null;
-        console.error("Erro ao criar sessão:", err);
         throw err;
       });
     }
@@ -231,7 +215,6 @@ export function SessionRunningScreen({
     }
   };
 
-  // Resolve a instância de RC da sessão para o formulário inline gravar nela.
   useEffect(() => {
     if (!effectiveSessionId) return;
     let active = true;
@@ -248,7 +231,6 @@ export function SessionRunningScreen({
     };
   }, [effectiveSessionId]);
 
-  // Ao retomar (sessionId não vazio), carrega as execuções já gravadas.
   const { data: resumeData } = useResumeSession(sessionId || null);
 
   const resolvedSid = sessionId || effectiveSessionIdRef.current || "";
@@ -267,9 +249,7 @@ export function SessionRunningScreen({
           mediaUrls: [],
           iconUrl: e.iconUrl ?? null,
         }));
-      } catch (err) {
-        console.error("Failed to parse exercises from context fallback", err);
-      }
+      } catch {}
     }
     return [];
   });
@@ -287,8 +267,6 @@ export function SessionRunningScreen({
     return "ready";
   });
 
-  // Expo Router's useLocalSearchParams might be undefined on the very first render,
-  // We sync the 'order' state if 'exercises' prop arrives later.
   useEffect(() => {
     if (order.length === 0 && exercises.length > 0) {
       setOrder(exercises);
@@ -298,11 +276,9 @@ export function SessionRunningScreen({
   const controlledSeconds = currentSessionData?.timeElapsed ?? 0;
   const controlledIsRunning = currentSessionData?.isRunning ?? false;
 
-  // Fallbacks for dropped URL params
   const effectiveCircuitId = circuitId || currentSessionData?.circuitId || "";
   const effectiveCircuitName = circuitName || currentSessionData?.circuitName || "Circuito";
 
-  // Enquanto a tela estruturada está ativa, ela sempre ocupa a tela, ocultando o widget
   useEffect(() => {
     if (!resolvedSid) return;
     setTimerVisible(resolvedSid, true);
@@ -317,7 +293,6 @@ export function SessionRunningScreen({
   const [historicoExercicios, setHistoricoExercicios] = useState<
     Record<string, "concluido" | "nao_realizada" | "adiado">
   >({});
-  // Reconstrói o estado ao retomar uma sessão em_andamento.
   useEffect(() => {
     if (!resumeData || resumeData.executions.length === 0) return;
 
@@ -339,7 +314,6 @@ export function SessionRunningScreen({
     setHasAdvanced(true);
 
     if (!currentSessionData?.activeExerciseId) {
-      // Retoma no primeiro exercício da ordem original que ainda não tem execução.
       const resumeIndex = order.findIndex((ex) => !executed.has(ex.id));
       setCurrentIndex(resumeIndex === -1 ? Math.max(0, order.length - 1) : resumeIndex);
     }
@@ -351,12 +325,10 @@ export function SessionRunningScreen({
     circuitType === "mabc_2" ||
     circuitType === "mabc_3";
 
-  // States and refs for Success Toast feedback
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTranslateY = useRef(new Animated.Value(20)).current;
 
-  // Visibilidade do RC por sessão (default visível; toggle persiste na sessão).
   const isFormVisible = currentSessionData?.isFormVisible ?? true;
 
   const triggerToast = () => {
@@ -444,8 +416,6 @@ export function SessionRunningScreen({
     });
   };
 
-  // Grava as execuções acumuladas e finaliza a sessão no banco.
-  // Se createSession ainda estiver em-flight, aguarda seu resultado antes de prosseguir.
   const persistAndFinish = async (
     motivoFinalizacao: MotivoNaoRealizacao | null = null,
     descricaoMotivo: string | null = null,
@@ -460,9 +430,6 @@ export function SessionRunningScreen({
       }
     }
 
-    // Exercícios do circuito que não foram realizados (sem execução) viram
-    // execuções 'nao_realizada', herdando o motivo/descrição da finalização da
-    // sessão. Cobre tanto a conclusão quanto a finalização precoce.
     const executedIds = new Set(
       executionsRef.current.map((e) => e.exercicioId),
     );
@@ -479,9 +446,7 @@ export function SessionRunningScreen({
       executionsRef.current = [...executionsRef.current, ...records];
       try {
         await persistExecutions(sid, records);
-      } catch (err) {
-        console.error("Erro ao salvar exercícios não realizados:", err);
-      }
+      } catch {}
     }
 
     try {
@@ -490,32 +455,24 @@ export function SessionRunningScreen({
         motivoFinalizacao,
         descricaoMotivo,
       });
-      // Grava tempo_total e preenche tempo/fugas no RC desta sessão.
       await finalizeSessionAutoFill(
         sid,
         currentSessionData?.totalElapsed ?? 0,
         fugaIntervalsRef.current,
       );
       closeSession(sid);
-    } catch (err) {
-      console.error("Erro ao salvar a sessão:", err);
-    }
+    } catch {}
   };
 
-  // Tenta salvar o formulário sem bloquear a persistência da sessão.
-  // Notifica o usuário se houver campos obrigatórios pendentes.
   const trySaveForm = () => {
     if (!formRef.current) return;
-    void (formRef.current.handleSave(true, true) as Promise<any>).then((result: any) => {
-    });
+    void (formRef.current.handleSave(true, true) as Promise<any>);
   };
 
   const advanceSession = (
     statusAtual: "concluido" | "nao_realizada" | "adiado",
     record?: Omit<ExecutionRecord, "exercicioId" | "ordemExecucao">,
   ) => {
-    // Garante que qualquer crise/fuga em andamento seja atribuída a este
-    // exercício antes de trocar de atividade.
     finalizeActiveCrise();
     finalizeActiveFuga();
 
@@ -529,7 +486,6 @@ export function SessionRunningScreen({
 
     setHistoricoExercicios(historicoAtualizado);
 
-    // Apenas realizada/não realizada viram execução; adiado fica pendente.
     if (record) {
       const newRecord: ExecutionRecord = {
         exercicioId: currentExercise.id,
@@ -538,7 +494,6 @@ export function SessionRunningScreen({
       };
       executionsRef.current = [...executionsRef.current, newRecord];
 
-      // Persiste incrementalmente para que a sessão possa ser retomada.
       const sid = effectiveSessionIdRef.current;
       if (sid) void persistExecutions(sid, [newRecord]);
     }
@@ -587,8 +542,6 @@ export function SessionRunningScreen({
   const currentExercise = order[currentIndex];
   const subtitle = `${effectiveCircuitName} - ${currentIndex + 1}/${total} - ${formatSessionClock(currentSessionData?.totalElapsed ?? 0)}`;
 
-  // Apenas exercícios ainda não realizados podem ser reordenados; os já
-  // executados (concluído/não realizado) ficam fixos em suas posições.
   const isRealized = (id: string) =>
     historicoExercicios[id] === "concluido" ||
     historicoExercicios[id] === "nao_realizada";
@@ -609,7 +562,6 @@ export function SessionRunningScreen({
   };
 
   const handleStartAndRecord = async () => {
-    // TODO: kick off media recording before starting the stopwatch.
     setStage("running");
     const sid = await ensureSessionId();
     if (sid) {
@@ -633,7 +585,6 @@ export function SessionRunningScreen({
   };
 
   const handleConfirmFinish = (motivo: string, descricao?: string) => {
-    // Encerra crise/fuga eventualmente ativas antes de finalizar a sessão.
     finalizeActiveCrise();
     finalizeActiveFuga();
 
@@ -683,9 +634,6 @@ export function SessionRunningScreen({
             />
           </View>
 
-          {/* A atividade (StartActivity quando pronta, Stopwatch durante a
-              execução) fica fixa no topo — mesmo com o cronômetro parado — para
-              iniciar/controlar sem rolar a tela. Só o RC rola abaixo. */}
           <View className="mt-5 px-8">
             {stage === "ready" ? (
               <StartActivity
@@ -729,7 +677,6 @@ export function SessionRunningScreen({
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 24 }}
           >
-            {/* Circuitos MABC não usam o Registro de Controle dentro da sessão. */}
             {!isMabc && rcFormId && (
               <View style={{ display: isFormVisible ? "flex" : "none" }}>
                 <FormComponent

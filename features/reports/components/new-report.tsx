@@ -16,14 +16,21 @@ import {
   useWindowDimensions,
 } from "react-native";
 
+/** Props for {@link NewReport}. */
 export type NewReportProps = {
   visible: boolean;
   onClose: () => void;
   onSave: (data: ReportFormData) => Promise<void>;
+  /** When provided, the modal opens in edit mode pre-filled with this report. */
   initialData?: Report | null;
+  /** Default title used when creating a new report. */
   defaultTitle?: string;
 };
 
+/**
+ * Modal for creating or editing a report: sets its title and date range (via a
+ * range calendar) before saving.
+ */
 export function NewReport({ visible, onClose, onSave, initialData, defaultTitle }: NewReportProps) {
   const { width, height } = useWindowDimensions();
   const isEdit = !!initialData;
@@ -113,7 +120,6 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
               contentContainerStyle={{ padding: 24, gap: 18 }}
               showsVerticalScrollIndicator={false}
             >
-              {/* Header */}
               <View className="flex-row items-center justify-between">
                 <Text className="text-header-2 text-white">
                   {isEdit ? "Editar relatório" : "Novo relatório"}
@@ -123,7 +129,6 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
                 </Pressable>
               </View>
 
-              {/* Título */}
               <View className="gap-1">
                 <Text className="text-default-2 text-muted">Nome do relatório*</Text>
                 <DefaultTextInput
@@ -140,7 +145,6 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
                 ) : null}
               </View>
 
-              {/* Período */}
               <View className="gap-1">
                 <Text className="text-default-2 text-muted">Período*</Text>
                 <PeriodSelector
@@ -153,7 +157,6 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
                 ) : null}
               </View>
 
-              {/* Botões */}
               <ActionButtons
                 onCancel={onClose}
                 onSave={handleSave}

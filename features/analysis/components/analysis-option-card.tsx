@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 
+/** Props for {@link AnalysisOptionCard}. */
 export type AnalysisOptionCardProps = {
   title: string;
   description: string;
@@ -11,6 +12,7 @@ export type AnalysisOptionCardProps = {
   className?: string;
 };
 
+/** Tappable row with a title, description, and registration status badge. */
 export function AnalysisOptionCard({
   title,
   description,

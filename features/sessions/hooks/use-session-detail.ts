@@ -2,17 +2,22 @@ import { supabase } from "@/lib/supabase";
 import { useEffect, useState, useCallback } from "react";
 import type { ActivityRecordItem, ActivityRecordUpdate } from "@/features/sessions/components/activity-record-card";
 
+/** Title, date, and executions of a single session. */
 export interface SessionDetailData {
   sessionTitle: string;
   sessionDate: string;
   executions: ActivityRecordItem[];
 }
 
+/**
+ * Loads a session's details and executions, tracks whether its Control Record
+ * still has pending required questions, and exposes execution update and session
+ * cancellation actions.
+ */
 export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
   const [data, setData] = useState<SessionDetailData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  // RC com perguntas obrigatórias ainda não preenchidas (para o lápis amarelo).
   const [rcPending, setRcPending] = useState(false);
 
   const fetchDetail = useCallback(async () => {
@@ -74,7 +79,6 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
 
       setData({ sessionTitle, sessionDate, executions });
 
-      // Pendência do RC desta sessão (perguntas obrigatórias não preenchidas).
       const { data: pend } = await supabase.rpc("verificar_pendencias_sessao", {
         p_sessao_id: sessionId,
       });
@@ -91,6 +95,7 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
     fetchDetail();
   }, [fetchDetail]);
 
+  /** Persists an execution's edited values and updates local state. */
   async function updateExecution(execId: string, values: ActivityRecordUpdate) {
     const { error } = await supabase
       .from("execucoes_exercicio")
@@ -130,10 +135,12 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
     );
   }
 
+  /**
+   * Cancels (soft-deletes) the session via a SECURITY DEFINER RPC, which lets
+   * coordinators and non-owner monitors cancel sessions that a direct update
+   * would block under the table's row-level security policy.
+   */
   async function deleteSession() {
-    // Cancela via RPC (SECURITY DEFINER): a policy de UPDATE em `sessoes` só
-    // permite ao monitor dono alterar a própria sessão, então um UPDATE direto
-    // falhava para coordenadores e sessões de outros monitores.
     const { error } = await supabase.rpc("rpc_cancelar_sessao", {
       p_sessao_id: sessionId,
     });

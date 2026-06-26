@@ -13,10 +13,12 @@ import { TagGroup } from "./tag-group";
 
 type ExecutionMode = "estruturado" | "semi-estruturado";
 
+/** Props for {@link NewCircuit}. */
 interface NewCircuitProps {
   visible: boolean;
   onClose: () => void;
   title?: string;
+  /** When provided, the modal opens in edit mode pre-filled with this circuit. */
   initialData?: {
     name: string;
     executionMode: ExecutionMode;
@@ -33,7 +35,11 @@ interface NewCircuitProps {
   }) => Promise<void>;
 }
 
-
+/**
+ * Modal for creating or editing a circuit: sets its name and execution mode,
+ * selects exercises (optionally filtered by tag), and reorders them via a
+ * draggable list for structured circuits.
+ */
 export function NewCircuit({
   visible,
   onClose,

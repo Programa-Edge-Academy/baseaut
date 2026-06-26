@@ -32,7 +32,7 @@ export interface BaseQuestion {
  */
 export interface OpenQuestion extends BaseQuestion {
   type: "open";
-  /** Quando true, aceita apenas números (single-line + teclado numérico). */
+  /** When true, accepts numbers only (single-line input with a numeric keyboard). */
   numeric?: boolean;
 }
 

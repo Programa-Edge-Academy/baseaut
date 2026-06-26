@@ -2,6 +2,7 @@ import { View } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { OpenQuestion } from "../types";
 
+/** Props for {@link OpenQuestionUI}. */
 interface Props {
   question: OpenQuestion;
   value?: any;
@@ -9,13 +10,12 @@ interface Props {
 }
 
 /**
- * Renders an open-ended question with optional audio action placeholder.
+ * Renders an open-ended text question. Numeric questions (e.g. MABC) accept only
+ * integer digits on a single line with a numeric keyboard.
  */
 export function OpenQuestionUI({ question, value, onChange }: Props) {
   const isNumeric = (question as any).numeric === true;
 
-  // Perguntas numéricas (ex.: MABC) aceitam apenas dígitos inteiros — sem
-  // separador decimal (nem "," nem "."), em linha única e teclado numérico.
   const handleNumericChange = (text: string) => {
     onChange?.(text.replace(/[^0-9]/g, ""));
   };

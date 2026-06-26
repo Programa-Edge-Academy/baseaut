@@ -7,6 +7,7 @@ import {
 } from "./mabc2-exercise-item";
 import type { Mabc2ViewFilter } from "./mabc2-motor-development-card";
 
+/** Props for {@link Mabc2Section}. */
 export type Mabc2SectionProps = {
   id?: string;
   title: string;
@@ -23,6 +24,10 @@ export type Mabc2SectionProps = {
   accessibilityLabel?: string;
 };
 
+/**
+ * One MABC-2 section: its category score/percentile inputs and the list of
+ * exercise items, with view-mode filtering and read-only support.
+ */
 export function Mabc2Section({
   title,
   categoryScore,

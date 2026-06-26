@@ -12,17 +12,20 @@ const LEVEL_MAP: Record<string, number> = {
     maduro: 3,
 };
 
+/** Per-exercise development levels for the two compared periods. */
 export interface RpcExerciciosItem {
     titulo: string;
     nivel_p1: string | null;
     nivel_p2: string | null;
 }
 
+/** Props for {@link ExerciseComparisonCard}. */
 export type ExerciseComparisonCardProps = {
     exercicios: RpcExerciciosItem[];
     hideDropdown?: boolean;
 };
 
+/** Normalized comparison row with parsed levels and computed variation. */
 interface CombinedExerciseItem {
     exercise: string;
     previous: { status: DevelopmentLevel; label: string } | null;
@@ -30,6 +33,7 @@ interface CombinedExerciseItem {
     variacaoNivel: number;
 }
 
+/** Formats a development-level value into a capitalized badge label. */
 function formatBadgeLabel(str: string | null): string {
     if (!str) return "Sem registro";
     const lower = str.toLowerCase();
@@ -37,10 +41,13 @@ function formatBadgeLabel(str: string | null): string {
     return lower.charAt(0).toUpperCase() + lower.slice(1);
 }
 
+/**
+ * Compares per-exercise development levels between two periods, with an optional
+ * dropdown to focus on a single exercise.
+ */
 function ExerciseComparisonCard({ exercicios, hideDropdown = false }: ExerciseComparisonCardProps) {
     const [selectedIndex, setSelectedIndex] = useState<number>(0);
 
-    // Reset selection when database data changes
     useEffect(() => {
         setSelectedIndex(0);
     }, [exercicios]);
@@ -87,7 +94,6 @@ function ExerciseComparisonCard({ exercicios, hideDropdown = false }: ExerciseCo
                 </View>
             )}
 
-            {/* Cabeçalho da Tabela */}
             <View className="mb-3 px-3 flex-row items-center">
                 <View className="flex-[2]"><Text className="text-muted text-xs">Exercício</Text></View>
                 <View className="flex-1 items-center"><Text className="text-muted text-xs">Período 1</Text></View>

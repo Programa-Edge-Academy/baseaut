@@ -13,12 +13,15 @@ import { SearchInput } from "@/components/search-input";
 
 import { useHistory } from "@/features/sessions/hooks/use-history";
 
+/**
+ * Route listing students that have session history, with real-time name search
+ * and navigation into each student's record history.
+ */
 export default function HistoryScreen() {
   const { studentsHistory, isLoading, error, refetch } = useHistory();
   useFocusEffect(useCallback(() => { refetch(); }, [refetch]));
   const [query, setQuery] = useState("");
 
-  // Filtro em tempo real por nome
   const filteredHistory = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return studentsHistory.filter((student) => {
@@ -26,7 +29,6 @@ export default function HistoryScreen() {
     });
   }, [query, studentsHistory]);
 
-  // Renderização do corpo
   const renderListBody = () => {
     if (isLoading) {
       return (

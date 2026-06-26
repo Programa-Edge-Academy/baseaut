@@ -1,12 +1,18 @@
 import React, { useState } from "react";
 import { Pressable, PressableProps, Animated, GestureResponderEvent, View } from "react-native";
 
+/** Props for {@link RipplePressable}. */
 export interface RipplePressableProps extends Omit<PressableProps, 'children'> {
+  /** Color of the ripple animation. */
   rippleColor?: string;
   className?: string;
   children?: React.ReactNode;
 }
 
+/**
+ * Pressable that renders an animated touch ripple at the press location. Falls
+ * back to a plain {@link View} when no press handlers are provided.
+ */
 export function RipplePressable({
   rippleColor = "rgba(255, 255, 255, 0.3)",
   className,

@@ -7,6 +7,7 @@ import React from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Mabc2Record, Mabc2RecordCard } from "../components/mabc2-record-card";
 
+/** Props for {@link Mabc2RecordsListScreen}. */
 export type Mabc2RecordsListScreenProps = {
   studentName: string;
   records: Mabc2Record[];
@@ -19,6 +20,7 @@ export type Mabc2RecordsListScreenProps = {
   onPressRecord?: (record: Mabc2Record) => void;
 };
 
+/** Lists a student's MABC-2 records with create and open actions and a toast. */
 export function Mabc2RecordsListScreen({
   studentName,
   records,

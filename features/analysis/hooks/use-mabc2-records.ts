@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useState } from "react";
 import type { Mabc2Record } from "../components/mabc2-record-card";
 
+/** An editable exercise item within a MABC-2 draft section. */
 export type Mabc2DraftExercise = {
   id: string;
   perguntaId: string;
@@ -12,6 +13,7 @@ export type Mabc2DraftExercise = {
   valorAjuda?: Record<string, any> | null;
 };
 
+/** A MABC-2 draft section with its category scores and exercises. */
 export type Mabc2DraftSection = {
   id: string;
   title: string;
@@ -20,6 +22,7 @@ export type Mabc2DraftSection = {
   exercises: Mabc2DraftExercise[];
 };
 
+/** The full editable draft of a MABC-2 record. */
 export type Mabc2Draft = {
   formularioId: string;
   totalScore: number | null;
@@ -331,6 +334,7 @@ function buildTotalsPayload(draft: Mabc2Draft) {
   };
 }
 
+/** Loads a student's MABC-2 records as list summaries, with a refetch action. */
 export function useMabc2Records(studentId: string) {
   const [records, setRecords] = useState<Mabc2Record[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -386,6 +390,7 @@ export function useMabc2Records(studentId: string) {
   return { records, isLoading, refetch, error };
 }
 
+/** Creates a new MABC-2 record for a student and returns it as an empty draft. */
 export async function startMabc2Record(studentId: string) {
   const {
     data: { user },
@@ -405,6 +410,7 @@ export async function startMabc2Record(studentId: string) {
   return mapItemsToDraft(data.formulario_id, {}, data.itens ?? []);
 }
 
+/** Loads a MABC-2 record via the per-form RPC when the export RPC has no items. */
 async function getMabc2RecordFallback(formularioId: string) {
   const { data: fallbackData, error: fallbackError } = await supabase.rpc(
     "rpc_get_mabc2_formulario",
@@ -422,6 +428,7 @@ async function getMabc2RecordFallback(formularioId: string) {
   );
 }
 
+/** Loads a MABC-2 record as an editable draft, falling back when needed. */
 export async function getMabc2Record(formularioId: string) {
   const { data, error } = await supabase.rpc("rpc_get_registro_exportacao", {
     p_tipo: "formulario",
@@ -439,6 +446,7 @@ export async function getMabc2Record(formularioId: string) {
   return getMabc2RecordFallback(formularioId);
 }
 
+/** Persists each item's score and the section/total scores of a MABC-2 draft. */
 export async function saveMabc2Record(draft: Mabc2Draft) {
   for (const section of draft.sections) {
     for (const exercise of section.exercises) {
@@ -465,6 +473,7 @@ export async function saveMabc2Record(draft: Mabc2Draft) {
   if (error) throw error;
 }
 
+/** Permanently deletes a MABC-2 record and its answers. */
 export async function deleteMabc2Record(formularioId: string) {
   const { error: answersError } = await supabase
     .from("respostas_formulario")

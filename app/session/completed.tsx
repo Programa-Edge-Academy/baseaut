@@ -2,6 +2,10 @@ import React from "react";
 import { useLocalSearchParams } from "expo-router";
 import { SessionCompletedScreen } from "@/features/sessions/screens/session-completed-screen";
 
+/**
+ * Route for the session-completed hub, reading the completion context from the
+ * route params and forwarding it to the completion screen.
+ */
 export default function SessionCompletedHubRoute() {
   const { type, studentName, queue, fullCircuit, studentId, sessionId } =
     useLocalSearchParams<{

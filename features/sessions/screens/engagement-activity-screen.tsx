@@ -20,7 +20,7 @@ import { CheckCircle2 } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, ScrollView, Text, View } from "react-native";
 
-/** Mapeia os rótulos do modal de resultado para o motivo_nao_realizacao_enum. */
+/** Maps the result modal's labels to the `motivo_nao_realizacao_enum` values. */
 const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
   "Recusa do aluno": "recusa_aluno",
   "Comportamento disruptivo": "comportamento_disruptivo",
@@ -30,6 +30,11 @@ const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
   Outro: "outro",
 };
 
+/**
+ * Runs an engagement activity within a semi-structured session. It records each
+ * activity as an execution of the team's invisible engagement sentinel exercise
+ * (also logging an "engajamento" behavior), and returns to the session afterward.
+ */
 export function EngagementActivityScreen() {
   const router = useRouter();
   const { studentName, sessionId, studentId, fromWidget } = useLocalSearchParams<{
@@ -50,7 +55,6 @@ export function EngagementActivityScreen() {
     updateTimeElapsed,
   } = useSessionGlobalContext();
 
-  // Id do exercício-sentinela de engajamento da equipe (resolvido na montagem).
   const engagementExerciseIdRef = useRef<string | null>(null);
   const ordemRef = useRef(0);
   const lastElapsedSecondsRef = useRef<number | null>(null);
@@ -74,7 +78,6 @@ export function EngagementActivityScreen() {
   const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
 
-  // Informa o contexto global que a tela está focada (esconde o cronômetro nativo do widget)
   useEffect(() => {
     if (!sessionId) return;
     setTimerVisible(sessionId, true);
@@ -130,7 +133,7 @@ export function EngagementActivityScreen() {
     setIsResultModalOpen(true);
   };
 
-  // Grava a atividade de engajamento como uma execução (exercício-sentinela).
+  /** Saves an engagement activity as an execution of the sentinel exercise. */
   const persistEngagement = async (
     record: Omit<ExecutionRecord, "exercicioId" | "ordemExecucao">,
   ): Promise<string | null> => {
@@ -146,8 +149,7 @@ export function EngagementActivityScreen() {
         },
       ]);
       return inserted[0]?.id ?? null;
-    } catch (err) {
-      console.error("Erro ao salvar atividade de engajamento:", err);
+    } catch {
       return null;
     }
   };
@@ -166,18 +168,13 @@ export function EngagementActivityScreen() {
         complementosAjuda: options?.result?.subCategorias ?? null,
         duracaoRealSegundos: duracao,
       });
-      // Toda atividade de engajamento realizada gera um comportamento do tipo
-      // "engajamento", vinculado à execução (e, por ela, à sessão).
       if (sessionId && execId) {
-        const { error } = await supabase.from("comportamentos_sessao").insert({
+        await supabase.from("comportamentos_sessao").insert({
           sessao_id: sessionId,
           execucao_id: execId,
           tipo: "engajamento",
           duracao_segundos: duracao != null ? Math.round(duracao) : null,
         });
-        if (error) {
-          console.error("Erro ao registrar comportamento de engajamento:", error);
-        }
       }
     } else if (status === "nao_realizada") {
       void persistEngagement({
@@ -211,7 +208,7 @@ export function EngagementActivityScreen() {
       isEngagementRunning: true,
     });
     updateSessionProgress(sessionId, "Atividade de engajamento");
-    updateTimeElapsed(sessionId, 0); // <--- Zera o cronômetro!
+    updateTimeElapsed(sessionId, 0);
     toggleTimer(sessionId, true);
   };
 

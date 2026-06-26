@@ -5,8 +5,7 @@ import * as Print from "expo-print";
 import { Platform } from "react-native";
 import { Report } from "../hooks/use-student-reports";
 
-// ─── Student profile ─────────────────────────────────────────────────────────
-
+/** Student profile fields embedded in an exported report. */
 type StudentProfile = {
   nome_completo: string;
   altura: number | null;
@@ -17,6 +16,7 @@ type StudentProfile = {
   observacoes_clinicas: string | null;
 };
 
+/** Loads the current student profile, used as a fallback when no snapshot exists. */
 async function fetchStudentProfile(studentId: string): Promise<StudentProfile | null> {
   const { data } = await supabase
     .from("alunos")
@@ -26,6 +26,7 @@ async function fetchStudentProfile(studentId: string): Promise<StudentProfile | 
   return (data as StudentProfile) ?? null;
 }
 
+/** Returns the age in completed years for a birth date. */
 function calcAge(birthDate: string): number {
   const today = new Date();
   const birth = new Date(birthDate);
@@ -35,6 +36,7 @@ function calcAge(birthDate: string): number {
   return age;
 }
 
+/** Maps a stored support level code to its display label. */
 function fmtSupportLevel(raw: string | null): string {
   if (!raw) return "–";
   if (raw === "nivel_1") return "Nível 1";
@@ -43,6 +45,7 @@ function fmtSupportLevel(raw: string | null): string {
   return raw;
 }
 
+/** Builds the student information block of the PDF report. */
 function buildStudentInfoHtml(profile: StudentProfile): string {
   const chip = (label: string, value: string) =>
     `<td style="padding:6px 10px;border:1px solid #e2e8f0;vertical-align:top">
@@ -72,16 +75,23 @@ function buildStudentInfoHtml(profile: StudentProfile): string {
     </div>`;
 }
 
-// ─── Date helpers ────────────────────────────────────────────────────────────
 
-function toIso(date: string) {
+/** Converts a `YYYY-MM-DD` date into an ISO string at start of day (UTC-3). */
+function toIsoStart(date: string) {
   return `${date}T00:00:00.000-03:00`;
 }
 
+/** Converts a `YYYY-MM-DD` date into an ISO string at end of day (UTC-3). */
+function toIsoEnd(date: string) {
+  return `${date}T23:59:59.999-03:00`;
+}
+
+/** Formats an ISO date as a Brazilian short date. */
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("pt-BR");
 }
 
+/** Returns the midpoint date between two dates, used to split comparison periods. */
 function midDate(start: string, end: string): string {
   const s = new Date(start).getTime();
   const e = new Date(end).getTime();
@@ -89,8 +99,14 @@ function midDate(start: string, end: string): string {
   return mid.toISOString().split("T")[0];
 }
 
-// ─── Data fetchers ────────────────────────────────────────────────────────────
+/** Returns the very next day (YYYY-MM-DD) to prevent period overlap. */
+function nextDay(dateStr: string): string {
+  const d = new Date(dateStr);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().split("T")[0];
+}
 
+/** Fetches exercise progress filtered to the given date range. */
 async function fetchProgressoExercicio(studentId: string, inicio: string, fim: string) {
   const { data } = await supabase.rpc("rpc_get_progresso_exercicios", {
     p_aluno_id: studentId,
@@ -109,24 +125,26 @@ async function fetchProgressoExercicio(studentId: string, inicio: string, fim: s
   }));
 }
 
+/** Fetches per-session autonomy/help counts in range. */
 async function fetchAjudaSessao(studentId: string, inicio: string, fim: string) {
   const { data } = await supabase.rpc("rpc_get_grafico_autonomia_aluno", {
     p_aluno_id: studentId,
-    p_data_inicio: toIso(inicio),
-    p_data_fim: toIso(fim),
+    p_data_inicio: toIsoStart(inicio),
+    p_data_fim: toIsoEnd(fim),
   });
   const sessoes = (data as any)?.sessoes ?? [];
   return sessoes as { sessao_id: string; ajuda_intrusiva: number; autonomo: number }[];
 }
 
+/** Fetches and counts observed behaviors for completed sessions in range. */
 async function fetchComportamentos(studentId: string, inicio: string, fim: string) {
   const { data: sessoes } = await supabase
     .from("sessoes")
     .select("id")
     .eq("aluno_id", studentId)
     .eq("status", "concluida")
-    .gte("data_inicio", inicio)
-    .lte("data_inicio", fim);
+    .gte("data_inicio", toIsoStart(inicio))
+    .lte("data_inicio", toIsoEnd(fim));
 
   const ids = (sessoes ?? []).map((s: any) => s.id);
   if (!ids.length) return {};
@@ -159,18 +177,21 @@ async function fetchComportamentos(studentId: string, inicio: string, fim: strin
   return counts;
 }
 
+/** Fetches the performance comparison between the two halves of the range. */
 async function fetchComparacao(studentId: string, inicio: string, fim: string) {
   const meio = midDate(inicio, fim);
+  const inicioPeriodo2 = nextDay(meio);
   const { data } = await supabase.rpc("rpc_comparar_desempenho_periodos", {
     p_aluno_id: studentId,
-    p_p1_inicio: toIso(inicio),
-    p_p1_fim: toIso(meio),
-    p_p2_inicio: toIso(meio),
-    p_p2_fim: toIso(fim),
+    p_p1_inicio: toIsoStart(inicio),
+    p_p1_fim: toIsoEnd(meio),
+    p_p2_inicio: toIsoStart(inicioPeriodo2),
+    p_p2_fim: toIsoEnd(fim),
   });
   return typeof data === "string" ? JSON.parse(data) : data;
 }
 
+/** Fetches the consolidated protocol/record history filtered to the range. */
 async function fetchConsolidado(studentId: string, inicio: string, fim: string) {
   const { data } = await supabase.rpc("rpc_get_relatorio_consolidado_aluno", {
     p_aluno_id: studentId,
@@ -191,18 +212,19 @@ async function fetchConsolidado(studentId: string, inicio: string, fim: string) 
   };
 }
 
-// ─── HTML helpers ─────────────────────────────────────────────────────────────
 
 const CARD = `border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;background:#f8fafc;page-break-inside:avoid;`;
 const TH_STYLE = `border:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:11px;background:#f1f5f9;font-weight:bold;`;
 const TD_STYLE = `border:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:11px;`;
 
+/** Builds an HTML table row from cell values, as header or body. */
 function tableRow(cells: string[], header = false): string {
   const style = header ? TH_STYLE : TD_STYLE;
   const tag = header ? "th" : "td";
   return `<tr>${cells.map((c) => `<${tag} style="${style}">${c}</${tag}>`).join("")}</tr>`;
 }
 
+/** Formats the absolute and percentage variation between two values. */
 function calcVariation(p1: number, p2: number): string {
   const diff = p2 - p1;
   if (p1 === 0 && p2 === 0) return "0 (0%)";
@@ -211,6 +233,7 @@ function calcVariation(p1: number, p2: number): string {
   return `${sign}${diff} (${sign}${pct}%)`;
 }
 
+/** Wraps content in a titled card container for the PDF. */
 function sectionCard(title: string, content: string): string {
   return `<div style="${CARD}">
     <h3 style="font-size:13px;font-weight:bold;color:#1e293b;margin:0 0 12px">${title}</h3>
@@ -218,8 +241,8 @@ function sectionCard(title: string, content: string): string {
   </div>`;
 }
 
-// ─── MABC-2 category scores fetcher ──────────────────────────────────────────
 
+/** Loads per-category MABC-2 scores from each record's metadata. */
 async function fetchMabc2CategoryScores(recordIds: string[]): Promise<Record<string, any>> {
   if (!recordIds.length) return {};
   const { data } = await supabase
@@ -234,8 +257,8 @@ async function fetchMabc2CategoryScores(recordIds: string[]): Promise<Record<str
   return map;
 }
 
-// ─── SVG chart builders ───────────────────────────────────────────────────────
 
+/** Renders an SVG line chart of an exercise's development level over sessions. */
 function svgProgressoExercicio(ex: any): string {
   const nivelY: Record<string, number> = { inicial: 80, intermediario: 45, maduro: 10 };
   const hist = ex.historico ?? [];
@@ -266,6 +289,7 @@ function svgProgressoExercicio(ex: any): string {
   return svg;
 }
 
+/** Renders an SVG grouped bar chart of intrusive vs autonomous help per session. */
 function svgAjudaSessao(sessoes: { ajuda_intrusiva: number; autonomo: number }[]): string {
   const maxVal = Math.max(...sessoes.map((s) => Math.max(s.ajuda_intrusiva, s.autonomo)), 1);
   const barW = 14;
@@ -293,6 +317,7 @@ function svgAjudaSessao(sessoes: { ajuda_intrusiva: number; autonomo: number }[]
   return svg;
 }
 
+/** Renders an SVG bar chart of observed behavior frequencies. */
 function svgComportamentos(counts: Record<string, number>): string {
   const labels: Record<string, string> = { estereotipia: "Estereotipia", contato_visual_pessoas: "C. visual (Pessoas)", contato_visual_objetos: "C. visual (Objetos)", engajamento: "Engajamento", fuga: "Fuga", crise: "Crise", inapto: "Inaptos", atividade_preferencial: "Ativ. pref." };
   const barColors = ["#09CDDB", "#DBBF09", "#A6900A", "#34C759", "#CB30E0", "#FF383C", "#FF8A00", "#1E88E5"];
@@ -316,17 +341,17 @@ function svgComportamentos(counts: Record<string, number>): string {
   return svg;
 }
 
-// ─── Section builders ─────────────────────────────────────────────────────────
 
+/** Builds an accent-colored section title for the PDF. */
 function sectionTitle(title: string): string {
   return `<h3 style="font-size:14px;font-weight:bold;color:#0ea5e9;margin:20px 0 8px">${title}</h3>`;
 }
 
+/** Assembles the full HTML body (charts and tables) for a report's data. */
 async function buildSections(dataMap: Record<string, any>, inicio: string, fim: string): Promise<string> {
   let html = "";
   const meio = midDate(inicio, fim);
 
-  // 1. Progresso por exercício — um card por exercício
   html += sectionTitle("Progresso por exercício");
   const exs: any[] = dataMap.progresso_exercicio ?? [];
   const exsWithData = exs.filter((ex: any) => (ex.historico ?? []).length > 0);
@@ -338,20 +363,17 @@ async function buildSections(dataMap: Record<string, any>, inicio: string, fim: 
     html += sectionCard("Progresso por exercício", `<p style="color:#888;font-size:11px">Sem dados no período.</p>`);
   }
 
-  // 2. Registros de ajuda — card único
   html += sectionTitle("Registros de ajuda por sessão");
   const ajuda: any[] = dataMap.ajuda_sessao ?? [];
   html += sectionCard("Ajuda por sessão",
     ajuda.length ? svgAjudaSessao(ajuda) : `<p style="color:#888;font-size:11px">Sem dados no período.</p>`);
 
-  // 3. Comportamentos — card único
   html += sectionTitle("Comportamentos observados");
   const counts = dataMap.comportamentos ?? {};
   const hasBehaviors = Object.values(counts).some((v: any) => v > 0);
   html += sectionCard("Frequência de comportamentos",
     hasBehaviors ? svgComportamentos(counts) : `<p style="color:#888;font-size:11px">Sem comportamentos registrados.</p>`);
 
-  // 4. Comparar desempenho — um card por sub-seção
   html += sectionTitle("Comparação de desempenho");
   const comp = dataMap.comparar_desempenho;
   if (comp) {
@@ -365,7 +387,6 @@ async function buildSections(dataMap: Record<string, any>, inicio: string, fim: 
     const compsP2 = compKeys.reduce((s, k) => s + (compComps[k]?.p2 ?? 0), 0);
     const periodNote = `<p style="font-size:10px;color:#888;margin:0 0 8px">Período 1: ${fmtDate(inicio)} – ${fmtDate(meio)} &nbsp;|&nbsp; Período 2: ${fmtDate(meio)} – ${fmtDate(fim)}<br/>Os períodos correspondem às metades do intervalo selecionado.</p>`;
 
-    // 4a. Resumo
     html += sectionCard("Resumo da comparação", `${periodNote}
       <table style="border-collapse:collapse;width:100%">
         ${tableRow(["Métrica", "Período 1", "Período 2", "Variação"], true)}
@@ -375,7 +396,6 @@ async function buildSections(dataMap: Record<string, any>, inicio: string, fim: 
         ${tableRow(["Sessões registradas", String(resumo?.sessoes_p1 ?? 0), String(resumo?.sessoes_p2 ?? 0), calcVariation(resumo?.sessoes_p1 ?? 0, resumo?.sessoes_p2 ?? 0)])}
       </table>`);
 
-    // 4b. Exercícios
     const filteredEx = (exercicios ?? []).filter((e: any) => e.nivel_p1 || e.nivel_p2);
     if (filteredEx.length) {
       const LEVEL_MAP: Record<string, number> = { inicial: 1, intermediario: 2, maduro: 3 };
@@ -392,7 +412,6 @@ async function buildSections(dataMap: Record<string, any>, inicio: string, fim: 
         </table>`);
     }
 
-    // 4c. Ajuda
     if (compAjuda) {
       html += sectionCard("Comparação dos registros de ajuda", `
         <table style="border-collapse:collapse;width:100%">
@@ -402,7 +421,6 @@ async function buildSections(dataMap: Record<string, any>, inicio: string, fim: 
         </table>`);
     }
 
-    // 4d. Comportamentos
     if (compComps) {
       const behaviorLabels: Record<string, string> = { estereotipia: "Estereotipias", contato_visual_pessoas: "Contato visual (Pessoas)", contato_visual_objetos: "Contato visual (Objetos)", engajamento: "Engajamento", fuga: "Fuga", crise: "Crises", inapto: "Comportamentos inaptos", atividade_preferencial: "Atividades preferenciais" };
       html += sectionCard("Comparação dos comportamentos observados", `
@@ -419,7 +437,6 @@ async function buildSections(dataMap: Record<string, any>, inicio: string, fim: 
     html += sectionCard("Comparação de desempenho", `<p style="color:#888;font-size:11px">Dados insuficientes.</p>`);
   }
 
-  // 5. Protocolos — um card por tipo de protocolo
   html += sectionTitle("Protocolos/Testes aplicados");
   const cons = dataMap.protocolos_testes;
   if (cons) {
@@ -460,8 +477,18 @@ async function buildSections(dataMap: Record<string, any>, inicio: string, fim: 
   return html;
 }
 
-// ─── Public export function ───────────────────────────────────────────────────
 
+/**
+ * Exports one or more reports as PDF and/or CSV and delivers them via share or
+ * direct download. Each report aggregates progress, help, behavior, comparison,
+ * and protocol data for its date range; on native, multiple files are bundled.
+ *
+ * @param reports - Reports to export.
+ * @param formats - Which file formats to generate (at least one required).
+ * @param studentName - Student name shown in the export header.
+ * @param studentId - Student id used to fetch the report data.
+ * @param mode - Delivery mode for native platforms. Defaults to "share".
+ */
 export async function exportReports(
   reports: Report[],
   formats: { pdf: boolean; csv: boolean },
@@ -474,10 +501,8 @@ export async function exportReports(
   }
 
   const emissao = new Date().toLocaleDateString("pt-BR");
-  // Fallback: busca perfil atual quando snapshot não existe (migration pendente)
   const fallbackProfile = await fetchStudentProfile(studentId);
 
-  // Nativo: acumula os arquivos gerados para entregar de uma vez (zip/baixar).
   const files: ExportableFile[] = [];
 
   for (const report of reports) {
@@ -634,7 +659,6 @@ export async function exportReports(
       } else {
         const name = `relatorio_${safeName}.csv`;
         const path = `${FileSystem.cacheDirectory}${name}`;
-        // BOM UTF-8 + encoding explícito: sem isso o Android/Excel quebram acentos.
         await FileSystem.writeAsStringAsync(path, "﻿" + csv, {
           encoding: FileSystem.EncodingType.UTF8,
         });
@@ -643,7 +667,6 @@ export async function exportReports(
     }
   }
 
-  // Nativo: entrega tudo de uma vez (zip se houver mais de um arquivo, ou baixa).
   if (Platform.OS !== "web" && files.length) {
     await deliverFiles(files, mode, "Exportar relatório");
   }

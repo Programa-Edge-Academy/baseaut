@@ -7,11 +7,13 @@ import {
 import React from "react";
 import { Text, View } from "react-native";
 
+/** Motor development level of an exercise. */
 export type DevelopmentLevel =
     | "maduro"
     | "intermediario"
     | "inicial";
 
+/** Props for {@link AnalysisMaturityCard}. */
 export type AnalysisMaturityCardProps = {
     exercise: string;
     previous?: {
@@ -38,6 +40,7 @@ const levelStyles: Record<
     inicial: { backgroundColor: "#3A1620", borderColor: colors.error },
 };
 
+/** Returns the badge label for a level, falling back to its default name. */
 function getBadgeLabel(label: string | undefined, status: DevelopmentLevel) {
     return (
         label ??
@@ -49,11 +52,12 @@ function getBadgeLabel(label: string | undefined, status: DevelopmentLevel) {
     );
 }
 
+/** Resolves the icon, color, and label describing the level change. */
 function getChangeData(
     exerciseName: string,
     variacaoNivel: number | undefined | null
 ) {
-    
+
     if (variacaoNivel === undefined || variacaoNivel === null) {
         return {
             Icon: MinusCircle,
@@ -89,6 +93,10 @@ function getChangeData(
     };
 }
 
+/**
+ * Comparison row for one exercise showing its previous and current development
+ * level badges and the level change between periods.
+ */
 export function AnalysisMaturityCard({
     exercise,
     previous,
@@ -107,14 +115,12 @@ export function AnalysisMaturityCard({
         >
             <View className="flex-row items-center">
 
-                {/* Exercício */}
                 <View style={{ flex: 2.2, paddingRight: 8 }}>
                     <Text numberOfLines={2} className="text-white text-xs font-medium">
                         {exercise}
                     </Text>
                 </View>
 
-                {/* Período 1 */}
                 <View style={{ flex: 1.4, alignItems: "center", paddingHorizontal: 6 }}>
                     {previous?.status ? (
                         <View
@@ -133,7 +139,6 @@ export function AnalysisMaturityCard({
                     )}
                 </View>
 
-                {/* Período 2 */}
                 <View style={{ flex: 1.4, alignItems: "center", paddingHorizontal: 6 }}>
                     {current?.status ? (
                         <View
@@ -152,7 +157,6 @@ export function AnalysisMaturityCard({
                     )}
                 </View>
 
-                {/* Variação */}
                 <View style={{ flex: 0.8, alignItems: "flex-end" }}>
                     <View className="flex-row items-center">
                         <ChangeIcon size={18} color={changeData.iconColor} />

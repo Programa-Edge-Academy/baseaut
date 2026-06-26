@@ -3,6 +3,11 @@ import { useLocalSearchParams, router } from "expo-router";
 import { SessionRunningScreen } from "../../features/sessions/screens/session-running-screen";
 import type { SessionExercise } from "../../features/sessions/screens/session-running-screen";
 
+/**
+ * Route for a structured (circuit) session run. Deserializes the selected
+ * circuit's exercises from the route params and wires completion navigation to
+ * the session-completed hub.
+ */
 export default function SessionEstruturadoRoute() {
   const {
     studentName,
@@ -14,7 +19,6 @@ export default function SessionEstruturadoRoute() {
     exercises,
   } = useLocalSearchParams<any>();
 
-  // Exercícios reais do circuito selecionado (serializados no parâmetro).
   const sessionExercises = useMemo<SessionExercise[] | undefined>(() => {
     if (!exercises) return undefined;
     try {
@@ -58,9 +62,6 @@ export default function SessionEstruturadoRoute() {
             fullCircuit: JSON.stringify(todos || []),
           },
         });
-      }}
-      onFinishSession={(motivo) => {
-        console.log("Sessão finalizada antecipadamente por motivo:", motivo);
       }}
     />
   );
