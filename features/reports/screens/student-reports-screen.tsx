@@ -404,12 +404,20 @@ export function StudentReportsScreen() {
         )}
 
         {isExportMode && (
-          <View className="absolute bottom-8 left-0 right-0">
+          <View className="absolute bottom-8 left-0 right-0 flex-row gap-4">
+            <DefaultButton
+              label={`Cancelar`}
+              onPress={toggleExportMode}
+              bgColorClass="bg-error"
+              sizeClass="flex-1 h-11"
+              shadowClass="shadow-errorShadow"
+            />
             <DefaultButton
               label={`Confirmar (${selectedIds.length})`}
               onPress={handleConfirmExport}
               bgColorClass="bg-primary"
-            />
+              sizeClass="flex-1 h-11"
+              />
           </View>
         )}
       </View>
@@ -460,7 +468,7 @@ export function StudentReportsScreen() {
             <View className="items-center">
               <DefaultButton
                 label="Salvar"
-                sizeClass="w-[168px] h-[44px]"
+                sizeClass="w-full h-11"
                 disabled={!tempFilterStart || !tempFilterEnd}
                 style={{ opacity: !tempFilterStart || !tempFilterEnd ? 0.5 : 1 }}
                 onPress={saveFilter}
