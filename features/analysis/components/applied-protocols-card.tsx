@@ -24,18 +24,18 @@ export function AppliedProtocolsCard({
       </Text>
 
       <AnalysisOptionCard
+        title="ATA"
+        description="Visualizar formulário registrado"
+        status={ataStatus}
+        onPress={onAtaPress}
+      />
+
+      <AnalysisOptionCard
         title="CARS"
         description="Visualizar formulário registrado"
         status={carsStatus}
         onPress={onCarsPress}
         className="mb-3"
-      />
-
-      <AnalysisOptionCard
-        title="ATA"
-        description="Visualizar formulário registrado"
-        status={ataStatus}
-        onPress={onAtaPress}
       />
     </View>
   );
