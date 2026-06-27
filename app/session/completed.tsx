@@ -7,15 +7,25 @@ import { SessionCompletedScreen } from "@/features/sessions/screens/session-comp
  * route params and forwarding it to the completion screen.
  */
 export default function SessionCompletedHubRoute() {
-  const { type, studentName, queue, fullCircuit, studentId, sessionId } =
-    useLocalSearchParams<{
-      type: string;
-      studentName: string;
-      queue: string;
-      fullCircuit: string;
-      studentId: string;
-      sessionId: string;
-    }>();
+  const {
+    type,
+    studentName,
+    queue,
+    fullCircuit,
+    studentId,
+    sessionId,
+    attempted,
+    realized,
+  } = useLocalSearchParams<{
+    type: string;
+    studentName: string;
+    queue: string;
+    fullCircuit: string;
+    studentId: string;
+    sessionId: string;
+    attempted: string;
+    realized: string;
+  }>();
 
   return (
     <SessionCompletedScreen
@@ -25,6 +35,8 @@ export default function SessionCompletedHubRoute() {
       fullCircuit={fullCircuit}
       studentId={studentId}
       sessionId={sessionId}
+      attempted={attempted}
+      realized={realized}
     />
   );
 }

@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { ConfirmationModal } from "@/components/confirmation-modal";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { FormComponent } from "@/features/forms/components/form-component";
@@ -9,13 +10,9 @@ import {
 } from "@/features/exercises/components/activity-result-modal";
 import { StartActivity } from "@/features/exercises/components/start-activity";
 import { Stopwatch } from "@/features/exercises/components/stopwatch";
-import {
-  DEFAULT_FINISH_MOTIVOS,
-  FinishSessionModal,
-} from "@/features/sessions/components/finish-session-modal";
 import { SessionExercise } from "@/features/sessions/screens/session-running-screen";
 import { useRouter } from "expo-router";
-import { CheckCircle2, ChevronRight, Split } from "lucide-react-native";
+import { CheckCircle2, ChevronRight, Split, XCircle } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Animated, Pressable, ScrollView, Text, View } from "react-native";
 import {
@@ -408,6 +405,13 @@ export function SessionRunningSemiStructuredScreen({
         );
         closeSession(finalSid);
       }
+      const naoRealizados = exercises.filter(
+        (ex) => novoHistorico[ex.id] === "nao_realizada",
+      );
+      const attempted = Object.keys(novoHistorico).length;
+      const realized = Object.values(novoHistorico).filter(
+        (s) => s === "concluido",
+      ).length;
       router.replace({
         pathname: "/session/completed",
         params: {
@@ -416,7 +420,9 @@ export function SessionRunningSemiStructuredScreen({
           studentId,
           sessionId: finalSid,
           fullCircuit: JSON.stringify(exercises),
-          queue: JSON.stringify([]),
+          queue: JSON.stringify(naoRealizados),
+          attempted: String(attempted),
+          realized: String(realized),
         },
       });
     } else {
@@ -424,24 +430,25 @@ export function SessionRunningSemiStructuredScreen({
     }
   };
 
-  const pendentesNomes = exercises
-    .filter((ex) => {
-      const status = historicoExercicios[ex.id];
-      return status !== "concluido" && status !== "adiado";
-    })
-    .map((ex) => ex.name);
-
-  const handleFinishSession = (motivo: string, descricao?: string) => {
+  /**
+   * Finishes a semi-structured session early. Only confirmation is required (no
+   * finish reason): exercises that were never attempted are left untouched, and
+   * the completion screen's progress reflects only the attempted exercises.
+   */
+  const handleFinishSession = () => {
     setIsFinishOpen(false);
 
     finalizeActiveCrise();
     finalizeActiveFuga();
     trySaveForm();
 
-    const filaDePendentes = exercises.filter((ex) => {
-      const status = historicoExercicios[ex.id];
-      return status !== "concluido" && status !== "adiado";
-    });
+    const naoRealizados = exercises.filter(
+      (ex) => historicoExercicios[ex.id] === "nao_realizada",
+    );
+    const attempted = Object.keys(historicoExercicios).length;
+    const realized = Object.values(historicoExercicios).filter(
+      (s) => s === "concluido",
+    ).length;
 
     const finalSid = effectiveSessionIdRef.current;
     if (finalSid) {
@@ -450,8 +457,6 @@ export function SessionRunningSemiStructuredScreen({
       void (async () => {
         await saveSession(finalSid, [], crisesRef.current, {
           status: "concluida",
-          motivoFinalizacao: MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro",
-          descricaoMotivo: descricao ?? motivo,
         });
         await finalizeSessionAutoFill(finalSid, totalAtFinish, fugasAtFinish);
       })();
@@ -466,7 +471,9 @@ export function SessionRunningSemiStructuredScreen({
         studentId,
         sessionId: finalSid,
         fullCircuit: JSON.stringify(exercises),
-        queue: JSON.stringify(filaDePendentes),
+        queue: JSON.stringify(naoRealizados),
+        attempted: String(attempted),
+        realized: String(realized),
       },
     });
   };
@@ -607,12 +614,14 @@ export function SessionRunningSemiStructuredScreen({
             {exercises.map((exercise) => {
               const status = historicoExercicios[exercise.id];
               const isConcluido = status === "concluido" || status === "adiado";
+              const isNaoRealizada = status === "nao_realizada";
+              const isResolved = isConcluido || isNaoRealizada;
 
               const hasActiveExercise = !!currentSessionData?.activeExerciseId;
               const isRunningThis = exercise.id === currentSessionData?.activeExerciseId;
               const isBlocked = hasActiveExercise && !isRunningThis;
 
-              const disabled = isConcluido || isBlocked;
+              const disabled = isResolved || isBlocked;
 
               return (
                 <Pressable
@@ -621,21 +630,35 @@ export function SessionRunningSemiStructuredScreen({
                   className={`flex-row items-center justify-between rounded-2xl border px-5 py-4 ${
                     isConcluido
                       ? "bg-[#34C759]/10 border-[#34C759] opacity-70"
-                      : isBlocked
-                        ? "bg-level2 border-outline opacity-40"
-                        : "bg-level2 border-outline"
+                      : isNaoRealizada
+                        ? "bg-error/10 border-error opacity-70"
+                        : isBlocked
+                          ? "bg-level2 border-outline opacity-40"
+                          : "bg-level2 border-outline"
                   }`}
                   onPress={() => handleSelectExercise(exercise)}
                 >
                   <View className="flex-1 mr-4">
                     <Text
-                      className={`text-base font-medium leading-5 ${isConcluido ? "text-[#34C759]" : "text-white"}`}
+                      className={`text-base font-medium leading-5 ${
+                        isConcluido
+                          ? "text-[#34C759]"
+                          : isNaoRealizada
+                            ? "text-error"
+                            : "text-white"
+                      }`}
                     >
                       {exercise.name}
                     </Text>
                     {exercise.description && (
                       <Text
-                        className={`text-sm font-medium leading-5 mt-1 ${isConcluido ? "text-[#34C759]/80" : "text-muted"}`}
+                        className={`text-sm font-medium leading-5 mt-1 ${
+                          isConcluido
+                            ? "text-[#34C759]/80"
+                            : isNaoRealizada
+                              ? "text-error/80"
+                              : "text-muted"
+                        }`}
                         numberOfLines={2}
                       >
                         {exercise.description}
@@ -645,6 +668,8 @@ export function SessionRunningSemiStructuredScreen({
 
                   {isConcluido ? (
                     <CheckCircle2 color="#34C759" size={24} />
+                  ) : isNaoRealizada ? (
+                    <XCircle color={colors.error} size={24} />
                   ) : (
                     <ChevronRight color={colors.muted} size={24} />
                   )}
@@ -695,10 +720,9 @@ export function SessionRunningSemiStructuredScreen({
           )}
         </ScrollView>
 
-        <FinishSessionModal
+        <ConfirmationModal
           visible={isFinishOpen}
-          motivos={DEFAULT_FINISH_MOTIVOS}
-          pendingExercises={pendentesNomes}
+          mode="finishSession"
           onClose={() => setIsFinishOpen(false)}
           onConfirm={handleFinishSession}
         />

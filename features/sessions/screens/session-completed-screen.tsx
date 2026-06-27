@@ -27,6 +27,14 @@ interface SessionCompletedScreenProps {
   fullCircuit?: string;
   studentId?: string;
   sessionId?: string;
+  /**
+   * Number of exercises attempted during the session (the `x/y` denominator).
+   * Passed by semi-structured sessions, where never-attempted exercises must
+   * not count; falls back to the full circuit length when absent.
+   */
+  attempted?: string;
+  /** Number of attempted exercises marked as realized (the `x/y` numerator). */
+  realized?: string;
 }
 
 /**
@@ -41,6 +49,8 @@ export function SessionCompletedScreen({
   fullCircuit,
   studentId,
   sessionId,
+  attempted,
+  realized,
 }: SessionCompletedScreenProps) {
   const router = useRouter();
 
@@ -74,13 +84,13 @@ export function SessionCompletedScreen({
 
     setIsOtherModalOpen(false);
     router.push({
-      pathname: "/session/structured",
+      pathname: "/session/semi-structured",
       params: {
         studentName,
         studentId: studentId ?? "",
         sessionId: sessionId ?? "",
         circuitName: "Outro exercício",
-        exercises: JSON.stringify(chosen),
+        queue: JSON.stringify(chosen),
       },
     });
   };
@@ -93,10 +103,15 @@ export function SessionCompletedScreen({
     : "Circuito Estruturado";
   const detailsLabel = `${studentName} · ${subtitleLabel}`;
 
-  const totalExercicios = circuitoCompleto.length;
-  const concluidosCount = circuitoCompleto.filter(
-    (ex: any) => !filaDePendentes.some((p: any) => p.id === ex.id),
-  ).length;
+  const hasAttemptCounts = attempted !== undefined && attempted !== "";
+  const totalExercicios = hasAttemptCounts
+    ? Number(attempted)
+    : circuitoCompleto.length;
+  const concluidosCount = hasAttemptCounts
+    ? Number(realized ?? 0)
+    : circuitoCompleto.filter(
+        (ex: any) => !filaDePendentes.some((p: any) => p.id === ex.id),
+      ).length;
   const progressLabel = `${concluidosCount}/${totalExercicios}`;
 
   const handleToggleRepeat = (id: string) => {
