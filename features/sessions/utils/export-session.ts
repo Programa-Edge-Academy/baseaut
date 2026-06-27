@@ -1,6 +1,7 @@
 import type {
   ActivityRecordItem,
 } from "@/features/sessions/components/activity-record-card";
+import { formatAnswer } from "@/features/forms/utils/format-answer";
 import { deliverFiles, type DeliveryMode, type ExportableFile } from "@/lib/export-delivery";
 import { supabase } from "@/lib/supabase";
 import * as FileSystem from "expo-file-system/legacy";
@@ -93,10 +94,9 @@ async function fetchRcForSession(sessionId: string): Promise<RcRow[]> {
 
   return (perguntas ?? []).map((q) => {
     const titulo = (q.texto_pergunta || "").split(/\n(?=\(0=)/)[0].trim();
-    const valor = respByQ.get(q.id);
     return {
       pergunta: titulo,
-      resposta: valor != null && valor !== "" ? String(valor) : "–",
+      resposta: formatAnswer(respByQ.get(q.id)),
     };
   });
 }
