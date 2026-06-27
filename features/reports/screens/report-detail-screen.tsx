@@ -24,9 +24,31 @@ import React, { useState } from "react";
 import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from "react-native";
 
 /** Formats an ISO date as a Brazilian short date. */
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("pt-BR");
+function fmtDate(val: string | Date | null | undefined) {
+  if (!val) return "";  
+  if (val instanceof Date) {
+    const day = String(val.getDate()).padStart(2, "0");
+    const month = String(val.getMonth() + 1).padStart(2, "0");
+    const year = val.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+  const [year, month, day] = val.split("T")[0].split("-");
+  return `${day}/${month}/${year}`;
 }
+
+/** Returns date at local 00:00:00 */
+const getLocalStartOfDay = (dateStr: string) => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split("T")[0].split("-").map(Number);
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+};
+
+/** Returns date at local 23:59:59.999 */
+const getLocalEndOfDay = (dateStr: string) => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split("T")[0].split("-").map(Number);
+  return new Date(year, month - 1, day, 23, 59, 59, 999);
+};
 
 /** Maps a stored support level code to its display label. */
 function fmtSupportLevel(raw: string | null | undefined): string | null {
@@ -126,8 +148,8 @@ export function ReportDetailScreen() {
     }
   };
 
-  const startDate = dataInicio ? new Date(dataInicio) : null;
-  const endDate = dataFim ? new Date(dataFim) : null;
+  const startDate = dataInicio ? getLocalStartOfDay(dataInicio) : null;
+  const endDate = dataFim ? getLocalEndOfDay(dataFim) : null;
 
   const buildSummaryCards = () => {
     if (!data?.comparacao) return [];
@@ -197,7 +219,7 @@ export function ReportDetailScreen() {
                   const records: ExerciseProgressRecord[] = (ex.historico ?? []).map((h: any, i: number) => ({
                     id: `${ex.exercicio_id}-${i}`,
                     sessionId: `s-${i}`,
-                    date: new Date(h.data).toLocaleDateString("pt-BR"),
+                    date: fmtDate(h.data),
                     rawDate: h.data,
                     executionStatus: "realizada" as const,
                     developmentLevel: h.nivel_desenvolvimento,
