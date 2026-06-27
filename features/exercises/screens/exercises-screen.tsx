@@ -156,7 +156,7 @@ export function ExercisesScreen() {
       setExerciseToDelete(exercise);
       if (count > 0) {
         setDeleteModalMessage(
-          `Este exercício está vinculado a ${count} circuito${count > 1 ? "s" : ""}. A exclusão pode impactar esses circuitos e não pode ser desfeita.`,
+          `Este exercício está vinculado a ${count} circuito${count > 1 ? "s" : ""}. Ele será removido desse${count > 1 ? "s" : ""} circuito${count > 1 ? "s" : ""} e esta ação não pode ser desfeita.`,
         );
       } else {
         setDeleteModalMessage(undefined);
