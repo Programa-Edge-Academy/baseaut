@@ -14,6 +14,7 @@ import ComparisonBehaviors from "@/features/analysis/components/comparison-behav
 import ComparisonHelp from "@/features/analysis/components/comparison-help";
 import ExerciceComparisonCard from "@/features/analysis/components/exercice-comparison-card";
 import { usePerformanceComparison } from "@/features/analysis/hooks/use-performance-comparison";
+import { PageHeader } from "@/components/page-header";
 
 const monthsPt = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -244,26 +245,23 @@ export function PerformanceComparisonScreen() {
     <View className="flex-1 bg-level1">
       <Header variant="back" onPressBack={() => router.back()} />
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }} className="flex-1">
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }} className="flex-1">
         {isLoading ? (
           <View className="items-center justify-center py-10">
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
-          <View className="mt-5">
-            <Text
-              className="text-xl font-bold text-white"
-              style={{ marginHorizontal: 22, marginBottom: 16, fontFamily: "Inter-Bold" }}
-            >
-              Comparar desempenho - {profile?.name || "Aluno"}
-            </Text>
+          <View className="mx-8 mt-5">
+            <PageHeader title={`Comparar desempenho - ${profile?.name || "Aluno"}`} subtitle=""></PageHeader>
 
             <PeriodSelector
+              containerStyle={{marginHorizontal: 0}}
               label={getLabel(1, period1Range)}
               onPress={() => handlePeriodPress(1)}
-            />
+              />
 
             <PeriodSelector
+              containerStyle={{marginHorizontal: 0}}
               label={getLabel(2, period2Range)}
               onPress={() => handlePeriodPress(2)}
             />
@@ -274,10 +272,10 @@ export function PerformanceComparisonScreen() {
               </Text>
             )}
 
-            <View className="items-center mt-4">
+            <View className="items-center mt-2">
               <DefaultButton
                 label="Comparar"
-                sizeClass="w-[168px] h-[44px]"
+                sizeClass="w-full h-[44px]"
                 disabled={false}
                 style={{ opacity: isCompareDisabled ? 0.5 : 1 }}
                 onPress={handleComparePress}
@@ -285,7 +283,7 @@ export function PerformanceComparisonScreen() {
             </View>
 
             {showResults && (
-              <View className="mt-6 gap-6">
+              <View className="mt-4 gap-4">
                 {isLoadingComparison ? (
                   <View className="items-center justify-center py-10">
                     <ActivityIndicator size="large" color={colors.primary} />
@@ -338,7 +336,7 @@ export function PerformanceComparisonScreen() {
             <View className="items-center">
               <DefaultButton
                 label="Salvar"
-                sizeClass="w-[168px] h-[44px]"
+                sizeClass="w-full h-11"
                 disabled={false}
                 style={{ opacity: isSaveDisabled ? 0.5 : 1 }}
                 onPress={handleSavePeriod}

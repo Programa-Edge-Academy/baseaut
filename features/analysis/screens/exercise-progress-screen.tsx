@@ -132,14 +132,7 @@ export function ExerciseProgressScreen() {
     <View className="flex-1 bg-level1">
       <Header 
         variant="back" 
-        onPressBack={() => {
-          if (isCalendarOpen) setIsCalendarOpen(false);
-          else if (selectedExercise) {
-            setSelectedExercise(null);
-            setSelectedRange({ startDate: null, endDate: null });
-            setTempRange({ startDate: null, endDate: null });
-          } else router.back();
-        }} 
+        onPressBack={() => {router.back();}} 
       />
 
       <View className="mt-5 w-full">
@@ -169,14 +162,14 @@ export function ExerciseProgressScreen() {
         </View>
       ) : (
         <ScrollView className="flex-1 px-8" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-          <View className="mt-6 gap-4">
+          <View className="mt-6 gap-2">
             {exercises.map((exercise) => {
               const isSelected = selectedExercise?.id === exercise.id;
               const hasSavedRange = !!(selectedRange.startDate && selectedRange.endDate);
               const hasOnlyOneSession = exercise.sessions === 1;
 
               return (
-                <View key={exercise.id} className="gap-4">
+                <View key={exercise.id} className="gap-2">
                   <ProgressExerciseCard
                     title={exercise.title}
                     statusLabel={exercise.statusLabel}
@@ -199,14 +192,15 @@ export function ExerciseProgressScreen() {
                   />
 
                   {isSelected && (
-                    <View className="gap-3 -mt-2 mb-2 px-1">
-                      <PeriodSelector 
+                    <View className="gap-2 mt-2 mb-4">
+                      <PeriodSelector
+                        containerStyle={{marginVertical: 0, marginHorizontal: 0}}
                         label={getPeriodLabel()} 
                         onPress={() => setIsCalendarOpen(true)}
                       />
 
                       {hasSavedRange && (
-                        <View className="gap-3">
+                        <View className="">
                           <ExerciseProgressChart
                             exerciseName={exercise.title}
                             records={filteredChartRecords} 
@@ -246,7 +240,7 @@ export function ExerciseProgressScreen() {
             <View className="items-center">
               <DefaultButton
                 label="Salvar"
-                sizeClass="w-[168px] h-[44px]"
+                sizeClass="w-full h-11"
                 disabled={!tempRange.startDate}
                 style={{ opacity: !tempRange.startDate ? 0.5 : 1 }}
                 onPress={handleSaveDate}
