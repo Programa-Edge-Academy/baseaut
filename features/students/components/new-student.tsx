@@ -3,7 +3,7 @@ import { DefaultButton } from "@/components/default-button";
 import { Calendar, ChevronDown, ImageUp, Pencil, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { AppModal } from "@/components/app-modal";
-import { Image, Keyboard, Pressable, Text, View } from "react-native";
+import { Image, Keyboard, Pressable, ScrollView, Text, View } from "react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { ActionButtons } from "../../../components/action-buttons";
 import { ConfirmationModal } from "../../../components/confirmation-modal";
@@ -331,9 +331,21 @@ export function NewStudent({
         transparent
         animationType="fade"
       >
-        <View className="flex-1 bg-black/50 p-7 justify-center">
-          <View className="border bg-level2 border-outline rounded-[15px]">
-            <View className="p-[25px] gap-5">
+        <View className="flex-1 justify-center">
+          <Pressable
+            className="absolute inset-0 bg-black/50"
+            onPress={Keyboard.dismiss}
+          />
+          <View
+            className="mx-7 border bg-level2 border-outline rounded-[15px] overflow-hidden"
+            style={{ maxHeight: "90%" }}
+          >
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ padding: 25, gap: 20 }}
+            >
               <View className="flex-row items-center justify-between">
                 <Text className="text-header-2 text-white">
                   {mode === "edit" ? "Editar aluno" : "Novo aluno"}
@@ -621,7 +633,7 @@ export function NewStudent({
                 saveLabel={isSaving ? "Salvando..." : "Salvar"}
                 disabled={isSaving}
               />
-            </View>
+            </ScrollView>
           </View>
         </View>
       </AppModal>

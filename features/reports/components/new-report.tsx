@@ -9,6 +9,7 @@ import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
+  Keyboard,
   Pressable,
   ScrollView,
   Text,
@@ -107,7 +108,11 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
   return (
     <>
       <AppModal visible={visible} onRequestClose={onClose} transparent animationType="fade">
-        <View className="flex-1 bg-black/50 justify-center">
+        <View className="flex-1 justify-center">
+          <Pressable
+            className="absolute inset-0 bg-black/50"
+            onPress={Keyboard.dismiss}
+          />
           <View
             className="border bg-level2 border-outline"
             style={{
@@ -117,6 +122,8 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
             }}
           >
             <ScrollView
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
               contentContainerStyle={{ padding: 24, gap: 18 }}
               showsVerticalScrollIndicator={false}
             >
@@ -195,7 +202,7 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
             <View className="items-center">
               <DefaultButton
                 label="Salvar"
-                sizeClass="w-[168px] h-[44px]"
+                sizeClass="w-full h-11"
                 disabled={!tempInicio || !tempFim}
                 style={{ opacity: !tempInicio || !tempFim ? 0.5 : 1 }}
                 onPress={savePeriod}

@@ -8,7 +8,7 @@ import { Stack } from "expo-router";
 import { colors } from "@/assets/colors";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { Keyboard, TouchableWithoutFeedback, View, Platform } from "react-native";
+import { View, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   SafeAreaProvider,
@@ -67,12 +67,10 @@ export default function RootLayout() {
       <SessionGlobalProvider>
         {Platform.OS !== "web" ? (
           <GestureHandlerRootView style={{ flex: 1 }}>
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-              <View style={{ flex: 1 }}>
-                {stack}
-                <GlobalSessionWidget />
-              </View>
-            </TouchableWithoutFeedback>
+            <View style={{ flex: 1 }}>
+              {stack}
+              <GlobalSessionWidget />
+            </View>
           </GestureHandlerRootView>
         ) : (
           <View style={{ flex: 1 }}>

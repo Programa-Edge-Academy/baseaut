@@ -1,6 +1,6 @@
 import { AppModal } from "@/components/app-modal";
 import React, { useEffect, useRef, useState } from "react";
-import { Text, View, Pressable, useWindowDimensions, ScrollView } from "react-native";
+import { Keyboard, Text, View, Pressable, useWindowDimensions, ScrollView } from "react-native";
 import { X, CheckCircle2, Tags } from "lucide-react-native";
 import { ActionButtons } from "@/components/action-buttons";
 import { colors } from "@/assets/colors";
@@ -171,7 +171,11 @@ export function NewCircuit({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-black/60 justify-center items-center px-4">
+      <View className="flex-1 justify-center items-center">
+        <Pressable
+          className="absolute inset-0 bg-black/60"
+          onPress={Keyboard.dismiss}
+        />
         <View
           className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[900px] overflow-hidden relative"
           style={{ maxHeight: screenHeight * 0.85 }}
@@ -194,6 +198,7 @@ export function NewCircuit({
 
           <ScrollView
             className="flex-shrink"
+            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             scrollEnabled={!isDragging}
             contentContainerStyle={{ padding: 20 }}
