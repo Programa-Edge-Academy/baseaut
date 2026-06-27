@@ -237,7 +237,7 @@ export function HelpRecordsScreen() {
             <View className="items-center">
               <DefaultButton
                 label="Salvar"
-                sizeClass="w-[168px] h-[44px]"
+                sizeClass="w-full h-11"
                 disabled={!canSavePeriod}
                 style={{ opacity: !canSavePeriod ? 0.5 : 1 }}
                 onPress={savePeriod}
