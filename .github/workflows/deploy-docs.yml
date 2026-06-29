@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - develop
   workflow_dispatch:
 
 # Permissões exigidas pelo deploy oficial do GitHub Pages.

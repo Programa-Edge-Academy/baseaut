@@ -13,6 +13,9 @@ interface Props {
   onChange?: (val: any) => void;
 }
 
+/** Option that is mutually exclusive with every other choice. */
+const NONE_OPTION = "Nenhuma das opções";
+
 /**
  * Renders a choice list with optional "other" input.
  */
@@ -22,13 +25,24 @@ export function ChoiceListQuestionUI({ question, value, onChange }: Props) {
 
   /**
    * Toggles a choice option and updates selection state.
+   *
+   * @remarks
+   * "Nenhuma das opções" is mutually exclusive: selecting it clears every other
+   * choice, and selecting any other choice clears it.
    */
   const toggleOption = (option: string) => {
-    let newOptions;
+    let newOptions: string[];
     if (selectedOptions.includes(option)) {
       newOptions = selectedOptions.filter((o: string) => o !== option);
+    } else if (option === NONE_OPTION) {
+      newOptions = [NONE_OPTION];
+    } else if (question.multiple) {
+      newOptions = [
+        ...selectedOptions.filter((o: string) => o !== NONE_OPTION),
+        option,
+      ];
     } else {
-      newOptions = question.multiple ? [...selectedOptions, option] : [option];
+      newOptions = [option];
     }
     if (onChange) onChange({ selected: newOptions, other: otherText });
   };

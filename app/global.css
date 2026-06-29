@@ -38,6 +38,38 @@
   .shadow-panelShadow { @apply shadow-base shadow-black/50; }
 }
 
+/*
+ * Disable text selection app-wide on web. React Native Web makes <Text> nodes
+ * selectable by default, so dragging a finger/cursor over text or images
+ * triggers a selection/drag gesture instead of scrolling the parent
+ * ScrollView. That made only Pressable elements (which already get
+ * user-select: none) and empty background areas usable for drag-scrolling.
+ * Text inputs re-enable selection below so users can still edit field values.
+ */
+html,
+body,
+#root {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

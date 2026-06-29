@@ -151,14 +151,18 @@ export function useExercises() {
   };
 
   /**
-   * Soft-deletes an exercise.
+   * Soft-deletes an exercise and removes it from every circuit it belongs to.
+   *
+   * @remarks
+   * Delegates to the `excluir_exercicio` RPC so the soft-delete, the removal of
+   * the exercise's `itens_circuito` rows and the renumbering of each affected
+   * circuit's `ordem` all happen in a single transaction.
    */
   const deleteExercise = async (id: string) => {
     try {
-      const { error: deleteError } = await supabase
-        .from("exercicios")
-        .update({ ativo: false })
-        .eq("id", id);
+      const { error: deleteError } = await supabase.rpc("excluir_exercicio", {
+        p_exercicio_id: id,
+      });
 
       if (deleteError) throw deleteError;
       await loadExercises(false);

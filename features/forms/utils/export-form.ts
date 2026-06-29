@@ -1,3 +1,4 @@
+import { formatAnswer } from "@/features/forms/utils/format-answer";
 import { deliverFiles, type DeliveryMode, type ExportableFile } from "@/lib/export-delivery";
 import { supabase } from "@/lib/supabase";
 import * as FileSystem from "expo-file-system/legacy";
@@ -17,26 +18,6 @@ const TD = `border:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:
 
 /** A question/answer pair prepared for export. */
 type FormRow = { pergunta: string; resposta: string };
-
-/** Converts a stored value (plain text or JSON) into a human-readable string. */
-function displayValue(valor: string | null | undefined): string {
-  if (valor == null || valor === "") return "–";
-  try {
-    const parsed = JSON.parse(valor);
-    if (Array.isArray(parsed)) return parsed.length ? parsed.join(", ") : "–";
-    if (parsed && typeof parsed === "object") {
-      if ("selected" in parsed) {
-        const sel = (parsed as any).selected;
-        if (Array.isArray(sel)) return sel.length ? sel.join(", ") : "–";
-        return sel != null && sel !== "" ? String(sel) : "–";
-      }
-      return JSON.stringify(parsed);
-    }
-    return String(parsed);
-  } catch {
-    return String(valor);
-  }
-}
 
 /** Loads a form's questions and their answers, joined into export rows. */
 async function fetchFormRows(formularioId: string): Promise<FormRow[]> {
@@ -66,7 +47,7 @@ async function fetchFormRows(formularioId: string): Promise<FormRow[]> {
 
   return (perguntas ?? []).map((q) => {
     const titulo = (q.texto_pergunta || "").split(/\n(?=\(0=)/)[0].trim();
-    return { pergunta: titulo, resposta: displayValue(respByQ.get(q.id)) };
+    return { pergunta: titulo, resposta: formatAnswer(respByQ.get(q.id)) };
   });
 }
 

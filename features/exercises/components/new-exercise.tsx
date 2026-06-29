@@ -7,7 +7,9 @@ import { ImageUp, Pencil, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   Image,
+  Keyboard,
   Pressable,
+  ScrollView,
   Text,
   useWindowDimensions,
   View,
@@ -170,9 +172,21 @@ export function NewExercise({
         transparent
         animationType="fade"
       >
-        <View className="flex-1 bg-black/50 justify-center p-7">
-          <View className="border bg-level2 border-outline rounded-[15px]">
-            <View className="p-[25px] gap-[25px]">
+        <View className="flex-1 justify-center">
+          <Pressable
+            className="absolute inset-0 bg-black/50"
+            onPress={Keyboard.dismiss}
+          />
+          <View
+            className="mx-7 border bg-level2 border-outline rounded-[15px] overflow-hidden"
+            style={{ maxHeight: "90%" }}
+          >
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ padding: 25, gap: 25 }}
+            >
               <View className="flex-row items-center justify-between">
                 <Text className="text-header-2 text-white">{title}</Text>
                 <Pressable onPress={onClose} className="p-1 active:opacity-70">
@@ -310,7 +324,7 @@ export function NewExercise({
                   />
                 </View>
               </View>
-            </View>
+            </ScrollView>
           </View>
         </View>
       </AppModal>

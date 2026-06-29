@@ -7,7 +7,6 @@ import { colors } from "@/assets/colors";
 import { type ToastMode } from "@/components/toast";
 import { useMabc2Records } from "@/features/analysis/hooks/use-mabc2-records";
 import { Mabc2RecordsListScreen } from "@/features/analysis/screens/mabc2-records-list-screen";
-import { supabase } from "@/lib/supabase";
 
 /**
  * Route listing a student's MABC-2 records. Guards access to coordinators and
@@ -25,8 +24,6 @@ export default function Mabc2RecordsRoute() {
   const currentStudentName = studentName ?? "Aluno";
   const { records, isLoading, refetch, error } = useMabc2Records(currentStudentId);
 
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-
   const [toastConfig, setToastConfig] = useState<{
     visible: boolean;
     mode: ToastMode;
@@ -38,61 +35,24 @@ export default function Mabc2RecordsRoute() {
     title: "",
   });
 
-  useEffect(() => {
-    async function checkAccess() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setIsAuthorized(false);
-          return;
-        }
-
-        const { data: profileData } = await supabase
-          .from("perfis")
-          .select("perfil")
-          .eq("id", user.id)
-          .single();
-
-        const role = profileData?.perfil || user.user_metadata?.perfil || user.user_metadata?.role;
-
-        if (role === "coordenador" || role === "monitor") {
-          setIsAuthorized(true);
-        } else {
-          setIsAuthorized(false);
-        }
-      } catch {
-        setIsAuthorized(false);
-      }
-    }
-    checkAccess();
-  }, []);
-
-  useEffect(() => {
-    if (isAuthorized === false) {
-      router.back();
-    }
-  }, [isAuthorized]);
-
   useFocusEffect(
     useCallback(() => {
-      if (isAuthorized) {
-        refetch();
-      }
-    }, [refetch, isAuthorized])
+      refetch();
+    }, [refetch])
   );
 
   useEffect(() => {
-    if (toastSuccess && isAuthorized) {
+    if (toastSuccess) {
       setToastConfig({
         visible: true,
         mode: "success",
         title: toastSuccess,
       });
     }
-  }, [toastSuccess, isAuthorized]);
+  }, [toastSuccess]);
 
   useEffect(() => {
-    if (error && isAuthorized) {
+    if (error) {
       setToastConfig({
         visible: true,
         mode: "error",
@@ -100,18 +60,14 @@ export default function Mabc2RecordsRoute() {
         description: "Tente novamente",
       });
     }
-  }, [error, isAuthorized]);
+  }, [error]);
 
-  if (isAuthorized === null || isLoading) {
+  if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-level1">
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
-  }
-
-  if (isAuthorized === false) {
-    return null;
   }
 
   return (

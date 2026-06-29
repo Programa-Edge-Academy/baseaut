@@ -123,7 +123,7 @@ export function ExerciseProgressChart({
   return (
     <View
       onLayout={handleLayout}
-      className={`w-full bg-level2 rounded-[20px] border border-outline p-5 flex-col gap-4 mt-5 ${hideShadow ? "" : "shadow-panelShadow"}`}
+      className={`w-full bg-level2 rounded-[20px] border border-outline p-5 flex-col gap-4 ${hideShadow ? "" : "shadow-panelShadow"}`}
     >
       <View className="flex-col gap-1">
         <Text className="text-white font-bold" style={{ fontSize: 16 }}>

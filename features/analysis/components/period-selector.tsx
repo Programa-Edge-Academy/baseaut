@@ -17,8 +17,8 @@ export function PeriodSelector({ label = "Selecione o período para visualizar o
   return (
     <Container
       onPress={onPress}
-      className="w-auto flex-row items-center rounded-lg border border-outline bg-level2 py-3 px-4 pr-6"
-      style={[{ marginVertical: 8, marginHorizontal: 22 }, containerStyle]}
+      className="w-auto flex-row items-center border border-outline bg-level2 py-3 px-4 pr-6"
+      style={[{ marginVertical: 8, marginHorizontal: 22, borderRadius: 15 }, containerStyle]}
     >
       <View className="mr-3">
         <Calendar size={20} color={colors.muted} strokeWidth={2} />
