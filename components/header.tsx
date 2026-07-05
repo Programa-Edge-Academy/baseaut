@@ -1,60 +1,65 @@
 import { baseautLogoXml } from "@/assets/baseaut-logo";
-import { colors } from "@/assets/colors";
-import { ConfirmationModal } from "@/components/confirmation-modal";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { useThemeColors } from "@/features/settings/contexts/theme-context";
+// LAUNCH-GATE: tutorial access disabled for the public release (buggy tutorial).
+// Restore this import together with the header tutorial button below once the
+// tutorial is finished.
+// import { useTutorial } from "@/features/tutorial/contexts/tutorial-context";
 import { useUserRole } from "@/lib/use-user-role";
-import { supabase } from "@/lib/supabase";
 import { usePathname, useRouter } from "expo-router";
-import { ArrowLeft, LogOut, Save, Users, X } from "lucide-react-native";
-import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+// LAUNCH-GATE: `HelpCircle` re-add when the header tutorial button is restored.
+import { ArrowLeft, GraduationCap, /* HelpCircle, */ Save, Settings, User, Users, X } from "lucide-react-native";
+import React from "react";
+import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SvgXml } from "react-native-svg";
 
 /** Props for {@link Header}. */
 type HeaderProps = {
   /** Selects which actions and layout the header renders. Defaults to "default". */
-  variant?: "default" | "back" | "finish" | "finishEngagement" | "form";
+  variant?: "default" | "back" | "finish" | "finishEngagement" | "form" | "tutorial";
   /** Called when the back button is pressed. */
   onPressBack?: () => void;
-  /** Called when a finish button is pressed. */
+  /** Called when a finish button is pressed (also the "Em tutorial" button). */
   onPressFinish?: () => void;
   /** Called when the form save button is pressed. */
   onPressSave?: () => void;
+  /**
+   * When provided, shows the icon-only "Em tutorial" button beside the logo
+   * regardless of variant (used by the session-flow simulation, whose screens
+   * keep their real back/finish variants). Opens the practice notice.
+   */
+  onPressTutorial?: () => void;
 };
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.level2,
-  },
-});
-
 /**
- * App top bar with the logo and variant-driven actions: default (team/logout),
- * back, session/engagement finish, and form save. Owns the logout confirmation
- * flow.
+ * App top bar with the logo and variant-driven actions: default (team, account,
+ * tutorial and settings shortcuts), back, session/engagement finish, and form
+ * save. The "Em tutorial" practice button sits beside the logo (icon-only) so it
+ * never competes with the centered actions. Logging out lives on the account page.
  */
 export function Header({
   variant = "default",
   onPressBack,
   onPressFinish,
   onPressSave,
+  onPressTutorial,
 }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const role = useUserRole();
-  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+  const colors = useThemeColors();
+  const { t } = useI18n();
+  // LAUNCH-GATE: tutorial visibility flag unused while the header tutorial
+  // button is disabled. Restore with the button below.
+  // const { hidden: tutorialHidden } = useTutorial();
 
-  const handleLogout = async () => {
-    setIsLogoutModalVisible(false);
-    await supabase.auth.signOut();
-    router.replace("/");
-  };
-
-  const showBack = ["back", "finish", "finishEngagement", "form"].includes(variant);
+  const showBack = ["back", "finish", "finishEngagement", "form", "tutorial"].includes(variant);
   const showDefaultActions = variant === "default";
   const showFinishError = variant === "finish";
   const showFinishExtra = variant === "finishEngagement";
   const showFormSave = variant === "form";
+  const showTutorialBanner = variant === "tutorial";
 
   const handleLogoPress = () => {
     if (pathname !== "/students") {
@@ -63,8 +68,7 @@ export function Header({
   };
 
   return (
-    <>
-    <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} className="bg-level2">
       <View className="w-full items-center justify-center bg-level2 p-4">
         <View className="w-full flex-row items-center justify-between">
 
@@ -72,6 +76,16 @@ export function Header({
             <Pressable onPress={handleLogoPress} className="active:opacity-80">
               <SvgXml xml={baseautLogoXml} width={76} height={34} />
             </Pressable>
+
+            {(showTutorialBanner || onPressTutorial) && (
+              <Pressable
+                onPress={showTutorialBanner ? onPressFinish : onPressTutorial}
+                accessibilityLabel={t("tutorial.inTutorial")}
+                className="ml-3 h-10 w-10 flex-row items-center justify-center rounded-xl border-2 border-primary bg-primary/10 active:opacity-70"
+              >
+                <GraduationCap color={colors.primary} size={22} />
+              </Pressable>
+            )}
           </View>
 
           <View className="flex-1 flex-row justify-center items-center">
@@ -101,7 +115,7 @@ export function Header({
                 className="flex-row items-center px-4 py-2.5 rounded-2xl bg-primary shadow-primaryShadow active:opacity-70"
               >
                 <Save color="#FFFFFF" size={20} />
-                <Text className="text-white text-default-1 ml-2">Salvar</Text>
+                <Text className="text-content text-default-1 ml-2">{t("common.save")}</Text>
               </Pressable>
             )}
           </View>
@@ -115,8 +129,23 @@ export function Header({
                   </Pressable>
                 )}
 
-                <Pressable onPress={() => setIsLogoutModalVisible(true)} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
-                  <LogOut color={colors.muted} size={24} />
+                {/*
+                  LAUNCH-GATE: header tutorial entry disabled for the public
+                  release. The tutorial is still buggy; re-enable this button
+                  (and the imports/flag above) once it is complete.
+                  {!tutorialHidden && (
+                    <Pressable onPress={() => router.push("/tutorial" as never)} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
+                      <HelpCircle color={colors.muted} size={24} />
+                    </Pressable>
+                  )}
+                */}
+
+                <Pressable onPress={() => router.push("/account")} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
+                  <User color={colors.muted} size={24} />
+                </Pressable>
+
+                <Pressable onPress={() => router.push("/settings")} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
+                  <Settings color={colors.muted} size={24} />
                 </Pressable>
               </View>
             )}
@@ -127,20 +156,12 @@ export function Header({
                 className="flex-row items-center px-4 py-2 rounded-xl border-2 border-outline bg-level2 active:opacity-70"
               >
                 <ArrowLeft color={colors.muted} size={24} />
-                <Text className="text-muted text-default-1 ml-2">Voltar</Text>
+                <Text className="text-muted text-default-1 ml-2">{t("common.back")}</Text>
               </Pressable>
             )}
           </View>
         </View>
       </View>
     </SafeAreaView>
-
-    <ConfirmationModal
-      visible={isLogoutModalVisible}
-      onClose={() => setIsLogoutModalVisible(false)}
-      onConfirm={handleLogout}
-      mode="logout"
-    />
-    </>
   );
 }
