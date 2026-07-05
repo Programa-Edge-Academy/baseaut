@@ -12,6 +12,8 @@ export type Companion = {
   name: string;
   email: string;
   status?: "ativo" | "pendente" | "removido";
+  /** Companion's profile photo URL, mirroring the students' avatars. */
+  avatarUrl?: string | null;
 };
 
 /**
@@ -41,7 +43,7 @@ export function CompanionCard({
     >
       <View className="mb-4 flex-row items-center gap-3">
         <GraduationCap size={24} color={colors.secondary} />
-        <Text className="text-lg font-bold text-white">
+        <Text className="text-lg font-bold text-content">
           Monitores ({companions.length - companions.filter((c) => c.status === "pendente").length})
         </Text>
       </View>
@@ -59,6 +61,7 @@ export function CompanionCard({
                 name={companion.name}
                 email={companion.email}
                 status={companion.status}
+                avatarUrl={companion.avatarUrl}
                 onRemove={() => onRemoveCompanion?.(companion.id)}
                 onAccept={() => onAcceptCompanion?.(companion.id)}
                 onReject={() => onRejectCompanion?.(companion.id)}
