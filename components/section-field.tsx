@@ -1,7 +1,8 @@
 import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
-import { colors } from "../assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { useThemeColors } from "@/features/settings/contexts/theme-context";
 
 /** Which pair of sibling routes a {@link SectionField} toggles between. */
 export type SectionFieldMode = "exercises" | "circuits" | "analysis" | "reports";
@@ -18,26 +19,28 @@ interface SectionFieldProps {
  */
 export function SectionField({ mode, className }: SectionFieldProps) {
   const router = useRouter();
+  const colors = useThemeColors();
+  const { t } = useI18n();
 
   const config = {
     exercises: {
-      left: { label: "Exercícios", route: "/exercises" },
-      right: { label: "Circuitos", route: "/circuits" },
+      left: { label: t("section.exercises"), route: "/exercises" },
+      right: { label: t("section.circuits"), route: "/circuits" },
       isRightActive: false,
     },
     circuits: {
-      left: { label: "Exercícios", route: "/exercises" },
-      right: { label: "Circuitos", route: "/circuits" },
+      left: { label: t("section.exercises"), route: "/exercises" },
+      right: { label: t("section.circuits"), route: "/circuits" },
       isRightActive: true,
     },
     analysis: {
-      left: { label: "Análises", route: "/analysis" },
-      right: { label: "Relatórios", route: "/reports" },
+      left: { label: t("section.analysis"), route: "/analysis" },
+      right: { label: t("section.reports"), route: "/reports" },
       isRightActive: false,
     },
     reports: {
-      left: { label: "Análises", route: "/analysis" },
-      right: { label: "Relatórios", route: "/reports" },
+      left: { label: t("section.analysis"), route: "/analysis" },
+      right: { label: t("section.reports"), route: "/reports" },
       isRightActive: true,
     },
   }[mode];
@@ -60,7 +63,7 @@ export function SectionField({ mode, className }: SectionFieldProps) {
         style={{ backgroundColor: !config.isRightActive ? colors.level2 : "transparent" }}
       >
         <Text
-          className={`text-base font-bold ${!config.isRightActive ? "text-white" : "text-muted"}`}
+          className={`text-base font-bold ${!config.isRightActive ? "text-content" : "text-muted"}`}
         >
           {config.left.label}
         </Text>
@@ -72,7 +75,7 @@ export function SectionField({ mode, className }: SectionFieldProps) {
         style={{ backgroundColor: config.isRightActive ? colors.level2 : "transparent" }}
       >
         <Text
-          className={`text-base font-bold ${config.isRightActive ? "text-white" : "text-muted"}`}
+          className={`text-base font-bold ${config.isRightActive ? "text-content" : "text-muted"}`}
         >
           {config.right.label}
         </Text>

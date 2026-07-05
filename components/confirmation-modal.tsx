@@ -1,6 +1,9 @@
 import { AppModal } from "@/components/app-modal";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { AlertCircle, LogOut, Trash2, X } from "lucide-react-native";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Pressable, Text, View } from "react-native";
 import { colors } from "@/assets/colors";
 import { ActionButtons } from "./action-buttons";
@@ -25,6 +28,11 @@ export interface ConfirmationModalProps {
   iconType?: "trash" | "alert" | "logout";
   /** Preset that drives default copy, icon, and styling. Defaults to "delete". */
   mode?: "delete" | "finishSession" | "logout" | "finishEngagement";
+  /**
+   * Tutorial spotlight key for the confirm button. When set, the confirm button
+   * is registered as a highlight target and a spotlight is drawn over this modal.
+   */
+  confirmSpotlightKey?: string;
 }
 
 /**
@@ -42,24 +50,35 @@ export function ConfirmationModal({
   cancelLabel,
   iconType,
   mode = "delete",
+  confirmSpotlightKey,
 }: ConfirmationModalProps) {
+  const { t } = useI18n();
+  const sim = useTutorialSimulation();
+  const confirmButtonRef = useRef<View>(null);
+
+  useEffect(() => {
+    if (!confirmSpotlightKey) return;
+    sim.registerTarget(confirmSpotlightKey, confirmButtonRef, { rounded: true });
+    return () => sim.unregisterTarget(confirmSpotlightKey);
+  }, [confirmSpotlightKey, sim]);
+
   const isFinishMode = mode === "finishSession";
   const isLogoutMode = mode === "logout";
   const isFinishEngagementMode = mode === "finishEngagement";
 
   const config = {
-    title: title ?? (isFinishMode || isFinishEngagementMode ? "Finalizar sessão?" : isLogoutMode ? "Sair da conta?" : "Excluir"),
+    title: title ?? (isFinishMode || isFinishEngagementMode ? t("confirm.finishSession.title") : isLogoutMode ? t("confirm.logout.title") : t("confirm.delete.title")),
     message: message ?? (
       isFinishEngagementMode
-      ? "O progresso atual desta atividade de engajamento será salvo de acordo com o tipo de circuito escolhido."
-      : isFinishMode 
-      ? "O progresso atual desta sessão será salvo de acordo com o tipo de circuito escolhido." 
+      ? t("confirm.finishEngagement.message")
+      : isFinishMode
+      ? t("confirm.finishSession.message")
       : isLogoutMode
-      ? "Você será redirecionado para a tela de login."
-      : "Tem certeza que deseja excluir? Esta ação não poderá ser desfeita."
+      ? t("confirm.logout.message")
+      : t("confirm.delete.message")
     ),
-    confirmLabel: confirmLabel ?? (isFinishMode || isFinishEngagementMode ? "Finalizar" : isLogoutMode ? "Sair" : "Excluir"),
-    cancelLabel: cancelLabel ?? "Cancelar",
+    confirmLabel: confirmLabel ?? (isFinishMode || isFinishEngagementMode ? t("common.finish") : isLogoutMode ? t("common.exit") : t("common.delete")),
+    cancelLabel: cancelLabel ?? t("common.cancel"),
     iconType: iconType ?? (isLogoutMode ? "logout" : isFinishMode || isFinishEngagementMode ? "alert" : "trash"),
   };
 
@@ -83,7 +102,7 @@ export function ConfirmationModal({
             </View>
 
             <View className="flex-1 flex-row justify-between items-center">
-              <Text className="text-white text-header-2">
+              <Text className="text-content text-header-2">
                 {config.title}
               </Text>
               <Pressable onPress={onClose} className="p-1 active:opacity-70">
@@ -102,8 +121,11 @@ export function ConfirmationModal({
             cancelLabel={config.cancelLabel}
             saveLabel={config.confirmLabel}
             mode={isFinishEngagementMode ? "warning" : "danger"}
+            saveButtonRef={confirmSpotlightKey ? confirmButtonRef : undefined}
           />
         </View>
+
+        <TutorialSpotlight />
       </View>
     </AppModal>
   );
