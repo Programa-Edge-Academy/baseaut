@@ -8,7 +8,7 @@ import { Stack } from "expo-router";
 import { colors } from "@/assets/colors";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { View, Platform } from "react-native";
+import { View, Platform, useWindowDimensions } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   SafeAreaProvider,
@@ -17,6 +17,10 @@ import {
 import { SessionGlobalProvider } from "@/features/sessions/contexts/session-global-context";
 import { GlobalToastProvider } from "@/components/global-toast";
 import { GlobalSessionWidget } from "@/features/sessions/components/global-session-widget";
+import { ThemeProvider } from "@/features/settings/contexts/theme-context";
+import { I18nProvider } from "@/features/settings/contexts/i18n-context";
+import { TutorialProvider } from "@/features/tutorial/contexts/tutorial-context";
+import { SessionSimulationProvider } from "@/features/tutorial/contexts/session-simulation-controller";
 import "./global.css";
 
 SplashScreen.preventAutoHideAsync();
@@ -33,6 +37,12 @@ SplashScreen.preventAutoHideAsync();
  * {@link initialWindowMetrics} is passed to the provider so safe-area insets are
  * available synchronously on the first render, preventing the content from
  * jumping once insets are measured.
+ *
+ * The rendered tree is keyed on the system font scale and display scale:
+ * changing either while the app is backgrounded only partially re-renders the
+ * UI (stale measurements survive until a full restart), so the key forces a
+ * clean remount when the user returns. Providers sit above the key, so global
+ * session state survives the remount.
  */
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -40,6 +50,7 @@ export default function RootLayout() {
     "Inter-Medium": Inter_500Medium,
     "Inter-Bold": Inter_700Bold,
   });
+  const { fontScale, scale } = useWindowDimensions();
 
   useEffect(() => {
     if (loaded || error) {
@@ -63,23 +74,31 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <ThemeProvider>
+      <I18nProvider>
+      <TutorialProvider>
       <GlobalToastProvider>
       <SessionGlobalProvider>
+      <SessionSimulationProvider>
         {Platform.OS !== "web" ? (
           <GestureHandlerRootView style={{ flex: 1 }}>
-            <View style={{ flex: 1 }}>
+            <View key={`metrics-${fontScale}-${scale}`} style={{ flex: 1 }}>
               {stack}
               <GlobalSessionWidget />
             </View>
           </GestureHandlerRootView>
         ) : (
-          <View style={{ flex: 1 }}>
+          <View key={`metrics-${fontScale}-${scale}`} style={{ flex: 1 }}>
             {stack}
             <GlobalSessionWidget />
           </View>
         )}
+      </SessionSimulationProvider>
       </SessionGlobalProvider>
       </GlobalToastProvider>
+      </TutorialProvider>
+      </I18nProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
