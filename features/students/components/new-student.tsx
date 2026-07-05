@@ -1,10 +1,13 @@
 import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { Calendar, ChevronDown, ImageUp, Pencil, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { AppModal } from "@/components/app-modal";
+import RangeCalendar from "@/components/range-calendar";
 import { Image, Keyboard, Pressable, ScrollView, Text, View } from "react-native";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { ActionButtons } from "../../../components/action-buttons";
 import { ConfirmationModal } from "../../../components/confirmation-modal";
 import { DefaultTextInput } from "../../../components/default-text-input";
@@ -34,6 +37,7 @@ export function NewStudent({
   borderRadius = 15,
   onSave,
 }: NewStudentProps) {
+  const { t } = useI18n();
   const [fullName, setFullName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [weight, setWeight] = useState("");
@@ -58,10 +62,17 @@ export function NewStudent({
     width: 0,
   });
 
+  const sim = useTutorialSimulation();
+  const nameFieldRef = useRef<View>(null);
+  const birthFieldRef = useRef<View>(null);
+  const supportFieldRef = useRef<View>(null);
+  const saveFieldRef = useRef<View>(null);
+  const initialSupportRef = useRef<string | null>(null);
+
   const supportLevelOptions = [
-    "Transtorno do Espectro Autista Nível 1",
-    "Transtorno do Espectro Autista Nível 2",
-    "Transtorno do Espectro Autista Nível 3",
+    t("students.form.supportOption1"),
+    t("students.form.supportOption2"),
+    t("students.form.supportOption3"),
   ];
 
   useEffect(() => {
@@ -94,8 +105,52 @@ export function NewStudent({
         setPhotoUri(null);
       }
       setErrors({});
+      initialSupportRef.current =
+        mode === "edit" && initialData ? initialData.supportLevel : null;
     }
   }, [visible, mode, initialData]);
+
+  // Register the simulation spotlight targets living inside this modal.
+  useEffect(() => {
+    sim.registerTarget("name", nameFieldRef, { rounded: true });
+    sim.registerTarget("birthdate", birthFieldRef, { rounded: true });
+    sim.registerTarget(["support", "editSupport"], supportFieldRef, { rounded: true });
+    sim.registerTarget(["save", "editSave"], saveFieldRef, { rounded: true });
+    return () => sim.unregisterTarget([
+      "name",
+      "birthdate",
+      "support",
+      "editSupport",
+      "save",
+      "editSave",
+    ]);
+  }, [sim]);
+
+  // Advance the guided simulation as each field is filled in.
+  useEffect(() => {
+    if (sim.currentKey === "name" && fullName.trim().length > 0) {
+      sim.complete("name");
+    }
+  }, [sim, fullName]);
+
+  useEffect(() => {
+    if (sim.currentKey === "birthdate" && /^\d{2}\/\d{2}\/\d{4}$/.test(birthDate)) {
+      sim.complete("birthdate");
+    }
+  }, [sim, birthDate]);
+
+  useEffect(() => {
+    if (sim.currentKey === "support" && supportLevel) {
+      sim.complete("support");
+    }
+    if (
+      sim.currentKey === "editSupport" &&
+      supportLevel &&
+      supportLevel !== initialSupportRef.current
+    ) {
+      sim.complete("editSupport");
+    }
+  }, [sim, supportLevel]);
 
   /**
    * Opens the image picker and stores the selected photo.
@@ -125,12 +180,11 @@ export function NewStudent({
   const hideDatePicker = () => setDatePickerVisibility(false);
 
   /**
-   * Formats and stores the selected birth date.
+   * Stores the birth date selected in the calendar (a single day, received as
+   * a "YYYY-MM-DD" string) formatted as DD/MM/YYYY.
    */
-  const handleConfirmDate = (date: Date) => {
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
+  const handleConfirmDate = (dateString: string) => {
+    const [year, month, day] = dateString.split("-");
     setBirthDate(`${day}/${month}/${year}`);
     if (errors.birthDate) setErrors((prev) => ({ ...prev, birthDate: "" }));
     hideDatePicker();
@@ -230,23 +284,23 @@ export function NewStudent({
 
     const nameTrimmed = fullName.trim().replace(/\s+/g, " ");
     if (!nameTrimmed) {
-      newErrors.fullName = "Nome é obrigatório";
+      newErrors.fullName = t("students.form.err.nameRequired");
     } else if (nameTrimmed.length < 3) {
-      newErrors.fullName = "No mínimo 3 caracteres";
+      newErrors.fullName = t("students.form.err.nameMin");
     } else if (nameTrimmed.length > 100) {
-      newErrors.fullName = "O nome deve ter no máximo 100 caracteres";
+      newErrors.fullName = t("students.form.err.nameMax");
     } else if (!nameTrimmed.includes(" ")) {
-      newErrors.fullName = "Informe nome e sobrenome";
+      newErrors.fullName = t("students.form.err.nameFull");
     }
 
     if (!birthDate.trim()) {
-      newErrors.birthDate = "Data é obrigatória";
+      newErrors.birthDate = t("students.form.err.dateRequired");
     } else {
       const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
       const match = birthDate.match(dateRegex);
 
       if (!match) {
-        newErrors.birthDate = "Data inválida";
+        newErrors.birthDate = t("students.form.err.dateInvalid");
       } else {
         const day = parseInt(match[1], 10);
         const month = parseInt(match[2], 10);
@@ -260,11 +314,11 @@ export function NewStudent({
           dateObj.getDate() !== day ||
           dateObj > today
         ) {
-          newErrors.birthDate = "Data irreal ou no futuro";
+          newErrors.birthDate = t("students.form.err.dateUnreal");
         }
 
         if (observations.length > 250) {
-          newErrors.observations = "O campo deve ter no máximo 250 caracteres";
+          newErrors.observations = t("students.form.err.observationsMax");
         }
       }
     }
@@ -272,23 +326,23 @@ export function NewStudent({
     if (weight.trim()) {
       const parsedWeight = Number(weight.replace(/[^\d.]/g, ""));
       if (isNaN(parsedWeight) || parsedWeight <= 0)
-        newErrors.weight = "Valor inválido";
+        newErrors.weight = t("students.form.err.invalidValue");
     }
 
     if (height.trim()) {
       const parsedHeight = Number(height.replace(/[^\d]/g, ""));
       if (isNaN(parsedHeight) || parsedHeight <= 0)
-        newErrors.height = "Valor inválido";
+        newErrors.height = t("students.form.err.invalidValue");
     }
 
     if (waist.trim()) {
       const parsedWaist = Number(waist.replace(/[^\d]/g, ""));
       if (isNaN(parsedWaist) || parsedWaist <= 0)
-        newErrors.waist = "Valor inválido";
+        newErrors.waist = t("students.form.err.invalidValue");
     }
 
     if (!supportLevel) {
-      newErrors.supportLevel = "Nível de suporte é obrigatório";
+      newErrors.supportLevel = t("students.form.err.supportRequired");
     }
 
     setErrors(newErrors);
@@ -347,8 +401,8 @@ export function NewStudent({
               contentContainerStyle={{ padding: 25, gap: 20 }}
             >
               <View className="flex-row items-center justify-between">
-                <Text className="text-header-2 text-white">
-                  {mode === "edit" ? "Editar aluno" : "Novo aluno"}
+                <Text className="text-header-2 text-content">
+                  {mode === "edit" ? t("students.form.editTitle") : t("students.form.createTitle")}
                 </Text>
                 <Pressable onPress={onClose} className="p-1 active:opacity-70">
                   <X color={colors.muted} size={28} />
@@ -398,12 +452,12 @@ export function NewStudent({
                 </View>
               </View>
 
-              <View className="w-full gap-1">
+              <View ref={nameFieldRef} collapsable={false} className="w-full gap-1">
                 <Text className="text-default-2 text-muted">
-                  Nome completo*
+                  {t("students.form.fullName")}*
                 </Text>
                 <DefaultTextInput
-                  placeholder="Nome do aluno"
+                  placeholder={t("students.form.fullNamePlaceholder")}
                   className="h-11 w-full rounded-[15px]"
                   outLineBorderClass={
                     errors.fullName ? "border-error" : "border-outline"
@@ -424,14 +478,14 @@ export function NewStudent({
                 )}
               </View>
 
-              <View className="w-full gap-1">
+              <View ref={birthFieldRef} collapsable={false} className="w-full gap-1">
                 <Text className="text-default-2 text-muted">
-                  Data de nascimento*
+                  {t("students.form.birthDate")}*
                 </Text>
-                <View className="relative justify-center">
+                <View className="flex-row items-center gap-2">
                   <DefaultTextInput
-                    placeholder="DD/MM/AAAA"
-                    className="h-11 w-full pr-[50px] rounded-[15px]"
+                    placeholder={t("students.form.birthDatePlaceholder")}
+                    className="h-11 flex-1 rounded-[15px]"
                     outLineBorderClass={
                       errors.birthDate ? "border-error" : "border-outline"
                     }
@@ -441,10 +495,13 @@ export function NewStudent({
                     maxLength={10}
                   />
                   <Pressable
-                    className="absolute right-4"
+                    className="h-11 shrink-0 flex-row items-center gap-2 rounded-[15px] border border-outline bg-level1 px-4 active:opacity-70"
                     onPress={showDatePicker}
                   >
                     <Calendar color={colors.muted} size={20} />
+                    <Text className="text-default-2 text-muted" numberOfLines={1}>
+                      {t("students.form.calendar")}
+                    </Text>
                   </Pressable>
                 </View>
                 {errors.birthDate && (
@@ -453,22 +510,35 @@ export function NewStudent({
                   </Text>
                 )}
 
-                <DateTimePickerModal
-                  isVisible={isDatePickerVisible}
-                  mode="date"
-                  onConfirm={handleConfirmDate}
-                  onCancel={hideDatePicker}
-                  confirmTextIOS="Confirmar"
-                  cancelTextIOS="Cancelar"
-                  maximumDate={new Date()}
-                />
+                <AppModal
+                  visible={isDatePickerVisible}
+                  transparent
+                  animationType="fade"
+                  onRequestClose={hideDatePicker}
+                >
+                  <Pressable
+                    className="flex-1 items-center justify-center bg-black/60 px-6"
+                    onPress={hideDatePicker}
+                  >
+                    <Pressable
+                      className="w-full max-w-[380px]"
+                      onPress={(e) => e.stopPropagation()}
+                    >
+                      <RangeCalendar
+                        key={`birth-${isDatePickerVisible}`}
+                        mode="single"
+                        onRangeSelected={(start) => handleConfirmDate(start)}
+                      />
+                    </Pressable>
+                  </Pressable>
+                </AppModal>
               </View>
 
               <View className="flex-row gap-3">
                 <View className="flex-1 gap-1">
-                  <Text className="text-default-2 text-muted">Massa</Text>
+                  <Text className="text-default-2 text-muted">{t("students.form.weight")}</Text>
                   <DefaultTextInput
-                    placeholder="Ex: 30.5"
+                    placeholder={t("students.form.weightPlaceholder")}
                     value={weight}
                     onChangeText={(text) => {
                       let valStr = text
@@ -496,9 +566,9 @@ export function NewStudent({
                 </View>
 
                 <View className="flex-1 gap-1">
-                  <Text className="text-default-2 text-muted">Estatura</Text>
+                  <Text className="text-default-2 text-muted">{t("students.form.height")}</Text>
                   <DefaultTextInput
-                    placeholder="Ex: 120"
+                    placeholder={t("students.form.heightPlaceholder")}
                     value={height}
                     onChangeText={(text) => {
                       let valStr = text.replace(/[^\d]/g, "");
@@ -524,9 +594,9 @@ export function NewStudent({
                 </View>
 
                 <View className="flex-1 gap-1">
-                  <Text className="text-default-2 text-muted">Cintura</Text>
+                  <Text className="text-default-2 text-muted">{t("students.form.waist")}</Text>
                   <DefaultTextInput
-                    placeholder="Ex: 50"
+                    placeholder={t("students.form.waistPlaceholder")}
                     value={waist}
                     onChangeText={(text) => {
                       let valStr = text.replace(/[^\d]/g, "");
@@ -552,9 +622,9 @@ export function NewStudent({
                 </View>
               </View>
 
-              <View className="w-full gap-1">
+              <View ref={supportFieldRef} collapsable={false} className="w-full gap-1">
                 <Text className="text-default-2 text-muted">
-                  Nível de suporte*
+                  {t("students.form.supportLevel")}*
                 </Text>
                 <Pressable
                   ref={supportLevelRef}
@@ -562,9 +632,9 @@ export function NewStudent({
                   className={`h-11 bg-level2 border rounded-[15px] px-4 flex-row items-center justify-between ${errors.supportLevel ? "border-error" : "border-outline"}`}
                 >
                   <Text
-                    className={`text-default-1 ${supportLevel ? "text-white" : "text-muted"}`}
+                    className={`text-default-1 ${supportLevel ? "text-content" : "text-muted"}`}
                   >
-                    {supportLevel || "Selecione aqui"}
+                    {supportLevel || t("students.form.selectHere")}
                   </Text>
                   <ChevronDown color={colors.muted} size={20} />
                 </Pressable>
@@ -590,10 +660,10 @@ export function NewStudent({
 
               <View className="w-full gap-1">
                 <Text className="text-default-2 text-muted">
-                  Outras condições de saúde
+                  {t("students.form.healthConditions")}
                 </Text>
                 <DefaultTextInput
-                  placeholder="Outras condições de saúde (opcional)"
+                  placeholder={t("students.form.healthConditionsPlaceholder")}
                   className="h-20 rounded-[15px]"
                   multiline
                   maxLength={100}
@@ -607,9 +677,9 @@ export function NewStudent({
               </View>
 
               <View className="w-full gap-1">
-                <Text className="text-default-2 text-muted">Observações</Text>
+                <Text className="text-default-2 text-muted">{t("students.form.observations")}</Text>
                   <DefaultTextInput
-                    placeholder="Observações adicionais (opcionais)"
+                    placeholder={t("students.form.observationsPlaceholder")}
                     className="h-11 rounded-[15px]"
                     maxLength={250}
                     value={observations}
@@ -629,12 +699,15 @@ export function NewStudent({
               <ActionButtons
                 onCancel={onClose}
                 onSave={handleSaveWrapper}
-                cancelLabel="Cancelar"
-                saveLabel={isSaving ? "Salvando..." : "Salvar"}
+                cancelLabel={t("common.cancel")}
+                saveLabel={isSaving ? t("common.saving") : t("common.save")}
                 disabled={isSaving}
+                saveButtonRef={saveFieldRef}
               />
             </ScrollView>
           </View>
+
+          <TutorialSpotlight />
         </View>
       </AppModal>
 
@@ -645,7 +718,7 @@ export function NewStudent({
           setPhotoUri(null);
           setDeletePhotoModalVisible(false);
         }}
-        title="Remover foto?"
+        title={t("students.form.removePhotoTitle")}
         mode="delete"
       />
 
@@ -673,7 +746,7 @@ export function NewStudent({
 
           <View className="flex-row gap-4 mt-10 w-full max-w-[342px]">
             <DefaultButton
-              label="Remover"
+              label={t("common.remove")}
               onPress={() => {
                 setPhotoUri(null);
                 setIsPreviewVisible(false);
@@ -686,7 +759,7 @@ export function NewStudent({
               className="flex-1"
             />
             <DefaultButton
-              label="Substituir"
+              label={t("students.form.replace")}
               onPress={() => {
                 setIsPreviewVisible(false);
                 setTimeout(handlePhotoPress, 300);

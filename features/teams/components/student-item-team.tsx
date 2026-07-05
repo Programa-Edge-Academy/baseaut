@@ -37,7 +37,7 @@ export function StudentItemTeam({ name, avatarUrl, onRemove, onEdit }: StudentIt
           )}
         </View>
         <View className="flex-1 pr-2">
-          <Text className="text-header-3 text-white" numberOfLines={1}>
+          <Text className="text-header-3 text-content" numberOfLines={1}>
             {name}
           </Text>
         </View>

@@ -41,7 +41,7 @@ export function StudentCardTeam({
       <View className="mb-4 flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
           <Users size={24} color={colors.extra} />
-          <Text className="text-lg font-bold text-white">
+          <Text className="text-lg font-bold text-content">
             Alunos ({students.length})
           </Text>
         </View>

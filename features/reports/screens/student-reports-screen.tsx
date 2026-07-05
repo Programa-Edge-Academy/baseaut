@@ -12,10 +12,15 @@ import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { NewReport } from "@/features/reports/components/new-report";
 import { Report, ReportFormData, useStudentReports } from "@/features/reports/hooks/use-student-reports";
 import { exportReports } from "@/features/reports/utils/export-report";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import RangeCalendar from "@/components/range-calendar";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { FileText, X } from "lucide-react-native";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -48,7 +53,7 @@ function FormatPicker({
           className="bg-level2 border border-outline rounded-2xl p-6 w-full gap-5"
           onPress={(e) => e.stopPropagation()}
         >
-          <Text className="text-header-2 text-white">Selecionar formato</Text>
+          <Text className="text-header-2 text-content">Selecionar formato</Text>
 
           <View className="gap-3">
             <Pressable onPress={() => setPdf((v) => !v)} className="flex-row items-center gap-3">
@@ -57,9 +62,9 @@ function FormatPicker({
                   pdf ? "bg-primary border-primary" : "border-outline bg-transparent"
                 }`}
               >
-                {pdf && <Text className="text-white text-xs font-bold">✓</Text>}
+                {pdf && <Text className="text-content text-xs font-bold">✓</Text>}
               </View>
-              <Text className="text-white text-default-1">PDF (com gráficos)</Text>
+              <Text className="text-content text-default-1">PDF (com gráficos)</Text>
             </Pressable>
             <Pressable onPress={() => setCsv((v) => !v)} className="flex-row items-center gap-3">
               <View
@@ -67,9 +72,9 @@ function FormatPicker({
                   csv ? "bg-primary border-primary" : "border-outline bg-transparent"
                 }`}
               >
-                {csv && <Text className="text-white text-xs font-bold">✓</Text>}
+                {csv && <Text className="text-content text-xs font-bold">✓</Text>}
               </View>
-              <Text className="text-white text-default-1">CSV (dados tabulares)</Text>
+              <Text className="text-content text-default-1">CSV (dados tabulares)</Text>
             </Pressable>
           </View>
 
@@ -101,7 +106,7 @@ function FormatPicker({
                 bgColorClass="bg-secondary"
                 hasShadow={false}
                 className="border border-secondary"
-                textClassName="text-white"
+                textClassName="text-content"
               />
             )}
           </View>
@@ -139,7 +144,7 @@ function RenameModal({
           onPress={(e) => e.stopPropagation()}
         >
           <View className="flex-row items-center justify-between">
-            <Text className="text-header-2 text-white">Renomear relatório</Text>
+            <Text className="text-header-2 text-content">Renomear relatório</Text>
             <Pressable onPress={onClose} hitSlop={10}>
               <X color={colors.muted} size={22} />
             </Pressable>
@@ -155,7 +160,7 @@ function RenameModal({
             className={`w-full h-11 items-center justify-center rounded-2xl active:opacity-70 ${name.trim() ? "bg-primary" : "bg-muted/30"}`}
           >
             <Text 
-              className="text-white text-base font-bold" 
+              className="text-content text-base font-bold" 
               style={{ fontFamily: "Inter-Bold", opacity: name.trim() ? 1 : 0.5 }}
             >
               Salvar
@@ -192,8 +197,14 @@ export function StudentReportsScreen() {
     studentName: string;
   }>();
 
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "reports";
+  const sim = useTutorialSimulation();
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const newButtonRef = useRef<View>(null);
+
   const { reports, isLoading, refresh, createReport, renameReport, deleteReport } =
-    useStudentReports(studentId ?? "");
+    useStudentReports(studentId ?? "", { mock: isTutorial });
 
   const [isNewOpen, setIsNewOpen] = useState(false);
 
@@ -220,6 +231,17 @@ export function StudentReportsScreen() {
 
   const showToast = (mode: "success" | "error", title: string, description?: string) =>
     setToast({ visible: true, mode, title, description });
+
+  /** The report created during the guided simulation (spotlight target). */
+  const createdReport = isTutorial
+    ? reports.find((r) => r.id.startsWith("mock-new-report-"))
+    : undefined;
+
+  React.useEffect(() => {
+    if (!isTutorial) return;
+    sim.registerTarget("newReport", newButtonRef, { rounded: true });
+    return () => sim.unregisterTarget("newReport");
+  }, [isTutorial, sim]);
 
   const openFilterCalendar = () => {
     setTempFilterStart(filterStart);
@@ -274,6 +296,17 @@ export function StudentReportsScreen() {
     deliveryMode: "share" | "download" = "share",
   ) => {
     setIsFormatPickerOpen(false);
+    if (isTutorial) {
+      showToast(
+        "success",
+        deliveryMode === "download" ? "Relatório baixado!" : "Relatório exportado!",
+        "Simulação: nada foi enviado ao servidor.",
+      );
+      setIsExportMode(false);
+      setSelectedIds([]);
+      sim.complete("exportReport");
+      return;
+    }
     const selected = reports.filter((r) => selectedIds.includes(r.id));
     try {
       setExporting(true);
@@ -297,6 +330,7 @@ export function StudentReportsScreen() {
   const handleCreate = async (data: ReportFormData) => {
     await createReport(data);
     showToast("success", "Relatório criado!");
+    if (isTutorial) sim.complete("saveReport");
   };
 
   const handleRename = async (newName: string) => {
@@ -320,6 +354,7 @@ export function StudentReportsScreen() {
   };
 
   const openReport = (report: Report) => {
+    if (isTutorial) sim.complete("openReport");
     router.push({
       pathname: "/report-detail",
       params: {
@@ -329,6 +364,7 @@ export function StudentReportsScreen() {
         dataInicio: report.data_inicio,
         dataFim: report.data_fim,
         snapshotAluno: report.snapshot_aluno ? JSON.stringify(report.snapshot_aluno) : "",
+        imagemUrl: report.imagem_url ?? "",
       },
     } as any);
   };
@@ -340,18 +376,24 @@ export function StudentReportsScreen() {
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" onPressBack={() => router.back()} />
+      <Header
+        variant="back"
+        onPressBack={() => router.back()}
+        onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+      />
 
       <View className="flex-1 mx-8">
         <View className="mt-5 w-full">
           <PageHeader
             mode="relatorios-aluno"
             title={studentName ?? ""}
-            subtitle={`${n} relatório${n !== 1 ? "s" : ""}`}
+            subtitle={`${n} ${n === 1 ? "relatório" : "relatórios"}`}
+            newButtonRef={isTutorial ? newButtonRef : undefined}
             onExportPress={toggleExportMode}
             isExportActive={isExportMode}
             onNewPress={() => {
               if (isExportMode) return;
+              if (isTutorial) sim.complete("newReport");
               setIsNewOpen(true);
             }}
           />
@@ -384,7 +426,7 @@ export function StudentReportsScreen() {
               onRefresh={refresh}
               renderItem={({ item }) => {
                 const isSelected = selectedIds.includes(item.id);
-                return (
+                const card = (
                   <ListCard
                     title={item.titulo}
                     subtitle={formatDateRange(item.data_inicio, item.data_fim)}
@@ -397,6 +439,11 @@ export function StudentReportsScreen() {
                     onPress={isExportMode ? () => toggleSelect(item.id) : () => openReport(item)}
                     className={isSelected ? "border border-primary" : undefined}
                   />
+                );
+                return isTutorial && !isExportMode && item.id === createdReport?.id ? (
+                  <SpotlightTarget targetKey="openReport">{card}</SpotlightTarget>
+                ) : (
+                  card
                 );
               }}
             />
@@ -496,8 +543,18 @@ export function StudentReportsScreen() {
         mode={toast.mode}
         title={toast.title}
         description={toast.description}
-        onHide={() => setToast((t) => ({ ...t, visible: false }))}
+        onHide={() => setToast((prev) => ({ ...prev, visible: false }))}
       />
+
+      {isTutorial && (
+        <TutorialPracticeNotice
+          visible={noticeOpen}
+          onClose={() => setNoticeOpen(false)}
+          onExit={() => { setNoticeOpen(false); router.back(); }}
+        />
+      )}
+
+      {isTutorial && <TutorialSpotlight />}
     </View>
   );
 }

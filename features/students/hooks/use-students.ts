@@ -1,8 +1,9 @@
 import { supabase } from "@/lib/supabase";
 import { calculateAge } from "@/lib/date-utils";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { uploadImage } from "@/lib/upload-image";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 
 /**
@@ -23,19 +24,70 @@ export type Student = {
   pendencyAlert: boolean;
 };
 
+/** Seed students for the tutorial's mock mode (kept entirely in memory). */
+const MOCK_STUDENTS: Student[] = [
+  {
+    id: "mock-ana",
+    name: "Ana Beatriz",
+    birthDate: "2017-03-12",
+    age: calculateAge("2017-03-12"),
+    weight: 28,
+    height: 122,
+    waist: 54,
+    supportLevel: "Nível 2",
+    healthConditions: "",
+    observations: "",
+    avatarUrl: null,
+    pendencyAlert: false,
+  },
+  {
+    id: "mock-lucas",
+    name: "Lucas Martins",
+    birthDate: "2015-08-04",
+    age: calculateAge("2015-08-04"),
+    weight: 34,
+    height: 135,
+    waist: 60,
+    supportLevel: "Nível 1",
+    healthConditions: "",
+    observations: "",
+    avatarUrl: null,
+    pendencyAlert: false,
+  },
+];
+
+/** Options for {@link useStudents}. */
+export type UseStudentsOptions = {
+  /**
+   * When true, the hook runs entirely on in-memory mock data with no Supabase
+   * access, used by the tutorial practice replica of the students screen.
+   */
+  mock?: boolean;
+};
+
 /**
  * Provides CRUD operations and state for students.
+ *
+ * @param options - Pass `{ mock: true }` (tutorial only) to operate on seeded
+ * in-memory data instead of Supabase.
  */
-export function useStudents() {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function useStudents(options?: UseStudentsOptions) {
+  const isMock = options?.mock ?? false;
+  const { t } = useI18n();
+  const [students, setStudents] = useState<Student[]>(isMock ? MOCK_STUDENTS : []);
+  const [isLoading, setIsLoading] = useState(!isMock);
   const [error, setError] = useState<Error | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
+  const mockIdRef = useRef(0);
 
   /**
    * Loads students for the active team.
    */
 const loadStudents = useCallback(async (showLoader = true) => {
+    if (isMock) {
+      setIsLoading(false);
+      return;
+    }
     if (showLoader) setIsLoading(true);
     setError(null);
     try {
@@ -91,7 +143,7 @@ const loadStudents = useCallback(async (showLoader = true) => {
     } finally {
       if (showLoader) setIsLoading(false);
     }
-  }, []);
+  }, [isMock]);
 
   useEffect(() => {
     loadStudents(true);
@@ -104,6 +156,28 @@ const loadStudents = useCallback(async (showLoader = true) => {
     data: Omit<Student, "id" | "age">,
     photoUri?: string | null,
   ) => {
+    if (isMock) {
+      mockIdRef.current += 1;
+      const newStudent: Student = {
+        id: `mock-new-${mockIdRef.current}`,
+        name: data.name,
+        birthDate: data.birthDate,
+        age: calculateAge(data.birthDate),
+        weight: data.weight || 0,
+        height: data.height || 0,
+        waist: data.waist || 0,
+        supportLevel: data.supportLevel,
+        healthConditions: data.healthConditions || "",
+        observations: data.observations || "",
+        avatarUrl: photoUri ?? data.avatarUrl ?? null,
+        pendencyAlert: false,
+      };
+      setStudents((prev) =>
+        [...prev, newStudent].sort((a, b) => a.name.localeCompare(b.name)),
+      );
+      return;
+    }
+
     try {
       if (!equipeId) throw new Error("ID da equipe não identificado.");
 
@@ -147,8 +221,8 @@ const loadStudents = useCallback(async (showLoader = true) => {
       await loadStudents(false);
     } catch (err: any) {
       Alert.alert(
-        "Erro ao Criar",
-        `Não foi possível salvar o aluno: ${err.message}`,
+        t("students.error.createTitle"),
+        `${t("students.error.createBody")} ${err.message}`,
       );
     }
   };
@@ -161,6 +235,22 @@ const loadStudents = useCallback(async (showLoader = true) => {
     data: Partial<Omit<Student, "id" | "age">>,
     photoUri?: string | null,
   ) => {
+    if (isMock) {
+      setStudents((prev) =>
+        prev
+          .map((s) => {
+            if (s.id !== id) return s;
+            const merged: Student = { ...s, ...data };
+            if (data.birthDate) merged.age = calculateAge(data.birthDate);
+            if (photoUri === null) merged.avatarUrl = null;
+            else if (photoUri !== undefined) merged.avatarUrl = photoUri;
+            return merged;
+          })
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      );
+      return;
+    }
+
     try {
       const payload: any = {};
       if (data.name !== undefined) payload.nome_completo = data.name;
@@ -206,8 +296,8 @@ const loadStudents = useCallback(async (showLoader = true) => {
       await loadStudents(false);
     } catch (err: any) {
       Alert.alert(
-        "Erro ao Editar",
-        `Não foi possível atualizar o aluno: ${err.message}`,
+        t("students.error.editTitle"),
+        `${t("students.error.editBody")} ${err.message}`,
       );
     }
   };
@@ -216,6 +306,11 @@ const loadStudents = useCallback(async (showLoader = true) => {
    * Soft-deletes a student record.
    */
   const deleteStudent = async (id: string) => {
+    if (isMock) {
+      setStudents((prev) => prev.filter((s) => s.id !== id));
+      return;
+    }
+
     try {
       const { error: deleteError } = await supabase
         .from("alunos")
@@ -225,7 +320,7 @@ const loadStudents = useCallback(async (showLoader = true) => {
       if (deleteError) throw deleteError;
       await loadStudents(false);
     } catch (err: any) {
-      Alert.alert("Erro ao Remover", err.message);
+      Alert.alert(t("students.error.deleteTitle"), err.message);
     }
   };
 

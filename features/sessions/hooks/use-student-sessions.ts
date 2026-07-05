@@ -42,17 +42,48 @@ export interface StudentProfile {
   observations: string | null;
 }
 
+/** Seed records for the tutorial's mock student history. */
+const MOCK_SESSIONS: SessionItem[] = [
+  { id: "mock-rc-form", title: "Registro de Controle", date: "28/06/2026", status: "Pendente", hasPendency: true, type: "form", rawDate: "2026-06-28", isResumable: false, circuitId: null, circuitType: null, resumeExercises: null, formType: "registro_controle" },
+  { id: "mock-ata-form", title: "ATA", date: "27/06/2026", status: "Preenchido", hasPendency: false, type: "form", rawDate: "2026-06-27", isResumable: false, circuitId: null, circuitType: null, resumeExercises: null, formType: "ata" },
+  { id: "mock-hist-session", title: "Circuito 1", date: "26/06/2026", status: "concluida", hasPendency: false, type: "session", rawDate: "2026-06-26", isResumable: false, circuitId: null, circuitType: null, resumeExercises: null, totalPrevisto: 4, totalRealizado: 4 },
+];
+
+const MOCK_PROFILE: StudentProfile = {
+  name: "Ana Beatriz",
+  avatarUrl: null,
+  height: 122,
+  weight: 28,
+  waist: 54,
+  birthDate: "2017-03-12",
+  supportLevel: "Nível 2",
+  observations: null,
+};
+
+/** Options for {@link useStudentSessions}. */
+export type UseStudentSessionsOptions = {
+  /** When true, returns seeded mock records (tutorial only). */
+  mock?: boolean;
+};
+
 /**
  * Loads a student's profile and combined record history (sessions, ATA/CARS
  * forms, and MABC-2 assessments), resolving pendencies and execution progress,
  * sorted from newest to oldest.
+ *
+ * @param options - Pass `{ mock: true }` (tutorial only) for seeded records.
  */
-export function useStudentSessions(studentId?: string) {
-  const [sessions, setSessions] = useState<SessionItem[]>([]);
-  const [profile, setProfile] = useState<StudentProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export function useStudentSessions(studentId?: string, options?: UseStudentSessionsOptions) {
+  const isMock = options?.mock ?? false;
+  const [sessions, setSessions] = useState<SessionItem[]>(isMock ? MOCK_SESSIONS : []);
+  const [profile, setProfile] = useState<StudentProfile | null>(isMock ? MOCK_PROFILE : null);
+  const [isLoading, setIsLoading] = useState(!isMock);
 
   const fetchDetails = useCallback(async () => {
+    if (isMock) {
+      setIsLoading(false);
+      return;
+    }
     if (!studentId) return;
 
     try {
@@ -230,11 +261,11 @@ export function useStudentSessions(studentId?: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [studentId]);
+  }, [studentId, isMock]);
 
   useEffect(() => {
-    if (studentId) fetchDetails();
-  }, [studentId, fetchDetails]);
+    if (isMock || studentId) fetchDetails();
+  }, [studentId, fetchDetails, isMock]);
 
   return { sessions, profile, isLoading, refetch: fetchDetails };
 }
