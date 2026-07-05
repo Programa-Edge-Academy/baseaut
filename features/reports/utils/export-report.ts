@@ -45,17 +45,26 @@ function fmtSupportLevel(raw: string | null): string {
   return raw;
 }
 
-/** Builds the student information block of the PDF report. */
-function buildStudentInfoHtml(profile: StudentProfile): string {
+/**
+ * Builds the student information block of the PDF report, including the
+ * report's snapshot image when available.
+ */
+function buildStudentInfoHtml(profile: StudentProfile, imageUrl?: string | null): string {
   const chip = (label: string, value: string) =>
     `<td style="padding:6px 10px;border:1px solid #e2e8f0;vertical-align:top">
        <div style="font-size:10px;color:#94a3b8;margin-bottom:2px">${label}</div>
        <div style="font-size:12px;color:#1e293b;font-weight:bold">${value}</div>
      </td>`;
   const age = profile.data_nascimento ? `${calcAge(profile.data_nascimento)} anos` : "–";
+  const imageHtml = imageUrl
+    ? `<div style="text-align:center;margin-bottom:12px">
+         <img src="${imageUrl}" style="width:110px;height:110px;object-fit:cover;border-radius:10px;border:1px solid #e2e8f0"/>
+       </div>`
+    : "";
   return `
     <div style="margin-bottom:24px;padding:16px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;page-break-inside:avoid">
       <p style="font-size:14px;font-weight:bold;color:#1e293b;margin:0 0 12px">Informações da criança</p>
+      ${imageHtml}
       <table style="border-collapse:collapse;width:100%">
         <tr>
           ${chip("Nome", profile.nome_completo)}
@@ -528,7 +537,9 @@ export async function exportReports(
       const sectionsHtml = await buildSections(dataMap, data_inicio, data_fim);
 
       const snapshot = (report.snapshot_aluno as StudentProfile | null) ?? fallbackProfile;
-      const studentInfoHtml = snapshot ? buildStudentInfoHtml(snapshot) : "";
+      const studentInfoHtml = snapshot
+        ? buildStudentInfoHtml(snapshot, report.imagem_url)
+        : "";
 
       const html = `<!DOCTYPE html>
 <html><head>
@@ -669,5 +680,225 @@ export async function exportReports(
 
   if (Platform.OS !== "web" && files.length) {
     await deliverFiles(files, mode, "Exportar relatório");
+  }
+}
+
+/** Minimal student identification used by {@link exportConsolidatedReport}. */
+export type ConsolidatedStudent = {
+  id: string;
+  name: string;
+};
+
+/** Per-student aggregate metrics shown in the consolidated summary table. */
+type ConsolidatedSummary = {
+  name: string;
+  sessoes: number;
+  exerciciosAvaliados: number;
+  melhorou: number;
+  estavel: number;
+  precisaReforco: number;
+  autonomo: number;
+  intrusiva: number;
+  comportamentos: number;
+};
+
+/**
+ * Exports a single consolidated report crossing the data of several students
+ * over one period. The document opens with a comparative summary table (one
+ * row per student) followed by each student's full evolution sections — the
+ * same progress, help, behavior, comparison and protocol content used by the
+ * individual report export.
+ *
+ * @param students - Students whose data will be crossed.
+ * @param dataInicio - Period start in `YYYY-MM-DD`.
+ * @param dataFim - Period end in `YYYY-MM-DD`.
+ * @param formats - Which file formats to generate (at least one required).
+ * @param mode - Delivery mode for native platforms. Defaults to "share".
+ */
+export async function exportConsolidatedReport(
+  students: ConsolidatedStudent[],
+  dataInicio: string,
+  dataFim: string,
+  formats: { pdf: boolean; csv: boolean },
+  mode: DeliveryMode = "share",
+): Promise<void> {
+  if (!formats.pdf && !formats.csv) {
+    throw new Error("Selecione ao menos um formato para exportar.");
+  }
+  if (!students.length) {
+    throw new Error("Selecione ao menos um aluno.");
+  }
+
+  const emissao = new Date().toLocaleDateString("pt-BR");
+  const summaries: ConsolidatedSummary[] = [];
+  const studentSectionsHtml: string[] = [];
+  const csvRows: string[][] = [];
+
+  for (const student of students) {
+    const [profile, progresso, ajuda, comportamentos, comparacao, consolidado] =
+      await Promise.all([
+        fetchStudentProfile(student.id),
+        fetchProgressoExercicio(student.id, dataInicio, dataFim),
+        fetchAjudaSessao(student.id, dataInicio, dataFim),
+        fetchComportamentos(student.id, dataInicio, dataFim),
+        fetchComparacao(student.id, dataInicio, dataFim),
+        fetchConsolidado(student.id, dataInicio, dataFim),
+      ]);
+
+    const dataMap: Record<string, any> = {
+      progresso_exercicio: progresso,
+      ajuda_sessao: ajuda,
+      comportamentos,
+      comparar_desempenho: comparacao,
+      protocolos_testes: consolidado,
+    };
+
+    const exsComDados = (progresso as any[]).filter(
+      (ex: any) => (ex.historico ?? []).length > 0,
+    );
+    const countEvolucao = (label: string) =>
+      exsComDados.filter((ex: any) => ex.evolucao === label).length;
+    const totalComportamentos = Object.values(
+      (comportamentos ?? {}) as Record<string, number>,
+    ).reduce((sum, v) => sum + v, 0);
+
+    summaries.push({
+      name: student.name,
+      sessoes:
+        (comparacao?.resumo?.sessoes_p1 ?? 0) + (comparacao?.resumo?.sessoes_p2 ?? 0),
+      exerciciosAvaliados: exsComDados.length,
+      melhorou: countEvolucao("Melhorou"),
+      estavel: countEvolucao("Estável"),
+      precisaReforco: countEvolucao("Precisa reforço"),
+      autonomo: (ajuda as any[]).reduce((s, a) => s + (a.autonomo ?? 0), 0),
+      intrusiva: (ajuda as any[]).reduce((s, a) => s + (a.ajuda_intrusiva ?? 0), 0),
+      comportamentos: totalComportamentos,
+    });
+
+    if (formats.pdf) {
+      const sectionsHtml = await buildSections(dataMap, dataInicio, dataFim);
+      const infoHtml = profile ? buildStudentInfoHtml(profile) : "";
+      studentSectionsHtml.push(`
+        <div style="page-break-before:always">
+          <h2 style="font-size:18px;color:#0ea5e9;margin:0 0 12px">${student.name}</h2>
+          ${infoHtml}
+          ${sectionsHtml}
+        </div>`);
+    }
+
+    if (formats.csv) {
+      csvRows.push([student.name]);
+      csvRows.push(["Exercício", "Evolução", "Sessões"]);
+      (progresso as any[]).forEach((ex: any) =>
+        csvRows.push([ex.titulo, ex.evolucao ?? "–", String(ex.total_sessoes ?? 0)]),
+      );
+      csvRows.push([]);
+    }
+  }
+
+  const files: ExportableFile[] = [];
+
+  if (formats.pdf) {
+    const summaryTable = `
+      <table style="border-collapse:collapse;width:100%">
+        ${tableRow(
+          ["Aluno", "Sessões", "Exercícios", "Melhorou", "Estável", "Precisa reforço", "Autônomo", "Ajuda intrusiva", "Comportamentos"],
+          true,
+        )}
+        ${summaries
+          .map((s) =>
+            tableRow([
+              s.name,
+              String(s.sessoes),
+              String(s.exerciciosAvaliados),
+              String(s.melhorou),
+              String(s.estavel),
+              String(s.precisaReforco),
+              String(s.autonomo),
+              String(s.intrusiva),
+              String(s.comportamentos),
+            ]),
+          )
+          .join("")}
+      </table>`;
+
+    const html = `<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8"/>
+<style>
+  body { font-family: Arial, sans-serif; color: #1e293b; margin: 40px; }
+  h1 { font-size: 22px; color: #0ea5e9; margin: 0 0 4px; }
+  h2 { font-size: 16px; color: #334155; margin: 0 0 2px; }
+  .meta { font-size: 11px; color: #94a3b8; margin-bottom: 24px; }
+  hr { border: none; border-top: 1px solid #e2e8f0; margin: 16px 0; }
+  table { page-break-inside: avoid; }
+  svg { page-break-inside: avoid; }
+</style>
+</head><body>
+  <h1>Relatório consolidado</h1>
+  <p class="meta">Alunos: ${students.map((s) => s.name).join(", ")}<br/>
+  Período: ${fmtDate(dataInicio)} – ${fmtDate(dataFim)} &nbsp;|&nbsp; Emitido em: ${emissao}</p>
+  <hr/>
+  ${sectionCard("Resumo comparativo dos alunos", summaryTable)}
+  ${studentSectionsHtml.join("")}
+</body></html>`;
+
+    if (Platform.OS === "web") {
+      await Print.printAsync({ html });
+    } else {
+      const result = await Print.printToFileAsync({ html });
+      if (result?.uri) {
+        const name = "relatorio_consolidado.pdf";
+        const dest = `${FileSystem.cacheDirectory}${name}`;
+        await FileSystem.moveAsync({ from: result.uri, to: dest });
+        files.push({ uri: dest, name, mimeType: "application/pdf" });
+      }
+    }
+  }
+
+  if (formats.csv) {
+    const rows: string[][] = [
+      ["Relatório consolidado", `${dataInicio} a ${dataFim}`, `Emissão: ${emissao}`],
+      [],
+      ["Aluno", "Sessões", "Exercícios", "Melhorou", "Estável", "Precisa reforço", "Autônomo", "Ajuda intrusiva", "Comportamentos"],
+      ...summaries.map((s) => [
+        s.name,
+        String(s.sessoes),
+        String(s.exerciciosAvaliados),
+        String(s.melhorou),
+        String(s.estavel),
+        String(s.precisaReforco),
+        String(s.autonomo),
+        String(s.intrusiva),
+        String(s.comportamentos),
+      ]),
+      [],
+      ...csvRows,
+    ];
+
+    const csv = rows
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+
+    if (Platform.OS === "web") {
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "relatorio_consolidado.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      const name = "relatorio_consolidado.csv";
+      const path = `${FileSystem.cacheDirectory}${name}`;
+      await FileSystem.writeAsStringAsync(path, "﻿" + csv, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      files.push({ uri: path, name, mimeType: "text/csv" });
+    }
+  }
+
+  if (Platform.OS !== "web" && files.length) {
+    await deliverFiles(files, mode, "Exportar relatório consolidado");
   }
 }

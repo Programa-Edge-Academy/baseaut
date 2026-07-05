@@ -49,11 +49,21 @@ function nextDay(dateStr: string): string {
  * @param dataInicio - Inclusive start date (`YYYY-MM-DD`).
  * @param dataFim - Inclusive end date (`YYYY-MM-DD`).
  */
-export function useReportData(studentId: string, dataInicio: string, dataFim: string) {
+export function useReportData(
+  studentId: string,
+  dataInicio: string,
+  dataFim: string,
+  options?: { mock?: boolean },
+) {
+  const isMock = options?.mock ?? false;
   const [data, setData] = useState<ReportData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!isMock);
 
   useEffect(() => {
+    if (isMock) {
+      setIsLoading(false);
+      return;
+    }
     if (!studentId || !dataInicio || !dataFim) return;
     let active = true;
 
@@ -140,7 +150,7 @@ export function useReportData(studentId: string, dataInicio: string, dataFim: st
 
     fetchAll();
     return () => { active = false; };
-  }, [studentId, dataInicio, dataFim]);
+  }, [studentId, dataInicio, dataFim, isMock]);
 
   return { data, isLoading };
 }

@@ -8,6 +8,7 @@ import { Toast } from "@/components/toast";
 import { StudentInfoCard } from "@/features/analysis/components/student-info-card";
 import { ExerciseProgressChart, ExerciseProgressRecord } from "@/features/analysis/components/exercise-progress-chart";
 import { HelpRecordsBarChart, HelpSessionRecord } from "@/features/analysis/components/help-records-bar-chart";
+import { HelpRecordsDetailModal } from "@/features/analysis/components/help-records-detail-modal";
 import { ObservedBehaviorsChart, BehaviorRecord } from "@/features/analysis/components/observed-behaviors-chart";
 import { AnalysisSummary } from "@/features/analysis/components/analysis-summary";
 import ExerciseComparisonCard from "@/features/analysis/components/exercice-comparison-card";
@@ -18,6 +19,9 @@ import { useReportData } from "@/features/reports/hooks/use-report-data";
 import { Report, StudentSnapshot, useStudentReports } from "@/features/reports/hooks/use-student-reports";
 import { exportReports } from "@/features/reports/utils/export-report";
 import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { BarChart3 } from "lucide-react-native";
 import React, { useState } from "react";
@@ -63,7 +67,7 @@ function fmtSupportLevel(raw: string | null | undefined): string | null {
 function SectionHeader({ title }: { title: string }) {
   return (
     <View className="mb-3 mt-6 pb-2" style={{ borderBottomWidth: 2, borderBottomColor: colors.outline }}>
-      <Text className="text-base font-bold text-white" style={{ fontFamily: "Inter-Bold" }}>
+      <Text className="text-base font-bold text-content" style={{ fontFamily: "Inter-Bold" }}>
         {title}
       </Text>
     </View>
@@ -95,17 +99,23 @@ export function ReportDetailScreen() {
     dataInicio: string;
     dataFim: string;
     snapshotAluno: string;
+    imagemUrl: string;
   }>();
 
   const router = useRouter();
   const { studentId, reportId, titulo, dataInicio, dataFim } = params;
+  const imagemUrl = params.imagemUrl || null;
   const snapshot: StudentSnapshot | null = params.snapshotAluno
     ? JSON.parse(params.snapshotAluno)
     : null;
 
-  const { profile: liveProfile } = useStudentProfile(snapshot ? undefined : (studentId ?? ""));
-  const { data, isLoading } = useReportData(studentId ?? "", dataInicio ?? "", dataFim ?? "");
-  const { deleteReport } = useStudentReports(studentId ?? "");
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "reports";
+  const [noticeOpen, setNoticeOpen] = useState(false);
+
+  const { profile: liveProfile } = useStudentProfile(snapshot ? undefined : (studentId ?? ""), { mock: isTutorial });
+  const { data, isLoading } = useReportData(studentId ?? "", dataInicio ?? "", dataFim ?? "", { mock: isTutorial });
+  const { deleteReport } = useStudentReports(studentId ?? "", { mock: isTutorial });
 
   const [isFormatPickerOpen, setIsFormatPickerOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -119,6 +129,8 @@ export function ReportDetailScreen() {
     data_inicio: dataInicio ?? "",
     data_fim: dataFim ?? "",
     snapshot_aluno: snapshot,
+    imagem_id: null,
+    imagem_url: imagemUrl,
     created_at: "",
   };
 
@@ -175,7 +187,11 @@ export function ReportDetailScreen() {
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" onPressBack={() => router.back()} />
+      <Header
+        variant="back"
+        onPressBack={() => router.back()}
+        onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+      />
 
       <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}>
         <View className="mx-6 mt-4">
@@ -190,7 +206,7 @@ export function ReportDetailScreen() {
           {snapshot ? (
             <View className="mt-4">
               <StudentInfoCard
-                name={snapshot.nome_completo} avatarUrl={null}
+                name={snapshot.nome_completo} avatarUrl={imagemUrl}
                 height={snapshot.altura} weight={snapshot.peso} waist={snapshot.cintura}
                 birthDate={snapshot.data_nascimento} supportLevel={fmtSupportLevel(snapshot.nivel_suporte)}
                 observations={snapshot.observacoes_clinicas}
@@ -243,14 +259,21 @@ export function ReportDetailScreen() {
 
               <SectionHeader title="Registros de ajuda por sessão" />
               {data.ajuda && data.ajuda.length > 0 ? (
-                <HelpRecordsBarChart
-                  sessions={data.ajuda.map((s: any, i: number): HelpSessionRecord => ({
-                    sessionId: s.sessao_id ?? `s-${i}`,
-                    sessionLabel: String(i + 1),
-                    intrusiveCount: s.ajuda_intrusiva ?? 0,
-                    autonomousCount: s.autonomo ?? 0,
-                  }))}
-                />
+                <>
+                  <HelpRecordsBarChart
+                    sessions={data.ajuda.map((s: any, i: number): HelpSessionRecord => ({
+                      sessionId: s.sessao_id ?? `s-${i}`,
+                      sessionLabel: String(i + 1),
+                      intrusiveCount: s.ajuda_intrusiva ?? 0,
+                      autonomousCount: s.autonomo ?? 0,
+                    }))}
+                  />
+                  <HelpRecordsDetailModal
+                    studentId={studentId}
+                    startDate={dataInicio ? dataInicio.split("T")[0] : null}
+                    endDate={dataFim ? dataFim.split("T")[0] : null}
+                  />
+                </>
               ) : (
                 <EmptySection message="Nenhum registro de ajuda no período." />
               )}
@@ -327,7 +350,7 @@ export function ReportDetailScreen() {
                 data.consolidado.registros_controle.map((rc: any, idx: number) => (
                   <View key={idx} className="mb-3 border border-outline rounded-lg bg-level2 overflow-hidden">
                     <View className="bg-level1 px-4 py-2 border-b border-outline">
-                      <Text className="text-xs font-bold text-white">
+                      <Text className="text-xs font-bold text-content">
                         {fmtDate(rc.data_sessao)} — {rc.monitor ?? "Sem monitor"}
                       </Text>
                     </View>
@@ -336,7 +359,7 @@ export function ReportDetailScreen() {
                         (rc.respostas as any[]).map((r: any, ri: number) => (
                           <View key={ri} className="flex-row py-1.5 border-b border-outline/30">
                             <Text className="text-xs text-muted flex-1 mr-2">{r.pergunta}</Text>
-                            <Text className="text-xs text-white font-bold">{r.valor ?? "–"}</Text>
+                            <Text className="text-xs text-content font-bold">{r.valor ?? "–"}</Text>
                           </View>
                         ))
                       ) : (
@@ -376,8 +399,18 @@ export function ReportDetailScreen() {
         mode={toast.mode}
         title={toast.title}
         description={toast.description}
-        onHide={() => setToast((t) => ({ ...t, visible: false }))}
+        onHide={() => setToast((prev) => ({ ...prev, visible: false }))}
       />
+
+      {isTutorial && (
+        <TutorialPracticeNotice
+          visible={noticeOpen}
+          onClose={() => setNoticeOpen(false)}
+          onExit={() => { setNoticeOpen(false); router.back(); }}
+        />
+      )}
+
+      {isTutorial && <TutorialSpotlight />}
     </View>
   );
 }
@@ -388,19 +421,19 @@ function FormatPicker({ onExport, onClose }: { onExport: (f: { pdf: boolean; csv
   const [csv, setCsv] = useState(false);
   return (
     <Pressable className="bg-level2 border border-outline rounded-2xl p-6 w-full gap-5" onPress={(e) => e.stopPropagation()}>
-      <Text className="text-header-2 text-white">Selecionar formato</Text>
+      <Text className="text-header-2 text-content">Selecionar formato</Text>
       <View className="gap-3">
         <Pressable onPress={() => setPdf((v) => !v)} className="flex-row items-center gap-3">
           <View className={`w-5 h-5 rounded border items-center justify-center ${pdf ? "bg-primary border-primary" : "border-outline bg-transparent"}`}>
-            {pdf && <Text className="text-white text-xs font-bold">✓</Text>}
+            {pdf && <Text className="text-content text-xs font-bold">✓</Text>}
           </View>
-          <Text className="text-white text-default-1">PDF (com gráficos)</Text>
+          <Text className="text-content text-default-1">PDF (com gráficos)</Text>
         </Pressable>
         <Pressable onPress={() => setCsv((v) => !v)} className="flex-row items-center gap-3">
           <View className={`w-5 h-5 rounded border items-center justify-center ${csv ? "bg-primary border-primary" : "border-outline bg-transparent"}`}>
-            {csv && <Text className="text-white text-xs font-bold">✓</Text>}
+            {csv && <Text className="text-content text-xs font-bold">✓</Text>}
           </View>
-          <Text className="text-white text-default-1">CSV (dados tabulares)</Text>
+          <Text className="text-content text-default-1">CSV (dados tabulares)</Text>
         </Pressable>
       </View>
       <View className="gap-3">
@@ -409,7 +442,7 @@ function FormatPicker({ onExport, onClose }: { onExport: (f: { pdf: boolean; csv
           <DefaultButton label="Exportar" onPress={() => onExport({ pdf, csv }, "share")} sizeClass="flex-1 h-11" bgColorClass="bg-primary" hasShadow />
         </View>
         {Platform.OS === "android" && (
-          <DefaultButton label="Baixar" onPress={() => onExport({ pdf, csv }, "download")} sizeClass="w-full h-11" bgColorClass="bg-secondary" hasShadow={false} className="border border-secondary" textClassName="text-white" />
+          <DefaultButton label="Baixar" onPress={() => onExport({ pdf, csv }, "download")} sizeClass="w-full h-11" bgColorClass="bg-secondary" hasShadow={false} className="border border-secondary" textClassName="text-content" />
         )}
       </View>
     </Pressable>
