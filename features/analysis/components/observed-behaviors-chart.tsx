@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, LayoutChangeEvent } from "react-native";
+import { View, Text, LayoutChangeEvent, ScrollView } from "react-native";
 import Svg, { Rect, Line, Text as SvgText } from "react-native-svg";
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import type { TranslationKey } from "@/features/settings/constants/translations";
 
 /** A charted behavior category. */
 export type BehaviorType =
@@ -18,7 +20,11 @@ export type BehaviorType =
 export interface BehaviorRecord {
   id: string;
   behaviorType: BehaviorType;
-  /** "YYYY-MM-DD" date. */
+  /**
+   * "YYYY-MM-DD" local calendar date. Parsed by splitting the string rather
+   * than via `new Date(string)`, which would interpret it as UTC midnight and
+   * shift the date backwards in negative-offset timezones.
+   */
   date: string;
   frequency: number;
 }
@@ -31,56 +37,58 @@ export interface ObservedBehaviorsChartProps {
   hideShadow?: boolean;
 }
 
-/** Display labels and colors for each behavior type. */
+/** Translation keys and colors for each behavior type. */
 export const BEHAVIOR_CONFIG: Record<
   BehaviorType,
-  { label: string; legendLabel: string; color: string }
+  { labelKey: TranslationKey; legendKey: TranslationKey; color: string }
 > = {
   stereotypy: {
-    label: "Estereotipias",
-    legendLabel: "Estereotipias",
+    labelKey: "analysis.behaviorChart.stereotypy.label",
+    legendKey: "analysis.behaviorChart.stereotypy.legend",
     color: "#09CDDB",
   },
   eye_contact_people: {
-    label: "Contato\nvisual\n(Pessoas)",
-    legendLabel: "Contato visual (Pessoas)",
+    labelKey: "analysis.behaviorChart.eyePeople.label",
+    legendKey: "analysis.behaviorChart.eyePeople.legend",
     color: "#DBBF09",
   },
   eye_contact_objects: {
-    label: "Contato\nvisual\n(Objetos)",
-    legendLabel: "Contato visual (Objetos)",
+    labelKey: "analysis.behaviorChart.eyeObjects.label",
+    legendKey: "analysis.behaviorChart.eyeObjects.legend",
     color: "#A6900A",
   },
   engagement: {
-    label: "Engajamento",
-    legendLabel: "Engajamento",
+    labelKey: "analysis.behaviorChart.engagement.label",
+    legendKey: "analysis.behaviorChart.engagement.legend",
     color: "#34C759",
   },
   escape: {
-    label: "Fuga",
-    legendLabel: "Fuga",
+    labelKey: "analysis.behaviorChart.escape.label",
+    legendKey: "analysis.behaviorChart.escape.legend",
     color: "#CB30E0",
   },
   crisis: {
-    label: "Crises",
-    legendLabel: "Crises",
+    labelKey: "analysis.behaviorChart.crisis.label",
+    legendKey: "analysis.behaviorChart.crisis.legend",
     color: "#FF383C",
   },
   unfit: {
-    label: "Comporta-\nmentos\ninaptos",
-    legendLabel: "Comportamentos inaptos",
+    labelKey: "analysis.behaviorChart.unfit.label",
+    legendKey: "analysis.behaviorChart.unfit.legend",
     color: "#FF8A00",
   },
   preferred_activity: {
-    label: "Atividades\npreferenciais",
-    legendLabel: "Atividades preferenciais",
+    labelKey: "analysis.behaviorChart.preferred.label",
+    legendKey: "analysis.behaviorChart.preferred.legend",
     color: "#1E88E5",
   },
 };
 
 /**
  * Bar chart of accumulated observed-behavior frequencies over a date range, one
- * bar per behavior type.
+ * bar per behavior type. Each column keeps a minimum width; when the columns no
+ * longer fit the card, the plot (bars plus category labels) scrolls
+ * horizontally while the Y axis stays fixed.
  */
 export function ObservedBehaviorsChart({
   records,
@@ -88,12 +96,13 @@ export function ObservedBehaviorsChart({
   endDate,
   hideShadow = false,
 }: ObservedBehaviorsChartProps) {
+  const { t } = useI18n();
   const [containerWidth, setContainerWidth] = useState<number>(340);
 
   const filteredRecords = useMemo(() => {
     return records.filter((rec) => {
-      const recDate = new Date(rec.date);
-      const compDate = new Date(recDate.getFullYear(), recDate.getMonth(), recDate.getDate());
+      const [year, month, day] = rec.date.split("-").map(Number);
+      const compDate = new Date(year, month - 1, day);
 
       if (startDate) {
         const compStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
@@ -157,14 +166,15 @@ export function ObservedBehaviorsChart({
     }
   };
 
-  const chartHeight = 220; 
-  const leftAxisWidth = 20; 
+  const chartHeight = 220;
+  const leftAxisWidth = 20;
   const rightMargin = 10;
-  
+  const MIN_COLUMN_WIDTH = 64;
+
   const paddingX = 40;
   const innerWidth = containerWidth - paddingX;
   const leftMargin = leftAxisWidth + 10;
-  const plotWidth = innerWidth - leftMargin - rightMargin;
+  const availablePlotWidth = innerWidth - leftMargin - rightMargin;
 
   const gridHeight = 180;
   const gridBottomY = 195;
@@ -184,7 +194,12 @@ export function ObservedBehaviorsChart({
     "preferred_activity",
   ];
 
-  const columnWidth = plotWidth / behaviorKeys.length;
+  const columnWidth = Math.max(
+    availablePlotWidth / behaviorKeys.length,
+    MIN_COLUMN_WIDTH,
+  );
+  const plotWidth = columnWidth * behaviorKeys.length;
+  const plotSvgWidth = plotWidth + rightMargin;
   const barWidth = Math.min(35, Math.max(16, columnWidth - 12));
 
   return (
@@ -193,8 +208,8 @@ export function ObservedBehaviorsChart({
       className={`w-full bg-level2 rounded-[20px] border border-outline p-5 flex-col gap-5 mt-5 ${hideShadow ? "" : "shadow-panelShadow"}`}
     >
       <View className="flex-col gap-3">
-        <Text className="text-white font-bold" style={{ fontSize: 16 }}>
-          Frequência de comportamentos observados
+        <Text className="text-content font-bold" style={{ fontSize: 16 }}>
+          {t("analysis.behaviorChart.title")}
         </Text>
 
         <View className="flex-row flex-wrap items-center gap-x-4 gap-y-2">
@@ -207,7 +222,7 @@ export function ObservedBehaviorsChart({
                   style={{ backgroundColor: config.color }}
                 />
                 <Text className="text-[10px] text-muted font-medium">
-                  {config.legendLabel}
+                  {t(config.legendKey)}
                 </Text>
               </View>
             );
@@ -215,91 +230,102 @@ export function ObservedBehaviorsChart({
         </View>
       </View>
 
-      <View style={{ height: chartHeight, width: "100%" }}>
-        <Svg width={innerWidth} height={chartHeight} pointerEvents="none">
-          {behaviorKeys.map((key, index) => {
-            const config = BEHAVIOR_CONFIG[key];
-            const frequency = aggregatedData[key];
-            const barHeight = (frequency / yMax) * gridHeight;
-            const barX = leftMargin + index * columnWidth + (columnWidth - barWidth) / 2;
-            const barY = gridBottomY - barHeight;
-
-            if (frequency === 0) return null;
-
-            return (
-              <Rect
-                key={`bar-${key}`}
-                x={barX}
-                y={barY}
-                width={barWidth}
-                height={barHeight}
-                fill={config.color}
-              />
-            );
-          })}
-
-          {yLines.map((val) => {
-            const y = getGridY(val);
-            return (
-              <Line
-                key={`grid-line-${val}`}
-                x1={leftMargin}
-                y1={y}
-                x2={innerWidth - rightMargin}
-                y2={y}
-                stroke={colors.outline}
-                strokeWidth={1}
-                strokeDasharray="4 4"
-              />
-            );
-          })}
-
-          {yLines.map((val) => {
-            const y = getGridY(val);
-            return (
-              <SvgText
-                key={`axis-label-${val}`}
-                x={leftAxisWidth}
-                y={y + 4}
-                fill={colors.muted}
-                fontSize={12}
-                fontFamily="Inter-Medium"
-                textAnchor="end"
-              >
-                {val}
-              </SvgText>
-            );
-          })}
-        </Svg>
-      </View>
-
-      <View className="flex-row w-full" style={{ paddingLeft: leftMargin }}>
-        {behaviorKeys.map((key) => {
-          const config = BEHAVIOR_CONFIG[key];
-          const lines = config.label.split("\n");
-
-          return (
-            <View
-              key={`label-${key}`}
-              style={{ width: columnWidth }}
-              className="items-center justify-start px-0.5"
-            >
-              {lines.map((line, idx) => (
-                <Text
-                  key={`${key}-lbl-line-${idx}`}
-                  className="text-muted text-[10px] font-medium text-center leading-[14px]"
+      <View className="flex-row w-full">
+        <View style={{ width: leftMargin, height: chartHeight }}>
+          <Svg width={leftMargin} height={chartHeight} pointerEvents="none">
+            {yLines.map((val) => {
+              const y = getGridY(val);
+              return (
+                <SvgText
+                  key={`axis-label-${val}`}
+                  x={leftAxisWidth}
+                  y={y + 4}
+                  fill={colors.muted}
+                  fontSize={12}
+                  fontFamily="Inter-Medium"
+                  textAnchor="end"
                 >
-                  {line}
-                </Text>
-              ))}
+                  {val}
+                </SvgText>
+              );
+            })}
+          </Svg>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="flex-1"
+        >
+          <View style={{ width: plotSvgWidth }}>
+            <Svg width={plotSvgWidth} height={chartHeight} pointerEvents="none">
+              {behaviorKeys.map((key, index) => {
+                const config = BEHAVIOR_CONFIG[key];
+                const frequency = aggregatedData[key];
+                const barHeight = (frequency / yMax) * gridHeight;
+                const barX = index * columnWidth + (columnWidth - barWidth) / 2;
+                const barY = gridBottomY - barHeight;
+
+                if (frequency === 0) return null;
+
+                return (
+                  <Rect
+                    key={`bar-${key}`}
+                    x={barX}
+                    y={barY}
+                    width={barWidth}
+                    height={barHeight}
+                    fill={config.color}
+                  />
+                );
+              })}
+
+              {yLines.map((val) => {
+                const y = getGridY(val);
+                return (
+                  <Line
+                    key={`grid-line-${val}`}
+                    x1={0}
+                    y1={y}
+                    x2={plotWidth}
+                    y2={y}
+                    stroke={colors.outline}
+                    strokeWidth={1}
+                    strokeDasharray="4 4"
+                  />
+                );
+              })}
+            </Svg>
+
+            <View className="flex-row" style={{ width: plotWidth }}>
+              {behaviorKeys.map((key) => {
+                const config = BEHAVIOR_CONFIG[key];
+                const lines = t(config.labelKey).split("\n");
+
+                return (
+                  <View
+                    key={`label-${key}`}
+                    style={{ width: columnWidth }}
+                    className="items-center justify-start px-0.5"
+                  >
+                    {lines.map((line, idx) => (
+                      <Text
+                        key={`${key}-lbl-line-${idx}`}
+                        className="text-muted text-[10px] font-medium text-center leading-[14px]"
+                      >
+                        {line}
+                      </Text>
+                    ))}
+                  </View>
+                );
+              })}
             </View>
-          );
-        })}
+          </View>
+        </ScrollView>
       </View>
 
       <Text className="text-[#66758a] text-[12px] font-medium leading-[20px] mt-2">
-        A frequência dos comportamentos observados ajuda a identificar padrões durante as sessões e
-        apoiar decisões de acompanhamento.
+        {t("analysis.behaviorChart.note")}
       </Text>
     </View>
   );

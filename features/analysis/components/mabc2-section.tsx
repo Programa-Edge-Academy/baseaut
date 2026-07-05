@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import React from "react";
 import { Text, TextInput, View } from "react-native";
 import {
@@ -42,6 +43,7 @@ export function Mabc2Section({
   testID,
   accessibilityLabel,
 }: Mabc2SectionProps) {
+  const { t } = useI18n();
   const showAll = viewMode === null;
   const showRecords = showAll || viewMode === "records";
   const showExercises = showAll || viewMode === "exercises";
@@ -52,7 +54,7 @@ export function Mabc2Section({
       accessibilityLabel={accessibilityLabel ?? title}
       className={className}
     >
-      <Text className="mb-2 text-base font-medium text-white">{title}</Text>
+      <Text className="mb-2 text-base font-medium text-content">{title}</Text>
 
       {showRecords ? (
         <View className="mb-3 flex-row gap-3">
@@ -63,15 +65,15 @@ export function Mabc2Section({
                 : "border-outline"
             } bg-level1 px-3 py-1.5`}
           >
-            <Text className="text-xs font-medium text-muted">Pontuação</Text>
+            <Text className="text-xs font-medium text-muted">{t("analysis.mabc.score")}</Text>
             {readOnly ? (
-              <Text className="text-base font-bold text-white">
+              <Text className="text-base font-bold text-content">
                 {categoryScore !== null ? String(categoryScore) : "—"}
               </Text>
             ) : (
               <TextInput
                 testID={testID ? `${testID}-category-score-input` : undefined}
-                className="m-0 p-0 text-base font-bold text-white"
+                className="m-0 p-0 text-base font-bold text-content"
                 value={categoryScore !== null ? String(categoryScore) : ""}
                 onChangeText={onChangeCategoryScore}
                 keyboardType="numeric"
@@ -88,15 +90,15 @@ export function Mabc2Section({
                 : "border-outline"
             } bg-level1 px-3 py-1.5`}
           >
-            <Text className="text-xs font-medium text-muted">Percentil</Text>
+            <Text className="text-xs font-medium text-muted">{t("analysis.mabc.percentile")}</Text>
             {readOnly ? (
-              <Text className="text-base font-bold text-white">
+              <Text className="text-base font-bold text-content">
                 {categoryPercentile ?? "—"}
               </Text>
             ) : (
               <TextInput
                 testID={testID ? `${testID}-category-percentile-input` : undefined}
-                className="m-0 p-0 text-base font-bold text-white"
+                className="m-0 p-0 text-base font-bold text-content"
                 value={categoryPercentile !== null ? String(categoryPercentile) : ""}
                 onChangeText={onChangeCategoryPercentile}
                 keyboardType="numeric"

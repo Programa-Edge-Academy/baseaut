@@ -1,10 +1,14 @@
 import type {
   Mabc2Draft,
 } from "@/features/analysis/hooks/use-mabc2-records";
+import type { Locale, TranslationKey } from "@/features/settings/constants/translations";
 import { deliverFiles, type DeliveryMode, type ExportableFile } from "@/lib/export-delivery";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Print from "expo-print";
 import { Platform } from "react-native";
+
+/** A translator function bound to the active locale. */
+type Translate = (key: TranslationKey) => string;
 
 const TH = `border:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:11px;background:#f1f5f9;font-weight:bold;`;
 const TD = `border:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:11px;`;
@@ -28,12 +32,14 @@ export async function exportMabc(
   formats: { pdf: boolean; csv: boolean },
   studentName: string,
   mode: DeliveryMode = "share",
+  t: Translate = (key) => key,
+  locale: Locale = "pt",
 ): Promise<void> {
   if (!formats.pdf && !formats.csv) {
-    throw new Error("Selecione ao menos um formato para exportar.");
+    throw new Error(t("export.selectAtLeastOne"));
   }
 
-  const emissao = new Date().toLocaleDateString("pt-BR");
+  const emissao = new Date().toLocaleDateString(locale === "en" ? "en-US" : "pt-BR");
   const safeName = studentName.replace(/[^a-zA-Z0-9]/g, "_");
 
   const buildPdfHtml = () => {
@@ -55,8 +61,8 @@ export async function exportMabc(
         return `
         <tr style="background:#f8fafc">
           <td style="${TH}" colspan="2">${section.title}</td>
-          <td style="${TH}">Escore: ${str(section.categoryScore)}</td>
-          <td style="${TH}">Percentil: ${str(section.categoryPercentile)}</td>
+          <td style="${TH}">${t("export.scoreLabel")}: ${str(section.categoryScore)}</td>
+          <td style="${TH}">${t("analysis.mabc.percentile")}: ${str(section.categoryPercentile)}</td>
           <td style="${TH}"></td>
         </tr>
         ${exerciseRows}`;
@@ -78,20 +84,20 @@ export async function exportMabc(
 </head><body>
   <h1>MABC-2</h1>
   <h2>${studentName}</h2>
-  <p class="meta">Emitido em: ${emissao}</p>
+  <p class="meta">${t("export.issuedOn")}: ${emissao}</p>
   <p class="totals">
-    Escore Total: ${str(draft.totalScore)} &nbsp;|&nbsp;
-    Percentil Total: ${str(draft.totalPercentile)}
+    ${t("export.totalScore")}: ${str(draft.totalScore)} &nbsp;|&nbsp;
+    ${t("export.totalPercentile")}: ${str(draft.totalPercentile)}
   </p>
   <hr/>
   <table>
     <thead>
       <tr>
-        <th style="${TH}">Categoria</th>
-        <th style="${TH}">Exercício</th>
-        <th style="${TH}">Pontuação</th>
-        <th style="${TH}">Tentativas</th>
-        <th style="${TH}">Unidade</th>
+        <th style="${TH}">${t("export.category")}</th>
+        <th style="${TH}">${t("analysis.compare.exercise")}</th>
+        <th style="${TH}">${t("analysis.mabc.score")}</th>
+        <th style="${TH}">${t("export.attempts")}</th>
+        <th style="${TH}">${t("export.unit")}</th>
       </tr>
     </thead>
     <tbody>${sectionRows}</tbody>
@@ -101,12 +107,12 @@ export async function exportMabc(
 
   const buildCsv = () => {
     const rows: string[][] = [
-      ["MABC-2", "Aluno", "Emissão"],
+      ["MABC-2", t("common.student"), t("export.issue")],
       ["", studentName, emissao],
       [],
-      ["Escore Total", str(draft.totalScore), "Percentil Total", str(draft.totalPercentile)],
+      [t("export.totalScore"), str(draft.totalScore), t("export.totalPercentile"), str(draft.totalPercentile)],
       [],
-      ["Categoria", "Escore Categoria", "Percentil Categoria", "Exercício", "Pontuação", "Tentativas", "Unidade"],
+      [t("export.category"), t("export.categoryScore"), t("export.categoryPercentile"), t("analysis.compare.exercise"), t("analysis.mabc.score"), t("export.attempts"), t("export.unit")],
     ];
 
     for (const section of draft.sections) {
@@ -167,5 +173,5 @@ export async function exportMabc(
     files.push({ uri: path, name, mimeType: "text/csv" });
   }
 
-  await deliverFiles(files, mode, "Exportar MABC-2");
+  await deliverFiles(files, mode, t("export.exportMabcTitle"));
 }

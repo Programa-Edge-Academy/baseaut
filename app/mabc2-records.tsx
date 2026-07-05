@@ -7,6 +7,7 @@ import { colors } from "@/assets/colors";
 import { type ToastMode } from "@/components/toast";
 import { useMabc2Records } from "@/features/analysis/hooks/use-mabc2-records";
 import { Mabc2RecordsListScreen } from "@/features/analysis/screens/mabc2-records-list-screen";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 
 /**
  * Route listing a student's MABC-2 records. Guards access to coordinators and
@@ -22,7 +23,9 @@ export default function Mabc2RecordsRoute() {
 
   const currentStudentId = studentId ?? "";
   const currentStudentName = studentName ?? "Aluno";
-  const { records, isLoading, refetch, error } = useMabc2Records(currentStudentId);
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const { records, isLoading, refetch, error } = useMabc2Records(currentStudentId, { mock: isTutorial });
 
   const [toastConfig, setToastConfig] = useState<{
     visible: boolean;

@@ -8,27 +8,40 @@ import { ObservedBehaviorsChart, BehaviorType } from "@/features/analysis/compon
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { NoRecordsScreen } from "@/features/analysis/screens/no-records-screen";
 import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useObservedBehaviors } from "@/features/analysis/hooks/use-observed-behaviors";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 
-const monthsPt = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-];
+/** Month names per supported locale, used to format "D Month YYYY". */
+const MONTHS: Record<string, string[]> = {
+  pt: [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+  ],
+  en: [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ],
+};
 
-/** Formats a date as "D Month YYYY" in Portuguese. */
-function formatSingleDate(date: Date): string {
+/** Formats a date as "D Month YYYY" in the given locale. */
+function formatSingleDate(date: Date, locale: string): string {
   const day = date.getDate();
-  const month = monthsPt[date.getMonth()];
+  const months = MONTHS[locale] ?? MONTHS.pt;
+  const month = months[date.getMonth()];
   const year = date.getFullYear();
   return `${day} ${month} ${year}`;
 }
 
 /** Formats a date range as "start - end". */
-function formatDateRange(start: Date, end: Date): string {
-  return `${formatSingleDate(start)} - ${formatSingleDate(end)}`;
+function formatDateRange(start: Date, end: Date, locale: string): string {
+  return `${formatSingleDate(start, locale)} - ${formatSingleDate(end, locale)}`;
 }
 
 /** Parses a "YYYY-MM-DD" string into a local Date. */
@@ -44,9 +57,14 @@ function parseDateString(dateStr: string): Date {
  */
 export function ObservedBehaviorsScreen() {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const { studentId } = useLocalSearchParams();
 
-  const { profile: dbProfile, isLoading: isDbLoading } = useStudentProfile(studentId as string);
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const [noticeOpen, setNoticeOpen] = useState(false);
+
+  const { profile: dbProfile, isLoading: isDbLoading } = useStudentProfile(studentId as string, { mock: isTutorial });
 
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -57,7 +75,7 @@ export function ObservedBehaviorsScreen() {
     isLoading: isBehaviorsLoading,
     error: behaviorsError,
     refetch,
-  } = useObservedBehaviors(studentId as string, startDate, endDate);
+  } = useObservedBehaviors(studentId as string, startDate, endDate, { mock: isTutorial });
 
   const profile = dbProfile;
   const isLoading = isDbLoading || isBehaviorsLoading;
@@ -89,7 +107,7 @@ export function ObservedBehaviorsScreen() {
 
   const handleSavePeriod = () => {
     if (!tempStart || !tempEnd) {
-      Alert.alert("Erro", "O período é obrigatório.");
+      Alert.alert(t("common.error"), t("analysis.behaviorsScreen.periodRequired"));
       return;
     }
 
@@ -102,10 +120,10 @@ export function ObservedBehaviorsScreen() {
 
   const periodLabel = useMemo(() => {
     if (startDate && endDate) {
-      return formatDateRange(startDate, endDate);
+      return formatDateRange(startDate, endDate, locale);
     }
-    return "Selecione o período para visualizar os comportamentos";
-  }, [startDate, endDate]);
+    return t("analysis.behaviorsScreen.selectPeriod");
+  }, [startDate, endDate, locale, t]);
 
   const filteredRecords = records;
 
@@ -122,15 +140,15 @@ export function ObservedBehaviorsScreen() {
 
     const keys: BehaviorType[] = ["stereotypy", "eye_contact_people", "eye_contact_objects", "engagement", "escape", "crisis", "unfit", "preferred_activity"];
 
-    const configMap: Record<BehaviorType, { label: string; color: string }> = {
-      stereotypy: { label: "Estereotipias", color: "#09CDDB" },
-      eye_contact_people: { label: "Contato visual (Pessoas)", color: "#DBBF09" },
-      eye_contact_objects: { label: "Contato visual (Objetos)", color: "#A6900A" },
-      engagement: { label: "Engajamento", color: "#34C759" },
-      escape: { label: "Fuga", color: "#CB30E0" },
-      crisis: { label: "Crises", color: "#FF383C" },
-      unfit: { label: "Comportamentos inaptos", color: "#FF8A00" },
-      preferred_activity: { label: "Atividades preferenciais", color: "#1E88E5" },
+    const configMap: Record<BehaviorType, { labelKey: TranslationKey; color: string }> = {
+      stereotypy: { labelKey: "analysis.behaviorChart.stereotypy.legend", color: "#09CDDB" },
+      eye_contact_people: { labelKey: "analysis.behaviorChart.eyePeople.legend", color: "#DBBF09" },
+      eye_contact_objects: { labelKey: "analysis.behaviorChart.eyeObjects.legend", color: "#A6900A" },
+      engagement: { labelKey: "analysis.behaviorChart.engagement.legend", color: "#34C759" },
+      escape: { labelKey: "analysis.behaviorChart.escape.legend", color: "#CB30E0" },
+      crisis: { labelKey: "analysis.behaviorChart.crisis.legend", color: "#FF383C" },
+      unfit: { labelKey: "analysis.behaviorChart.unfit.legend", color: "#FF8A00" },
+      preferred_activity: { labelKey: "analysis.behaviorChart.preferred.legend", color: "#1E88E5" },
     };
 
     keys.forEach((key) => {
@@ -148,7 +166,7 @@ export function ObservedBehaviorsScreen() {
           const [, month, day] = dateStr.split("-").map(Number);
           const formattedMonth = String(month).padStart(2, "0");
           const formattedDay = String(day).padStart(2, "0");
-          return `${index + 1}. Sessão de ${formattedDay}/${formattedMonth}`;
+          return `${index + 1}. ${t("analysis.behaviorsScreen.sessionOf")} ${formattedDay}/${formattedMonth}`;
         });
 
         const lastDateStr = uniqueDates[0];
@@ -159,7 +177,7 @@ export function ObservedBehaviorsScreen() {
 
         result.push({
           type: key,
-          behaviorName: config.label,
+          behaviorName: t(config.labelKey),
           color: config.color,
           occurrences,
           sessions: formattedSessions,
@@ -170,7 +188,7 @@ export function ObservedBehaviorsScreen() {
     });
 
     return result.sort((a, b) => b.occurrences - a.occurrences);
-  }, [filteredRecords, exercises]);
+  }, [filteredRecords, exercises, t]);
 
   const showResults = startDate && endDate;
 
@@ -179,11 +197,11 @@ export function ObservedBehaviorsScreen() {
       <View className="flex-1 bg-level1">
         <NoRecordsScreen
           variant="loadRecords"
-          title="Não foi possível carregar os comportamentos observados. Tente novamente."
-          message="Verifique sua conexão ou tente acessar os dados novamente mais tarde."
+          title={t("analysis.behaviorsScreen.errorTitle")}
+          message={t("analysis.behaviorsScreen.errorMessage")}
           onPressBack={() => router.back()}
           onPrimaryAction={refetch}
-          primaryActionLabel="Tentar novamente"
+          primaryActionLabel={t("common.tryAgain")}
         />
 
         <AppModal
@@ -209,7 +227,7 @@ export function ObservedBehaviorsScreen() {
 
               <View className="items-center">
                 <DefaultButton
-                  label="Salvar"
+                  label={t("common.save")}
                   sizeClass="w-full h-11"
                   disabled={isSaveDisabled}
                   style={{ opacity: isSaveDisabled ? 0.5 : 1 }}
@@ -228,12 +246,12 @@ export function ObservedBehaviorsScreen() {
       <View className="flex-1 bg-level1">
         <NoRecordsScreen
           variant="behavior"
-          title="Ainda não há comportamentos observados para o período selecionado."
-          message="Ainda não há comportamentos observados registrados para o período selecionado."
-          studentName={profile?.name || "Aluno"}
+          title={t("analysis.behaviorsScreen.emptyTitle")}
+          message={t("analysis.behaviorsScreen.emptyMessage")}
+          studentName={profile?.name || t("common.student")}
           onPressBack={() => router.back()}
           onPrimaryAction={handlePeriodPress}
-          primaryActionLabel="Alterar Período"
+          primaryActionLabel={t("common.changePeriod")}
         />
 
         <AppModal
@@ -259,7 +277,7 @@ export function ObservedBehaviorsScreen() {
 
               <View className="items-center">
                 <DefaultButton
-                  label="Salvar"
+                  label={t("common.save")}
                   sizeClass="w-full h-11"
                   disabled={isSaveDisabled}
                   style={{ opacity: isSaveDisabled ? 0.5 : 1 }}
@@ -275,7 +293,11 @@ export function ObservedBehaviorsScreen() {
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" onPressBack={() => router.back()} />
+      <Header
+        variant="back"
+        onPressBack={() => router.back()}
+        onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+      />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }} className="flex-1">
         {isLoading ? (
@@ -285,10 +307,10 @@ export function ObservedBehaviorsScreen() {
         ) : (
           <View className="mt-5">
             <Text
-              className="text-xl font-bold text-white"
+              className="text-xl font-bold text-content"
               style={{ marginHorizontal: 22, marginBottom: 16, fontFamily: "Inter-Bold" }}
             >
-              Comportamentos Observados - {profile?.name || "Aluno"}
+              {t("analysis.behaviorsScreen.title")} - {profile?.name || t("common.student")}
             </Text>
 
             <PeriodSelector
@@ -307,10 +329,10 @@ export function ObservedBehaviorsScreen() {
                 </View>
 
                 <Text
-                  className="text-white text-lg font-bold mt-8 mb-4"
+                  className="text-content text-lg font-bold mt-8 mb-4"
                   style={{ marginHorizontal: 22, fontFamily: "Inter-Bold" }}
                 >
-                  Detalhamento dos comportamentos
+                  {t("analysis.behaviorsScreen.detailsTitle")}
                 </Text>
 
                 <View style={{ marginHorizontal: 22 }} className="gap-4">
@@ -333,7 +355,7 @@ export function ObservedBehaviorsScreen() {
                   className="text-muted text-center text-sm font-medium leading-[22px]"
                   style={{ fontFamily: "Inter-Medium" }}
                 >
-                  Selecione o período para visualizar os comportamentos
+                  {t("analysis.behaviorsScreen.selectPeriod")}
                 </Text>
               </View>
             )}
@@ -374,6 +396,16 @@ export function ObservedBehaviorsScreen() {
           </Pressable>
         </Pressable>
       </AppModal>
+
+      {isTutorial && (
+        <TutorialPracticeNotice
+          visible={noticeOpen}
+          onClose={() => setNoticeOpen(false)}
+          onExit={() => { setNoticeOpen(false); router.back(); }}
+        />
+      )}
+
+      {isTutorial && <TutorialSpotlight />}
     </View>
   );
 }

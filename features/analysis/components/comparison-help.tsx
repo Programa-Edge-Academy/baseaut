@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { AlertCircle } from "lucide-react-native";
 import React from "react";
 import { Text, View } from "react-native";
@@ -22,6 +23,7 @@ export type ComparisonHelpProps = {
 
 /** Table comparing autonomous vs intrusive help counts between two periods. */
 export default function ComparisonHelp({ data }: ComparisonHelpProps) {
+  const { t } = useI18n();
   const autonomoP1 = data?.autonomo?.p1 ?? 0;
   const autonomoP2 = data?.autonomo?.p2 ?? 0;
   const intrusiveP1 = data?.ajuda_intrusiva?.p1 ?? 0;
@@ -36,34 +38,34 @@ export default function ComparisonHelp({ data }: ComparisonHelpProps) {
       }}
       className="w-full rounded-2xl p-6"
     >
-      <Text className="text-white text-lg font-bold mb-4" style={{ fontFamily: "Inter" }}>
-        Comparação dos registros de ajuda
+      <Text className="text-content text-lg font-bold mb-4" style={{ fontFamily: "Inter" }}>
+        {t("analysis.help.comparisonTitle")}
       </Text>
 
       <View className="flex-row items-center px-1 mb-3">
         <View className="flex-[2]">
-          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 11 }}>Tipo</Text>
+          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 11 }}>{t("analysis.help.type")}</Text>
         </View>
         <View className="flex-[1.2] items-center left-4">
-          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 10 }}>Período 1</Text>
+          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 10 }}>{t("analysis.period1")}</Text>
         </View>
         <View className="flex-[1.2] items-center left-4">
-          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 10 }}>Período 2</Text>
+          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 10 }}>{t("analysis.period2")}</Text>
         </View>
         <View className="flex-[2] items-end right-2">
-          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 11 }}>Variação</Text>
+          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 11 }}>{t("analysis.variation")}</Text>
         </View>
       </View>
 
       <View className="space-y-3">
         <ComparisonCard
-          title="Ajuda Intrusiva"
+          title={t("analysis.help.intrusive")}
           period1={{ value: intrusiveP1 }}
           period2={{ value: intrusiveP2 }}
         />
 
         <ComparisonCard
-          title="Autônomo"
+          title={t("analysis.help.autonomous")}
           period1={{ value: autonomoP1 }}
           period2={{ value: autonomoP2 }}
         />
@@ -74,7 +76,7 @@ export default function ComparisonHelp({ data }: ComparisonHelpProps) {
           <AlertCircle color={colors.muted} size={18} />
         </View>
         <Text className="text-slate-400 text-[12px]" style={{ flex: 1, fontFamily: "Inter", color: colors.muted }}>
-          Os valores exibem a diferença absoluta e percentual dos registros de ajuda entre os dois períodos selecionados.
+          {t("analysis.help.footnote")}
         </Text>
       </View>
     </View>

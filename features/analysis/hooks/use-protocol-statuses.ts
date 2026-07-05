@@ -17,11 +17,15 @@ const INITIAL_STATUSES: ProtocolStatuses = {
  * record for the student, used to drive the "Registrado / Não registrado"
  * status on the applied-protocols card.
  */
-export function useProtocolStatuses(studentId?: string) {
-  const [statuses, setStatuses] = useState<ProtocolStatuses>(INITIAL_STATUSES);
-  const [isLoading, setIsLoading] = useState<boolean>(Boolean(studentId));
+export function useProtocolStatuses(studentId?: string, options?: { mock?: boolean }) {
+  const isMock = options?.mock ?? false;
+  const [statuses, setStatuses] = useState<ProtocolStatuses>(
+    isMock ? { ata: "registrado", cars: "registrado", mabc2: "registrado" } : INITIAL_STATUSES,
+  );
+  const [isLoading, setIsLoading] = useState<boolean>(!isMock && Boolean(studentId));
 
   useEffect(() => {
+    if (isMock) return;
     let active = true;
 
     async function fetchStatuses() {
@@ -67,7 +71,7 @@ export function useProtocolStatuses(studentId?: string) {
     return () => {
       active = false;
     };
-  }, [studentId]);
+  }, [studentId, isMock]);
 
   return { statuses, isLoading };
 }

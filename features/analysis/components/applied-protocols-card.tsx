@@ -1,3 +1,4 @@
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import React from "react";
 import { Text, View } from "react-native";
 import { AnalysisOptionCard } from "./analysis-option-card";
@@ -17,22 +18,23 @@ export function AppliedProtocolsCard({
   onCarsPress,
   onAtaPress,
 }: AppliedProtocolsCardProps) {
+  const { t } = useI18n();
   return (
     <View className="w-full bg-level2 border border-outline rounded-lg p-[15px]">
-      <Text className="text-[16px] font-bold text-white mb-[15px]" style={{ fontFamily: "Inter-Bold" }}>
-        Protocolos/Testes aplicados
+      <Text className="text-[16px] font-bold text-content mb-[15px]" style={{ fontFamily: "Inter-Bold" }}>
+        {t("analysis.appliedProtocols")}
       </Text>
 
       <AnalysisOptionCard
         title="ATA"
-        description="Visualizar formulário registrado"
+        description={t("analysis.protocol.viewRegistered")}
         status={ataStatus}
         onPress={onAtaPress}
       />
 
       <AnalysisOptionCard
         title="CARS"
-        description="Visualizar formulário registrado"
+        description={t("analysis.protocol.viewRegistered")}
         status={carsStatus}
         onPress={onCarsPress}
         className="mb-3"

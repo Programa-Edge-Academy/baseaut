@@ -2,6 +2,7 @@ import { colors } from "@/assets/colors";
 import { Header } from "@/components/header";
 import { useGlobalToast } from "@/components/global-toast";
 import { FormComponent } from "@/features/forms/components/form-component";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { ClipboardList } from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
@@ -37,6 +38,7 @@ function RecordHeaderCard({
   ageGroupLabel,
   evaluatorName,
 }: RecordHeaderProps) {
+  const { t } = useI18n();
   return (
     <View className="flex-row items-center gap-4 rounded-2xl border border-outline bg-level2 p-4">
       <View
@@ -46,26 +48,26 @@ function RecordHeaderCard({
         <ClipboardList size={22} color={colors.primary} />
       </View>
       <View className="flex-1">
-        <Text className="text-base font-bold text-white">{label}</Text>
+        <Text className="text-base font-bold text-content">{label}</Text>
         <Text className="mt-1 text-sm text-muted">
-          Registro: <Text className="text-white font-medium">{dateLabel}</Text>
+          {t("analysis.protocolCard.record")}: <Text className="text-content font-medium">{dateLabel}</Text>
         </Text>
         {ageGroupLabel ? (
           <Text className="mt-1 text-sm text-muted">
-            Grupo de idade:{" "}
-            <Text className="text-white font-medium">{ageGroupLabel}</Text>
+            {t("analysis.protocolCard.ageGroup")}:{" "}
+            <Text className="text-content font-medium">{ageGroupLabel}</Text>
           </Text>
         ) : null}
         {scoreLabel != null ? (
           <Text className="mt-1 text-sm text-muted">
-            Pontuação total:{" "}
-            <Text className="text-white font-medium">{scoreLabel}</Text>
+            {t("analysis.mabc.totalScore")}:{" "}
+            <Text className="text-content font-medium">{scoreLabel}</Text>
           </Text>
         ) : null}
         {evaluatorName ? (
           <Text className="mt-1 text-sm text-muted">
-            Avaliado por:{" "}
-            <Text className="text-white font-medium">{evaluatorName}</Text>
+            {t("analysis.protocolCard.evaluatedBy")}:{" "}
+            <Text className="text-content font-medium">{evaluatorName}</Text>
           </Text>
         ) : null}
       </View>
@@ -99,6 +101,7 @@ export function ProtocolVisualizationScreen({
   scoreLabel,
   onPressBack,
 }: ProtocolVisualizationScreenProps) {
+  const { t } = useI18n();
   const { detail, isLoading, error } = useProtocolRecordDetail(tipo, recordId);
   const protocolLabel = PROTOCOL_LABELS[tipo];
   const { showToast } = useGlobalToast();
@@ -117,13 +120,13 @@ export function ProtocolVisualizationScreen({
       onPressBack?.();
       showToast({
         mode: "success",
-        title: "Formulário salvo",
-        description: "As respostas foram salvas com sucesso!",
+        title: t("analysis.protocolViz.formSaved"),
+        description: t("analysis.protocolViz.formSavedDesc"),
       });
     } else if (result) {
       showToast({
         mode: "error",
-        title: result.title || "Erro ao salvar",
+        title: result.title || t("analysis.protocolViz.saveError"),
         description: result.description,
       });
     }
@@ -148,7 +151,7 @@ export function ProtocolVisualizationScreen({
         />
 
         <View className="mx-8 mt-5">
-          <Text className="text-header-1 text-white">
+          <Text className="text-header-1 text-content">
             {protocolLabel} - {studentName}
           </Text>
         </View>
@@ -160,13 +163,12 @@ export function ProtocolVisualizationScreen({
             </View>
           ) : error ? (
             <Text className="mt-10 text-center text-default-2 text-extra">
-              Não foi possível carregar os protocolos/testes aplicados. Tente
-              novamente.
+              {t("analysis.protocolList.loadError")}
             </Text>
           ) : (
             <>
               <RecordHeaderCard
-                label={label ?? `Formulário ${protocolLabel}`}
+                label={label ?? t("analysis.protocolViz.formLabel").replace("{x}", protocolLabel)}
                 dateLabel={dateLabel ?? ""}
                 scoreLabel={totalLabel}
               />
@@ -196,8 +198,7 @@ export function ProtocolVisualizationScreen({
     if (error) {
       return (
         <Text className="mt-10 text-center text-default-2 text-extra">
-          Não foi possível carregar os protocolos/testes aplicados. Tente
-          novamente.
+          {t("analysis.protocolList.loadError")}
         </Text>
       );
     }
@@ -213,7 +214,7 @@ export function ProtocolVisualizationScreen({
             evaluatorName={mabc.evaluatorName}
           />
 
-          <Text className="mt-6 mb-3 text-header-3 text-white">Resumo do teste</Text>
+          <Text className="mt-6 mb-3 text-header-3 text-content">{t("analysis.protocolViz.testSummary")}</Text>
           <Mabc2MotorDevelopmentCard
             readOnly
             recordCount={mabc.components.reduce((acc, c) => acc + c.items.length, 0)}
@@ -239,7 +240,7 @@ export function ProtocolVisualizationScreen({
 
     return (
       <Text className="mt-10 text-center text-muted text-default-2">
-        Nenhum dado disponível para este registro.
+        {t("analysis.protocolViz.noData")}
       </Text>
     );
   };
@@ -249,7 +250,7 @@ export function ProtocolVisualizationScreen({
       <Header variant="back" onPressBack={onPressBack} />
 
       <View className="mx-8 mt-5">
-        <Text className="text-header-1 text-white">
+        <Text className="text-header-1 text-content">
           {protocolLabel} - {studentName}
         </Text>
       </View>

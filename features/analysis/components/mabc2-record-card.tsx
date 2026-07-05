@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { ChevronRight } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
@@ -20,13 +21,14 @@ export type Mabc2RecordCardProps = {
 
 /** Tappable list card summarizing a MABC-2 record's date and total scores. */
 export function Mabc2RecordCard({ record, onPress }: Mabc2RecordCardProps) {
+  const { t } = useI18n();
   return (
     <Pressable
       onPress={onPress}
       className="w-full rounded-xl border border-outline bg-level2 px-4 py-3 mb-3 active:opacity-80"
     >
       <View className="flex-row items-center justify-between mb-1">
-        <Text className="text-base font-bold text-white flex-1 pr-2" numberOfLines={1}>
+        <Text className="text-base font-bold text-content flex-1 pr-2" numberOfLines={1}>
           {record.label}
         </Text>
         <ChevronRight size={18} color={colors.muted} />
@@ -38,14 +40,14 @@ export function Mabc2RecordCard({ record, onPress }: Mabc2RecordCardProps) {
 
       <View className="flex-row gap-3">
         <View className="flex-1">
-          <Text className="text-sm font-medium text-muted">Pontuação total</Text>
-          <Text className="text-base font-bold text-white">
+          <Text className="text-sm font-medium text-muted">{t("analysis.mabc.totalScore")}</Text>
+          <Text className="text-base font-bold text-content">
             {record.totalScore !== null ? String(record.totalScore) : "—"}
           </Text>
         </View>
         <View className="flex-1">
-          <Text className="text-sm font-medium text-muted">Percentil total</Text>
-          <Text className="text-base font-bold text-white">
+          <Text className="text-sm font-medium text-muted">{t("analysis.mabc.totalPercentile")}</Text>
+          <Text className="text-base font-bold text-content">
             {record.totalPercentile ?? "—"}
           </Text>
         </View>

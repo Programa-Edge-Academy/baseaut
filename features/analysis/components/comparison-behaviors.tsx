@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { AlertCircle } from "lucide-react-native";
 import React from "react";
 import { Text, View } from "react-native";
@@ -27,6 +28,7 @@ export type ComparisonBehaviorsProps = {
 
 /** Table comparing observed-behavior counts between two periods. */
 export function ComparisonBehaviors({ data }: ComparisonBehaviorsProps) {
+  const { t } = useI18n();
   return (
     <View
       style={{
@@ -36,70 +38,70 @@ export function ComparisonBehaviors({ data }: ComparisonBehaviorsProps) {
       }}
       className="w-full rounded-2xl p-6"
     >
-      <Text className="text-white text-lg font-bold mb-4" style={{ fontFamily: "Inter" }}>
-        Comparação dos comportamentos observados
+      <Text className="text-content text-lg font-bold mb-4" style={{ fontFamily: "Inter" }}>
+        {t("analysis.behaviors.comparisonTitle")}
       </Text>
 
       <View className="flex-row items-center px-1 mb-3">
         <View className="flex-[2]">
-          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 11 }}>Comportamento</Text>
+          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 11 }}>{t("analysis.behavior.behavior")}</Text>
         </View>
         <View className="flex-[1.2] items-center">
-          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 10 }}>Período 1</Text>
+          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 10 }}>{t("analysis.period1")}</Text>
         </View>
         <View className="flex-[1.2] items-center">
-          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 10 }}>Período 2</Text>
+          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 10 }}>{t("analysis.period2")}</Text>
         </View>
         <View className="flex-[2] items-end right-2">
-          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 11 }}>Variação</Text>
+          <Text className="text-slate-400" style={{ fontFamily: "Inter", fontSize: 11 }}>{t("analysis.variation")}</Text>
         </View>
       </View>
 
       <View className="space-y-3">
         <ComparisonCard
-          title="Estereotipias"
+          title={t("analysis.behaviorChart.stereotypy.legend")}
           period1={{ value: data?.estereotipia?.p1 ?? 0 }}
           period2={{ value: data?.estereotipia?.p2 ?? 0 }}
         />
 
         <ComparisonCard
-          title="Contato visual (Pessoas)"
+          title={t("analysis.behaviorChart.eyePeople.legend")}
           period1={{ value: data?.contato_visual_pessoas?.p1 ?? 0 }}
           period2={{ value: data?.contato_visual_pessoas?.p2 ?? 0 }}
         />
 
         <ComparisonCard
-          title="Contato visual (Objetos)"
+          title={t("analysis.behaviorChart.eyeObjects.legend")}
           period1={{ value: data?.contato_visual_objetos?.p1 ?? 0 }}
           period2={{ value: data?.contato_visual_objetos?.p2 ?? 0 }}
         />
 
         <ComparisonCard
-          title="Engajamento"
+          title={t("analysis.behaviorChart.engagement.legend")}
           period1={{ value: data?.engajamento?.p1 ?? 0 }}
           period2={{ value: data?.engajamento?.p2 ?? 0 }}
         />
 
         <ComparisonCard
-          title="Fuga"
+          title={t("analysis.behaviorChart.escape.legend")}
           period1={{ value: data?.fuga?.p1 ?? 0 }}
           period2={{ value: data?.fuga?.p2 ?? 0 }}
         />
 
         <ComparisonCard
-          title="Crises"
+          title={t("analysis.behaviorChart.crisis.legend")}
           period1={{ value: data?.crise?.p1 ?? 0 }}
           period2={{ value: data?.crise?.p2 ?? 0 }}
         />
 
         <ComparisonCard
-          title="Comportamentos inaptos"
+          title={t("analysis.behaviorChart.unfit.legend")}
           period1={{ value: data?.inapto?.p1 ?? 0 }}
           period2={{ value: data?.inapto?.p2 ?? 0 }}
         />
 
         <ComparisonCard
-          title="Atividades preferenciais"
+          title={t("analysis.behaviorChart.preferred.legend")}
           period1={{ value: data?.atividade_preferencial?.p1 ?? 0 }}
           period2={{ value: data?.atividade_preferencial?.p2 ?? 0 }}
         />
@@ -110,7 +112,7 @@ export function ComparisonBehaviors({ data }: ComparisonBehaviorsProps) {
           <AlertCircle color={colors.muted} size={18} />
         </View>
         <Text className="text-slate-400 text-[12px]" style={{ flex: 1, fontFamily: "Inter", color: colors.muted }}>
-          Os valores exibem a diferença absoluta e percentual dos comportamentos observados entre os dois períodos selecionados.
+          {t("analysis.behaviors.footnote")}
         </Text>
       </View>
 

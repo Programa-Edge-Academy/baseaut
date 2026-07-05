@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { Calendar } from "lucide-react-native";
 import React from "react";
 import { Pressable, StyleProp, Text, View, ViewStyle } from "react-native";
@@ -11,7 +12,9 @@ export type PeriodSelectorProps = {
 };
 
 /** Calendar-icon row that opens a date-range picker; static when no handler is given. */
-export function PeriodSelector({ label = "Selecione o período para visualizar o progresso", onPress, containerStyle }: PeriodSelectorProps) {
+export function PeriodSelector({ label, onPress, containerStyle }: PeriodSelectorProps) {
+  const { t } = useI18n();
+  const displayLabel = label ?? t("analysis.selectPeriodProgress");
   const Container: any = onPress ? Pressable : View;
 
   return (
@@ -24,7 +27,7 @@ export function PeriodSelector({ label = "Selecione o período para visualizar o
         <Calendar size={20} color={colors.muted} strokeWidth={2} />
       </View>
 
-      <Text className="text-xs text-white font-medium">{label}</Text>
+      <Text className="text-xs text-content font-medium">{displayLabel}</Text>
     </Container>
   );
 }

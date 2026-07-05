@@ -12,6 +12,10 @@ import { PeriodSelector } from "../components/period-selector";
 import ProgressExerciseCard from "../components/progress-exercise-card";
 import { useExerciseProgress } from "../hooks/use-exercise-progress";
 import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 
 /**
  * Screen showing a student's exercise progress. Loads the data, lets the user
@@ -20,13 +24,17 @@ import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile
  */
 export function ExerciseProgressScreen() {
   const router = useRouter();
-  
+  const { t } = useI18n();
+
   const { studentId, studentName } = useLocalSearchParams<{ studentId: string; studentName: string }>();
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const [noticeOpen, setNoticeOpen] = useState(false);
 
-  const { exercises, isLoading, error, refetch } = useExerciseProgress(studentId ?? "");
+  const { exercises, isLoading, error, refetch } = useExerciseProgress(studentId ?? "", { mock: isTutorial });
 
-  const { profile } = useStudentProfile(studentId as string);
-  const displayName = profile?.name ?? studentName ?? "Aluno";
+  const { profile } = useStudentProfile(studentId as string, { mock: isTutorial });
+  const displayName = profile?.name ?? studentName ?? t("common.student");
 
   const [selectedExercise, setSelectedExercise] = useState<{ id: string; title: string; sessions: number } | null>(null);
   
@@ -51,28 +59,28 @@ export function ExerciseProgressScreen() {
         : "success";
 
   const stateConfig = {
-    empty: { 
-      title: "Ainda não há registros de sessão", 
-      message: "Quando houver uma sessão salva para este aluno, ela aparecerá aqui para acompanhamento.", 
-      icon: ChartNoAxesCombined, 
-      accentColor: colors.primary, 
-      buttonLabel: "Atualizar Lista" 
+    empty: {
+      title: t("analysis.noRecords.sessions.title"),
+      message: t("analysis.noRecords.sessions.message"),
+      icon: ChartNoAxesCombined,
+      accentColor: colors.primary,
+      buttonLabel: t("common.updateList")
     },
-    error: { 
-      title: "Não foi possível carregar os registros", 
-      message: "Tente novamente em alguns instantes ou verifique sua conexão para acessar os dados do aluno.", 
-      icon: AlertCircle, 
-      accentColor: "#EF4444", 
-      buttonLabel: "Tentar Novamente" 
+    error: {
+      title: t("analysis.noRecords.loadRecords.title"),
+      message: t("analysis.noRecords.loadRecords.message"),
+      icon: AlertCircle,
+      accentColor: "#EF4444",
+      buttonLabel: t("common.tryAgain")
     }
   };
 
   const getPeriodLabel = () => {
     if (selectedRange.startDate && selectedRange.endDate) {
       if (selectedRange.startDate === selectedRange.endDate) {
-        return `Data selecionada: ${formatDateToShow(selectedRange.startDate)}`;
+        return `${t("analysis.period.selectedDate")}: ${formatDateToShow(selectedRange.startDate)}`;
       }
-      return `Período: ${formatDateToShow(selectedRange.startDate)} até ${formatDateToShow(selectedRange.endDate)}`;
+      return `${t("analysis.period.range")}: ${formatDateToShow(selectedRange.startDate)} ${t("common.until")} ${formatDateToShow(selectedRange.endDate)}`;
     }
     return undefined;
   };
@@ -130,14 +138,15 @@ export function ExerciseProgressScreen() {
 
   return (
     <View className="flex-1 bg-level1">
-      <Header 
-        variant="back" 
-        onPressBack={() => {router.back();}} 
+      <Header
+        variant="back"
+        onPressBack={() => {router.back();}}
+        onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
       />
 
       <View className="mt-5 w-full">
-        <Text className="text-xl font-bold text-white pl-8 mb-4" style={{ fontFamily: "Inter-Bold" }}>
-          Progresso por exercício - {displayName}
+        <Text className="text-xl font-bold text-content pl-8 mb-4" style={{ fontFamily: "Inter-Bold" }}>
+          {t("analysis.card.progress.title")} - {displayName}
         </Text>
       </View>
 
@@ -151,11 +160,11 @@ export function ExerciseProgressScreen() {
             <View className="mb-5 items-center justify-center rounded-[24px] p-5 self-center" style={{ backgroundColor: `${stateConfig[currentStatus as "empty" | "error"].accentColor}14` }}>
               {React.createElement(stateConfig[currentStatus as "empty" | "error"].icon, { size: 56, color: stateConfig[currentStatus as "empty" | "error"].accentColor, strokeWidth: 2 })}
             </View>
-            <Text className="text-center text-[22px] font-bold text-white" style={{ fontFamily: "Inter-Bold" }}>{stateConfig[currentStatus as "empty" | "error"].title}</Text>
+            <Text className="text-center text-[22px] font-bold text-content" style={{ fontFamily: "Inter-Bold" }}>{stateConfig[currentStatus as "empty" | "error"].title}</Text>
             <Text className="mt-3 text-center text-[14px] leading-6 text-muted" style={{ fontFamily: "Inter-Medium" }}>{stateConfig[currentStatus as "empty" | "error"].message}</Text>
             <View className="mt-6">
               <Pressable onPress={() => refetch()} className="items-center rounded-2xl px-4 py-3" style={{ backgroundColor: colors.primary }}>
-                <Text className="text-[14px] font-semibold text-white">{stateConfig[currentStatus as "empty" | "error"].buttonLabel}</Text>
+                <Text className="text-[14px] font-semibold text-content">{stateConfig[currentStatus as "empty" | "error"].buttonLabel}</Text>
               </Pressable>
             </View>
           </View>
@@ -203,16 +212,16 @@ export function ExerciseProgressScreen() {
                         <View className="">
                           <ExerciseProgressChart
                             exerciseName={exercise.title}
-                            records={filteredChartRecords} 
-                            startDate={chartStartDate} 
-                            endDate={chartEndDate}     
+                            records={filteredChartRecords}
+                            startDate={chartStartDate}
+                            endDate={chartEndDate}
                           />
-                          
+
                           {hasOnlyOneSession && (
                             <View className="flex-row items-center gap-3 p-4 rounded-xl border mt-1" style={{ backgroundColor: colors.level2, borderColor: '#464646' }}>
                               <CircleAlert size={20} color="#B5BEC6" />
                               <Text className="flex-1 text-sm font-medium leading-5" style={{ color: '#B5BEC6' }}>
-                                Há apenas um registro disponível para este exercício. Ainda não é possível identificar evolução.
+                                {t("analysis.progressChart.singleRecordWarning")}
                               </Text>
                             </View>
                           )}
@@ -239,7 +248,7 @@ export function ExerciseProgressScreen() {
 
             <View className="items-center">
               <DefaultButton
-                label="Salvar"
+                label={t("common.save")}
                 sizeClass="w-full h-11"
                 disabled={!tempRange.startDate}
                 style={{ opacity: !tempRange.startDate ? 0.5 : 1 }}
@@ -249,6 +258,16 @@ export function ExerciseProgressScreen() {
           </Pressable>
         </Pressable>
       </AppModal>
+
+      {isTutorial && (
+        <TutorialPracticeNotice
+          visible={noticeOpen}
+          onClose={() => setNoticeOpen(false)}
+          onExit={() => { setNoticeOpen(false); router.back(); }}
+        />
+      )}
+
+      {isTutorial && <TutorialSpotlight />}
     </View>
   );
 }

@@ -3,7 +3,11 @@ import { DataList } from "@/components/data-list";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { Toast, type ToastMode } from "@/components/toast";
-import React from "react";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import React, { useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Mabc2Record, Mabc2RecordCard } from "../components/mabc2-record-card";
 
@@ -32,15 +36,23 @@ export function Mabc2RecordsListScreen({
   onPressNewRecord,
   onPressRecord,
 }: Mabc2RecordsListScreenProps) {
+  const { t } = useI18n();
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const [noticeOpen, setNoticeOpen] = useState(false);
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" onPressBack={onPressBack} />
+      <Header
+        variant="back"
+        onPressBack={onPressBack}
+        onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+      />
 
       <View className="mx-5 mt-5">
         <PageHeader
           mode="exercicios"
           title={`MABC-2 — ${studentName}`}
-          subtitle="Registros de avaliação motora"
+          subtitle={t("analysis.mabcList.subtitle")}
           onNewPress={onPressNewRecord}
         />
       </View>
@@ -53,7 +65,7 @@ export function Mabc2RecordsListScreen({
         <DataList
           className="mx-5 mt-3"
           data={records}
-          emptyMessage="Nenhum registro MABC-2 encontrado."
+          emptyMessage={t("analysis.mabcList.empty")}
           onRefresh={onRefresh}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
@@ -74,6 +86,16 @@ export function Mabc2RecordsListScreen({
           onHide={onHideToast}
         />
       )}
+
+      {isTutorial && (
+        <TutorialPracticeNotice
+          visible={noticeOpen}
+          onClose={() => setNoticeOpen(false)}
+          onExit={() => { setNoticeOpen(false); onPressBack?.(); }}
+        />
+      )}
+
+      {isTutorial && <TutorialSpotlight />}
     </View>
   );
 }

@@ -2,7 +2,11 @@ import { colors } from "@/assets/colors";
 import { DataList } from "@/components/data-list";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
-import React from "react";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import React, { useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 
 import { ProtocolEmptyState } from "../components/protocol-empty-state";
@@ -37,12 +41,20 @@ export function ProtocolRecordsListScreen({
   onPressBack,
   onPressRecord,
 }: ProtocolRecordsListScreenProps) {
-  const { records, isLoading, error, refetch } = useProtocolRecords(studentId, tipo);
+  const { t } = useI18n();
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const { records, isLoading, error, refetch } = useProtocolRecords(studentId, tipo, { mock: isTutorial });
   const protocolLabel = PROTOCOL_LABELS[tipo];
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" onPressBack={onPressBack} />
+      <Header
+        variant="back"
+        onPressBack={onPressBack}
+        onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+      />
 
       <View className="flex-1">
         <View className="mx-8 mt-5">
@@ -50,8 +62,8 @@ export function ProtocolRecordsListScreen({
             title={`${protocolLabel} - ${studentName}`}
             subtitle={
               records.length > 0
-                ? `${records.length} ${records.length === 1 ? "registro" : "registros"}`
-                : "Visualização de registros"
+                ? (records.length === 1 ? t("analysis.protocolList.recordOne") : t("analysis.protocolList.recordMany")).replace("{n}", String(records.length))
+                : t("analysis.protocolList.viewRecords")
             }
           />
         </View>
@@ -63,8 +75,7 @@ export function ProtocolRecordsListScreen({
         ) : error ? (
           <View className="mt-16 items-center px-8">
             <Text className="text-center text-default-2 text-extra">
-              Não foi possível carregar os protocolos/testes aplicados. Tente
-              novamente.
+              {t("analysis.protocolList.loadError")}
             </Text>
           </View>
         ) : records.length === 0 ? (
@@ -74,7 +85,7 @@ export function ProtocolRecordsListScreen({
             className="mx-8 mt-5"
             data={records}
             keyExtractor={(item) => item.id}
-            emptyMessage="Nenhum registro encontrado."
+            emptyMessage={t("analysis.protocolList.noRecordsFound")}
             onRefresh={refetch}
             renderItem={({ item }) => (
               <ProtocolRecordCard
@@ -86,6 +97,16 @@ export function ProtocolRecordsListScreen({
           />
         )}
       </View>
+
+      {isTutorial && (
+        <TutorialPracticeNotice
+          visible={noticeOpen}
+          onClose={() => setNoticeOpen(false)}
+          onExit={() => { setNoticeOpen(false); onPressBack?.(); }}
+        />
+      )}
+
+      {isTutorial && <TutorialSpotlight />}
     </View>
   );
 }

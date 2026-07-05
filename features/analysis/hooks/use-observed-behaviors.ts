@@ -48,21 +48,52 @@ function toISODate(date: Date): string {
  * Loads a student's observed behaviors over a date range directly from the
  * Supabase tables.
  *
+ * @remarks
+ * The range is resolved in the device's local timezone: the query converts the
+ * local midnight boundaries to UTC instants and each session's `data_inicio`
+ * is mapped back to a local "YYYY-MM-DD" date, so sessions near midnight land
+ * on the calendar day the user actually saw.
+ *
  * @returns `records` (BehaviorRecord list grouped by type and date),
  * `exercises` (associated exercises keyed by BehaviorType), and
  * `isLoading` / `error` / `refetch`.
  */
+/** Seed observed behaviors for the tutorial's mock analysis. */
+const MOCK_BEHAVIORS: BehaviorRecord[] = [
+  { id: "mb1", behaviorType: "engagement", date: "2026-06-12", frequency: 4 },
+  { id: "mb2", behaviorType: "stereotypy", date: "2026-06-12", frequency: 2 },
+  { id: "mb3", behaviorType: "escape", date: "2026-06-19", frequency: 1 },
+  { id: "mb4", behaviorType: "crisis", date: "2026-06-19", frequency: 1 },
+  { id: "mb5", behaviorType: "preferred_activity", date: "2026-06-26", frequency: 3 },
+];
+
+const MOCK_BEHAVIOR_EXERCISES: Record<string, string[]> = {
+  engagement: ["Andar na linha", "Girar bambolê"],
+  stereotypy: ["Andar na linha"],
+  escape: ["Girar bambolê"],
+  crisis: ["Andar na linha"],
+  preferred_activity: ["Girar bambolê"],
+};
+
 export function useObservedBehaviors(
   studentId?: string,
   startDate?: Date | null,
   endDate?: Date | null,
+  options?: { mock?: boolean },
 ) {
-  const [records, setRecords] = useState<BehaviorRecord[]>([]);
-  const [exercises, setExercises] = useState<Record<string, string[]>>({});
+  const isMock = options?.mock ?? false;
+  const [records, setRecords] = useState<BehaviorRecord[]>(isMock ? MOCK_BEHAVIORS : []);
+  const [exercises, setExercises] = useState<Record<string, string[]>>(isMock ? MOCK_BEHAVIOR_EXERCISES : {});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchBehaviors = useCallback(async () => {
+    if (isMock) {
+      setRecords(MOCK_BEHAVIORS);
+      setExercises(MOCK_BEHAVIOR_EXERCISES);
+      setIsLoading(false);
+      return;
+    }
     if (!studentId || !startDate || !endDate) {
       setRecords([]);
       setExercises({});
@@ -73,18 +104,24 @@ export function useObservedBehaviors(
     setError(null);
 
     try {
-      const startISO = toISODate(startDate);
-      const endPlusOne = new Date(endDate);
-      endPlusOne.setDate(endPlusOne.getDate() + 1);
-      const endISO = toISODate(endPlusOne);
+      const startInstant = new Date(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        startDate.getDate(),
+      );
+      const endInstant = new Date(
+        endDate.getFullYear(),
+        endDate.getMonth(),
+        endDate.getDate() + 1,
+      );
 
       const { data: sessionsData, error: sessionsError } = await supabase
         .from("sessoes")
         .select("id, data_inicio")
         .eq("aluno_id", studentId)
         .eq("status", "concluida")
-        .gte("data_inicio", startISO)
-        .lt("data_inicio", endISO);
+        .gte("data_inicio", startInstant.toISOString())
+        .lt("data_inicio", endInstant.toISOString());
 
       if (sessionsError) throw sessionsError;
 
@@ -159,7 +196,7 @@ export function useObservedBehaviors(
         const sessionDate = sessionDateMap.get(b.sessao_id);
         if (!sessionDate) return;
 
-        const dateOnly = sessionDate.substring(0, 10);
+        const dateOnly = toISODate(new Date(sessionDate));
         const key = `${behaviorType}::${dateOnly}`;
 
         const existing = groupMap.get(key);
@@ -207,7 +244,7 @@ export function useObservedBehaviors(
     } finally {
       setIsLoading(false);
     }
-  }, [studentId, startDate, endDate]);
+  }, [studentId, startDate, endDate, isMock]);
 
   useEffect(() => {
     fetchBehaviors();

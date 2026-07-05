@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { ClipboardList } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
@@ -17,6 +18,7 @@ export function ProtocolRecordCard({
   showAgeGroup = false,
   onPress,
 }: ProtocolRecordCardProps) {
+  const { t } = useI18n();
   return (
     <Pressable
       onPress={onPress}
@@ -30,31 +32,31 @@ export function ProtocolRecordCard({
       </View>
 
       <View className="flex-1">
-        <Text className="text-base font-bold text-white" numberOfLines={1}>
+        <Text className="text-base font-bold text-content" numberOfLines={1}>
           {record.label}
         </Text>
 
         <Text className="mt-1 text-sm text-muted">
-          Registro: <Text className="text-white font-medium">{record.dateLabel}</Text>
+          {t("analysis.protocolCard.record")}: <Text className="text-content font-medium">{record.dateLabel}</Text>
         </Text>
 
         {showAgeGroup && record.ageGroupLabel ? (
           <Text className="mt-1 text-sm text-muted">
-            Grupo de idade:{" "}
-            <Text className="text-white font-medium">{record.ageGroupLabel}</Text>
+            {t("analysis.protocolCard.ageGroup")}:{" "}
+            <Text className="text-content font-medium">{record.ageGroupLabel}</Text>
           </Text>
         ) : (
           <Text className="mt-1 text-sm text-muted">
-            Pontuação total:{" "}
-            <Text className="text-white font-medium">
+            {t("analysis.mabc.totalScore")}:{" "}
+            <Text className="text-content font-medium">
               {record.scoreLabel ?? "—"}
             </Text>
           </Text>
         )}
 
         <Text className="mt-1 text-sm text-muted">
-          Avaliado por:{" "}
-          <Text className="text-white font-medium">
+          {t("analysis.protocolCard.evaluatedBy")}:{" "}
+          <Text className="text-content font-medium">
             {record.evaluatorName ?? "—"}
           </Text>
         </Text>

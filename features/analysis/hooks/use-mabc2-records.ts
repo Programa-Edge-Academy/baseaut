@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useState } from "react";
+import type { Locale } from "@/features/settings/constants/translations";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import type { Mabc2Record } from "../components/mabc2-record-card";
 
 /** An editable exercise item within a MABC-2 draft section. */
@@ -53,10 +55,10 @@ function parseNumber(value: any): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function formatDate(value: string | null) {
+function formatDate(value: string | null, locale: Locale, notSet: string) {
   return value
-    ? new Date(value).toLocaleDateString("pt-BR")
-    : "Data não definida";
+    ? new Date(value).toLocaleDateString(locale === "en" ? "en-US" : "pt-BR")
+    : notSet;
 }
 
 function normalizeText(value: any) {
@@ -334,13 +336,36 @@ function buildTotalsPayload(draft: Mabc2Draft) {
   };
 }
 
-/** Loads a student's MABC-2 records as list summaries, with a refetch action. */
-export function useMabc2Records(studentId: string) {
-  const [records, setRecords] = useState<Mabc2Record[]>([]);
+/** Seed MABC-2 list records for the tutorial's mock analysis. */
+function buildMockMabc2Records(formLabel: (n: number) => string): Mabc2Record[] {
+  return [
+    { id: "mock-mabc-1", label: formLabel(1), date: "26/06/2026", totalScore: 62, totalPercentile: "50" },
+    { id: "mock-mabc-2", label: formLabel(2), date: "12/05/2026", totalScore: 48, totalPercentile: "25" },
+  ];
+}
+
+/**
+ * Loads a student's MABC-2 records as list summaries, with a refetch action.
+ *
+ * @param options - Pass `{ mock: true }` (tutorial only) for seeded records.
+ */
+export function useMabc2Records(studentId: string, options?: { mock?: boolean }) {
+  const isMock = options?.mock ?? false;
+  const { t, locale } = useI18n();
+  const formLabel = useCallback(
+    (n: number) => t("analysis.protocolViz.formLabel").replace("{x}", `MABC-2 ${n}`),
+    [t],
+  );
+  const [records, setRecords] = useState<Mabc2Record[]>(isMock ? buildMockMabc2Records(formLabel) : []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   const refetch = useCallback(async () => {
+    if (isMock) {
+      setRecords(buildMockMabc2Records(formLabel));
+      setIsLoading(false);
+      return;
+    }
     if (!studentId) {
       setRecords([]);
       return;
@@ -361,8 +386,8 @@ export function useMabc2Records(studentId: string) {
       setRecords(
         list.map((item: any, index: number) => ({
           id: item.id,
-          label: `Formulário MABC-2 ${index + 1}`,
-          date: formatDate(item.created_at),
+          label: formLabel(index + 1),
+          date: formatDate(item.created_at, locale, t("common.dateNotSet")),
           totalScore: parseNumber(
             item.metadados?.pontuacao_total ?? item.metadados?.escore_total
           ),
@@ -381,7 +406,7 @@ export function useMabc2Records(studentId: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [studentId]);
+  }, [studentId, isMock, formLabel, locale, t]);
 
   useEffect(() => {
     refetch();

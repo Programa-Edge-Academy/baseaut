@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import {
   ArrowDownCircle,
   ArrowUpCircle,
@@ -105,6 +106,7 @@ export function ComparisonCard({
   hasError,
   hasInsufficientData,
 }: ComparisonCardProps) {
+  const { t } = useI18n();
   const { width } = useWindowDimensions();
   const isMobile = width < 480;
 
@@ -115,7 +117,7 @@ export function ComparisonCard({
           } ${className ?? ""}`}
       >
         <Text className="text-xs font-medium text-error text-center">
-          Não foi possível carregar esta comparação. Tente novamente.
+          {t("analysis.comparisonCard.loadError")}
         </Text>
       </View>
     );
@@ -131,7 +133,7 @@ export function ComparisonCard({
           } ${className ?? ""}`}
       >
         <Text className="text-xs font-medium text-muted text-center">
-          Dados insuficientes para comparação.
+          {t("analysis.comparisonCard.insufficientData")}
         </Text>
       </View>
     );

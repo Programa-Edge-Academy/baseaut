@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { ArrowDownCircle, ArrowUpCircle, MinusCircle } from "lucide-react-native";
 import React from "react";
 import { Text, View } from "react-native";
@@ -93,11 +94,12 @@ export function AnalysisSummaryCard({
   hasError,
   hasInsufficientData,
 }: AnalysisSummaryCardProps) {
+  const { t } = useI18n();
   if (hasError) {
     return (
       <View className={`rounded-2xl border border-outline bg-level2 p-4 justify-center items-center ${className ?? ""}`}>
         <Text className="text-sm font-medium text-error text-center">
-          Não foi possível carregar o resumo da comparação. Tente novamente.
+          {t("analysis.summaryCard.loadError")}
         </Text>
       </View>
     );
@@ -110,7 +112,7 @@ export function AnalysisSummaryCard({
     return (
       <View className={`rounded-2xl border border-outline bg-level2 p-4 justify-center items-center ${className ?? ""}`}>
         <Text className="text-sm font-medium text-muted text-center">
-          Não há dados suficientes para comparar os períodos selecionados.
+          {t("analysis.summaryCard.insufficientData")}
         </Text>
       </View>
     );
@@ -128,24 +130,24 @@ export function AnalysisSummaryCard({
   const Icon = statusStyle.Icon;
   const iconColor = variation?.iconColor || statusStyle.iconColor;
   const textColor = variation?.textColor || statusStyle.textColor;
-  const variationLabel = variation?.label || "Variação";
+  const variationLabel = variation?.label || t("analysis.variation");
   const variationValue = variation?.value || getVariationText(numericPeriod1, numericPeriod2);
 
   return (
     <View className={`rounded-2xl border border-outline bg-level2 p-4 ${className ?? ""}`}>
-      <Text className="text-xs font-medium text-white mb-3">{title}</Text>
+      <Text className="text-xs font-medium text-content mb-3">{title}</Text>
 
       <View className="flex-row justify-between gap-3 items-start">
         <View className="flex-1">
-          <Text className="text-[10px] font-medium text-muted mb-2">{period1.label ?? "Período 1"}</Text>
-          <Text className="text-base font-medium text-white">{period1.value}</Text>
+          <Text className="text-[10px] font-medium text-muted mb-2">{period1.label ?? t("analysis.period1")}</Text>
+          <Text className="text-base font-medium text-content">{period1.value}</Text>
         </View>
 
         <View className="w-px h-10 self-stretch bg-outline my-2" />
 
         <View className="flex-1">
-          <Text className="text-[10px] font-medium text-muted mb-2">{period2.label ?? "Período 2"}</Text>
-          <Text className="text-base font-medium text-white">{period2.value}</Text>
+          <Text className="text-[10px] font-medium text-muted mb-2">{period2.label ?? t("analysis.period2")}</Text>
+          <Text className="text-base font-medium text-content">{period2.value}</Text>
         </View>
 
         <View className="w-px h-10 self-stretch bg-outline my-2" />
