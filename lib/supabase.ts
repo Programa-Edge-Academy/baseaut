@@ -35,12 +35,15 @@ const storage =
       }
     : AsyncStorage;
 
+// On web, OAuth providers (Google) redirect back with the session in the URL,
+// so detection must be enabled there; on native the session is created
+// manually from the auth browser callback.
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    detectSessionInUrl: Platform.OS === "web",
   },
 });
 
