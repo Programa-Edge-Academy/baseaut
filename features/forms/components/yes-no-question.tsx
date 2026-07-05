@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { View } from "react-native";
 import { YesNoQuestion } from "../types";
 import { DefaultButton } from "@/components/default-button";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 
 /**
  * Props for a yes/no question UI.
@@ -31,6 +32,7 @@ export function YesNoQuestionUI({
   onChange,
   renderSubQuestion,
 }: Props) {
+  const { t } = useI18n();
   const selected = value as "sim" | "nao" | null;
 
   /**
@@ -52,11 +54,11 @@ export function YesNoQuestionUI({
           key={`nao-${selected === "nao"}`}
           sizeClass="flex-1 h-[44px]"
           className="rounded-[10px]"
-          label="Não"
+          label={t("common.no")}
           onPress={() => handleSelect("nao")}
           isOutline={true}
           outlineBorderClass={selected === "nao" ? "border-error" : "border-outline"}
-          textClassName="text-white"
+          textClassName="text-content"
           hasShadow={selected === "nao"}
           bgColorClass={selected === "nao" ? "bg-error" : "bg-level1"}
           shadowClass={selected === "nao" ? "shadow-errorShadow" : ""}
@@ -65,11 +67,11 @@ export function YesNoQuestionUI({
           key={`sim-${selected === "sim"}`}
           sizeClass="flex-1 h-[44px]"
           className="rounded-[10px]"
-          label="Sim"
+          label={t("common.yes")}
           onPress={() => handleSelect("sim")}
           isOutline={true}
           outlineBorderClass={selected === "sim" ? "border-primary" : "border-outline"}
-          textClassName="text-white"
+          textClassName="text-content"
           hasShadow={selected === "sim"}
           bgColorClass={selected === "sim" ? "bg-primary" : "bg-level1"}
           shadowClass={selected === "sim" ? "shadow-errorShadow" : ""}

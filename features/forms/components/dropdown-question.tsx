@@ -61,7 +61,7 @@ export function DropdownQuestionUI({ question, value, onChange }: Props) {
           <Text
             className={
               selected
-                ? "text-white text-default-2"
+                ? "text-content text-default-2"
                 : "text-muted text-default-2"
             }
           >

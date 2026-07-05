@@ -47,7 +47,7 @@ export function MatrixQuestionUI({ question, value, onChange }: Props) {
               : ""
           }`}
         >
-          <Text className="flex-1 text-white text-default-2 pr-2 ml-2">
+          <Text className="flex-1 text-content text-default-2 pr-2 ml-2">
             {row}
           </Text>
 

@@ -1,6 +1,6 @@
 import { Check } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
-import { colors } from "@/assets/colors";
+import { useThemeColors } from "@/features/settings/contexts/theme-context";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { ChoiceListQuestion } from "../types";
 
@@ -20,6 +20,7 @@ const NONE_OPTION = "Nenhuma das opções";
  * Renders a choice list with optional "other" input.
  */
 export function ChoiceListQuestionUI({ question, value, onChange }: Props) {
+  const colors = useThemeColors();
   const selectedOptions = value?.selected || [];
   const otherText = value?.other || "";
 
@@ -68,7 +69,7 @@ export function ChoiceListQuestionUI({ question, value, onChange }: Props) {
                 {isSelected && <Check color="#fff" size={18} />}
               </View>
               <View className="flex-1 min-h-[44px] px-3.5 py-2.5 bg-level1 rounded-xl border border-outline justify-center">
-                <Text className="text-white text-default-2">{opt}</Text>
+                <Text className="text-content text-default-2">{opt}</Text>
               </View>
             </Pressable>
 

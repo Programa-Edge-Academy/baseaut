@@ -5,6 +5,7 @@ import { useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 import { DefaultTextInput } from "../../../components/default-text-input";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { FormQuestionProps } from "../types";
 import { ChoiceListQuestionUI } from "./choice-list-question";
 import { DropdownQuestionUI } from "./dropdown-question";
@@ -34,6 +35,7 @@ export function FormQuestion({
   value,
   onChange,
 }: Props) {
+  const { t } = useI18n();
   const [isHelpModalVisible, setIsHelpModalVisible] = useState(false);
   const [observationText, setObservationText] = useState("");
 
@@ -102,7 +104,7 @@ export function FormQuestion({
     <>
     <View className="self-stretch px-0.7 rounded-[10px] flex flex-row items-center gap-2.5">
       <View className="flex-1 min-h-[44px] px-3.5 py-2.5 justify-center">
-        <Text className="text-white text-default-2">
+        <Text className="text-content text-default-2">
           {question.title}
         </Text>
       </View>
@@ -122,7 +124,7 @@ export function FormQuestion({
       {question.allowObservation && (
         <View className="self-stretch mt-4 border-t border-outline pt-4">
           <Text className="text-default-3 text-muted mb-2">
-            Observações (opcional)
+            {t("forms.observationsOptional")}
           </Text>
           <View className="flex flex-row items-end gap-3">
             <DefaultTextInput
@@ -130,7 +132,7 @@ export function FormQuestion({
               value={observationText}
               onChangeText={setObservationText}
               className="flex-1 min-h-[44px]"
-              placeholder="Adicione uma observação"
+              placeholder={t("forms.addObservation")}
             />
           </View>
         </View>
@@ -157,7 +159,7 @@ export function FormQuestion({
         <View className="flex-1 bg-black/60 justify-center p-6">
           <View className="bg-level2 border border-outline rounded-2xl max-h-[80%] overflow-hidden">
             <View className="flex-row items-center justify-between p-5 border-b border-outline">
-              <Text className="text-header-3 text-white flex-1 pr-4">
+              <Text className="text-header-3 text-content flex-1 pr-4">
                 {question.title}
               </Text>
               <Pressable

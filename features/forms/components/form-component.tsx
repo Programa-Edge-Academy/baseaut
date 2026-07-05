@@ -1,8 +1,16 @@
 import { colors } from "@/assets/colors";
 import { FormQuestion } from "@/features/forms/components/form-question";
 import { supabase } from "@/lib/supabase";
+import { useKeyboardAwareScroll } from "@/lib/use-keyboard-aware-scroll";
+import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
 import { forwardRef, useImperativeHandle, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 
 /** Returns the value the UI already displays as default, or undefined when there is none. */
 function getDefaultAnswer(question: { type: string; min?: number }): any {
@@ -18,6 +26,36 @@ function getDefaultAnswer(question: { type: string; min?: number }): any {
 const RC_AUTO_FILLED_TITLES = [
   "Tempo da sessão",
   "Fugas (número de fugas e tempo do ocorrido)",
+];
+
+/** Mock Control Record questions used by the tutorial session simulation. */
+const MOCK_RC_QUESTIONS = [
+  {
+    id: "mock-rc-1",
+    type: "linear_scale",
+    title: "Nível de engajamento do aluno na sessão",
+    min: 1,
+    max: 5,
+    step: 1,
+    options: undefined,
+    multiple: undefined,
+    obrigatoria: true,
+    helpText: undefined,
+    numeric: false,
+  },
+  {
+    id: "mock-rc-2",
+    type: "open",
+    title: "Observações gerais da sessão",
+    min: undefined,
+    max: undefined,
+    step: undefined,
+    options: undefined,
+    multiple: undefined,
+    obrigatoria: false,
+    helpText: undefined,
+    numeric: false,
+  },
 ];
 
 /** Normalizes a title for comparison by removing accents and casing. */
@@ -37,23 +75,58 @@ export interface FormComponentProps {
   onSuccess?: () => void;
   /** Hides the auto-filled Control Record questions (inline use during a session). */
   hideAutoFilledSessionFields?: boolean;
+  /**
+   * Whether the component owns its scrolling. Defaults to true. Set to false
+   * when rendered inside a parent `ScrollView` (e.g. during a running session),
+   * so it renders as a plain view and the parent handles scrolling and
+   * keyboard-aware behavior.
+   */
+  scrollable?: boolean;
+  /**
+   * When true, renders mock Control Record questions with no Supabase access
+   * (tutorial session simulation), so answers can be filled or left pending.
+   */
+  mock?: boolean;
 }
 
 /**
  * Renders and persists a dynamic form instance. Loads its questions from the
  * linked template (`template_origem_id`), pre-fills saved answers in edit mode,
  * and exposes an imperative `handleSave` (supporting partial saves) via ref.
+ *
+ * @remarks
+ * When it owns its scrolling (`scrollable`, the default), the keyboard brings
+ * the focused input above it (see {@link useKeyboardAwareScroll}) and the
+ * bottom padding grows by the keyboard height (see {@link useKeyboardPadding}).
+ * When nested inside a parent `ScrollView` (e.g. a running session), pass
+ * `scrollable={false}` so it renders as a plain view and the parent owns the
+ * scrolling and keyboard-aware behavior — otherwise the inner scroll never
+ * moves.
  */
 export const FormComponent = forwardRef(function FormComponent(
-  { formularioId, sessaoId, alunoId, onSuccess, hideAutoFilledSessionFields }: FormComponentProps,
+  { formularioId, sessaoId, alunoId, onSuccess, hideAutoFilledSessionFields, scrollable = true, mock = false }: FormComponentProps,
   ref
 ) {
   const [questions, setQuestions] = useState<any[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [, setSaving] = useState(false);
+  const keyboardPadding = useKeyboardPadding();
+  const keyboardAwareScroll = useKeyboardAwareScroll();
 
   useEffect(() => {
+    if (mock) {
+      const defaults: Record<string, any> = {};
+      for (const q of MOCK_RC_QUESTIONS) {
+        const def = getDefaultAnswer(q);
+        if (def !== undefined) defaults[q.id] = def;
+      }
+      setQuestions(MOCK_RC_QUESTIONS);
+      setAnswers(defaults);
+      setLoading(false);
+      return;
+    }
+
     async function loadQuestions() {
       if (!formularioId) {
         setLoading(false);
@@ -186,7 +259,7 @@ export const FormComponent = forwardRef(function FormComponent(
     }
 
     loadQuestions();
-  }, [formularioId, sessaoId, alunoId, hideAutoFilledSessionFields]);
+  }, [formularioId, sessaoId, alunoId, hideAutoFilledSessionFields, mock]);
 
   /**
    * Persists the current answers. When `allowPartial` is true, empty required
@@ -222,6 +295,14 @@ export const FormComponent = forwardRef(function FormComponent(
           title: "Erro ao salvar formulário",
           description: "Não é possível salvar formulários com campos vazios"
         };
+      }
+
+      // Tutorial mock: never touches Supabase; answers can be filled or left pending.
+      if (mock) {
+        setSaving(false);
+        if (!silent) Alert.alert("Sucesso", "Avaliação salva com sucesso!");
+        if (onSuccess) onSuccess();
+        return { success: true, hadPending: missingRequired };
       }
 
       const payloadRespostas = questions.map((q) => {
@@ -306,27 +387,44 @@ export const FormComponent = forwardRef(function FormComponent(
     );
   }
 
-  return (
-    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-      <View className="pb-10 items-center">
-        {questions.length === 0 ? (
-          <View className="mt-10 items-center">
-            <Text className="text-muted">Nenhuma pergunta encontrada para este formulário.</Text>
+  const content = (
+    <View
+      className="items-center"
+      style={{ paddingBottom: scrollable ? 40 + keyboardPadding : 40 }}
+    >
+      {questions.length === 0 ? (
+        <View className="mt-10 items-center">
+          <Text className="text-muted">Nenhuma pergunta encontrada para este formulário.</Text>
+        </View>
+      ) : (
+        questions.map((question) => (
+          <View key={question.id} className="w-full mt-4">
+            <FormQuestion
+              question={question}
+              value={answers[question.id]}
+              onChange={(val: any) =>
+                setAnswers((prev) => ({ ...prev, [question.id]: val }))
+              }
+            />
           </View>
-        ) : (
-          questions.map((question) => (
-            <View key={question.id} className="w-full mt-4">
-              <FormQuestion
-                question={question}
-                value={answers[question.id]}
-                onChange={(val: any) =>
-                  setAnswers((prev) => ({ ...prev, [question.id]: val }))
-                }
-              />
-            </View>
-          ))
-        )}
-      </View>
+        ))
+      )}
+    </View>
+  );
+
+  // Nested inside a parent ScrollView: let the parent own scrolling.
+  if (!scrollable) {
+    return content;
+  }
+
+  return (
+    <ScrollView
+      {...keyboardAwareScroll}
+      className="flex-1"
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      {content}
     </ScrollView>
   );
 });

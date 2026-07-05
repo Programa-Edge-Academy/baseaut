@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, Text, View, ScrollView } from "react-native";
+import { ActivityIndicator, Platform, Pressable, Text, View } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { colors } from "@/assets/colors";
 import { AppModal } from "@/components/app-modal";
@@ -11,6 +11,10 @@ import { PageHeader } from "@/components/page-header";
 import { Toast, ToastMode } from "@/components/toast";
 import { useGlobalToast } from "@/components/global-toast";
 import { exportForm } from "@/features/forms/utils/export-form";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { supabase } from "@/lib/supabase";
 
 const FORM_SUBTITLES: Record<string, string> = {
@@ -63,6 +67,13 @@ export default function FormRoute() {
   const isRegistroControle =
     circuitType === "registro_controle" || circuitType === "rc";
 
+  const sessionSim = useSessionSimController();
+  const isFormsSim = sessionSim.active && sessionSim.kind === "forms";
+  const isHistorySim = sessionSim.active && sessionSim.kind === "history";
+  const isTutorial = isFormsSim || isHistorySim;
+  const sim = useTutorialSimulation();
+  const [noticeOpen, setNoticeOpen] = useState(false);
+
   const [formId, setFormId] = useState<string | null>(
     formularioIdParam ?? null,
   );
@@ -73,6 +84,13 @@ export default function FormRoute() {
     let active = true;
 
     async function resolveFormInstance() {
+      if (isTutorial) {
+        if (active) {
+          setFormId("mock-form");
+          setResolvingForm(false);
+        }
+        return;
+      }
       if (formularioIdParam) {
         if (active) {
           setFormId(formularioIdParam);
@@ -168,6 +186,7 @@ export default function FormRoute() {
     alunoSelecionadoId,
     formularioIdParam,
     isRegistroControle,
+    isTutorial,
   ]);
 
   const formRef = useRef<any>(null);
@@ -188,6 +207,8 @@ export default function FormRoute() {
       const result = await formRef.current.handleSave(true);
 
       if (result && result.success) {
+        if (isFormsSim) sim.complete("fillAndSave");
+        if (isHistorySim) sim.complete("editSave");
         router.back();
         showToast({
           mode: "success",
@@ -262,8 +283,12 @@ export default function FormRoute() {
       <View className="flex-1 bg-level1">
         <Header
           variant="form"
-          onPressBack={() => router.back()}
+          onPressBack={() => {
+            if (isFormsSim) sim.complete("goBackAta");
+            router.back();
+          }}
           onPressSave={handleSaveForm}
+          onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
         />
         <View className="flex-1 mx-8">
           <View className="mt-5 w-full">
@@ -284,7 +309,7 @@ export default function FormRoute() {
               }
             />
           </View>
-          <ScrollView className="mt-3" showsVerticalScrollIndicator={false}>
+          <View className="mt-3 flex-1">
             {resolvingForm || !formId ? (
               <View className="flex-1 items-center justify-center py-20">
                 <ActivityIndicator size="large" color={colors.primary} />
@@ -295,9 +320,10 @@ export default function FormRoute() {
                 formularioId={formId}
                 sessaoId={isRegistroControle ? sessaoAtualId : ""}
                 alunoId={isRegistroControle ? "" : alunoSelecionadoId}
+                mock={isTutorial}
               />
             )}
-          </ScrollView>
+          </View>
         </View>
       </View>
 
@@ -336,6 +362,20 @@ export default function FormRoute() {
         description={toastConfig.description}
         onHide={handleToastHide}
       />
+
+      {isTutorial && (
+        <TutorialPracticeNotice
+          visible={noticeOpen}
+          onClose={() => setNoticeOpen(false)}
+          onExit={() => {
+            setNoticeOpen(false);
+            if (isFormsSim) sim.complete("goBackAta");
+            router.back();
+          }}
+        />
+      )}
+
+      {isTutorial && <TutorialSpotlight />}
     </>
   );
 }
@@ -359,25 +399,25 @@ function FormFormatPicker({
       className="bg-level2 border border-outline rounded-2xl p-6 w-full gap-5"
       onPress={(e) => e.stopPropagation()}
     >
-      <Text className="text-header-2 text-white">Selecionar formato</Text>
+      <Text className="text-header-2 text-content">Selecionar formato</Text>
 
       <View className="gap-3">
         <Pressable onPress={() => setPdf((v) => !v)} className="flex-row items-center gap-3">
           <View
             className={`w-5 h-5 rounded border items-center justify-center ${pdf ? "bg-primary border-primary" : "border-outline bg-transparent"}`}
           >
-            {pdf && <Text className="text-white text-xs font-bold">✓</Text>}
+            {pdf && <Text className="text-content text-xs font-bold">✓</Text>}
           </View>
-          <Text className="text-white text-default-1">PDF</Text>
+          <Text className="text-content text-default-1">PDF</Text>
         </Pressable>
 
         <Pressable onPress={() => setCsv((v) => !v)} className="flex-row items-center gap-3">
           <View
             className={`w-5 h-5 rounded border items-center justify-center ${csv ? "bg-primary border-primary" : "border-outline bg-transparent"}`}
           >
-            {csv && <Text className="text-white text-xs font-bold">✓</Text>}
+            {csv && <Text className="text-content text-xs font-bold">✓</Text>}
           </View>
-          <Text className="text-white text-default-1">CSV (dados tabulares)</Text>
+          <Text className="text-content text-default-1">CSV (dados tabulares)</Text>
         </Pressable>
       </View>
 
@@ -409,7 +449,7 @@ function FormFormatPicker({
             bgColorClass="bg-secondary"
             hasShadow={false}
             className="border border-secondary"
-            textClassName="text-white"
+            textClassName="text-content"
           />
         )}
       </View>
