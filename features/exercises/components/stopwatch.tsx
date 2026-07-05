@@ -1,4 +1,4 @@
-import { colors } from "@/assets/colors";
+import { useThemeColors } from "@/features/settings/contexts/theme-context";
 import {
   ClipboardEdit,
   Footprints,
@@ -9,7 +9,7 @@ import {
   Siren,
   Timer,
 } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 
 export type StopwatchVariant = "minimize" | "form";
@@ -27,7 +27,7 @@ export type StopwatchProps = {
   controlledSeconds?: number;
   /** If provided, overrides internal running state */
   controlledIsRunning?: boolean;
-  /** Fired when the user taps the play/pause icon. Receives the new running state. */
+  /** Fired when the user taps the timer container. Receives the new running state. */
   onToggleRunning?: (isRunning: boolean) => void;
   /**
    * Fired when the user taps the stop button. Receives the final elapsed
@@ -65,9 +65,15 @@ function formatTime(seconds: number): string {
 }
 
 /**
- * In-activity stopwatch card. Renders the activity title/subtitle, a crisis
- * action pill, a self-ticking timer with play/pause and stop controls, and a
- * corner action that either minimizes the card or opens a form.
+ * In-activity stopwatch card. Renders the activity title/subtitle, crisis and
+ * flight action pills, a self-ticking timer and a corner action that either
+ * minimizes the card or opens a form.
+ *
+ * The timer icon and clock share a single translucent, bordered pressable that
+ * toggles play/pause. Below it, full-width "Redefinir" (restart, left) and
+ * "Parar" (stop, right) buttons fill the row. While a crisis or flight episode
+ * is being timed, the corresponding pill label is replaced by a live elapsed
+ * counter for that episode.
  */
 export function Stopwatch({
   title,
@@ -89,8 +95,38 @@ export function Stopwatch({
   className,
   isFormVisible = true,
 }: StopwatchProps) {
+  const colors = useThemeColors();
   const [internalIsRunning, setInternalIsRunning] = useState(autoStart);
   const [internalSeconds, setInternalSeconds] = useState(initialSeconds);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const criseStartedAtRef = useRef<number | null>(null);
+  const fugaStartedAtRef = useRef<number | null>(null);
+
+  if (isCriseActive && criseStartedAtRef.current == null) {
+    criseStartedAtRef.current = Date.now();
+  } else if (!isCriseActive) {
+    criseStartedAtRef.current = null;
+  }
+  if (isFugaActive && fugaStartedAtRef.current == null) {
+    fugaStartedAtRef.current = Date.now();
+  } else if (!isFugaActive) {
+    fugaStartedAtRef.current = null;
+  }
+
+  useEffect(() => {
+    if (!isCriseActive && !isFugaActive) return;
+    const id = setInterval(() => setNowMs(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [isCriseActive, isFugaActive]);
+
+  const criseLabel =
+    isCriseActive && criseStartedAtRef.current != null
+      ? formatTime((nowMs - criseStartedAtRef.current) / 1000)
+      : "Crise";
+  const fugaLabel =
+    isFugaActive && fugaStartedAtRef.current != null
+      ? formatTime((nowMs - fugaStartedAtRef.current) / 1000)
+      : "Fuga";
 
   const isRunning = controlledIsRunning !== undefined ? controlledIsRunning : internalIsRunning;
   const seconds = controlledSeconds !== undefined ? controlledSeconds : internalSeconds;
@@ -144,7 +180,7 @@ export function Stopwatch({
             />
           ) : null}
           <View className="flex-1">
-            <Text className="text-header-3 text-white" numberOfLines={1}>
+            <Text className="text-header-3 text-content" numberOfLines={1}>
               {title}
             </Text>
             <Text className="mt-1 text-default-2 text-muted" numberOfLines={2}>
@@ -165,9 +201,10 @@ export function Stopwatch({
           >
             <Siren size={14} color={isCriseActive ? "#fff" : colors.extra} />
             <Text
-              className={`text-default-2 ${isCriseActive ? "text-white" : "text-extra"}`}
+              className={`text-default-2 ${isCriseActive ? "text-content" : "text-extra"}`}
+              style={{ fontVariant: ["tabular-nums"] }}
             >
-              Crise
+              {criseLabel}
             </Text>
           </Pressable>
 
@@ -182,75 +219,78 @@ export function Stopwatch({
           >
             <Footprints size={14} color={isFugaActive ? "#fff" : colors.extra} />
             <Text
-              className={`text-default-2 ${isFugaActive ? "text-white" : "text-extra"}`}
+              className={`text-default-2 ${isFugaActive ? "text-content" : "text-extra"}`}
+              style={{ fontVariant: ["tabular-nums"] }}
             >
-              Fuga
+              {fugaLabel}
             </Text>
           </Pressable>
         </View>
       </View>
 
-      <View className="mt-3 flex-row items-center justify-between">
-        <View className="flex-row items-center gap-3">
-          <Timer size={24} color={colors.muted} />
+      <View className="mt-3 flex-row items-stretch gap-3">
+        <Pressable
+          onPress={handleToggle}
+          className="h-12 flex-1 flex-row items-center justify-center gap-3 rounded-2xl border border-outline bg-content/5 active:opacity-70"
+        >
+          <Timer size={22} color={colors.muted} />
 
           <Text
-            className="text-white"
+            className="text-content"
             style={{
               fontFamily: "Inter-Bold",
-              fontSize: 30,
-              lineHeight: 32,
+              fontSize: 26,
+              lineHeight: 30,
               fontVariant: ["tabular-nums"],
-              minWidth: 90,
               textAlign: "center",
             }}
           >
             {formatTime(seconds)}
           </Text>
 
-          <Pressable
-            onPress={handleToggle}
-            hitSlop={8}
-            className="active:opacity-70"
-          >
-            {isRunning ? (
-              <Pause size={22} color={colors.muted} />
-            ) : (
-              <Play size={22} color={colors.muted} />
-            )}
-          </Pressable>
-
-          <Pressable
-            onPress={handleStop}
-            hitSlop={8}
-            className="active:opacity-70"
-          >
-            <View className="h-5 w-5 rounded-[3px] bg-error" />
-          </Pressable>
-
-          <Pressable
-            onPress={handleRestart}
-            hitSlop={8}
-            className="active:opacity-70"
-          >
-            <RotateCcw size={20} color={colors.muted} />
-          </Pressable>
-        </View>
+          {isRunning ? (
+            <Pause size={20} color={colors.muted} />
+          ) : (
+            <Play size={20} color={colors.muted} />
+          )}
+        </Pressable>
 
         <Pressable
           onPress={onPressCorner}
-          hitSlop={8}
-          className="active:opacity-70"
+          className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-outline bg-level1 active:opacity-70"
         >
-        {variant === "form" ? (
-            isFormVisible ? (
-              <Minimize2 size={20} color={colors.muted} />
-            ) : (
-              <ClipboardEdit size={20} color={colors.muted} />
-            )
+          {variant === "form" ? (
+            <>
+              {isFormVisible ? (
+                <Minimize2 size={18} color={colors.muted} />
+              ) : (
+                <ClipboardEdit size={18} color={colors.muted} />
+              )}
+              <Text className="text-default-1 text-muted">
+                {isFormVisible ? "Ocultar" : "Exibir"}
+              </Text>
+            </>
           ) : (
-            <Minimize2 size={20} color={colors.muted} />
+            <Minimize2 size={18} color={colors.muted} />
           )}
+        </Pressable>
+      </View>
+
+      <View className="mt-3 flex-row gap-3">
+        <Pressable
+          onPress={handleRestart}
+          className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-outline bg-level1 active:opacity-70"
+        >
+          <RotateCcw size={18} color={colors.muted} />
+          <Text className="text-default-1 text-muted">Redefinir</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={handleStop}
+          className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-error bg-error/10 active:opacity-70"
+        >
+          <View className="h-4 w-4 rounded-[3px] bg-error" />
+          <Text className="text-default-1 text-error">Parar</Text>
         </Pressable>
       </View>
     </View>

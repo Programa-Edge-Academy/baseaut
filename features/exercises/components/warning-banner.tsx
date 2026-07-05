@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { AlertCircle } from "lucide-react-native";
 import React from "react";
 import { Text, View } from "react-native";
@@ -16,10 +17,13 @@ interface WarningBannerProps {
  * Renders a warning banner with title and subtitle.
  */
 export function WarningBanner({
-  title = "Há atividades pendentes no histórico",
-  subtitle = "Responda o formulário incompleto no histórico",
+  title,
+  subtitle,
   className = "",
 }: WarningBannerProps) {
+  const { t } = useI18n();
+  const resolvedTitle = title ?? t("warningBanner.title");
+  const resolvedSubtitle = subtitle ?? t("warningBanner.subtitle");
   return (
     <View
       className={`w-full max-w-md items-center justify-center rounded-[20px] bg-level1 p-5 border border-outline ${className}`}
@@ -30,10 +34,10 @@ export function WarningBanner({
 
       <View className="items-center" style={{ gap: 4 }}>
         <Text className="text-[15px] font-semibold text-amber-500 text-center leading-5">
-          {title}
+          {resolvedTitle}
         </Text>
         <Text className="text-[15px] font-semibold text-amber-500 text-center leading-5">
-          {subtitle}
+          {resolvedSubtitle}
         </Text>
       </View>
     </View>

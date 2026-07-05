@@ -1,6 +1,7 @@
 import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import { RipplePressable } from "@/components/ripple-pressable";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { Check, RotateCcw } from "lucide-react-native";
 import React, { useState } from "react";
 import { Text, View } from "react-native";
@@ -25,16 +26,19 @@ interface SessionCompletionProps {
  * Renders a completion summary with optional warnings and actions.
  */
 export function SessionCompletion({
-  title = "Sessão Concluída!",
+  title,
   details,
   progress,
-  statusLabel = "Realizadas",
+  statusLabel,
   hasWarnings = false,
   unrealizedCount =0,
   onSelectContinuation,
   onBackToStart,
   className = "",
 }: SessionCompletionProps) {
+  const { t } = useI18n();
+  const resolvedTitle = title ?? t("sessionCompletion.title");
+  const resolvedStatusLabel = statusLabel ?? t("sessionCompletion.completed");
   const [showOptions, setShowOptions] = useState(false);
 
   return (
@@ -46,17 +50,17 @@ export function SessionCompletion({
         <Check size={40} color={colors.secondary} strokeWidth={3} />
       </View>
 
-      <Text className="text-[24px] font-bold text-white text-center mb-2">
-        {title}
+      <Text className="text-[24px] font-bold text-content text-center mb-2">
+        {resolvedTitle}
       </Text>
       <Text className="text-[16px] font-medium text-muted text-center mb-2">
         {details}
       </Text>
-      <Text className="text-[24px] font-bold text-white text-center mb-2">
+      <Text className="text-[24px] font-bold text-content text-center mb-2">
         {progress}
       </Text>
       <Text className="text-[16px] font-medium text-muted text-center mb-8">
-        {statusLabel}
+        {resolvedStatusLabel}
       </Text>
 
       {hasWarnings ? <WarningBanner className="mb-8" /> : null}
@@ -69,12 +73,12 @@ export function SessionCompletion({
         >
           <RotateCcw size={16} color={colors.muted} />
           <Text className="text-header-3 text-muted">
-            Continuar
+            {t("common.continue")}
           </Text>
         </RipplePressable>
 
         <DefaultButton
-          label="Voltar ao início"
+          label={t("sessionCompletion.backToStart")}
           sizeClass="flex-1 py-4"
           hasShadow={true}
           onPress={onBackToStart}

@@ -1,5 +1,8 @@
 import { AppModal } from "@/components/app-modal";
-import { colors } from "@/assets/colors";
+import { colors as staticColors } from "@/assets/colors";
+import type { TranslationKey } from "@/features/settings/constants/translations";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { useThemeColors } from "@/features/settings/contexts/theme-context";
 import { RipplePressable } from "@/components/ripple-pressable";
 import { SelectableChip } from "@/components/selectable-chip";
 import React, { useEffect, useState } from "react";
@@ -53,22 +56,26 @@ const SMILE_FACE_XML = `
 
 const NIVEIS: {
   id: NivelDesenvolvimento;
-  label: string;
+  labelKey: TranslationKey;
   svgXml: string;
   bgColor: string;
 }[] = [
-  { id: "inicial",       label: "Inicial",       svgXml: SAD_FACE_XML, bgColor: colors.error},
-  { id: "intermediario", label: "Intermediário",  svgXml: NEUTRAL_FACE_XML, bgColor: colors.extra },
-  { id: "maduro",        label: "Maduro",         svgXml: SMILE_FACE_XML, bgColor: colors.secondary },
+  { id: "inicial",       labelKey: "analysis.level.inicial",       svgXml: SAD_FACE_XML, bgColor: staticColors.error},
+  { id: "intermediario", labelKey: "analysis.level.intermediario",  svgXml: NEUTRAL_FACE_XML, bgColor: staticColors.extra },
+  { id: "maduro",        labelKey: "analysis.level.maduro",         svgXml: SMILE_FACE_XML, bgColor: staticColors.secondary },
 ];
 
-const MOTIVOS = [
-  "Recusa do aluno",
-  "Comportamento disruptivo",
-  "Fadiga ou cansaço",
-  "Tempo insuficiente",
-  "Dificuldade física",
-  "Outro",
+/**
+ * Reasons for a non-completed activity. `value` is the canonical (Portuguese)
+ * string persisted to the backend; `key` provides the localized display label.
+ */
+const MOTIVOS: { value: string; key: TranslationKey }[] = [
+  { value: "Recusa do aluno", key: "activityResult.motive.refusal" },
+  { value: "Comportamento disruptivo", key: "activityResult.motive.disruptive" },
+  { value: "Fadiga ou cansaço", key: "activityResult.motive.fatigue" },
+  { value: "Tempo insuficiente", key: "activityResult.motive.insufficientTime" },
+  { value: "Dificuldade física", key: "activityResult.motive.physicalDifficulty" },
+  { value: "Outro", key: "activityResult.motive.other" },
 ];
 
 /**
@@ -85,6 +92,8 @@ export function ActivityResultModal({
   onNotCompleted,
   onConfirm,
 }: ActivityResultModalProps) {
+  const colors = useThemeColors();
+  const { t } = useI18n();
   const [viewMode, setViewMode] = useState<"result" | "reasons">("result");
   const [nivel, setNivel] = useState<NivelDesenvolvimento | null>(null);
   const [ajuda, setAjuda] = useState<RegistroAjuda | null>(null);
@@ -208,7 +217,7 @@ export function ActivityResultModal({
                 paddingTop: 4,
               }}
             >
-              Resultado da atividade
+              {t("activityResult.title")}
             </Text>
 
             <RipplePressable
@@ -230,7 +239,7 @@ export function ActivityResultModal({
                   color: colors.extra,
                 }}
               >
-                Adiar resposta
+                {t("activityResult.deferAnswer")}
               </Text>
             </RipplePressable>
           </View>
@@ -243,7 +252,7 @@ export function ActivityResultModal({
                 color: colors.muted,
               }}
             >
-              Tempo: {elapsedTime}
+              {t("activityResult.time")}: {elapsedTime}
             </Text>
           )}
 
@@ -265,7 +274,7 @@ export function ActivityResultModal({
                     color: colors.muted,
                   }}
                 >
-                  Nível de desenvolvimento
+                  {t("activityResult.developmentLevel")}
                 </Text>
 
                 <View style={{ flexDirection: "row", gap: 8 }}>
@@ -319,7 +328,7 @@ export function ActivityResultModal({
                             textAlign: "center",
                           }}
                         >
-                          {item.label}
+                          {t(item.labelKey)}
                         </Text>
                       </RipplePressable>
                     );
@@ -334,7 +343,7 @@ export function ActivityResultModal({
                       color: colors.error,
                     }}
                   >
-                    É obrigatório selecionar um nível de desenvolvimento.
+                    {t("activityResult.levelRequired")}
                   </Text>
                 )}
               </View>
@@ -347,12 +356,12 @@ export function ActivityResultModal({
                     color: colors.muted,
                   }}
                 >
-                  Registro de ajuda
+                  {t("activityResult.helpRecord")}
                 </Text>
 
                 <View style={{ gap: 5 }}>
                   <SelectableChip
-                    label="Autônomo"
+                    label={t("analysis.help.autonomous")}
                     type="nivelAjuda"
                     isSelected={ajuda === "autonomo"}
                     onToggle={() => {
@@ -369,7 +378,7 @@ export function ActivityResultModal({
                   />
 
                   <SelectableChip
-                    label="Ajuda intrusiva"
+                    label={t("analysis.help.intrusive")}
                     isSelected={ajuda === "ajuda_intrusiva"}
                     onToggle={() => {
                       handleSelectAjuda("ajuda_intrusiva");
@@ -387,7 +396,7 @@ export function ActivityResultModal({
                       color: colors.error,
                     }}
                   >
-                    É obrigatório selecionar um registro de ajuda.
+                    {t("activityResult.helpRequired")}
                   </Text>
                 )}
                 {subError && (
@@ -398,7 +407,7 @@ export function ActivityResultModal({
                       color: colors.error,
                     }}
                   >
-                    Selecione pelo menos um complemento: Verbal ou Modelo.
+                    {t("activityResult.subRequired")}
                   </Text>
                 )}
               </View>
@@ -422,7 +431,7 @@ export function ActivityResultModal({
                       color: "#fff",
                     }}
                   >
-                    Não realizada
+                    {t("activityResult.notCompleted")}
                   </Text>
                 </RipplePressable>
 
@@ -446,7 +455,7 @@ export function ActivityResultModal({
                       color: "#fff",
                     }}
                   >
-                    Concluir
+                    {t("common.done")}
                   </Text>
                 </RipplePressable>
               </View>
@@ -461,7 +470,7 @@ export function ActivityResultModal({
                     color: colors.muted,
                   }}
                 >
-                  Motivo:
+                  {t("activityResult.reason")}
                 </Text>
 
                 <View 
@@ -475,12 +484,12 @@ export function ActivityResultModal({
                 >
                   {MOTIVOS.map((motivo) => (
                     <SelectableChip
-                      key={motivo}
-                      label={motivo}
+                      key={motivo.value}
+                      label={t(motivo.key)}
                       type="motivos"
-                      isSelected={selectedMotivo === motivo}
+                      isSelected={selectedMotivo === motivo.value}
                       onToggle={() => {
-                        setSelectedMotivo(motivo);
+                        setSelectedMotivo(motivo.value);
                         setSubmittedReasons(false);
                       }}
                     />
@@ -489,7 +498,7 @@ export function ActivityResultModal({
 
                 {motivoError && (
                   <Text style={{ fontFamily: "Inter-Medium", fontSize: 12, color: colors.error }}>
-                    Selecione o motivo da não realização.
+                    {t("activityResult.motiveRequired")}
                   </Text>
                 )}
 
@@ -502,7 +511,7 @@ export function ActivityResultModal({
                         color: colors.muted,
                       }}
                     >
-                      Descrição do motivo:
+                      {t("activityResult.motiveDescription")}
                     </Text>
                     <TextInput
                       value={outroDescricao}
@@ -510,7 +519,7 @@ export function ActivityResultModal({
                         setOutroDescricao(text);
                         setSubmittedReasons(false);
                       }}
-                      placeholder="Descreva o motivo..."
+                      placeholder={t("activityResult.describeMotive")}
                       placeholderTextColor={colors.placeholder}
                       multiline
                       numberOfLines={3}
@@ -529,7 +538,7 @@ export function ActivityResultModal({
                     />
                     {outroError && (
                       <Text style={{ fontFamily: "Inter-Medium", fontSize: 12, color: colors.error }}>
-                        Descreva o motivo da não realização.
+                        {t("activityResult.motiveDescRequired")}
                       </Text>
                     )}
                   </View>
@@ -562,7 +571,7 @@ export function ActivityResultModal({
                       color: colors.muted,
                     }}
                   >
-                    Voltar
+                    {t("common.back")}
                   </Text>
                 </RipplePressable>
 
@@ -587,7 +596,7 @@ export function ActivityResultModal({
                       color: isRegistrarApparentDisabled ? colors.muted : "#fff",
                     }}
                   >
-                    Registrar
+                    {t("common.register")}
                   </Text>
                 </RipplePressable>
               </View>

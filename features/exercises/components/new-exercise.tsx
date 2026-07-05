@@ -3,8 +3,11 @@ import { colors } from "@/assets/colors";
 import { ActionButtons } from "@/components/action-buttons";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { DefaultButton } from "@/components/default-button";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { ImageUp, Pencil, X } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Image,
   Keyboard,
@@ -56,6 +59,11 @@ export function NewExercise({
   initialData,
 }: NewExerciseProps) {
   const { width } = useWindowDimensions();
+  const { t } = useI18n();
+  const sim = useTutorialSimulation();
+  const nameFieldRef = useRef<View>(null);
+  const tagFieldRef = useRef<View>(null);
+  const saveFieldRef = useRef<View>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [durationInput, setDurationInput] = useState("");
@@ -85,6 +93,29 @@ export function NewExercise({
     setPhotoUri(initialData?.iconUrl ?? null);
   }, [visible, initialData]);
 
+  // Register the simulation spotlight targets living inside this modal.
+  useEffect(() => {
+    sim.registerTarget("title", nameFieldRef, { rounded: true });
+    sim.registerTarget("tag", tagFieldRef, { rounded: true });
+    sim.registerTarget("save", saveFieldRef, { rounded: true });
+    return () => sim.unregisterTarget(["title", "tag", "save"]);
+  }, [sim]);
+
+  // Advance the guided simulation as the required fields are filled in.
+  useEffect(() => {
+    if (sim.currentKey === "title" && name.trim().length > 0) {
+      sim.complete("title");
+    }
+  }, [sim, name]);
+
+  useEffect(() => {
+    const tag = selectedTags[0];
+    const hasSubtag = tag ? (selectedSubtags[tag]?.length ?? 0) > 0 : false;
+    if (sim.currentKey === "tag" && tag && hasSubtag) {
+      sim.complete("tag");
+    }
+  }, [sim, selectedTags, selectedSubtags]);
+
   /**
    * Opens the image picker and stores the selected photo.
    */
@@ -113,7 +144,7 @@ export function NewExercise({
     const seconds = Number.isNaN(parsed) ? 0 : parsed;
 
     if (!name.trim()) {
-      newErrors.name = "Este campo é obrigatório";
+      newErrors.name = t("exercises.form.err.required");
       isValid = false;
     }
 
@@ -121,21 +152,21 @@ export function NewExercise({
     const subtags = tag ? (selectedSubtags[tag] || []) : [];
 
     if (!tag) {
-      newErrors.tag = "É obrigatória a seleção de uma tag";
+      newErrors.tag = t("exercises.form.err.tagRequired");
       isValid = false;
     } else if (subtags.length === 0) {
-      newErrors.tag = "É obrigatória a seleção de pelo menos uma subtag";
+      newErrors.tag = t("exercises.form.err.subtagRequired");
       isValid = false;
     }
 
     if (name.trim().length > 100) {
-      newErrors.name = "O nome deve ter no máximo 100 caracteres";
+      newErrors.name = t("exercises.form.err.nameMax");
       isValid = false;
     }
 
     if (durationInput.trim()) {
       if (Number.isNaN(parsed) || seconds < 0 || seconds > 300) {
-        newErrors.duration = "A duração deve ser menor que 300 segundos";
+        newErrors.duration = t("exercises.form.err.duration");
         isValid = false;
       }
     }
@@ -188,7 +219,7 @@ export function NewExercise({
               contentContainerStyle={{ padding: 25, gap: 25 }}
             >
               <View className="flex-row items-center justify-between">
-                <Text className="text-header-2 text-white">{title}</Text>
+                <Text className="text-header-2 text-content">{title}</Text>
                 <Pressable onPress={onClose} className="p-1 active:opacity-70">
                   <X color={colors.muted} size={28} />
                 </Pressable>
@@ -243,9 +274,9 @@ export function NewExercise({
               </View>
 
               <View className="gap-[10px]">
-                <View className="gap-2">
+                <View ref={nameFieldRef} collapsable={false} className="gap-2">
                   <Text className="text-muted text-default-1">
-                    Nome do exercício*
+                    {t("exercises.form.name")}*
                   </Text>
                   <DefaultTextInput
                     value={name}
@@ -254,7 +285,7 @@ export function NewExercise({
                       if (errors.name)
                         setErrors((prev) => ({ ...prev, name: "" }));
                     }}
-                    placeholder="Ex: Girar bambolê"
+                    placeholder={t("exercises.form.namePlaceholder")}
                     className="h-[44px]"
                     outLineBorderClass={errors.name ? "border-error" : "border-outline"}
                     maxLength={100}
@@ -267,25 +298,25 @@ export function NewExercise({
                 </View>
 
                 <View className="gap-2">
-                  <Text className="text-muted text-default-1">Descrição</Text>
+                  <Text className="text-muted text-default-1">{t("exercises.form.description")}</Text>
                   <DefaultTextInput
                     multiline
                     value={description}
                     onChangeText={setDescription}
-                    placeholder="Descrição do exercício (opcional)"
+                    placeholder={t("exercises.form.descriptionPlaceholder")}
                     className="h-[80px]"
                   />
                 </View>
 
                 <View className="gap-2">
                   <Text className="text-muted text-default-1">
-                    Duração máxima (segundos)
+                    {t("exercises.form.duration")}
                   </Text>
                   <DefaultTextInput
                     value={durationInput}
                     onChangeText={setDurationInput}
                     keyboardType="numeric"
-                    placeholder="Ex: 120"
+                    placeholder={t("exercises.form.durationPlaceholder")}
                     className="h-[44px]"
                     maxLength={3}
                   />
@@ -296,8 +327,8 @@ export function NewExercise({
                   ) : null}
                 </View>
 
-                <View className="gap-2">
-                  <Text className="text-muted text-default-1">Tags*</Text>
+                <View ref={tagFieldRef} collapsable={false} className="gap-2">
+                  <Text className="text-muted text-default-1">{t("exercises.form.tags")}*</Text>
                   <TagGroup
                     availableTags={availableTags}
                     availableSubtags={availableSubtags}
@@ -318,14 +349,17 @@ export function NewExercise({
                   <ActionButtons
                     onCancel={onClose}
                     onSave={handleSave}
-                    cancelLabel="Cancelar"
-                    saveLabel={isSaving ? "Salvando..." : "Salvar"}
+                    cancelLabel={t("common.cancel")}
+                    saveLabel={isSaving ? t("common.saving") : t("common.save")}
                     disabled={isSaving}
+                    saveButtonRef={saveFieldRef}
                   />
                 </View>
               </View>
             </ScrollView>
           </View>
+
+          <TutorialSpotlight />
         </View>
       </AppModal>
 
@@ -336,7 +370,7 @@ export function NewExercise({
           setPhotoUri(null);
           setDeletePhotoModalVisible(false);
         }}
-        title="Remover ícone?"
+        title={t("exercises.form.removeIconTitle")}
         mode="delete"
       />
 
@@ -364,7 +398,7 @@ export function NewExercise({
 
           <View className="flex-row gap-4 mt-10 w-full max-w-[342px]">
             <DefaultButton
-              label="Remover"
+              label={t("common.remove")}
               onPress={() => {
                 setPhotoUri(null);
                 setIsPreviewVisible(false);
@@ -377,7 +411,7 @@ export function NewExercise({
               className="flex-1"
             />
             <DefaultButton
-              label="Substituir"
+              label={t("students.form.replace")}
               onPress={() => {
                 setIsPreviewVisible(false);
                 setTimeout(handlePhotoPress, 300);

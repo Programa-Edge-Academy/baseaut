@@ -1,4 +1,5 @@
 import { RipplePressable } from "@/components/ripple-pressable";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 
@@ -30,7 +31,7 @@ function OptionItem({ title, description, onPress }: OptionItemProps) {
       onPress={onPress}
       className="w-full rounded-[20px] bg-level1 p-5 border border-outline active:opacity-70"
     >
-      <Text className="text-[18px] font-semibold text-white">{title}</Text>
+      <Text className="text-[18px] font-semibold text-content">{title}</Text>
       <Text className="mt-1 text-[14px] text-muted leading-5">
         {description}
       </Text>
@@ -47,6 +48,7 @@ export function ContinuationOptions({
   onCancel,
   className = "",
 }: ContinuationOptionsProps) {
+  const { t } = useI18n();
   /**
    * Static list of continuation options shown to the user.
    */
@@ -55,23 +57,23 @@ export function ContinuationOptions({
   if (unrealizedCount > 0) {
     CONTINUATION_OPTIONS.push({
       id: "try_unrealized",
-      title: "Tentar exercício não realizado",
+      title: t("continuation.tryUnrealizedTitle"),
       description: unrealizedCount === 1
-        ? "1 exercício não realizado"
-        : `${unrealizedCount} exercícios não realizados`,
+        ? t("continuation.unrealizedOne")
+        : t("continuation.unrealizedMany").replace("{n}", String(unrealizedCount)),
     });
   }
 
   CONTINUATION_OPTIONS.push(
     {
       id: "repeat_exercise",
-      title: "Repetir exercício",
-      description: "Escolher exercício do circuito para repetir",
+      title: t("continuation.repeatTitle"),
+      description: t("continuation.repeatDesc"),
     },
     {
       id: "do_other",
-      title: "Realizar outro exercício",
-      description: "Escolher qualquer exercício da equipe",
+      title: t("continuation.otherTitle"),
+      description: t("continuation.otherDesc"),
     }
   );
   return (
@@ -91,7 +93,7 @@ export function ContinuationOptions({
         onPress={onCancel}
         className="mt-5 w-full py-3 items-center justify-center active:opacity-60"
       >
-        <Text className="text-[16px] font-medium text-muted">Cancelar</Text>
+        <Text className="text-[16px] font-medium text-muted">{t("common.cancel")}</Text>
       </Pressable>
     </View>
   );

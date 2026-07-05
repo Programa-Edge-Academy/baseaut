@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabase";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { uploadImage } from "@/lib/upload-image";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 import { NewExerciseData } from "../components/new-exercise";
 
@@ -18,19 +19,57 @@ export type Exercise = {
   iconUrl?: string | null;
 };
 
+/** Seed exercises for the tutorial's mock mode (kept entirely in memory). */
+const MOCK_EXERCISES: Exercise[] = [
+  {
+    id: "mock-linha",
+    name: "Andar na linha",
+    description: "Equilíbrio sobre uma linha reta",
+    durationSeconds: 60,
+    tag: "Equilíbrio",
+    subtags: ["estabilizador"],
+    iconUrl: null,
+  },
+  {
+    id: "mock-bambole",
+    name: "Girar bambolê",
+    description: "Coordenação com bambolê",
+    durationSeconds: 90,
+    tag: "Coordenação",
+    subtags: ["manipulativo"],
+    iconUrl: null,
+  },
+];
+
+/** Options for {@link useExercises}. */
+export type UseExercisesOptions = {
+  /** When true, runs entirely on in-memory mock data (tutorial only). */
+  mock?: boolean;
+};
+
 /**
  * Provides CRUD operations and state for exercises.
+ *
+ * @param options - Pass `{ mock: true }` (tutorial only) to operate on seeded
+ * in-memory data instead of Supabase.
  */
-export function useExercises() {
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function useExercises(options?: UseExercisesOptions) {
+  const isMock = options?.mock ?? false;
+  const { t } = useI18n();
+  const [exercises, setExercises] = useState<Exercise[]>(isMock ? MOCK_EXERCISES : []);
+  const [isLoading, setIsLoading] = useState(!isMock);
   const [error, setError] = useState<Error | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
+  const mockIdRef = useRef(0);
 
   /**
    * Loads exercises for the active team.
    */
   const loadExercises = useCallback(async (showLoader = true) => {
+    if (isMock) {
+      setIsLoading(false);
+      return;
+    }
     if (showLoader) setIsLoading(true);
     setError(null);
     try {
@@ -67,7 +106,7 @@ export function useExercises() {
     } finally {
       if (showLoader) setIsLoading(false);
     }
-  }, []);
+  }, [isMock]);
 
   useEffect(() => {
     loadExercises(true);
@@ -80,6 +119,21 @@ export function useExercises() {
     data: NewExerciseData,
     photoUri?: string | null,
   ) => {
+    if (isMock) {
+      mockIdRef.current += 1;
+      const created: Exercise = {
+        id: `mock-new-${mockIdRef.current}`,
+        name: data.name,
+        description: data.description,
+        durationSeconds: data.durationSeconds,
+        tag: data.tag || "Coordenação",
+        subtags: data.subtags,
+        iconUrl: photoUri ?? null,
+      };
+      setExercises((prev) => [created, ...prev]);
+      return;
+    }
+
     try {
       if (!equipeId) throw new Error("ID da equipe não identificado.");
       let finalIconUrl = null;
@@ -106,8 +160,8 @@ export function useExercises() {
       await loadExercises(false);
     } catch (err: any) {
       Alert.alert(
-        "Erro ao Criar",
-        `Não foi possível salvar o exercício: ${err.message}`,
+        t("exercises.error.createTitle"),
+        `${t("exercises.error.createBody")} ${err.message}`,
       );
     }
   };
@@ -120,6 +174,25 @@ export function useExercises() {
     data: NewExerciseData,
     photoUri?: string | null,
   ) => {
+    if (isMock) {
+      setExercises((prev) =>
+        prev.map((e) =>
+          e.id === id
+            ? {
+                ...e,
+                name: data.name,
+                description: data.description,
+                durationSeconds: data.durationSeconds,
+                tag: data.tag || e.tag,
+                subtags: data.subtags,
+                iconUrl: photoUri === null ? null : photoUri ?? e.iconUrl,
+              }
+            : e,
+        ),
+      );
+      return;
+    }
+
     try {
       const payload: any = {
         titulo: data.name,
@@ -144,8 +217,8 @@ export function useExercises() {
       await loadExercises(false);
     } catch (err: any) {
       Alert.alert(
-        "Erro ao Editar",
-        `Não foi possível atualizar o exercício: ${err.message}`,
+        t("exercises.error.editTitle"),
+        `${t("exercises.error.editBody")} ${err.message}`,
       );
     }
   };
@@ -159,6 +232,11 @@ export function useExercises() {
    * circuit's `ordem` all happen in a single transaction.
    */
   const deleteExercise = async (id: string) => {
+    if (isMock) {
+      setExercises((prev) => prev.filter((e) => e.id !== id));
+      return;
+    }
+
     try {
       const { error: deleteError } = await supabase.rpc("excluir_exercicio", {
         p_exercicio_id: id,
@@ -167,7 +245,7 @@ export function useExercises() {
       if (deleteError) throw deleteError;
       await loadExercises(false);
     } catch (err: any) {
-      Alert.alert("Erro ao Remover", err.message);
+      Alert.alert(t("exercises.error.deleteTitle"), err.message);
     }
   };
 
@@ -175,6 +253,17 @@ export function useExercises() {
    * Duplicates an exercise with a copy suffix.
    */
   const duplicateExercise = async (exercise: Exercise) => {
+    if (isMock) {
+      mockIdRef.current += 1;
+      const copy: Exercise = {
+        ...exercise,
+        id: `mock-dup-${mockIdRef.current}`,
+        name: `${exercise.name}${t("common.copySuffix")}`,
+      };
+      setExercises((prev) => [copy, ...prev]);
+      return;
+    }
+
     try {
       if (!equipeId) throw new Error("ID da equipe não identificado.");
 
@@ -197,24 +286,31 @@ export function useExercises() {
       await loadExercises(false);
     } catch (err: any) {
       Alert.alert(
-        "Erro ao Duplicar",
-        `Não foi possível duplicar o exercício: ${err.message}`,
+        t("exercises.error.duplicateTitle"),
+        `${t("exercises.error.duplicateBody")} ${err.message}`,
       );
     }
   };
 
   /**
-   * Returns how many circuits reference the given exercise.
+   * Returns how many active circuits reference the given exercise.
+   *
+   * @remarks
+   * Inner-joins `circuitos` to exclude soft-deleted circuits and counts
+   * distinct circuit ids, since an exercise may appear more than once in the
+   * same circuit.
    */
   async function getExerciseCircuitCount(id: string) {
+    if (isMock) return 0;
     try {
-      const { data, count, error } = await supabase
+      const { data, error } = await supabase
         .from("itens_circuito")
-        .select("circuito_id", { count: "exact" })
-        .eq("exercicio_id", id);
+        .select("circuito_id, circuitos!inner(ativo)")
+        .eq("exercicio_id", id)
+        .eq("circuitos.ativo", true);
 
       if (error) throw error;
-      return typeof count === "number" ? count : data ? data.length : 0;
+      return new Set((data ?? []).map((row) => row.circuito_id)).size;
     } catch {
       return 0;
     }
