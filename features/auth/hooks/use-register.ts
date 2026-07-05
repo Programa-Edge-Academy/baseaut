@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { useState } from "react";
 
 /**
- * Input payload for registering a new user.
+ * Input payload for registering a new user by e-mail.
  */
 type RegisterData = {
   name: string;
@@ -11,7 +11,7 @@ type RegisterData = {
 };
 
 /**
- * Provides a register handler backed by Supabase auth.
+ * Provides an e-mail register handler backed by Supabase auth.
  */
 export function useRegister() {
   const [loading, setLoading] = useState(false);

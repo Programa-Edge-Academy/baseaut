@@ -42,7 +42,7 @@ export function AuthFeedbackCard({ mode }: AuthFeedbackCardProps) {
       <View className="w-full max-w-[342px] items-center">
         {mode === "accountCreated" && (
           <>
-            <Text className="text-header-3 text-white">
+            <Text className="text-header-3 text-content">
               Conta criada com sucesso!
             </Text>
             <Image
@@ -50,7 +50,7 @@ export function AuthFeedbackCard({ mode }: AuthFeedbackCardProps) {
               source={require("../../../assets/images/success.png")}
               resizeMode="contain"
             />
-            <Text className="text-default-2 text-white text-center leading-5">
+            <Text className="text-default-2 text-content text-center leading-5">
               Por favor, aguarde a aprovação da Coordenadora para liberar seu
               acesso.
             </Text>
@@ -58,7 +58,7 @@ export function AuthFeedbackCard({ mode }: AuthFeedbackCardProps) {
         )}
         {mode === "codeValidated" && (
           <>
-            <Text className="text-header-3 text-white">
+            <Text className="text-header-3 text-content">
               Código validado com sucesso!
             </Text>
             <Image
@@ -66,14 +66,14 @@ export function AuthFeedbackCard({ mode }: AuthFeedbackCardProps) {
               source={require("../../../assets/images/success.png")}
               resizeMode="contain"
             />
-            <Text className="text-default-2 text-white text-center leading-5">
+            <Text className="text-default-2 text-content text-center leading-5">
               Agora você pode redefinir sua senha e acessar sua conta.
             </Text>
           </>
         )}
         {mode === "passwordUpdated" && (
           <>
-            <Text className="text-header-3 text-white">
+            <Text className="text-header-3 text-content">
               Senha redefinida com sucesso!
             </Text>
             <Image
@@ -81,7 +81,7 @@ export function AuthFeedbackCard({ mode }: AuthFeedbackCardProps) {
               source={require("../../../assets/images/success.png")}
               resizeMode="contain"
             />
-            <Text className="text-default-2 text-white text-center leading-5">
+            <Text className="text-default-2 text-content text-center leading-5">
               Agora você pode acessar sua conta com a sua nova senha.
             </Text>
           </>
@@ -89,7 +89,7 @@ export function AuthFeedbackCard({ mode }: AuthFeedbackCardProps) {
 
         {mode === "pendingApproval" && (
           <>
-            <Text className="text-header-3 text-white mb-7">
+            <Text className="text-header-3 text-content mb-7">
               Aprovação pendente
             </Text>
             <Text className="text-default-2 text-extra text-center leading-5">
