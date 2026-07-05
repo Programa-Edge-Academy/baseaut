@@ -4,7 +4,7 @@ import React, { useRef } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 
 import { colors } from "@/assets/colors";
-import { Exercise } from "../hooks/use-exercises";
+import { Exercise } from "@/features/exercises/hooks/use-exercises";
 
 type ExecutionMode = "estruturado" | "semi-estruturado";
 
@@ -86,7 +86,7 @@ export function ViewCircuit({
           style={{ maxHeight: screenHeight * 0.85 }}
         >
           <View className="flex-row justify-between items-center p-5 border-b border-outline/30">
-            <Text className="text-white text-header-2">{frozenTitle.current}</Text>
+            <Text className="text-content text-header-2">{frozenTitle.current}</Text>
             <Pressable onPress={onClose} className="p-1 active:opacity-70">
               <X size={24} color={colors.muted} />
             </Pressable>
@@ -100,19 +100,19 @@ export function ViewCircuit({
             <View className="gap-5 mb-5">
               <View>
                 <Text className="text-muted text-default-2 mb-1">Nome do circuito</Text>
-                <Text className="text-white text-default-1">{circuitData.name}</Text>
+                <Text className="text-content text-default-1">{circuitData.name}</Text>
               </View>
 
               <View>
                 <Text className="text-muted text-default-2 mb-2">Tipo do circuito</Text>
                 {circuitData.executionMode === "estruturado" ? (
                   <View className="p-3.5 rounded-xl border border-primary bg-primary/10">
-                    <Text className="text-white text-default-1 mb-1 font-bold">Estruturado</Text>
+                    <Text className="text-content text-default-1 mb-1 font-bold">Estruturado</Text>
                     <Text className="text-muted text-default-3">Realiza todos os exercícios definidos</Text>
                   </View>
                 ) : (
                   <View className="p-3.5 rounded-xl border border-primary bg-primary/10">
-                    <Text className="text-white text-default-1 mb-1 font-bold">Semi-estruturado</Text>
+                    <Text className="text-content text-default-1 mb-1 font-bold">Semi-estruturado</Text>
                     <Text className="text-muted text-default-3">Para engajamento e atividades parciais</Text>
                   </View>
                 )}
@@ -122,7 +122,7 @@ export function ViewCircuit({
 
             {circuitData.exercises.length > 0 && (
               <View className="mt-2">
-                <Text className="text-white text-default-1 mb-4 font-bold">
+                <Text className="text-content text-default-1 mb-4 font-bold">
                   {circuitData.executionMode === "estruturado" ? "Ordem dos exercícios" : "Exercícios inclusos"}
                 </Text>
 

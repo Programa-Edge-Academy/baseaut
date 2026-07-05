@@ -7,9 +7,12 @@ import { colors } from "@/assets/colors";
 import { DefaultTextInput } from "@/components/default-text-input";
 import { DraggableList } from "@/components/draggable-list";
 import { SelectableChip } from "@/components/selectable-chip";
-import { useExercises, Exercise } from "../hooks/use-exercises";
+import { useExercises, Exercise } from "@/features/exercises/hooks/use-exercises";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { CircuitType } from "../hooks/use-circuits";
-import { TagGroup } from "./tag-group";
+import { TagGroup } from "@/features/exercises/components/tag-group";
 
 type ExecutionMode = "estruturado" | "semi-estruturado";
 
@@ -18,6 +21,8 @@ interface NewCircuitProps {
   visible: boolean;
   onClose: () => void;
   title?: string;
+  /** When true, lists mock exercises instead of Supabase (tutorial only). */
+  mock?: boolean;
   /** When provided, the modal opens in edit mode pre-filled with this circuit. */
   initialData?: {
     name: string;
@@ -38,17 +43,26 @@ interface NewCircuitProps {
 /**
  * Modal for creating or editing a circuit: sets its name and execution mode,
  * selects exercises (optionally filtered by tag), and reorders them via a
- * draggable list for structured circuits.
+ * draggable list for structured circuits. The exercise picker is capped to a
+ * fixed height and scrolls on its own so the modal always fits the screen.
  */
 export function NewCircuit({
   visible,
   onClose,
   onSave,
   title = "Novo circuito",
+  mock = false,
   initialData
 }: NewCircuitProps) {
-  const { exercises } = useExercises();
+  const { exercises } = useExercises({ mock });
   const { height: screenHeight } = useWindowDimensions();
+  const { t } = useI18n();
+  const sim = useTutorialSimulation();
+  const nameFieldRef = useRef<View>(null);
+  const modeFieldRef = useRef<View>(null);
+  const exercisesFieldRef = useRef<View>(null);
+  const reorderFieldRef = useRef<View>(null);
+  const saveFieldRef = useRef<View>(null);
 
   const [name, setName] = useState("");
   const [executionMode, setExecutionMode] = useState<ExecutionMode>("estruturado");
@@ -72,7 +86,9 @@ export function NewCircuit({
   const frozenTitle = useRef(title);
 
   const isEditing = !!initialData;
-  const successMessage = isEditing ? "Circuito editado com sucesso" : "Circuito criado com sucesso";
+  const successMessage = isEditing
+    ? t("circuits.form.editedSuccess")
+    : t("circuits.form.createdSuccess");
 
   useEffect(() => {
     if (visible) {
@@ -98,6 +114,47 @@ export function NewCircuit({
       setSelectedSubtags({});
     }
   }, [visible, initialData]);
+
+  // Register the simulation spotlight targets living inside this modal.
+  useEffect(() => {
+    sim.registerTarget("name", nameFieldRef, { rounded: true });
+    sim.registerTarget(["mode", "changeStructured"], modeFieldRef, { rounded: true });
+    sim.registerTarget("selectExercises", exercisesFieldRef, { rounded: true });
+    sim.registerTarget("reorder", reorderFieldRef, { rounded: true });
+    sim.registerTarget("save", saveFieldRef, { rounded: true });
+    return () =>
+      sim.unregisterTarget([
+        "name",
+        "mode",
+        "changeStructured",
+        "selectExercises",
+        "reorder",
+        "save",
+      ]);
+  }, [sim]);
+
+  // Advance the guided simulation as each field is filled in.
+  useEffect(() => {
+    if (sim.currentKey === "name" && name.trim().length > 0) {
+      sim.complete("name");
+    }
+  }, [sim, name]);
+
+  useEffect(() => {
+    if (sim.currentKey === "mode" && executionMode === "semi-estruturado") {
+      sim.complete("mode");
+    }
+    if (sim.currentKey === "changeStructured" && executionMode === "estruturado") {
+      sim.complete("changeStructured");
+    }
+  }, [sim, executionMode]);
+
+  useEffect(() => {
+    // Require two exercises so the later reorder step is actually possible.
+    if (sim.currentKey === "selectExercises" && orderedExercises.length >= 2) {
+      sim.complete("selectExercises");
+    }
+  }, [sim, orderedExercises]);
 
   const handleToggleExercise = (exercise: Exercise) => {
     if (errors.exercises) setErrors(prev => ({ ...prev, exercises: "" }));
@@ -134,12 +191,12 @@ export function NewCircuit({
     const trimmedName = name.trim();
 
     if (!trimmedName) {
-      newErrors.name = "Este campo é obrigatório";
+      newErrors.name = t("circuits.form.err.nameRequired");
       isValid = false;
     }
 
     if (orderedExercises.length === 0) {
-      newErrors.exercises = "É obrigatória a seleção de pelo menos um exercício";
+      newErrors.exercises = t("circuits.form.err.exercisesRequired");
       isValid = false;
     }
 
@@ -183,14 +240,14 @@ export function NewCircuit({
           {showToast && (
             <View className="absolute top-5 left-5 right-5 z-50 bg-level1 border border-primary rounded-xl p-4 shadow-panelShadow flex-row items-center">
               <CheckCircle2 color={colors.primary} size={24} />
-              <Text className="text-white text-default-1 ml-3 flex-1">
+              <Text className="text-content text-default-1 ml-3 flex-1">
                 {successMessage}
               </Text>
             </View>
           )}
 
           <View className="flex-row justify-between items-center p-5 border-b border-outline/30">
-            <Text className="text-white text-header-2">{frozenTitle.current}</Text>
+            <Text className="text-content text-header-2">{frozenTitle.current}</Text>
             <Pressable onPress={onClose} disabled={isSaving} className="p-1 active:opacity-70">
               <X size={24} color={colors.muted} />
             </Pressable>
@@ -204,8 +261,8 @@ export function NewCircuit({
             contentContainerStyle={{ padding: 20 }}
           >
             <View className="gap-5 mb-5">
-              <View className="gap-2">
-                  <Text className="text-muted text-default-1">Nome do circuito*</Text>
+              <View ref={nameFieldRef} collapsable={false} className="gap-2">
+                  <Text className="text-muted text-default-1">{t("circuits.form.name")}*</Text>
                   <DefaultTextInput
                     value={name}
                     maxLength={20}
@@ -213,7 +270,7 @@ export function NewCircuit({
                       setName(val);
                       if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
                     }}
-                    placeholder="Ex: Circuito 1"
+                    placeholder={t("circuits.form.namePlaceholder")}
                     className="h-[44px]"
                     outLineBorderClass={errors.name ? "border-error" : "border-outline"}
                   />
@@ -223,16 +280,16 @@ export function NewCircuit({
                 </View>
 
               <View>
-                <View className="gap-2">
-                  <Text className="text-muted text-default-1">Tipo do circuito*</Text>
+                <View ref={modeFieldRef} collapsable={false} className="gap-2">
+                  <Text className="text-muted text-default-1">{t("circuits.form.type")}*</Text>
                   <View className="flex-row gap-3">
                     <Pressable
                       onPress={() => setExecutionMode("estruturado")}
                       className={`flex-1 p-3.5 rounded-xl border ${executionMode === "estruturado" ? "border-primary bg-primary/10" : "border-outline bg-level1"
                         }`}
                     >
-                      <Text className="text-white text-default-1 mb-1 font-bold">Estruturado</Text>
-                      <Text className="text-muted text-default-3">Realiza todos os exercícios definidos</Text>
+                      <Text className="text-content text-default-1 mb-1 font-bold">{t("circuits.form.structured")}</Text>
+                      <Text className="text-muted text-default-3">{t("circuits.form.structuredDesc")}</Text>
                     </Pressable>
 
                     <Pressable
@@ -240,8 +297,8 @@ export function NewCircuit({
                       className={`flex-1 p-3.5 rounded-xl border ${executionMode === "semi-estruturado" ? "border-primary bg-primary/10" : "border-outline bg-level1"
                         }`}
                     >
-                      <Text className="text-white text-default-1 mb-1 font-bold">Semi-estruturado</Text>
-                      <Text className="text-muted text-default-3">Para engajamento e atividades parciais</Text>
+                      <Text className="text-content text-default-1 mb-1 font-bold">{t("circuits.form.semi")}</Text>
+                      <Text className="text-muted text-default-3">{t("circuits.form.semiDesc")}</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -254,7 +311,7 @@ export function NewCircuit({
                 >
                   <Tags size={24} color={colors.muted} />
                   <Text className="text-muted text-[14px] leading-[20px] font-medium">
-                    Selecionar exercícios por tag
+                    {t("circuits.form.selectByTag")}
                   </Text>
                 </Pressable>
 
@@ -272,18 +329,24 @@ export function NewCircuit({
                   </View>
                 )}
 
-                <View className="gap-2">
-                  <Text className="text-muted text-default-1">Selecione os exercícios</Text>
-                  <View className="gap-2.5">
-                    {filteredExercises.map((ex: Exercise) => (
-                      <SelectableChip
-                        key={ex.id}
-                        label={ex.name}
-                        isSelected={orderedExercises.some((o) => o.id === ex.id)}
-                        onToggle={() => handleToggleExercise(ex)}
-                      />
-                    ))}
-                  </View>
+                <View ref={exercisesFieldRef} collapsable={false} className="gap-2">
+                  <Text className="text-muted text-default-1">{t("circuits.form.selectExercises")}</Text>
+                  <ScrollView
+                    style={{ maxHeight: Math.min(260, screenHeight * 0.3) }}
+                    nestedScrollEnabled
+                    showsVerticalScrollIndicator={false}
+                  >
+                    <View className="gap-2.5">
+                      {filteredExercises.map((ex: Exercise) => (
+                        <SelectableChip
+                          key={ex.id}
+                          label={ex.name}
+                          isSelected={orderedExercises.some((o) => o.id === ex.id)}
+                          onToggle={() => handleToggleExercise(ex)}
+                        />
+                      ))}
+                    </View>
+                  </ScrollView>
                 </View>
                 {errors.exercises ? (
                   <Text className="text-error text-default-3 mt-1 ml-1">{errors.exercises}</Text>
@@ -292,18 +355,19 @@ export function NewCircuit({
             </View>
 
             {executionMode === "estruturado" && orderedExercises.length > 0 && (
-              <View className="mt-2">
-                <Text className="text-white text-default-1 mb-1 font-bold">Ordem do Circuito</Text>
+              <View ref={reorderFieldRef} collapsable={false} className="mt-2">
+                <Text className="text-content text-default-1 mb-1 font-bold">{t("circuits.form.order")}</Text>
                 <Text className="text-muted text-default-3 mb-4">
-                  Segure e arraste pelo ícone de alça para reordenar.
+                  {t("circuits.form.orderHint")}
                 </Text>
                 <DraggableList
                   items={orderedExercises.map((ex) => ({ id: ex.id, name: ex.name }))}
-                  onReorder={(sorted) =>
+                  onReorder={(sorted) => {
                     setOrderedExercises(
                       sorted.map((s) => orderedExercises.find((ex) => ex.id === s.id)!),
-                    )
-                  }
+                    );
+                    sim.complete("reorder");
+                  }}
                   onDragActiveChange={setIsDragging}
                 />
               </View>
@@ -315,11 +379,14 @@ export function NewCircuit({
             <ActionButtons
               onCancel={onClose}
               onSave={handleValidationAndSave}
-              cancelLabel="Cancelar"
-              saveLabel={isSaving ? "Salvando..." : "Salvar"}
+              cancelLabel={t("common.cancel")}
+              saveLabel={isSaving ? t("common.saving") : t("common.save")}
               disabled={isSaving}
+              saveButtonRef={saveFieldRef}
             />
           </View>
+
+          <TutorialSpotlight />
         </View>
       </View>
     </AppModal>

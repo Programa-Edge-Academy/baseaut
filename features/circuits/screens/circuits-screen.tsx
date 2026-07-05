@@ -8,12 +8,18 @@ import { ListCard } from "@/components/list-card";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
 import { SectionField } from "@/components/section-field";
+import { SwipeNavigator } from "@/components/swipe-navigator";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
+import { router } from "expo-router";
 import { ClipboardList, Share2, Shuffle } from "lucide-react-native";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
-import { NewCircuit } from "../components/new-circuit"; 
+import { NewCircuit } from "../components/new-circuit";
 import { Circuit, CircuitType, ExecutionMode, useCircuits } from "../hooks/use-circuits";
-import { Exercise } from "../hooks/use-exercises";
+import { Exercise } from "@/features/exercises/hooks/use-exercises";
 import { ViewCircuit } from "../components/view-circuit";
 
 /** Payload emitted by the circuit modal when creating or updating a circuit. */
@@ -39,10 +45,21 @@ function circuitToFormData(circuit: Circuit) {
   };
 }
 
+/** Props for {@link CircuitsScreen}. */
+export type CircuitsScreenProps = {
+  /**
+   * When true, the screen is a tutorial practice replica: mocked data, no
+   * footer/swipe, and the "Em tutorial" header with its guided spotlight flow.
+   */
+  tutorial?: boolean;
+};
+
 /**
- * Main screen for managing Circuits listing.
+ * Main screen for managing Circuits listing. Used both as the real screen and,
+ * with `tutorial`, as its guided tutorial practice replica.
  */
-export function CircuitsScreen() {
+export function CircuitsScreen({ tutorial = false }: CircuitsScreenProps) {
+  const { t } = useI18n();
   const {
     circuits,
     isLoading,
@@ -52,15 +69,30 @@ export function CircuitsScreen() {
     updateCircuit,
     duplicateCircuit,
     deleteCircuit,
-  } = useCircuits();
+  } = useCircuits({ mock: tutorial });
 
   const [query, setQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [circuitToEdit, setCircuitToEdit] = useState<Circuit | null>(null);
   const [circuitToView, setCircuitToView] = useState<Circuit | null>(null);
   const [circuitToDelete, setCircuitToDelete] = useState<Circuit | null>(null);
+  const [noticeOpen, setNoticeOpen] = useState(false);
+
+  const sim = useTutorialSimulation();
+  const newButtonRef = useRef<View>(null);
 
   const isModalOpen = isCreateModalOpen || circuitToEdit !== null;
+
+  /** The circuit created during the guided simulation (spotlight target). */
+  const createdCircuit = tutorial
+    ? circuits.find((c) => c.id.startsWith("mock-new-"))
+    : undefined;
+
+  useEffect(() => {
+    if (!tutorial) return;
+    sim.registerTarget("new", newButtonRef, { rounded: true });
+    return () => sim.unregisterTarget("new");
+  }, [tutorial, sim]);
 
   const filteredCircuits = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -84,9 +116,11 @@ export function CircuitsScreen() {
     if (circuitToEdit) {
       await updateCircuit(circuitToEdit.id, data);
       setCircuitToEdit(null);
+      sim.complete("editSave");
     } else {
       await addCircuit(data);
       setIsCreateModalOpen(false);
+      sim.complete("save");
     }
   };
 
@@ -109,6 +143,7 @@ export function CircuitsScreen() {
     if (!circuitToDelete) return;
     try {
       await deleteCircuit(circuitToDelete.id);
+      sim.complete("deleteConfirm");
     } catch {
     } finally {
       setCircuitToDelete(null);
@@ -138,19 +173,22 @@ export function CircuitsScreen() {
       <View className="flex-1 mt-5 px-8">
         <DataList
           data={filteredCircuits}
-          emptyMessage="Nenhum circuito encontrado."
+          emptyMessage={t("circuits.empty")}
           onRefresh={refresh}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => {
             const isMabc = item.type === "mabc_1" || item.type === "mabc_2" || item.type === "mabc_3";
             const isStructured = item.executionMode === "estruturado";
+            const isCreated = tutorial && item.id.startsWith("mock-new-");
 
             let iconColor = isStructured ? colors.primary : colors.extra || "#EAB308";
             let iconComponent = !isStructured
-              ? <Shuffle size={20} color={iconColor} /> 
+              ? <Shuffle size={20} color={iconColor} />
               : <Share2 size={20} color={iconColor} />;
-              
-            let badgeLabel = isStructured ? "Estruturado" : "Semi-estruturado";
+
+            let badgeLabel = isStructured
+              ? t("circuits.badge.structured")
+              : t("circuits.badge.semi");
 
             if (isMabc) {
               if (item.type === "mabc_1") {
@@ -161,10 +199,10 @@ export function CircuitsScreen() {
                 iconColor = colors.mabc3;
               }
               iconComponent = <ClipboardList size={20} color={iconColor} />;
-              badgeLabel = "MABC-2";
+              badgeLabel = t("circuits.badge.mabc");
             }
 
-            const subtitleText = `${item.exercisesCount} exercícios · ${item.exercisesSummary}`;
+            const subtitleText = `${item.exercisesCount} ${t("circuits.exercisesSuffix")} · ${item.exercisesSummary}`;
 
             return (
               <ListCard
@@ -174,10 +212,37 @@ export function CircuitsScreen() {
                 iconBgColor={withOpacity(iconColor, 0.15)}
                 badge={{ label: badgeLabel, color: iconColor }}
                 showDuplicate={!isMabc}
+                moreButtonSpotlightKeys={
+                  isCreated ? ["editMenu", "deleteMenu"] : undefined
+                }
+                editSpotlightKey={isCreated ? "editSelect" : undefined}
+                deleteSpotlightKey={isCreated ? "deleteSelect" : undefined}
+                onMenuOpen={
+                  isCreated
+                    ? () => {
+                        sim.complete("editMenu");
+                        sim.complete("deleteMenu");
+                      }
+                    : undefined
+                }
                 onPress={isMabc ? () => setCircuitToView(item) : () => setCircuitToEdit(item)}
-                onEdit={isMabc ? undefined : () => setCircuitToEdit(item)}
+                onEdit={
+                  isMabc
+                    ? undefined
+                    : () => {
+                        setCircuitToEdit(item);
+                        sim.complete("editSelect");
+                      }
+                }
                 onDuplicate={isMabc ? undefined : () => handleDuplicate(item)}
-                onDelete={isMabc ? undefined : () => setCircuitToDelete(item)}
+                onDelete={
+                  isMabc
+                    ? undefined
+                    : () => {
+                        setCircuitToDelete(item);
+                        sim.complete("deleteSelect");
+                      }
+                }
                 enableRipple={true}
               />
             );
@@ -187,39 +252,62 @@ export function CircuitsScreen() {
     );
   };
 
+  const content = (
+    <View className="flex-1">
+      <View className="mx-8 mt-5">
+        <SectionField mode="circuits" />
+      </View>
+
+      <View className="mx-8 mt-5">
+        <PageHeader
+          mode="exercicios"
+          title={t("circuits.title")}
+          subtitle={t("circuits.subtitle")}
+          newButtonRef={tutorial ? newButtonRef : undefined}
+          onNewPress={() => {
+            setIsCreateModalOpen(true);
+            sim.complete("new");
+          }}
+        />
+      </View>
+
+      <View className="relative z-10 mx-8 mt-5">
+        <SearchInput
+          placeholder={t("common.searchPlaceholder")}
+          value={query}
+          onChangeText={setQuery}
+          showTags={false}
+        />
+      </View>
+
+      {renderListBody()}
+    </View>
+  );
+
   return (
     <View className="flex-1 bg-level1">
-      <Header />
+      {tutorial ? (
+        <Header
+          variant="tutorial"
+          onPressBack={() => router.back()}
+          onPressFinish={() => setNoticeOpen(true)}
+        />
+      ) : (
+        <Header />
+      )}
 
-      <View className="flex-1">
-        <View className="mx-8 mt-5">
-          <SectionField mode="circuits" />
-        </View>
-
-        <View className="mx-8 mt-5">
-          <PageHeader
-            mode="exercicios" 
-            title="Circuitos"
-            subtitle="Monte circuitos com exercícios"
-            onNewPress={() => setIsCreateModalOpen(true)}
-          />
-        </View>
-
-        <View className="relative z-10 mx-8 mt-5">
-          <SearchInput
-            placeholder="Buscar circuito por nome..."
-            value={query}
-            onChangeText={setQuery}
-            showTags={false} 
-          />
-        </View>
-
-        {renderListBody()}
-      </View>
+      {tutorial ? (
+        content
+      ) : (
+        <SwipeNavigator onSwipeLeft={() => router.replace("/students")}>
+          {content}
+        </SwipeNavigator>
+      )}
 
       <NewCircuit
         visible={isModalOpen}
-        title={circuitToEdit ? "Editar circuito" : "Novo circuito"}
+        mock={tutorial}
+        title={circuitToEdit ? t("circuits.form.editTitle") : t("circuits.form.createTitle")}
         initialData={circuitToEdit ? circuitToFormData(circuitToEdit) : undefined}
         onClose={handleCloseModal}
         onSave={handleSaveCircuit}
@@ -237,12 +325,29 @@ export function CircuitsScreen() {
 
       <ConfirmationModal
         visible={circuitToDelete !== null}
-        title="Excluir circuito?"
+        title={t("circuits.deleteTitle")}
+        message={t("common.deleteConfirmMessage")}
+        confirmLabel={t("common.delete")}
+        cancelLabel={t("common.cancel")}
+        confirmSpotlightKey={tutorial ? "deleteConfirm" : undefined}
         onClose={() => setCircuitToDelete(null)}
         onConfirm={handleConfirmDelete}
       />
 
-      <Footer />
+      {!tutorial && <Footer />}
+
+      {tutorial && (
+        <TutorialPracticeNotice
+          visible={noticeOpen}
+          onClose={() => setNoticeOpen(false)}
+          onExit={() => {
+            setNoticeOpen(false);
+            router.back();
+          }}
+        />
+      )}
+
+      {tutorial && <TutorialSpotlight />}
     </View>
   );
 }

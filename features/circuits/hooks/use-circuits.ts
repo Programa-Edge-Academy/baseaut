@@ -1,8 +1,9 @@
 import { supabase } from "@/lib/supabase";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
-import { Exercise } from "./use-exercises";
+import { Exercise } from "@/features/exercises/hooks/use-exercises";
 
 /**
  * Defines the possible circuit types matching the database enum.
@@ -184,19 +185,56 @@ async function seedMabcCircuits(teamId: string): Promise<void> {
   }
 }
 
+/** Seed exercises available for selection inside the tutorial's mock circuit modal. */
+const MOCK_CIRCUIT_EXERCISES: Exercise[] = [
+  { id: "mock-linha", name: "Andar na linha", description: "", tag: "Equilíbrio", subtags: ["estabilizador"], iconUrl: null },
+  { id: "mock-bambole", name: "Girar bambolê", description: "", tag: "Coordenação", subtags: ["manipulativo"], iconUrl: null },
+];
+
+/** Seed circuits for the tutorial's mock mode (kept entirely in memory). */
+const MOCK_CIRCUITS: Circuit[] = [
+  {
+    id: "mock-circ-ex",
+    name: "Circuito exemplo",
+    description: null,
+    formId: null,
+    type: "padrao",
+    executionMode: "estruturado",
+    exercisesCount: 2,
+    exercisesSummary: "Andar na linha, Girar bambolê",
+    exercises: MOCK_CIRCUIT_EXERCISES,
+  },
+];
+
+/** Options for {@link useCircuits}. */
+export type UseCircuitsOptions = {
+  /** When true, runs entirely on in-memory mock data (tutorial only). */
+  mock?: boolean;
+};
+
 /**
  * Custom hook that provides CRUD operations and state management for circuits.
+ *
+ * @param options - Pass `{ mock: true }` (tutorial only) to operate on seeded
+ * in-memory data instead of Supabase.
  */
-export function useCircuits() {
-  const [circuits, setCircuits] = useState<Circuit[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function useCircuits(options?: UseCircuitsOptions) {
+  const isMock = options?.mock ?? false;
+  const { t } = useI18n();
+  const [circuits, setCircuits] = useState<Circuit[]>(isMock ? MOCK_CIRCUITS : []);
+  const [isLoading, setIsLoading] = useState(!isMock);
   const [error, setError] = useState<Error | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
+  const mockIdRef = useRef(0);
 
   /**
    * Fetches the list of active circuits using real database columns 'tipo' and 'modo_execucao'.
    */
   const loadCircuits = useCallback(async (showLoader = true) => {
+    if (isMock) {
+      setIsLoading(false);
+      return;
+    }
     if (showLoader) setIsLoading(true);
     setError(null);
 
@@ -265,7 +303,7 @@ export function useCircuits() {
               type: row.tipo || "padrao",
               executionMode: row.modo_execucao || "estruturado",
               exercisesCount: sortedItems.length,
-              exercisesSummary: summary || "Sem exercícios vinculados",
+              exercisesSummary: summary || t("circuits.noExercises"),
               exercises: mappedExercises,
             };
           })
@@ -276,7 +314,7 @@ export function useCircuits() {
     } finally {
       if (showLoader) setIsLoading(false);
     }
-  }, []);
+  }, [isMock, t]);
 
   useEffect(() => {
     loadCircuits(true);
@@ -292,6 +330,24 @@ export function useCircuits() {
     form: string | null;
     exercises: Exercise[]
   }) => {
+    if (isMock) {
+      mockIdRef.current += 1;
+      const created: Circuit = {
+        id: `mock-new-${mockIdRef.current}`,
+        name: data.name,
+        description: null,
+        formId: data.form,
+        type: data.type,
+        executionMode: data.executionMode,
+        exercisesCount: data.exercises.length,
+        exercisesSummary:
+          data.exercises.map((e) => e.name).join(", ") || t("circuits.noExercises"),
+        exercises: data.exercises,
+      };
+      setCircuits((prev) => [created, ...prev]);
+      return;
+    }
+
     try {
       if (!equipeId) throw new Error("Team ID not identified.");
 
@@ -333,7 +389,7 @@ export function useCircuits() {
 
       await loadCircuits(false);
     } catch (err: any) {
-      Alert.alert("Erro ao Criar", `Não foi possível salvar o circuito: ${err.message}`);
+      Alert.alert(t("circuits.error.createTitle"), `${t("circuits.error.createBody")} ${err.message}`);
       throw err;
     }
   };
@@ -348,6 +404,27 @@ export function useCircuits() {
     form: string | null;
     exercises: Exercise[]
   }) => {
+    if (isMock) {
+      setCircuits((prev) =>
+        prev.map((c) =>
+          c.id === id
+            ? {
+                ...c,
+                name: data.name,
+                type: data.type,
+                executionMode: data.executionMode,
+                formId: data.form,
+                exercisesCount: data.exercises.length,
+                exercisesSummary:
+                  data.exercises.map((e) => e.name).join(", ") || t("circuits.noExercises"),
+                exercises: data.exercises,
+              }
+            : c,
+        ),
+      );
+      return;
+    }
+
     try {
       const formId =
         data.form ??
@@ -381,7 +458,7 @@ export function useCircuits() {
 
       await loadCircuits(false);
     } catch (err: any) {
-      Alert.alert("Erro ao Editar", `Não foi possível atualizar o circuito: ${err.message}`);
+      Alert.alert(t("circuits.error.editTitle"), `${t("circuits.error.editBody")} ${err.message}`);
       throw err;
     }
   };
@@ -390,6 +467,11 @@ export function useCircuits() {
    * Performs standard soft delete for active circuits.
    */
   const deleteCircuit = async (id: string) => {
+    if (isMock) {
+      setCircuits((prev) => prev.filter((c) => c.id !== id));
+      return;
+    }
+
     try {
       const { error: deleteError } = await supabase
         .from("circuitos")
@@ -399,7 +481,7 @@ export function useCircuits() {
       if (deleteError) throw deleteError;
       await loadCircuits(false);
     } catch (err: any) {
-      Alert.alert("Erro ao Remover", err.message);
+      Alert.alert(t("circuits.error.deleteTitle"), err.message);
     }
   };
 
@@ -407,6 +489,17 @@ export function useCircuits() {
    * Duplicates an existing circuit, copying its properties and exercise items.
    */
   const duplicateCircuit = async (circuit: Circuit) => {
+    if (isMock) {
+      mockIdRef.current += 1;
+      const copy: Circuit = {
+        ...circuit,
+        id: `mock-dup-${mockIdRef.current}`,
+        name: `${circuit.name}${t("common.copySuffix")}`,
+      };
+      setCircuits((prev) => [copy, ...prev]);
+      return;
+    }
+
     try {
       if (!equipeId) throw new Error("Team ID not identified.");
 
@@ -444,7 +537,7 @@ export function useCircuits() {
 
       await loadCircuits(false);
     } catch (err: any) {
-      Alert.alert("Erro ao Duplicar", `Não foi possível duplicar o circuito: ${err.message}`);
+      Alert.alert(t("circuits.error.duplicateTitle"), `${t("circuits.error.duplicateBody")} ${err.message}`);
       throw err;
     }
   };
