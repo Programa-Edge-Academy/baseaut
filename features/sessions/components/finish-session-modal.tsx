@@ -94,7 +94,7 @@ export function FinishSessionModal({
               <AlertCircle size={28} color={colors.error} />
             </View>
             <View className="flex-1 flex-row items-center justify-between">
-              <Text className="text-header-2 text-white">{title}</Text>
+              <Text className="text-header-2 text-content">{title}</Text>
               <Pressable onPress={onClose} hitSlop={8}>
                 <X size={22} color={colors.muted} />
               </Pressable>
@@ -106,11 +106,11 @@ export function FinishSessionModal({
           {pendingExercises.length > 0 && (
             <Text className="text-default-2 text-muted leading-5">
               Estes exercícios serão registrados como não realizados:{" "}
-              <Text className="text-white">[{pendingExercises.join(", ")}]</Text>
+              <Text className="text-content">[{pendingExercises.join(", ")}]</Text>
             </Text>
           )}
 
-          <Text className="text-default-1 text-white">Motivo:</Text>
+          <Text className="text-default-1 text-content">Motivo:</Text>
 
           <ScrollView style={{ maxHeight: 260 }}>
             <View className="gap-2.5">
@@ -128,7 +128,7 @@ export function FinishSessionModal({
                       borderColor: isActive ? colors.primary : colors.outline,
                     }}
                   >
-                    <Text className="text-default-1 text-white">{motivo}</Text>
+                    <Text className="text-default-1 text-content">{motivo}</Text>
                     {isActive && <Check size={18} color={colors.primary} />}
                   </Pressable>
                 );
@@ -189,7 +189,7 @@ export function FinishSessionModal({
               bgColorClass="bg-error"
               shadowClass="shadow-errorShadow"
               sizeClass="flex-1 h-11"
-              textClassName="text-white"
+              textClassName="text-content"
             />
           </View>
         </Pressable>

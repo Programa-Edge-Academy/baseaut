@@ -2,6 +2,8 @@ import { colors } from "@/assets/colors";
 import { withOpacity } from "@/components/color-opacity";
 import { RipplePressable } from "@/components/ripple-pressable";
 import { SelectableChip } from "@/components/selectable-chip";
+import type { TranslationKey } from "@/features/settings/constants/translations";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { Check, Edit2, X } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
@@ -79,24 +81,27 @@ const SMILE_FACE_XML = `
 </svg>
 `;
 
+/** A translator function bound to the active locale. */
+type Translate = (key: TranslationKey) => string;
+
 const NIVEIS: {
   id: NivelDesenvolvimento;
-  label: string;
+  labelKey: TranslationKey;
   svgXml: string;
   bgColor: string;
 }[] = [
-  { id: "inicial",       label: "Inicial",      svgXml: SAD_FACE_XML,     bgColor: colors.error },
-  { id: "intermediario", label: "Intermediário", svgXml: NEUTRAL_FACE_XML, bgColor: colors.extra },
-  { id: "maduro",        label: "Maduro",        svgXml: SMILE_FACE_XML,   bgColor: colors.secondary },
+  { id: "inicial",       labelKey: "analysis.level.inicial",      svgXml: SAD_FACE_XML,     bgColor: colors.error },
+  { id: "intermediario", labelKey: "analysis.level.intermediario", svgXml: NEUTRAL_FACE_XML, bgColor: colors.extra },
+  { id: "maduro",        labelKey: "analysis.level.maduro",        svgXml: SMILE_FACE_XML,   bgColor: colors.secondary },
 ];
 
-const MOTIVOS: { id: MotivoNaoRealizacao; label: string }[] = [
-  { id: "recusa_aluno",             label: "Recusa do aluno" },
-  { id: "comportamento_disruptivo", label: "Comportamento disruptivo" },
-  { id: "fadiga_cansaco",           label: "Fadiga ou cansaço" },
-  { id: "tempo_insuficiente",       label: "Tempo insuficiente" },
-  { id: "dificuldade_fisica",       label: "Dificuldade física" },
-  { id: "outro",                    label: "Outro" },
+const MOTIVOS: { id: MotivoNaoRealizacao; labelKey: TranslationKey }[] = [
+  { id: "recusa_aluno",             labelKey: "activityResult.motive.refusal" },
+  { id: "comportamento_disruptivo", labelKey: "activityResult.motive.disruptive" },
+  { id: "fadiga_cansaco",           labelKey: "activityResult.motive.fatigue" },
+  { id: "tempo_insuficiente",       labelKey: "activityResult.motive.insufficientTime" },
+  { id: "dificuldade_fisica",       labelKey: "activityResult.motive.physicalDifficulty" },
+  { id: "outro",                    labelKey: "activityResult.motive.other" },
 ];
 
 const INFO_LABEL_STYLE = {
@@ -135,9 +140,9 @@ export function hasActivityRecordPendency(record: ActivityRecordItem) {
 }
 
 /** Formats seconds as mm:ss, or a placeholder when unset. */
-function formatDuration(seconds: number | null | undefined) {
+function formatDuration(seconds: number | null | undefined, t: Translate) {
   if (seconds === null || seconds === undefined) {
-    return "Não selecionado";
+    return t("common.notSelected");
   }
   const safeSeconds = Math.max(0, Math.floor(seconds));
   const minutes = Math.floor(safeSeconds / 60);
@@ -146,16 +151,17 @@ function formatDuration(seconds: number | null | undefined) {
 }
 
 /** Returns the display label for a help registration value. */
-function getHelpLabel(value: RegistroAjuda | null) {
-  if (value === "autonomo") return "Autônomo";
-  if (value === "ajuda_intrusiva") return "Ajuda intrusiva";
-  if (value === "nao_se_aplica") return "Não se aplica";
-  return "Não selecionado";
+function getHelpLabel(value: RegistroAjuda | null, t: Translate) {
+  if (value === "autonomo") return t("analysis.help.autonomous");
+  if (value === "ajuda_intrusiva") return t("analysis.help.intrusive");
+  if (value === "nao_se_aplica") return t("activityResult.notApplicable");
+  return t("common.notSelected");
 }
 
 /** Returns the display label for a non-completion reason. */
-function getMotivoLabel(value: MotivoNaoRealizacao | null) {
-  return MOTIVOS.find((m) => m.id === value)?.label ?? "Não selecionado";
+function getMotivoLabel(value: MotivoNaoRealizacao | null, t: Translate) {
+  const found = MOTIVOS.find((m) => m.id === value);
+  return found ? t(found.labelKey) : t("common.notSelected");
 }
 
 /**
@@ -164,6 +170,7 @@ function getMotivoLabel(value: MotivoNaoRealizacao | null) {
  * performed). Highlights pending records and blocks saving until complete.
  */
 export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) {
+  const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<StatusRealizacao>(
     record.statusRealizacao === "nao_realizada" ? "nao_realizada" : "realizada"
@@ -352,16 +359,16 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
           {isNaoRealizada ? (
             <>
               <Text style={INFO_LABEL_STYLE}>
-                Status:{" "}
+                {t("activityRecord.status")}:{" "}
                 <Text style={[INFO_VALUE_STYLE, { color: colors.error }]}>
-                  Não realizado
+                  {t("activityRecord.notPerformed")}
                 </Text>
               </Text>
 
               <Text style={INFO_LABEL_STYLE}>
-                Motivo:{" "}
+                {t("activityRecord.reasonLabel")}:{" "}
                 <Text style={[INFO_VALUE_STYLE, { color: "#FFFFFF" }]}>
-                  {getMotivoLabel(record.motivoNaoRealizacao)}
+                  {getMotivoLabel(record.motivoNaoRealizacao, t)}
                   {record.motivoNaoRealizacao === "outro" && record.descricaoAdicional
                     ? ` — ${record.descricaoAdicional}`
                     : ""}
@@ -371,25 +378,25 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
           ) : (
             <>
               <Text style={INFO_LABEL_STYLE}>
-                Duração:{" "}
+                {t("activityRecord.duration")}:{" "}
                 <Text style={[INFO_VALUE_STYLE, { color: "#FFFFFF" }]}>
-                  {formatDuration(record.durationSeconds)}
+                  {formatDuration(record.durationSeconds, t)}
                 </Text>
               </Text>
 
               <Text style={INFO_LABEL_STYLE}>
-                Nível de desenvolvimento:{" "}
+                {t("activityResult.developmentLevel")}:{" "}
                 <Text style={[INFO_VALUE_STYLE, { color: nivelData?.bgColor ?? "#FFFFFF" }]}>
-                  {nivelData?.label ?? "Não selecionado"}
+                  {nivelData ? t(nivelData.labelKey) : t("common.notSelected")}
                 </Text>
               </Text>
 
               <Text style={INFO_LABEL_STYLE}>
-                Nível de ajuda:{" "}
+                {t("activityRecord.helpLevel")}:{" "}
                 <Text style={[INFO_VALUE_STYLE, { color: "#FFFFFF" }]}>
-                  {getHelpLabel(record.registroAjuda)}
+                  {getHelpLabel(record.registroAjuda, t)}
                   {record.registroAjuda === "autonomo" && (record.complementosAjuda?.length ?? 0) > 0
-                    ? ` (${record.complementosAjuda!.map((c) => c.charAt(0).toUpperCase() + c.slice(1)).join(", ")})`
+                    ? ` (${record.complementosAjuda!.map((c) => t(c === "modelo" ? "chip.model" : "chip.verbal")).join(", ")})`
                     : ""}
                 </Text>
               </Text>
@@ -404,12 +411,12 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
 
           <View style={{ gap: 8 }}>
             <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: colors.muted }}>
-              Status do exercício
+              {t("activityRecord.exerciseStatus")}
             </Text>
             <View style={{ flexDirection: "row", gap: 8 }}>
               {([
-                { id: "realizada", label: "Realizado", color: colors.secondary },
-                { id: "nao_realizada", label: "Não realizado", color: colors.error },
+                { id: "realizada", label: t("activityRecord.performed"), color: colors.secondary },
+                { id: "nao_realizada", label: t("activityRecord.notPerformed"), color: colors.error },
               ] as const).map((opt) => {
                 const isSelected = selectedStatus === opt.id;
                 return (
@@ -444,13 +451,13 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
           {selectedStatus === "nao_realizada" ? (
             <View style={{ gap: 8, marginTop: 16 }}>
               <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: colors.muted }}>
-                Motivo
+                {t("activityRecord.reasonLabel")}
               </Text>
               <View style={{ gap: 5 }}>
                 {MOTIVOS.map((m) => (
                   <SelectableChip
                     key={m.id}
-                    label={m.label}
+                    label={t(m.labelKey)}
                     type="motivos"
                     isSelected={selectedMotivo === m.id}
                     onToggle={() =>
@@ -464,7 +471,7 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
                 <TextInput
                   value={descricaoInput}
                   onChangeText={setDescricaoInput}
-                  placeholder="Descreva o motivo"
+                  placeholder={t("activityRecord.describeReason")}
                   placeholderTextColor={colors.placeholder}
                   multiline
                   style={{
@@ -488,14 +495,14 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
             <>
               <View style={{ gap: 8, marginTop: 16 }}>
                 <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: colors.muted }}>
-                  Duração (segundos)
+                  {t("activityRecord.durationSeconds")}
                 </Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                   <TextInput
                     value={durationInput}
-                    onChangeText={(t) => setDurationInput(t.replace(/[^0-9]/g, ""))}
+                    onChangeText={(text) => setDurationInput(text.replace(/[^0-9]/g, ""))}
                     keyboardType="number-pad"
-                    placeholder="Ex: 90"
+                    placeholder={t("activityRecord.durationExample")}
                     placeholderTextColor={colors.placeholder}
                     maxLength={5}
                     style={{
@@ -512,14 +519,14 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
                     }}
                   />
                   <Text style={{ color: "#FFFFFF", fontFamily: "Inter-Bold", fontSize: 13, minWidth: 56 }}>
-                    {editedDurationSeconds === null ? "--:--" : formatDuration(editedDurationSeconds)}
+                    {editedDurationSeconds === null ? "--:--" : formatDuration(editedDurationSeconds, t)}
                   </Text>
                 </View>
               </View>
 
               <View style={{ gap: 8, marginTop: 16 }}>
                 <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: colors.muted }}>
-                  Nível de desenvolvimento
+                  {t("activityResult.developmentLevel")}
                 </Text>
 
                 <View style={{ flexDirection: "row", gap: 8 }}>
@@ -558,7 +565,7 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
                             textAlign: "center",
                           }}
                         >
-                          {item.label}
+                          {t(item.labelKey)}
                         </Text>
                       </RipplePressable>
                     );
@@ -568,12 +575,12 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
 
               <View style={{ gap: 8, marginTop: 16 }}>
                 <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: colors.muted }}>
-                  Nível de ajuda oferecida
+                  {t("activityRecord.helpOffered")}
                 </Text>
 
                 <View style={{ gap: 5 }}>
                   <SelectableChip
-                    label="Autônomo"
+                    label={t("analysis.help.autonomous")}
                     type="nivelAjuda"
                     isSelected={selectedHelp === "autonomo"}
                     onToggle={() => {
@@ -593,7 +600,7 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
                   />
 
                   <SelectableChip
-                    label="Ajuda intrusiva"
+                    label={t("analysis.help.intrusive")}
                     isSelected={selectedHelp === "ajuda_intrusiva"}
                     onToggle={() => {
                       setSelectedHelp("ajuda_intrusiva");
@@ -615,7 +622,7 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
                 marginTop: 12,
               }}
             >
-              Existem informações não selecionadas neste registro.
+              {t("activityRecord.pendingInfo")}
             </Text>
           )}
         </View>

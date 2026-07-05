@@ -3,6 +3,7 @@ import { DraggableList, DraggableItem } from "@/components/draggable-list";
 import { X } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/assets/colors";
 import { SessionExercise } from "../screens/session-running-screen";
 
@@ -18,6 +19,10 @@ interface ReorderModalProps {
 /**
  * Bottom-sheet modal that lets the user reorder the remaining session exercises
  * via a drag-and-drop list.
+ *
+ * @remarks
+ * The sheet's bottom padding includes the safe-area inset so the confirm button
+ * is never covered by the device's system navigation bar.
  */
 export function ReorderModal({
   visible,
@@ -27,6 +32,7 @@ export function ReorderModal({
   onReorder,
 }: ReorderModalProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const draggableItems: DraggableItem[] = items.map((ex) => ({
     id: ex.id,
@@ -43,10 +49,13 @@ export function ReorderModal({
   return (
     <AppModal visible={visible} transparent animationType="slide">
       <View className="flex-1 bg-black/60 justify-end">
-        <View className="bg-level2 rounded-t-[32px] p-6 h-[80%] border-t border-outline">
+        <View
+          className="bg-level2 rounded-t-[32px] p-6 h-[80%] border-t border-outline"
+          style={{ paddingBottom: Math.max(insets.bottom, 24) }}
+        >
           <View className="flex-row justify-between items-center mb-6">
             <View>
-              <Text className="text-white text-[24px] font-bold">Mudar ordem</Text>
+              <Text className="text-content text-[24px] font-bold">Mudar ordem</Text>
               <Text className="text-muted text-[14px]">
                 Segure e arraste pelo ícone de alça para reordenar
               </Text>
@@ -74,7 +83,7 @@ export function ReorderModal({
             onPress={onClose}
             className="mt-6 w-full py-4 bg-level1 border border-outline rounded-2xl items-center"
           >
-            <Text className="text-white font-bold">Concluir reordenagem</Text>
+            <Text className="text-content font-bold">Concluir reordenagem</Text>
           </Pressable>
         </View>
       </View>

@@ -69,15 +69,26 @@ type FinishSessionInput = {
   descricaoMotivo?: string | null;
 };
 
+/** Options for {@link useSessionFlow}. */
+export type UseSessionFlowOptions = {
+  /** When true, all writes are no-ops on in-memory ids (tutorial only). */
+  mock?: boolean;
+};
+
 /**
  * Database side-effects for an ongoing session: creating the `sessoes` row,
  * persisting executed exercises into `execucoes_exercicio`, and closing the
  * session. All writes go through the authenticated client (RLS applies).
+ *
+ * @param options - Pass `{ mock: true }` (tutorial only) so every write is a
+ * no-op against an in-memory session id instead of Supabase.
  */
-export function useSessionFlow() {
+export function useSessionFlow(options?: UseSessionFlowOptions) {
+  const isMock = options?.mock ?? false;
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const savingRef = useRef(false);
+  const mockIdRef = useRef(0);
 
   /** Creates a new in-progress `sessoes` row and returns its id. */
   const createSession = useCallback(
@@ -86,6 +97,10 @@ export function useSessionFlow() {
       circuitoId = null,
       formularioId = null,
     }: CreateSessionInput): Promise<string> => {
+      if (isMock) {
+        mockIdRef.current += 1;
+        return `mock-session-${mockIdRef.current}`;
+      }
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -111,7 +126,7 @@ export function useSessionFlow() {
       if (insertError) throw insertError;
       return data.id as string;
     },
-    [],
+    [isMock],
   );
 
   /** Inserts one row per execution record, allowing repeated/engagement entries. */
@@ -120,6 +135,12 @@ export function useSessionFlow() {
       sessaoId: string,
       records: ExecutionRecord[],
     ): Promise<InsertedExecution[]> => {
+      if (isMock) {
+        return records.map((record, index) => ({
+          id: `mock-exec-${index}`,
+          exercicio_id: record.exercicioId,
+        }));
+      }
       if (!records.length) return [];
 
       const payload = records.map((record) => ({
@@ -143,7 +164,7 @@ export function useSessionFlow() {
       if (insertError) throw insertError;
       return (data ?? []) as InsertedExecution[];
     },
-    [],
+    [isMock],
   );
 
   /**
@@ -156,6 +177,7 @@ export function useSessionFlow() {
       crises: CrisisRecord[],
       execucaoIdByExercicio: Map<string, string>,
     ): Promise<void> => {
+      if (isMock) return;
       if (!crises.length) return;
 
       const payload = crises.map((crise) => ({
@@ -171,7 +193,7 @@ export function useSessionFlow() {
 
       if (insertError) throw insertError;
     },
-    [],
+    [isMock],
   );
 
   /** Marks a session as completed or cancelled with an optional reason. */
@@ -184,6 +206,7 @@ export function useSessionFlow() {
         descricaoMotivo = null,
       }: FinishSessionInput = {},
     ): Promise<void> => {
+      if (isMock) return;
       const { error: updateError } = await supabase
         .from("sessoes")
         .update({
@@ -196,7 +219,7 @@ export function useSessionFlow() {
 
       if (updateError) throw updateError;
     },
-    [],
+    [isMock],
   );
 
   /**
@@ -211,6 +234,7 @@ export function useSessionFlow() {
       crises: CrisisRecord[] = [],
       finishInput: FinishSessionInput = {},
     ): Promise<void> => {
+      if (isMock) return;
       if (savingRef.current) return;
       savingRef.current = true;
       setIsSaving(true);
@@ -236,7 +260,7 @@ export function useSessionFlow() {
         setIsSaving(false);
       }
     },
-    [persistCrises, finishSession],
+    [isMock, persistCrises, finishSession],
   );
 
   /**
@@ -252,6 +276,7 @@ export function useSessionFlow() {
       motivo: MotivoNaoRealizacao = "outro",
       descricao: string = "Sessão encerrada para iniciar uma nova.",
     ): Promise<void> => {
+      if (isMock) return;
       const MOTIVO: MotivoNaoRealizacao = motivo;
       const DESCRICAO = descricao;
 
@@ -312,7 +337,7 @@ export function useSessionFlow() {
         descricaoMotivo: DESCRICAO,
       });
     },
-    [finishSession],
+    [isMock, finishSession],
   );
 
   /**
@@ -330,6 +355,7 @@ export function useSessionFlow() {
       totalSeconds: number,
       fugaIntervals: { start: number; end: number }[],
     ): Promise<void> => {
+      if (isMock) return;
       if (!sessaoId) return;
 
       await supabase
@@ -411,7 +437,7 @@ export function useSessionFlow() {
           .upsert(payload, { onConflict: "sessao_id, pergunta_id" });
       }
     },
-    [],
+    [isMock],
   );
 
   return {

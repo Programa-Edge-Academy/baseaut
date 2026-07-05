@@ -5,11 +5,15 @@ import { calculateAge } from "@/lib/date-utils";
 import { getStartGuard, type StartGuardState } from "@/lib/session-start-guard";
 import { supabase } from "@/lib/supabase";
 import { ConcurrentSessionModal } from "@/components/concurrent-session-modal";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { useSessionGlobalContext } from "@/features/sessions/contexts/session-global-context";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import {
   Circuit,
   CircuitType,
   useCircuits,
-} from "../features/exercises/hooks/use-circuits";
+} from "../features/circuits/hooks/use-circuits";
 import { useSessionFlow } from "../features/sessions/hooks/use-session-flow";
 import {
   CircuitItem,
@@ -99,8 +103,17 @@ export default function CircuitSelectionRoute() {
     studentName: string;
   }>();
 
-  const { circuits, isLoading: circuitsLoading } = useCircuits();
-  const { finishSessionAndSaveUnexecuted } = useSessionFlow();
+  const { t } = useI18n();
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active;
+  const isSessionTutorial = isTutorial && sessionSim.kind === "session";
+  const isFormsTutorial = isTutorial && sessionSim.kind === "forms";
+  const sim = useTutorialSimulation();
+  /** Form types started (and thus pending) during the forms tutorial. */
+  const [pendingMockForms, setPendingMockForms] = useState<Record<string, boolean>>({});
+  const { activeSessions } = useSessionGlobalContext();
+  const { circuits, isLoading: circuitsLoading } = useCircuits({ mock: isTutorial });
+  const { finishSessionAndSaveUnexecuted } = useSessionFlow({ mock: isTutorial });
 
   const [studentAge, setStudentAge] = useState<number | null>(null);
   const [ageResolved, setAgeResolved] = useState(false);
@@ -111,6 +124,11 @@ export default function CircuitSelectionRoute() {
 
   useEffect(() => {
     async function loadStudentAge() {
+      if (isTutorial) {
+        setStudentAge(8);
+        setAgeResolved(true);
+        return;
+      }
       if (!studentId) {
         setStudentAge(null);
         setAgeResolved(true);
@@ -137,7 +155,31 @@ export default function CircuitSelectionRoute() {
     }
 
     loadStudentAge();
-  }, [studentId]);
+  }, [studentId, isTutorial]);
+
+  /** Mock start guard for the tutorial: reflects the in-memory session/forms state. */
+  const buildMockGuard = useCallback((): StartGuardState => {
+    const inProgress = Object.values(activeSessions).find(
+      (s) => s.studentId === (studentId ?? ""),
+    );
+    const pendingByType: Record<string, string> = {};
+    for (const tipo of Object.keys(pendingMockForms)) {
+      if (pendingMockForms[tipo]) pendingByType[tipo] = `mock-form-${tipo}`;
+    }
+    return {
+      inProgressSession: inProgress
+        ? {
+            id: inProgress.sessionId,
+            circuitoId: inProgress.circuitId ?? null,
+            modoExecucao:
+              inProgress.type === "semi-structured"
+                ? "semi-estruturado"
+                : "estruturado",
+          }
+        : null,
+      pendingByType,
+    };
+  }, [activeSessions, studentId, pendingMockForms]);
 
   const dbTipoById = useMemo(
     () => new Map(circuits.map((circuit) => [circuit.id, circuit.type])),
@@ -195,8 +237,11 @@ export default function CircuitSelectionRoute() {
       });
     }
 
+    // The session tutorial focuses on circuits; the forms tutorial on forms.
+    if (isSessionTutorial) return real;
+    if (isFormsTutorial) return [...formularios, ...mabcForms];
     return [...real, ...formularios, ...mabcForms];
-  }, [circuits, studentAge]);
+  }, [circuits, studentAge, isSessionTutorial, isFormsTutorial]);
 
   const isFormType = (type: string) =>
     type === "ata" || type === "cars" || type === "mabc";
@@ -305,7 +350,7 @@ export default function CircuitSelectionRoute() {
     async (circuit: CircuitItem) => {
       if (!studentId) return;
 
-      const guard = await getStartGuard(studentId);
+      const guard = isTutorial ? buildMockGuard() : await getStartGuard(studentId);
       const isForm = isFormType(circuit.type);
 
       if (!isForm) {
@@ -313,7 +358,11 @@ export default function CircuitSelectionRoute() {
           pendingCircuitRef.current = circuit;
           setGuardData(guard);
           setGuardModal("session-conflict");
+          if (isTutorial) sim.complete("reopenCircuit");
           return;
+        }
+        if (isTutorial && circuit.type === "estruturado") {
+          sim.complete("selectStructured");
         }
         if (guard.pendingByType.registro_controle) {
           pendingCircuitRef.current = circuit;
@@ -327,7 +376,12 @@ export default function CircuitSelectionRoute() {
           pendingCircuitRef.current = circuit;
           setGuardData(guard);
           setGuardModal("form-conflict");
+          if (isFormsTutorial && guardKey === "ata") sim.complete("reopenAta");
           return;
+        }
+        if (isFormsTutorial && guardKey === "ata") {
+          setPendingMockForms((prev) => ({ ...prev, ata: true }));
+          sim.complete("selectAta");
         }
       }
 
@@ -337,7 +391,7 @@ export default function CircuitSelectionRoute() {
         navigateToSession(circuit);
       }
     },
-    [studentId, navigateToSession, navigateToForm]
+    [studentId, navigateToSession, navigateToForm, isTutorial, isFormsTutorial, buildMockGuard, sim]
   );
 
   const handleContinueCurrent = useCallback(async () => {
@@ -346,17 +400,19 @@ export default function CircuitSelectionRoute() {
     setGuardModal(null);
 
     if (guardModal === "session-conflict") {
+      if (isTutorial) sim.complete("concurrentContinue");
       resumeInProgressSession(guardData);
     } else if (guardModal === "rc-pending") {
       const rcId = guardData.pendingByType.registro_controle;
       navigateToExistingForm(rcId, "registro_controle");
     } else if (guardModal === "form-conflict") {
+      if (isFormsTutorial) sim.complete("continueAta");
       const tipo = pendingCircuitRef.current?.type ?? "";
       const guardKey = tipo === "mabc" ? "mabc2" : tipo;
       const formId = guardData.pendingByType[guardKey];
       if (formId) navigateToExistingForm(formId, guardKey);
     }
-  }, [guardData, guardModal, resumeInProgressSession, navigateToExistingForm]);
+  }, [guardData, guardModal, resumeInProgressSession, navigateToExistingForm, isTutorial, isFormsTutorial, sim]);
 
   const handleFinishAndStartNew = useCallback(async () => {
     if (!guardData) return;
@@ -401,13 +457,12 @@ export default function CircuitSelectionRoute() {
   const modalProps = useMemo(() => {
     if (guardModal === "session-conflict") {
       return {
-        title: "Sessão em andamento",
-        message:
-          "Já existe uma sessão em andamento com este aluno. O que deseja fazer?",
-        continueLabel: "Continuar sessão em andamento",
+        title: t("sessions.concurrent.title"),
+        message: t("sessions.concurrent.message"),
+        continueLabel: t("sessions.concurrent.continue"),
         finishLabel: isProcessing
           ? "Finalizando..."
-          : "Finalizar sessão e iniciar nova",
+          : t("sessions.concurrent.finishNew"),
       };
     }
     if (guardModal === "rc-pending") {
@@ -428,16 +483,16 @@ export default function CircuitSelectionRoute() {
       };
       const formName = nameMap[tipo] ?? tipo;
       return {
-        title: `Formulário ${formName} pendente`,
-        message: `Já existe um formulário ${formName} pendente para este aluno. O que deseja fazer?`,
-        continueLabel: "Continuar formulário anterior",
+        title: t("forms.conflict.title").replace("{form}", formName),
+        message: t("forms.conflict.message").replace("{form}", formName),
+        continueLabel: t("forms.conflict.continue"),
         finishLabel: isProcessing
           ? "Apagando..."
-          : "Apagar anterior e iniciar um novo",
+          : t("forms.conflict.finishNew"),
       };
     }
     return {};
-  }, [guardModal, isProcessing]);
+  }, [guardModal, isProcessing, t]);
 
   return (
     <>
@@ -447,6 +502,17 @@ export default function CircuitSelectionRoute() {
         isLoading={circuitsLoading || !ageResolved}
         onPressBack={() => router.back()}
         onPressCircuit={handlePressCircuit}
+        tutorial={isTutorial}
+        getSpotlightKeys={
+          isSessionTutorial
+            ? (item) =>
+                item.type === "estruturado"
+                  ? ["selectStructured", "reopenCircuit"]
+                  : undefined
+            : isFormsTutorial
+            ? (item) => (item.type === "ata" ? ["selectAta", "reopenAta"] : undefined)
+            : undefined
+        }
       />
 
       <ConcurrentSessionModal
@@ -454,6 +520,13 @@ export default function CircuitSelectionRoute() {
         onRequestClose={() => setGuardModal(null)}
         onContinueCurrent={handleContinueCurrent}
         onFinishAndStartNew={handleFinishAndStartNew}
+        continueSpotlightKey={
+          isSessionTutorial && guardModal === "session-conflict"
+            ? "concurrentContinue"
+            : isFormsTutorial && guardModal === "form-conflict"
+            ? "continueAta"
+            : undefined
+        }
         {...modalProps}
       />
     </>

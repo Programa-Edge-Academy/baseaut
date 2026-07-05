@@ -180,7 +180,7 @@ export default function SessionDetailScreen() {
         </View>
       ) : error ? (
         <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-center text-white">
+          <Text className="text-center text-content">
             {error.message || "Erro ao carregar a sessão."}
           </Text>
         </View>
@@ -264,25 +264,25 @@ function FormatPicker({
       className="bg-level2 border border-outline rounded-2xl p-6 w-full gap-5"
       onPress={(e) => e.stopPropagation()}
     >
-      <Text className="text-header-2 text-white">Selecionar formato</Text>
+      <Text className="text-header-2 text-content">Selecionar formato</Text>
 
       <View className="gap-3">
         <Pressable onPress={() => setPdf((v) => !v)} className="flex-row items-center gap-3">
           <View
             className={`w-5 h-5 rounded border items-center justify-center ${pdf ? "bg-primary border-primary" : "border-outline bg-transparent"}`}
           >
-            {pdf && <Text className="text-white text-xs font-bold">✓</Text>}
+            {pdf && <Text className="text-content text-xs font-bold">✓</Text>}
           </View>
-          <Text className="text-white text-default-1">PDF</Text>
+          <Text className="text-content text-default-1">PDF</Text>
         </Pressable>
 
         <Pressable onPress={() => setCsv((v) => !v)} className="flex-row items-center gap-3">
           <View
             className={`w-5 h-5 rounded border items-center justify-center ${csv ? "bg-primary border-primary" : "border-outline bg-transparent"}`}
           >
-            {csv && <Text className="text-white text-xs font-bold">✓</Text>}
+            {csv && <Text className="text-content text-xs font-bold">✓</Text>}
           </View>
-          <Text className="text-white text-default-1">CSV (dados tabulares)</Text>
+          <Text className="text-content text-default-1">CSV (dados tabulares)</Text>
         </Pressable>
       </View>
 
@@ -317,7 +317,7 @@ function FormatPicker({
             outlineBorderClass="border-secondary"
             hasShadow={true}
             shadowClass="shadow-secondaryShadow"
-            textClassName="text-white"
+            textClassName="text-content"
           />
         )}
       </View>

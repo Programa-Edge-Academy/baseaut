@@ -4,6 +4,10 @@ import { DataList } from "@/components/data-list";
 import { Header } from "@/components/header";
 import { ListCard } from "@/components/list-card";
 import { SearchInput } from "@/components/search-input";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { ClipboardEdit, Layers } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
@@ -46,11 +50,16 @@ export type CircuitSelectionScreenProps = {
   isLoading?: boolean;
   onPressBack?: () => void;
   onPressCircuit?: (circuit: CircuitItem) => void;
+  /** Tutorial mode: shows the "Em tutorial" header button, notice and spotlight. */
+  tutorial?: boolean;
+  /** Returns the spotlight keys for an item, or undefined for no highlight. */
+  getSpotlightKeys?: (item: CircuitItem) => string[] | undefined;
 };
 
 /**
  * Lets the user pick which circuit (or the ATA form) to run inside an
- * already-opened session.
+ * already-opened session. Used both as the real screen and, with `tutorial`,
+ * as part of the guided session simulation.
  */
 export function CircuitSelectionScreen({
   studentName,
@@ -58,8 +67,12 @@ export function CircuitSelectionScreen({
   isLoading = false,
   onPressBack,
   onPressCircuit,
+  tutorial = false,
+  getSpotlightKeys,
 }: CircuitSelectionScreenProps) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
+  const [noticeOpen, setNoticeOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -71,21 +84,25 @@ export function CircuitSelectionScreen({
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" onPressBack={onPressBack} />
+      <Header
+        variant="back"
+        onPressBack={onPressBack}
+        onPressTutorial={tutorial ? () => setNoticeOpen(true) : undefined}
+      />
 
       <View className="flex-1">
         <View className="mx-8 mt-5">
-          <Text className="text-header-1 text-white">
-            Sessão de {studentName}
+          <Text className="text-header-1 text-content">
+            {t("sessions.circuitSelection.title").replace("{name}", studentName)}
           </Text>
           <Text className="mt-1 text-default-1 text-muted">
-            Selecione o circuito
+            {t("sessions.circuitSelection.subtitle")}
           </Text>
         </View>
 
         <SearchInput
           containerClassName="mx-8 mt-5"
-          placeholder="Buscar circuito por nome..."
+          placeholder={t("common.searchPlaceholder")}
           value={query}
           onChangeText={setQuery}
         />
@@ -98,18 +115,18 @@ export function CircuitSelectionScreen({
         <DataList
           className="mt-5 px-8"
           data={filtered}
-          emptyMessage="Nenhum circuito encontrado."
+          emptyMessage={t("sessions.circuitSelection.empty")}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => {
             const isForm = item.type === "ata" || item.type === "cars" || item.type === "mabc";
             const badge =
               item.type === "estruturado"
-                ? { label: "Estruturado", color: colors.primary }
+                ? { label: t("sessions.badge.structured"), color: colors.primary }
                 : item.type === "semi-estruturado"
-                ? { label: "Semi-estruturado", color: colors.extra }
+                ? { label: t("sessions.badge.semi"), color: colors.extra }
                 : undefined;
 
-            return (
+            const card = (
               <ListCard
                 title={item.name}
                 subtitle={item.description}
@@ -129,11 +146,30 @@ export function CircuitSelectionScreen({
                 onPress={() => onPressCircuit?.(item)}
               />
             );
+
+            const keys = getSpotlightKeys?.(item);
+            return keys && keys.length > 0 ? (
+              <SpotlightTarget targetKey={keys}>{card}</SpotlightTarget>
+            ) : (
+              card
+            );
           }}
         />
         )}
       </View>
 
+      {tutorial && (
+        <TutorialPracticeNotice
+          visible={noticeOpen}
+          onClose={() => setNoticeOpen(false)}
+          onExit={() => {
+            setNoticeOpen(false);
+            onPressBack?.();
+          }}
+        />
+      )}
+
+      {tutorial && <TutorialSpotlight />}
     </View>
   );
 }

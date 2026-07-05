@@ -3,6 +3,13 @@ import { supabase } from "@/lib/supabase";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { FormComponent } from "@/features/forms/components/form-component";
+import { useKeyboardAwareScroll } from "@/lib/use-keyboard-aware-scroll";
+import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { Check } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Animated, ScrollView, Text, View } from "react-native";
@@ -10,7 +17,7 @@ import { ActivityResultModal } from "../../exercises/components/activity-result-
 import { MabcResultModal } from "../../exercises/components/mabc-result-modal";
 import { StartActivity } from "../../exercises/components/start-activity";
 import { Stopwatch } from "../../exercises/components/stopwatch";
-import { CircuitType } from "../../exercises/hooks/use-circuits";
+import { CircuitType } from "../../circuits/hooks/use-circuits";
 import {
   DEFAULT_FINISH_MOTIVOS,
   FinishSessionModal,
@@ -86,7 +93,11 @@ export function SessionRunningScreen({
   onCompleteSession,
 }: SessionRunningScreenProps) {
   const formRef = useRef<any>(null);
-  const { createSession, persistExecutions, saveSession, finalizeSessionAutoFill } = useSessionFlow();
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "session";
+  const sim = useTutorialSimulation();
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const { createSession, persistExecutions, saveSession, finalizeSessionAutoFill } = useSessionFlow({ mock: isTutorial });
 
   const [effectiveSessionId, setEffectiveSessionId] = useState<string>(
     sessionId || "",
@@ -216,6 +227,10 @@ export function SessionRunningScreen({
   };
 
   useEffect(() => {
+    if (isTutorial) {
+      setRcFormId("mock-rc");
+      return;
+    }
     if (!effectiveSessionId) return;
     let active = true;
     supabase
@@ -229,7 +244,7 @@ export function SessionRunningScreen({
     return () => {
       active = false;
     };
-  }, [effectiveSessionId]);
+  }, [effectiveSessionId, isTutorial]);
 
   const { data: resumeData } = useResumeSession(sessionId || null);
 
@@ -284,7 +299,7 @@ export function SessionRunningScreen({
     setTimerVisible(resolvedSid, true);
     return () => setTimerVisible(resolvedSid, false);
   }, [resolvedSid, setTimerVisible]);
-  const [hasAdvanced, setHasAdvanced] = useState(false);
+  const [hasAdvanced, setHasAdvanced] = useState(isTutorial);
   const [isReorderOpen, setIsReorderOpen] = useState(false);
   const [isFinishOpen, setIsFinishOpen] = useState(false);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
@@ -330,6 +345,8 @@ export function SessionRunningScreen({
   const toastTranslateY = useRef(new Animated.Value(20)).current;
 
   const isFormVisible = currentSessionData?.isFormVisible ?? true;
+  const rcKeyboardAware = useKeyboardAwareScroll();
+  const rcKeyboardPadding = useKeyboardPadding();
 
   const triggerToast = () => {
     setShowSuccessToast(true);
@@ -506,6 +523,10 @@ export function SessionRunningScreen({
         updateSessionProgress(effectiveSessionIdRef.current, `Exercício ${currentIndex + 2}/${total}`);
       }
     } else {
+      if (isTutorial) {
+        sim.complete("finish");
+        return;
+      }
       const pendentes = order.filter(
         (ex) =>
           historicoAtualizado[ex.id] !== "concluido" &&
@@ -531,7 +552,7 @@ export function SessionRunningScreen({
       <View className="flex-1 bg-level1">
         <Header variant="back" onPressBack={onPressBack} />
         <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-white text-base text-center font-medium">
+          <Text className="text-content text-base text-center font-medium">
             Não foi possível carregar os exercícios do circuito.
           </Text>
         </View>
@@ -551,7 +572,13 @@ export function SessionRunningScreen({
     setOrder(order.map((ex) => (isRealized(ex.id) ? ex : reordered[i++])));
   };
 
+  const handleBack = () => {
+    if (isTutorial) sim.complete("goBack");
+    onPressBack?.();
+  };
+
   const handleStart = async () => {
+    if (isTutorial) sim.complete("startExercise");
     setStage("running");
     const sid = await ensureSessionId();
     if (sid) {
@@ -562,6 +589,7 @@ export function SessionRunningScreen({
   };
 
   const handleStartAndRecord = async () => {
+    if (isTutorial) sim.complete("startExercise");
     setStage("running");
     const sid = await ensureSessionId();
     if (sid) {
@@ -587,6 +615,12 @@ export function SessionRunningScreen({
   const handleConfirmFinish = (motivo: string, descricao?: string) => {
     finalizeActiveCrise();
     finalizeActiveFuga();
+
+    if (isTutorial) {
+      setIsFinishOpen(false);
+      sim.complete("finish");
+      return;
+    }
 
     if (formRef.current) {
       formRef.current.handleSave(true, true);
@@ -618,8 +652,9 @@ export function SessionRunningScreen({
       <View className="flex-1 bg-level1">
         <Header
           variant={hasAdvanced ? "finish" : "back"}
-          onPressBack={onPressBack}
+          onPressBack={handleBack}
           onPressFinish={() => setIsFinishOpen(true)}
+          onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
         />
 
         <View className="flex-1">
@@ -636,14 +671,27 @@ export function SessionRunningScreen({
 
           <View className="mt-5 px-8">
             {stage === "ready" ? (
-              <StartActivity
-                title={currentExercise.name}
-                subtitle={currentExercise.description}
-                iconUrl={currentExercise.iconUrl}
-                onStart={handleStart}
-                onStartAndRecord={handleStartAndRecord}
-                onPressInfo={() => setIsReorderOpen(true)}
-              />
+              isTutorial ? (
+                <SpotlightTarget targetKey="startExercise">
+                  <StartActivity
+                    title={currentExercise.name}
+                    subtitle={currentExercise.description}
+                    iconUrl={currentExercise.iconUrl}
+                    onStart={handleStart}
+                    onStartAndRecord={handleStartAndRecord}
+                    onPressInfo={() => setIsReorderOpen(true)}
+                  />
+                </SpotlightTarget>
+              ) : (
+                <StartActivity
+                  title={currentExercise.name}
+                  subtitle={currentExercise.description}
+                  iconUrl={currentExercise.iconUrl}
+                  onStart={handleStart}
+                  onStartAndRecord={handleStartAndRecord}
+                  onPressInfo={() => setIsReorderOpen(true)}
+                />
+              )
             ) : (
               <Stopwatch
                 title={currentExercise.name}
@@ -673,9 +721,11 @@ export function SessionRunningScreen({
           </View>
 
           <ScrollView
+            {...rcKeyboardAware}
             className="mt-5 px-8"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 24 }}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 24 + rcKeyboardPadding }}
           >
             {!isMabc && rcFormId && (
               <View style={{ display: isFormVisible ? "flex" : "none" }}>
@@ -685,6 +735,8 @@ export function SessionRunningScreen({
                   sessaoId={effectiveSessionId}
                   alunoId={""}
                   hideAutoFilledSessionFields
+                  scrollable={false}
+                  mock={isTutorial}
                 />
               </View>
             )}
@@ -783,6 +835,19 @@ export function SessionRunningScreen({
             </Text>
           </Animated.View>
         )}
+
+        {isTutorial && (
+          <TutorialPracticeNotice
+            visible={noticeOpen}
+            onClose={() => setNoticeOpen(false)}
+            onExit={() => {
+              setNoticeOpen(false);
+              handleBack();
+            }}
+          />
+        )}
+
+        {isTutorial && <TutorialSpotlight />}
       </View>
     </>
   );

@@ -11,6 +11,12 @@ import { Header } from "@/components/header";
 import { ListCard } from "@/components/list-card";
 import { PageHeader } from "@/components/page-header";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import RangeCalendar from "@/components/range-calendar";
 import { parseLocalDate } from "@/lib/date-utils";
 
@@ -20,8 +26,15 @@ import { parseLocalDate } from "@/lib/date-utils";
  */
 export default function HistoryDetailsScreen() {
   const { studentId } = useLocalSearchParams();
+  const { t } = useI18n();
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "history";
+  const sim = useTutorialSimulation();
+  const [noticeOpen, setNoticeOpen] = useState(false);
+
   const { sessions, profile, isLoading, refetch } = useStudentSessions(
     studentId as string,
+    { mock: isTutorial },
   );
 
   useFocusEffect(useCallback(() => { refetch(); }, [refetch]));
@@ -92,12 +105,16 @@ export default function HistoryDetailsScreen() {
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" onPressBack={() => router.back()} />
+      <Header
+        variant="back"
+        onPressBack={() => router.back()}
+        onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+      />
 
       <View className="mx-8 mt-5">
         <PageHeader
-          title={profile ? `Histórico - ${profile.name}` : "Carregando..."}
-          subtitle={`${filteredSessions.length} registros`}
+          title={profile ? t("history.detailTitle").replace("{name}", profile.name) : t("common.loading")}
+          subtitle={`${filteredSessions.length} ${t("history.recordsSuffix")}`}
           mode={"sessoes"}
           onCalendarPress={() => setShowDatePicker(true)}
         />
@@ -107,7 +124,7 @@ export default function HistoryDetailsScreen() {
         <View className="mx-8 mt-3 flex-row items-center justify-between bg-level2 p-3 rounded-xl border border-outline">
           <Text className="text-default-2 text-muted">
             Filtrado por:{" "}
-            <Text className="text-white font-semibold">
+            <Text className="text-content font-semibold">
               {selectedDate.toLocaleDateString("pt-BR")}
             </Text>
           </Text>
@@ -145,7 +162,7 @@ export default function HistoryDetailsScreen() {
             renderItem={({ item }) => {
               const { iconColor, bgColor, IconComponent, subtitle } = getCardVisuals(item);
 
-              return (
+              const card = (
                 <ListCard
                   title={item.title}
                   subtitle={subtitle}
@@ -160,6 +177,9 @@ export default function HistoryDetailsScreen() {
                   icon={<IconComponent size={22} color={iconColor} />}
                   iconBgColor={bgColor}
                   onPress={() => {
+                    if (isTutorial && item.type === "form") {
+                      sim.complete("openRecord");
+                    }
                     if (item.isResumable) {
                       router.push({
                         pathname: "/session/structured",
@@ -216,6 +236,12 @@ export default function HistoryDetailsScreen() {
                   rightAction="chevron"
                 />
               );
+
+              return isTutorial && item.id === "mock-rc-form" ? (
+                <SpotlightTarget targetKey="openRecord">{card}</SpotlightTarget>
+              ) : (
+                card
+              );
             }}
           />
         </View>
@@ -234,11 +260,23 @@ export default function HistoryDetailsScreen() {
             className="mt-4 items-center"
             onPress={() => setShowDatePicker(false)}
           >
-            <Text className="text-white font-bold">Fechar</Text>
+            <Text className="text-content font-bold">Fechar</Text>
           </Pressable>
         </View>
       )}
 
+      {isTutorial && (
+        <TutorialPracticeNotice
+          visible={noticeOpen}
+          onClose={() => setNoticeOpen(false)}
+          onExit={() => {
+            setNoticeOpen(false);
+            router.back();
+          }}
+        />
+      )}
+
+      {isTutorial && <TutorialSpotlight />}
     </View>
   );
 }
