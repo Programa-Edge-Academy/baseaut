@@ -2,8 +2,9 @@ import { colors } from "@/assets/colors";
 import { CardMenu } from "@/components/card-menu";
 import { withOpacity } from "@/components/color-opacity";
 import { RipplePressable } from "@/components/ripple-pressable";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { ChevronRight, MoreVertical } from "lucide-react-native";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 /** Trailing affordance rendered on the right side of a {@link ListCard}. */
@@ -40,6 +41,16 @@ export type ListCardProps = {
   editLabel?: string;
   /** Uses {@link RipplePressable} instead of {@link Pressable}. Defaults to false. */
   enableRipple?: boolean;
+  /** Tutorial spotlight keys registered on the "more" (⋮) button. */
+  moreButtonSpotlightKeys?: string[];
+  /** Tutorial spotlight key for the menu's edit item. */
+  editSpotlightKey?: string;
+  /** Tutorial spotlight key for the menu's duplicate item. */
+  duplicateSpotlightKey?: string;
+  /** Tutorial spotlight key for the menu's delete item. */
+  deleteSpotlightKey?: string;
+  /** Called when the context menu opens (used by the tutorial to advance). */
+  onMenuOpen?: () => void;
 };
 
 /**
@@ -64,17 +75,30 @@ export function ListCard({
   showDuplicate = false,
   editLabel,
   enableRipple = false,
+  moreButtonSpotlightKeys,
+  editSpotlightKey,
+  duplicateSpotlightKey,
+  deleteSpotlightKey,
+  onMenuOpen,
 }: ListCardProps) {
   const [menuVisible, setMenuVisible] = useState(false);
   const buttonRef = useRef<View>(null);
   const [menuLayout, setMenuLayout] = useState({ top: 0, left: 0, width: 0 });
   const hasMenuOptions = !!(onEdit || onDelete || onDuplicate);
+  const sim = useTutorialSimulation();
+
+  useEffect(() => {
+    if (!moreButtonSpotlightKeys?.length) return;
+    sim.registerTarget(moreButtonSpotlightKeys, buttonRef, { rounded: true });
+    return () => sim.unregisterTarget(moreButtonSpotlightKeys);
+  }, [moreButtonSpotlightKeys, sim]);
 
   const handleMorePress = () => {
     if (hasMenuOptions) {
       buttonRef.current?.measure((x, y, width, height, pageX, pageY) => {
         setMenuLayout({ top: pageY - height / 2, left: pageX, width });
         setMenuVisible(true);
+        onMenuOpen?.();
       });
     }
   };
@@ -136,7 +160,7 @@ export function ListCard({
       <View className="flex-1 flex-col justify-center pr-2">
         <View className="flex-row items-center">
           <Text
-            className="text-base font-medium text-white flex-shrink"
+            className="text-base font-medium text-content flex-shrink"
             style={pendencyAlert ? { color: colors.extra } : undefined}
             numberOfLines={1}
           >
@@ -176,6 +200,9 @@ export function ListCard({
             onEdit={onEdit}
             onDuplicate={onDuplicate}
             onDelete={onDelete}
+            editSpotlightKey={editSpotlightKey}
+            duplicateSpotlightKey={duplicateSpotlightKey}
+            deleteSpotlightKey={deleteSpotlightKey}
           />
         )}
       </View>

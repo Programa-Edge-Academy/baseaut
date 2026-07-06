@@ -18,7 +18,7 @@ function fmtComponentTitle(raw: string): string {
 function ScoreBadge({ label }: { label: string }) {
   return (
     <View className="bg-level1 border border-outline rounded-lg px-3 py-1">
-      <Text className="text-xs text-white font-bold">{label}</Text>
+      <Text className="text-xs text-content font-bold">{label}</Text>
     </View>
   );
 }
@@ -27,7 +27,7 @@ function ScoreBadge({ label }: { label: string }) {
 function SectionRow({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-center justify-between py-2.5 border-b border-outline">
-      <Text className="text-xs text-white flex-1 mr-3" numberOfLines={2}>{label}</Text>
+      <Text className="text-xs text-content flex-1 mr-3" numberOfLines={2}>{label}</Text>
       <ScoreBadge label={value} />
     </View>
   );
@@ -72,7 +72,7 @@ export function ProtocolRecordView({
     return (
       <View className="border border-outline rounded-lg bg-level2 p-4 mb-3">
         <View className="flex-row items-center justify-between mb-2">
-          <Text className="text-sm font-bold text-white">ATA — {dateLabel}</Text>
+          <Text className="text-sm font-bold text-content">ATA — {dateLabel}</Text>
           {detail.ata.total != null && <ScoreBadge label={`Total: ${detail.ata.total}`} />}
         </View>
         {responsavel && <Text className="text-xs text-muted mb-2">Responsável: {responsavel}</Text>}
@@ -92,7 +92,7 @@ export function ProtocolRecordView({
     return (
       <View className="border border-outline rounded-lg bg-level2 p-4 mb-3">
         <View className="flex-row items-center justify-between mb-2">
-          <Text className="text-sm font-bold text-white">CARS — {dateLabel}</Text>
+          <Text className="text-sm font-bold text-content">CARS — {dateLabel}</Text>
           {detail.cars.total != null && <ScoreBadge label={`Total: ${detail.cars.total}`} />}
         </View>
         {responsavel && <Text className="text-xs text-muted mb-2">Responsável: {responsavel}</Text>}
@@ -117,7 +117,7 @@ export function ProtocolRecordView({
     return (
       <View className="border border-outline rounded-lg bg-level2 p-4 mb-3">
         <View className="mb-3">
-          <Text className="text-sm font-bold text-white">MABC-2 — {dateLabel}</Text>
+          <Text className="text-sm font-bold text-content">MABC-2 — {dateLabel}</Text>
           {m.evaluatorName && <Text className="text-xs text-muted mt-0.5">Avaliador: {m.evaluatorName}</Text>}
           {m.ageGroupLabel && <Text className="text-xs text-muted">Faixa etária: {m.ageGroupLabel}</Text>}
         </View>
@@ -126,13 +126,13 @@ export function ProtocolRecordView({
           {m.totalScore != null && (
             <View className="flex-1 bg-level1 border border-outline rounded-lg py-2 items-center">
               <Text className="text-[10px] text-muted">Escore total</Text>
-              <Text className="text-base text-white font-bold">{m.totalScore}</Text>
+              <Text className="text-base text-content font-bold">{m.totalScore}</Text>
             </View>
           )}
           {m.totalPercentile != null && (
             <View className="flex-1 bg-level1 border border-outline rounded-lg py-2 items-center">
               <Text className="text-[10px] text-muted">Percentil</Text>
-              <Text className="text-base text-white font-bold">{m.totalPercentile}</Text>
+              <Text className="text-base text-content font-bold">{m.totalPercentile}</Text>
             </View>
           )}
         </View>
@@ -140,18 +140,18 @@ export function ProtocolRecordView({
         {m.components.map((comp, ci) => (
           <View key={ci} className="mb-4">
             <View className="flex-row items-center justify-between mb-2 pb-1.5 border-b border-outline">
-              <Text className="text-sm font-bold text-white">{fmtComponentTitle(comp.title)}</Text>
+              <Text className="text-sm font-bold text-content">{fmtComponentTitle(comp.title)}</Text>
               <View className="flex-row gap-2">
                 {comp.categoryScore != null && (
                   <View className="bg-level1 border border-outline rounded-lg px-2.5 py-1 items-center">
                     <Text className="text-[9px] text-muted">Escore padrão</Text>
-                    <Text className="text-xs text-white font-bold">{comp.categoryScore}</Text>
+                    <Text className="text-xs text-content font-bold">{comp.categoryScore}</Text>
                   </View>
                 )}
                 {comp.categoryPercentile && (
                   <View className="bg-level1 border border-outline rounded-lg px-2.5 py-1 items-center">
                     <Text className="text-[9px] text-muted">Percentil</Text>
-                    <Text className="text-xs text-white font-bold">{comp.categoryPercentile}</Text>
+                    <Text className="text-xs text-content font-bold">{comp.categoryPercentile}</Text>
                   </View>
                 )}
               </View>
@@ -159,7 +159,7 @@ export function ProtocolRecordView({
 
             {comp.items.map((item) => (
               <View key={item.id} className="flex-row items-center justify-between py-2 border-b border-outline/40">
-                <Text className="text-[11px] text-white flex-1 mr-3" numberOfLines={2}>{item.name}</Text>
+                <Text className="text-[11px] text-content flex-1 mr-3" numberOfLines={2}>{item.name}</Text>
                 <Text className="text-[11px] text-muted min-w-[40px] text-right">{item.rawScore}</Text>
               </View>
             ))}

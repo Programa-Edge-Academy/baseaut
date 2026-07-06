@@ -197,7 +197,7 @@ export function SessionCompletedScreen({
           <View className="flex-1 bg-black/60 justify-center items-center px-4">
             <View className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[600px] overflow-hidden">
               <View className="flex-row justify-between items-center p-5 border-b border-outline/30">
-                <Text className="text-white text-header-2">
+                <Text className="text-content text-header-2">
                   Repetir exercícios
                 </Text>
                 <Pressable
@@ -241,7 +241,7 @@ export function SessionCompletedScreen({
           <View className="flex-1 bg-black/60 justify-center items-center px-4">
             <View className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[600px] overflow-hidden">
               <View className="flex-row justify-between items-center p-5 border-b border-outline/30">
-                <Text className="text-white text-header-2">
+                <Text className="text-content text-header-2">
                   Realizar outro exercício
                 </Text>
                 <Pressable

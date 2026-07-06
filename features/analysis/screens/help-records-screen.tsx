@@ -3,9 +3,14 @@ import { DefaultButton } from "@/components/default-button";
 import { Header } from "@/components/header";
 import RangeCalendar from "@/components/range-calendar";
 import { HelpRecordsBarChart } from "@/features/analysis/components/help-records-bar-chart";
+import { HelpRecordsDetailModal } from "@/features/analysis/components/help-records-detail-modal";
 import PeriodSelector from "@/features/analysis/components/period-selector";
 import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useHelpRecords } from "../hooks/use-help-records";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { BarChart3 } from "lucide-react-native";
 import React, { useState } from "react";
@@ -19,25 +24,23 @@ import {
   View,
 } from "react-native";
 
-const months = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
+/** Month names per supported locale, used to format "DD Month YYYY". */
+const MONTHS: Record<string, string[]> = {
+  pt: [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+  ],
+  en: [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ],
+};
 
-/** Formats a "YYYY-MM-DD" date as "DD Month YYYY" in Portuguese. */
-function formatDate(date: string) {
+/** Formats a "YYYY-MM-DD" date as "DD Month YYYY" in the given locale. */
+function formatDate(date: string, locale: string) {
   const parsedDate = new Date(`${date}T00:00:00`);
   const day = String(parsedDate.getDate()).padStart(2, "0");
+  const months = MONTHS[locale] ?? MONTHS.pt;
   const month = months[parsedDate.getMonth()];
   const year = parsedDate.getFullYear();
 
@@ -55,6 +58,7 @@ function normalizeParam(value: string | string[] | undefined) {
 
 /** Empty state shown when there are no help records for the period. */
 function EmptyHelpRecordsState() {
+  const { t } = useI18n();
   return (
     <View style={styles.stateCard}>
       <View style={styles.stateIconContainer}>
@@ -62,8 +66,7 @@ function EmptyHelpRecordsState() {
       </View>
 
       <Text style={styles.emptyText}>
-        Ainda não há registros suficientes para visualizar{"\n"}
-        a evolução dos registros de ajuda.
+        {t("analysis.helpScreen.emptyText")}
       </Text>
     </View>
   );
@@ -71,6 +74,7 @@ function EmptyHelpRecordsState() {
 
 /** Error state shown when help records fail to load. */
 function ErrorHelpRecordsState() {
+  const { t } = useI18n();
   return (
     <View style={styles.stateCard}>
       <View style={styles.stateIconContainer}>
@@ -78,13 +82,11 @@ function ErrorHelpRecordsState() {
       </View>
 
       <Text style={styles.errorTitle}>
-        Não foi possível carregar a evolução dos{"\n"}
-        registros de ajuda. Tente novamente.
+        {t("analysis.helpScreen.errorTitle")}
       </Text>
 
       <Text style={styles.errorDescription}>
-        Verifique sua conexão ou tente acessar{"\n"}
-        os dados novamente mais tarde.
+        {t("analysis.helpScreen.errorDesc")}
       </Text>
     </View>
   );
@@ -96,6 +98,7 @@ function ErrorHelpRecordsState() {
  */
 export function HelpRecordsScreen() {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const params = useLocalSearchParams();
 
   const studentId = normalizeParam(
@@ -106,7 +109,11 @@ export function HelpRecordsScreen() {
     params.studentName as string | string[] | undefined
   );
 
-  const { profile, isLoading: isProfileLoading } = useStudentProfile(studentId as string);
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const [noticeOpen, setNoticeOpen] = useState(false);
+
+  const { profile, isLoading: isProfileLoading } = useStudentProfile(studentId as string, { mock: isTutorial });
 
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -123,7 +130,7 @@ export function HelpRecordsScreen() {
     records: helpRecords,
     isLoading: isHelpLoading,
     error: helpError,
-  } = useHelpRecords(studentId, startDate, endDate);
+  } = useHelpRecords(studentId, startDate, endDate, { mock: isTutorial });
 
   const isLoading = isProfileLoading || isHelpLoading;
 
@@ -133,12 +140,12 @@ export function HelpRecordsScreen() {
     (profile as any)?.nome ||
     (profile as any)?.studentName ||
     (profile as any)?.student_name ||
-    "Aluno";
+    t("common.student");
 
   const periodLabel =
     startDate && endDate
-      ? `${formatDate(startDate)} - ${formatDate(endDate)}`
-      : "Selecione o período para visualizar os registros de ajuda";
+      ? `${formatDate(startDate, locale)} - ${formatDate(endDate, locale)}`
+      : t("analysis.helpScreen.selectPeriod");
 
   const selectedPeriodHasError = Boolean(helpError);
 
@@ -167,7 +174,11 @@ export function HelpRecordsScreen() {
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" onPressBack={() => router.back()} />
+      <Header
+        variant="back"
+        onPressBack={() => router.back()}
+        onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+      />
 
       <ScrollView
         className="flex-1"
@@ -180,14 +191,14 @@ export function HelpRecordsScreen() {
         ) : (
           <View className="mt-5">
             <Text
-              className="text-xl font-bold text-white"
+              className="text-xl font-bold text-content"
               style={{
                 marginHorizontal: 22,
                 marginBottom: 16,
                 fontFamily: "Inter-Bold",
               }}
             >
-              Registros de ajuda - {studentName}
+              {t("analysis.helpScreen.title")} - {studentName}
             </Text>
 
             <PeriodSelector label={periodLabel} onPress={openCalendar} />
@@ -207,6 +218,11 @@ export function HelpRecordsScreen() {
             {hasSelectedPeriod && !selectedPeriodHasError && hasRecords && (
               <View style={styles.chartWrapper}>
                 <HelpRecordsBarChart sessions={helpRecords} />
+                <HelpRecordsDetailModal
+                  studentId={studentId}
+                  startDate={startDate}
+                  endDate={endDate}
+                />
               </View>
             )}
           </View>
@@ -236,7 +252,7 @@ export function HelpRecordsScreen() {
 
             <View className="items-center">
               <DefaultButton
-                label="Salvar"
+                label={t("common.save")}
                 sizeClass="w-full h-11"
                 disabled={!canSavePeriod}
                 style={{ opacity: !canSavePeriod ? 0.5 : 1 }}
@@ -246,6 +262,16 @@ export function HelpRecordsScreen() {
           </Pressable>
         </Pressable>
       </AppModal>
+
+      {isTutorial && (
+        <TutorialPracticeNotice
+          visible={noticeOpen}
+          onClose={() => setNoticeOpen(false)}
+          onExit={() => { setNoticeOpen(false); router.back(); }}
+        />
+      )}
+
+      {isTutorial && <TutorialSpotlight />}
     </View>
   );
 }

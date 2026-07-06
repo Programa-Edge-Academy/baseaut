@@ -45,7 +45,7 @@ export function PasswordInput({
       style={containerStyle}
     >
       <TextInput
-        className={`flex-1 pr-10 text-default-2 leading-5 text-white rounded-[15px] py-2.5 px-3.5`}
+        className={`flex-1 pr-10 text-default-2 leading-5 text-content rounded-[15px] py-2.5 px-3.5`}
         placeholderTextColor={colors.placeholder}
         secureTextEntry={!isPasswordVisible}
         style={inputStyle}

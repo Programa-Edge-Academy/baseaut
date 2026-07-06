@@ -22,12 +22,33 @@ function formatSupportLevel(level: string | null): string | null {
   return level;
 }
 
-/** Loads a student's profile by id, returning it with a loading flag. */
-export function useStudentProfile(studentId?: string) {
-  const [profile, setProfile] = useState<StudentProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+/** Seed profile for the tutorial's mock analysis screens. */
+const MOCK_PROFILE: StudentProfile = {
+  name: "Ana Beatriz",
+  avatarUrl: null,
+  height: 122,
+  weight: 28,
+  waist: 54,
+  birthDate: "2017-03-12",
+  supportLevel: "Nível 2",
+  observations: null,
+};
+
+/**
+ * Loads a student's profile by id, returning it with a loading flag.
+ *
+ * @param options - Pass `{ mock: true }` (tutorial only) for a seeded profile.
+ */
+export function useStudentProfile(studentId?: string, options?: { mock?: boolean }) {
+  const isMock = options?.mock ?? false;
+  const [profile, setProfile] = useState<StudentProfile | null>(isMock ? MOCK_PROFILE : null);
+  const [isLoading, setIsLoading] = useState(!isMock);
 
   useEffect(() => {
+    if (isMock) {
+      setIsLoading(false);
+      return;
+    }
     if (!studentId) {
       setIsLoading(false);
       return;
@@ -65,7 +86,7 @@ export function useStudentProfile(studentId?: string) {
 
     load();
     return () => { cancelled = true; };
-  }, [studentId]);
+  }, [studentId, isMock]);
 
   return { profile, isLoading };
 }

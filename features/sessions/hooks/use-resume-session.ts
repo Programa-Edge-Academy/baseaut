@@ -18,6 +18,12 @@ export function useResumeSession(sessaoId: string | null) {
 
   useEffect(() => {
     if (!sessaoId) return;
+    // Tutorial mock sessions have no persisted executions to resume.
+    if (sessaoId.startsWith("mock-")) {
+      setData({ executions: [] });
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
 
     supabase

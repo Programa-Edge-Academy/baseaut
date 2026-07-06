@@ -1,4 +1,6 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TranslationKey } from "@/features/settings/constants/translations";
 import {
     ArrowDownCircle,
     ArrowUpCircle,
@@ -40,16 +42,13 @@ const levelStyles: Record<
     inicial: { backgroundColor: "#3A1620", borderColor: colors.error },
 };
 
-/** Returns the badge label for a level, falling back to its default name. */
-function getBadgeLabel(label: string | undefined, status: DevelopmentLevel) {
-    return (
-        label ??
-        (status === "maduro"
-            ? "Maduro"
-            : status === "intermediario"
-                ? "Intermediário"
-                : "Inicial")
-    );
+/** Returns the badge label for a level, falling back to its translated name. */
+function getBadgeLabel(
+    label: string | undefined,
+    status: DevelopmentLevel,
+    t: (key: TranslationKey) => string,
+) {
+    return label ?? t(`analysis.level.${status}`);
 }
 
 /** Resolves the icon, color, and label describing the level change. */
@@ -104,6 +103,7 @@ export function AnalysisMaturityCard({
     variacaoNivel,
     className,
 }: AnalysisMaturityCardProps) {
+    const { t } = useI18n();
 
     const changeData = getChangeData(exercise, variacaoNivel);
 
@@ -116,7 +116,7 @@ export function AnalysisMaturityCard({
             <View className="flex-row items-center">
 
                 <View style={{ flex: 2.2, paddingRight: 8 }}>
-                    <Text numberOfLines={2} className="text-white text-xs font-medium">
+                    <Text numberOfLines={2} className="text-content text-xs font-medium">
                         {exercise}
                     </Text>
                 </View>
@@ -130,8 +130,8 @@ export function AnalysisMaturityCard({
                                 borderColor: levelStyles[previous.status].borderColor,
                             }}
                         >
-                            <Text numberOfLines={1} className="text-[10px] text-white">
-                                {getBadgeLabel(previous.label, previous.status)}
+                            <Text numberOfLines={1} className="text-[10px] text-content">
+                                {getBadgeLabel(previous.label, previous.status, t)}
                             </Text>
                         </View>
                     ) : (
@@ -148,8 +148,8 @@ export function AnalysisMaturityCard({
                                 borderColor: levelStyles[current.status].borderColor,
                             }}
                         >
-                            <Text numberOfLines={1} className="text-[10px] text-white">
-                                {getBadgeLabel(current.label, current.status)}
+                            <Text numberOfLines={1} className="text-[10px] text-content">
+                                {getBadgeLabel(current.label, current.status, t)}
                             </Text>
                         </View>
                     ) : (

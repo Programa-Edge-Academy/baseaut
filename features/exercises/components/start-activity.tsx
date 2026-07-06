@@ -49,7 +49,7 @@ export function StartActivity({
     >
       <View className="flex-row items-start justify-between">
         <View className="flex-1 pr-3">
-          <Text className="text-header-3 text-white" numberOfLines={1}>
+          <Text className="text-header-3 text-content" numberOfLines={1}>
             {title}
           </Text>
           <Text className="mt-1 text-default-2 text-muted" numberOfLines={2}>
@@ -102,7 +102,7 @@ export function StartActivity({
           bgColorClass="bg-primary"
           shadowClass="shadow-primaryShadow"
           sizeClass="flex-1 h-11"
-          textClassName="text-white"
+          textClassName="text-content"
         />
       </View>
     </View>

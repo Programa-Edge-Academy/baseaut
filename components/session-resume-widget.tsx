@@ -79,7 +79,7 @@ export function SessionResumeWidget({
         onPress={onPress}
         className="flex-1 justify-center active:opacity-70 py-1"
       >
-        <Text className="text-white text-[16px] font-medium leading-[20px] mb-0.5" numberOfLines={1}>
+        <Text className="text-content text-[16px] font-medium leading-[20px] mb-0.5" numberOfLines={1}>
           {studentName}
         </Text>
         <Text className="text-muted text-[14px] font-medium leading-[20px]" numberOfLines={1}>

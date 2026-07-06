@@ -3,6 +3,8 @@ import { ConfirmationModal } from "@/components/confirmation-modal";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { FormComponent } from "@/features/forms/components/form-component";
+import { useKeyboardAwareScroll } from "@/lib/use-keyboard-aware-scroll";
+import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
 import { supabase } from "@/lib/supabase";
 import {
   ActivityResultModal,
@@ -248,6 +250,8 @@ export function SessionRunningSemiStructuredScreen({
   const resolvedSid = sessionId || effectiveSessionIdRef.current || "";
   const currentSessionData = activeSessions[resolvedSid];
   const isFormVisible = currentSessionData?.isFormVisible ?? true;
+  const rcKeyboardAware = useKeyboardAwareScroll();
+  const rcKeyboardPadding = useKeyboardPadding();
   const [activeExercise, setActiveExercise] = useState<SessionExercise | null>(() => {
     if (!currentSessionData?.activeExerciseId) return null;
     return exercises.find((e) => e.id === currentSessionData.activeExerciseId) ?? null;
@@ -486,7 +490,7 @@ export function SessionRunningSemiStructuredScreen({
           onPressBack={() => router.replace("/students")}
         />
         <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-white text-base text-center font-medium">
+          <Text className="text-content text-base text-center font-medium">
             Não foi possível carregar os exercícios do circuito.
           </Text>
         </View>
@@ -584,7 +588,7 @@ export function SessionRunningSemiStructuredScreen({
         <View className="mx-5 rounded-2xl bg-level1 border border-primary p-5">
           <View className="flex-row items-center justify-between gap-4 pb-5 mb-5 border-b border-outline">
             <View className="flex-1 space-y-1">
-              <Text className="text-white text-base font-medium leading-5">
+              <Text className="text-content text-base font-medium leading-5">
                 Selecione o próximo exercício
               </Text>
               <Text className="text-muted text-sm font-medium leading-5">
@@ -645,7 +649,7 @@ export function SessionRunningSemiStructuredScreen({
                           ? "text-[#34C759]"
                           : isNaoRealizada
                             ? "text-error"
-                            : "text-white"
+                            : "text-content"
                       }`}
                     >
                       {exercise.name}
@@ -699,8 +703,10 @@ export function SessionRunningSemiStructuredScreen({
         {renderExecutionView()}
 
         <ScrollView
+          {...rcKeyboardAware}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 40 + rcKeyboardPadding }}
         >
           {!activeExercise && renderListView()}
 
@@ -715,6 +721,7 @@ export function SessionRunningSemiStructuredScreen({
                 sessaoId={effectiveSessionId}
                 alunoId={""}
                 hideAutoFilledSessionFields
+                scrollable={false}
               />
             </View>
           )}

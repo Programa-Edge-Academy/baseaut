@@ -13,11 +13,20 @@ import {
 } from "@/features/analysis/hooks/use-mabc2-records";
 import { Mabc2RecordFormScreen } from "@/features/analysis/screens/mabc2-record-form-screen";
 import { exportMabc } from "@/features/analysis/utils/export-mabc";
+import type { TranslationKey } from "@/features/settings/constants/translations";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, Text, View } from "react-native";
 
 type ScreenMode = "create" | "view" | "edit";
+
+/** Maps a MABC-2 section id to its translation key for localized titles. */
+const SECTION_TITLE_KEYS: Record<string, TranslationKey> = {
+  destreza_manual: "analysis.mabcSection.manualDexterity",
+  pontaria: "analysis.mabcSection.aimingCatching",
+  equilibrio: "analysis.mabcSection.balance",
+};
 
 /** Parses a user-entered string into a finite number, accepting commas as decimal separators. Returns null when empty or invalid. */
 function parseNumber(value: string) {
@@ -41,9 +50,10 @@ export default function Mabc2RecordFormRoute() {
     recordId?: string;
   }>();
 
+  const { t, locale } = useI18n();
   const currentMode = mode ?? "create";
   const currentStudentId = studentId ?? "";
-  const currentStudentName = studentName ?? "Aluno";
+  const currentStudentName = studentName ?? t("common.student");
   const currentRecordId = recordId ?? "";
 
   const navigation = useNavigation();
@@ -102,7 +112,7 @@ export default function Mabc2RecordFormRoute() {
           if (isAbortedRef.current) return;
           setDraft(existing);
         } else {
-          throw new Error("Registro não informado.");
+          throw new Error(t("mabcForm.recordNotProvided"));
         }
       } catch {
         if (isAbortedRef.current) return;
@@ -110,8 +120,8 @@ export default function Mabc2RecordFormRoute() {
         setToastConfig({
           visible: true,
           mode: "error",
-          title: "Não foi possível carregar os dados de desenvolvimento motor.",
-          description: "Tente novamente",
+          title: t("mabcForm.loadError"),
+          description: t("common.retry"),
         });
       } finally {
         if (!isAbortedRef.current) {
@@ -162,6 +172,9 @@ export default function Mabc2RecordFormRoute() {
 
     return draft.sections.map((section, sectionIndex) => ({
       ...section,
+      title: section.id && SECTION_TITLE_KEYS[section.id]
+        ? t(SECTION_TITLE_KEYS[section.id])
+        : section.title,
       onChangeCategoryScore: (value) => {
         setIsDirty(true);
         setDraft((current) =>
@@ -248,7 +261,7 @@ export default function Mabc2RecordFormRoute() {
         },
       })),
     }));
-  }, [draft]);
+  }, [draft, t]);
 
   const recordCount = draft?.sections.length ?? 0;
 
@@ -277,7 +290,7 @@ export default function Mabc2RecordFormRoute() {
       setToastConfig({
         visible: true,
         mode: "error",
-        title: `Preencha os campos obrigatórios para ${currentMode === "edit" ? "salvar" : "registrar"} a avaliação`,
+        title: currentMode === "edit" ? t("mabcForm.fillRequiredSave") : t("mabcForm.fillRequiredCreate"),
       });
       return;
     }
@@ -294,8 +307,8 @@ export default function Mabc2RecordFormRoute() {
           studentName: currentStudentName,
           toastSuccess:
             currentMode === "edit"
-              ? "Registro editado com sucesso"
-              : "Registro salvo com sucesso",
+              ? t("mabcForm.editedSuccess")
+              : t("mabcForm.savedSuccess"),
         },
       } as any);
     } catch {
@@ -305,9 +318,9 @@ export default function Mabc2RecordFormRoute() {
         mode: "error",
         title:
           currentMode === "edit"
-            ? "Não foi possível editar o registro."
-            : "Não foi possível salvar o registro.",
-        description: "Tente novamente",
+            ? t("mabcForm.editError")
+            : t("mabcForm.saveError"),
+        description: t("common.retry"),
       });
     }
   }
@@ -320,13 +333,13 @@ export default function Mabc2RecordFormRoute() {
     setIsFormatPickerOpen(false);
     setIsExporting(true);
     try {
-      await exportMabc(draft, formats, currentStudentName, deliveryMode);
-      setToastConfig({ visible: true, mode: "success", title: "Exportado com sucesso" });
+      await exportMabc(draft, formats, currentStudentName, deliveryMode, t, locale);
+      setToastConfig({ visible: true, mode: "success", title: t("common.exportedSuccess") });
     } catch (err: any) {
       setToastConfig({
         visible: true,
         mode: "error",
-        title: "Erro ao exportar",
+        title: t("common.exportError"),
         description: err?.message,
       });
     } finally {
@@ -348,8 +361,8 @@ export default function Mabc2RecordFormRoute() {
       setToastConfig({
         visible: true,
         mode: "error",
-        title: "Não foi possível excluir o registro.",
-        description: "Tente novamente",
+        title: t("mabcForm.deleteError"),
+        description: t("common.retry"),
       });
     }
   }
@@ -394,7 +407,7 @@ export default function Mabc2RecordFormRoute() {
         sections={sections}
         readOnly={currentMode === "view"}
         showErrors={showErrors}
-        submitLabel={currentMode === "edit" ? "Salvar" : "Registrar"}
+        submitLabel={currentMode === "edit" ? t("common.save") : t("common.register")}
         toastConfig={toastConfig}
         onHideToast={() => setToastConfig((prev) => ({ ...prev, visible: false }))}
         onChangeTotalScore={(value) => {
@@ -436,10 +449,10 @@ export default function Mabc2RecordFormRoute() {
           setIsExitModalVisible(false);
           handleDiscardAndLeave(exitAction);
         }}
-        title="Você tem certeza que deseja sair?"
-        message="Os dados preenchidos serão perdidos."
-        confirmLabel="Sair"
-        cancelLabel="Cancelar"
+        title={t("mabcForm.exitTitle")}
+        message={t("mabcForm.exitMessage")}
+        confirmLabel={t("common.exit")}
+        cancelLabel={t("common.cancel")}
         iconType="alert"
       />
 
@@ -474,6 +487,7 @@ function MabcFormatPicker({
   onExport: (f: { pdf: boolean; csv: boolean }, mode: "share" | "download") => void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const [pdf, setPdf] = useState(true);
   const [csv, setCsv] = useState(false);
 
@@ -491,7 +505,7 @@ function MabcFormatPicker({
       onPress={(e) => e.stopPropagation()}
     >
       <Text style={{ color: "#fff", fontSize: 18, fontFamily: "Inter-Bold" }}>
-        Selecionar formato
+        {t("mabcForm.selectFormat")}
       </Text>
 
       <View style={{ gap: 12 }}>
@@ -520,14 +534,14 @@ function MabcFormatPicker({
           >
             {csv && <Text style={{ color: "#fff", fontSize: 12, fontWeight: "bold" }}>✓</Text>}
           </View>
-          <Text style={{ color: "#fff", fontSize: 15, fontFamily: "Inter-Medium" }}>CSV (dados tabulares)</Text>
+          <Text style={{ color: "#fff", fontSize: 15, fontFamily: "Inter-Medium" }}>{t("mabcForm.csvTabular")}</Text>
         </Pressable>
       </View>
 
       <View style={{ gap: 12 }}>
         <View style={{ flexDirection: "row", gap: 12 }}>
           <DefaultButton
-            label="Cancelar"
+            label={t("common.cancel")}
             onPress={onClose}
             bgColorClass="bg-level1"
             shadowClass=""
@@ -536,7 +550,7 @@ function MabcFormatPicker({
             textClassName="text-muted"
           />
           <DefaultButton
-            label="Exportar"
+            label={t("common.export")}
             onPress={() => onExport({ pdf, csv }, "share")}
             sizeClass="flex-1 h-11"
             bgColorClass="bg-primary"
@@ -546,13 +560,13 @@ function MabcFormatPicker({
 
         {Platform.OS === "android" && (
           <DefaultButton
-            label="Baixar"
+            label={t("common.download")}
             onPress={() => onExport({ pdf, csv }, "download")}
             sizeClass="w-full h-11"
             bgColorClass="bg-secondary"
             hasShadow={false}
             className="border border-secondary"
-            textClassName="text-white"
+            textClassName="text-content"
           />
         )}
       </View>

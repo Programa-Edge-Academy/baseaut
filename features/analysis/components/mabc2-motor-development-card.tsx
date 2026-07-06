@@ -1,5 +1,6 @@
 import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { ClipboardList, Dumbbell } from "lucide-react-native";
 import React, { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
@@ -42,11 +43,14 @@ export function Mabc2MotorDevelopmentCard({
   onRegister,
   readOnly = false,
   showErrors = false,
-  submitLabel = "Registrar",
+  submitLabel,
   className,
   testID,
-  accessibilityLabel = "Desenvolvimento motor",
+  accessibilityLabel,
 }: Mabc2MotorDevelopmentCardProps) {
+  const { t } = useI18n();
+  const resolvedSubmitLabel = submitLabel ?? t("common.register");
+  const resolvedAccessibilityLabel = accessibilityLabel ?? t("analysis.motorDev");
   const [viewFilter, setViewFilter] = useState<Mabc2ViewFilter>(null);
 
   const isRecordsSelected = viewFilter === "records";
@@ -64,11 +68,11 @@ export function Mabc2MotorDevelopmentCard({
   return (
     <View
       testID={testID}
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={resolvedAccessibilityLabel}
       className={`w-full gap-4 rounded-xl border border-outline bg-level2 p-4 ${className ?? ""}`}
     >
-      <Text className="text-base font-bold text-white">
-        Desenvolvimento motor
+      <Text className="text-base font-bold text-content">
+        {t("analysis.motorDev")}
       </Text>
 
       <View className="flex-row gap-2.5">
@@ -76,7 +80,7 @@ export function Mabc2MotorDevelopmentCard({
           testID={testID ? `${testID}-records-button` : undefined}
           accessibilityRole="button"
           accessibilityState={{ selected: isRecordsSelected }}
-          accessibilityLabel={`Registros, ${recordCount} encontrados`}
+          accessibilityLabel={t("analysis.mabc.recordsFound").replace("{n}", String(recordCount))}
           onPress={handleRecordsPress}
           className="flex-row items-center gap-1.5 rounded-full px-2.5 py-1 active:opacity-70"
           style={{
@@ -93,7 +97,7 @@ export function Mabc2MotorDevelopmentCard({
             className="text-sm font-medium"
             style={{ color: isRecordsSelected ? SELECTED_BORDER_COLOR : colors.muted }}
           >
-            Categorias
+            {t("analysis.mabc.categories")}
           </Text>
         </Pressable>
 
@@ -101,7 +105,7 @@ export function Mabc2MotorDevelopmentCard({
           testID={testID ? `${testID}-exercises-button` : undefined}
           accessibilityRole="button"
           accessibilityState={{ selected: isExercisesSelected }}
-          accessibilityLabel="Exercícios"
+          accessibilityLabel={t("section.exercises")}
           onPress={handleExercisesPress}
           className="flex-row items-center gap-1 rounded-full px-2.5 py-1 active:opacity-70"
           style={{
@@ -118,7 +122,7 @@ export function Mabc2MotorDevelopmentCard({
             className="text-sm font-medium"
             style={{ color: isExercisesSelected ? SELECTED_BORDER_COLOR : colors.muted }}
           >
-            Exercícios
+            {t("section.exercises")}
           </Text>
         </Pressable>
       </View>
@@ -133,16 +137,16 @@ export function Mabc2MotorDevelopmentCard({
             } bg-level1 px-3 py-1.5`}
           >
             <Text className="text-xs font-medium text-muted">
-              Pontuação total
+              {t("analysis.mabc.totalScore")}
             </Text>
             {readOnly ? (
-              <Text className="text-xl font-bold text-white">
+              <Text className="text-xl font-bold text-content">
                 {totalScore !== null ? String(totalScore) : "-"}
               </Text>
             ) : (
               <TextInput
                 testID={testID ? `${testID}-total-score-input` : undefined}
-                className="m-0 p-0 text-xl font-bold text-white"
+                className="m-0 p-0 text-xl font-bold text-content"
                 value={totalScore !== null ? String(totalScore) : ""}
                 onChangeText={onChangeTotalScore}
                 keyboardType="numeric"
@@ -160,16 +164,16 @@ export function Mabc2MotorDevelopmentCard({
             } bg-level1 px-3 py-1.5`}
           >
             <Text className="text-xs font-medium text-muted">
-              Percentil total
+              {t("analysis.mabc.totalPercentile")}
             </Text>
             {readOnly ? (
-              <Text className="text-xl font-bold text-white">
+              <Text className="text-xl font-bold text-content">
                 {totalPercentile ?? "-"}
               </Text>
             ) : (
               <TextInput
                 testID={testID ? `${testID}-total-percentile-input` : undefined}
-                className="m-0 p-0 text-xl font-bold text-white"
+                className="m-0 p-0 text-xl font-bold text-content"
                 value={totalPercentile !== null ? String(totalPercentile) : ""}
                 onChangeText={onChangeTotalPercentile}
                 keyboardType="numeric"
@@ -200,12 +204,12 @@ export function Mabc2MotorDevelopmentCard({
 
       {!readOnly ? (
         <DefaultButton
-          label={submitLabel}
+          label={resolvedSubmitLabel}
           onPress={onRegister}
           bgColorClass="bg-primary"
           shadowClass="shadow-primaryShadow"
           sizeClass="w-full h-11"
-          textClassName="text-white"
+          textClassName="text-content"
         />
       ) : null}
     </View>

@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { calculateAge } from "@/lib/date-utils";
 import { User } from "lucide-react-native";
 import React from "react";
@@ -22,7 +23,7 @@ function InfoChip({ label, value }: InfoChipProps) {
         {label}
       </Text>
       <Text
-        className="text-[12px] text-white font-bold mt-0.5"
+        className="text-[12px] text-content font-bold mt-0.5"
         style={{ fontFamily: "Inter-Bold" }}
       >
         {value ? value : "—"}
@@ -54,15 +55,16 @@ export function StudentInfoCard({
   supportLevel,
   observations,
 }: StudentInfoCardProps) {
-  const ageStr = birthDate ? `${calculateAge(birthDate)} anos` : null;
+  const { t } = useI18n();
+  const ageStr = birthDate ? `${calculateAge(birthDate)} ${t("common.yearsOld")}` : null;
 
   return (
     <View className="w-full bg-level2 border border-outline rounded-lg p-[15px] mb-4">
       <Text
-        className="text-[16px] font-bold text-white mb-4"
+        className="text-[16px] font-bold text-content mb-4"
         style={{ fontFamily: "Inter-Bold" }}
       >
-        Informações da criança
+        {t("analysis.info.title")}
       </Text>
 
       <View className="items-center mb-4">
@@ -81,18 +83,18 @@ export function StudentInfoCard({
 
       <View className="flex-col gap-2">
         <View className="flex-row gap-2">
-          <InfoChip label="Nome" value={name} />
-          <InfoChip label="Idade" value={ageStr} />
+          <InfoChip label={t("analysis.info.name")} value={name} />
+          <InfoChip label={t("analysis.info.age")} value={ageStr} />
         </View>
 
         <View className="flex-row gap-2">
-          <InfoChip label="Nível de suporte do TEA" value={supportLevel} />
-          <InfoChip label="Massa" value={weight != null ? `${weight} kg` : null} />
+          <InfoChip label={t("analysis.info.supportLevel")} value={supportLevel} />
+          <InfoChip label={t("students.form.weight")} value={weight != null ? `${weight} kg` : null} />
         </View>
 
         <View className="flex-row gap-2">
-          <InfoChip label="Estatura" value={height != null ? `${height} cm` : null} />
-          <InfoChip label="Cintura" value={waist != null ? `${waist} cm` : null} />
+          <InfoChip label={t("students.form.height")} value={height != null ? `${height} cm` : null} />
+          <InfoChip label={t("students.form.waist")} value={waist != null ? `${waist} cm` : null} />
         </View>
 
         <View className="flex-row gap-2">
@@ -101,10 +103,10 @@ export function StudentInfoCard({
               className="text-[11px] text-muted"
               style={{ fontFamily: "Inter-Medium" }}
             >
-              Observações gerais
+              {t("analysis.info.generalObservations")}
             </Text>
             <Text
-              className="text-[12px] text-white font-bold mt-0.5"
+              className="text-[12px] text-content font-bold mt-0.5"
               style={{ fontFamily: "Inter-Bold" }}
             >
               {observations || "—"}

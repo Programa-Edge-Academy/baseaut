@@ -6,17 +6,32 @@ import { HelpSessionRecord } from "../components/help-records-bar-chart";
  * Loads a student's help/autonomy records over a date range, returning the
  * per-session chart data plus an explanatory text.
  */
+/** Seed help records for the tutorial's mock analysis. */
+const MOCK_HELP_RECORDS: HelpSessionRecord[] = [
+  { sessionId: "ms1", sessionLabel: "1", intrusiveCount: 3, autonomousCount: 1 },
+  { sessionId: "ms2", sessionLabel: "2", intrusiveCount: 2, autonomousCount: 2 },
+  { sessionId: "ms3", sessionLabel: "3", intrusiveCount: 1, autonomousCount: 4 },
+];
+
 export function useHelpRecords(
   studentId?: string,
   startDate?: string | null,
-  endDate?: string | null
+  endDate?: string | null,
+  options?: { mock?: boolean }
 ) {
-  const [records, setRecords] = useState<HelpSessionRecord[]>([]);
+  const isMock = options?.mock ?? false;
+  const [records, setRecords] = useState<HelpSessionRecord[]>(isMock ? MOCK_HELP_RECORDS : []);
   const [explanatoryText, setExplanatoryText] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   async function fetchHelpRecords() {
+    if (isMock) {
+      setRecords(MOCK_HELP_RECORDS);
+      setExplanatoryText("A autonomia do aluno aumentou ao longo das sessões.");
+      setIsLoading(false);
+      return;
+    }
     if (!studentId || !startDate || !endDate) {
       setRecords([]);
       setExplanatoryText("");
@@ -71,7 +86,8 @@ export function useHelpRecords(
 
   useEffect(() => {
     fetchHelpRecords();
-  }, [studentId, startDate, endDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId, startDate, endDate, isMock]);
 
   return {
     records,

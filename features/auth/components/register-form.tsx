@@ -2,26 +2,16 @@ import { DefaultButton } from "@/components/default-button";
 import { DefaultTextInput } from "@/components/default-text-input";
 import { PasswordInput } from "@/features/auth/components/password-input";
 import { passwordChecker } from "@/features/auth/hooks/password-checker";
+import { useGoogleAuth } from "@/features/auth/hooks/use-google-auth";
 import { useRegister } from "@/features/auth/hooks/use-register";
+import { translateAuthError } from "@/features/auth/utils/translate-auth-error";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 /**
- * Maps Supabase sign-up errors to localized UI-friendly messages.
- */
-const translateAuthError = (msg: string | null | undefined) => {
-  if (!msg) return null;
-  const lowerMsg = msg.toLowerCase();
-  if (lowerMsg.includes("user already registered"))
-    return "Este e-mail já está cadastrado.";
-  if (lowerMsg.includes("rate limit") || lowerMsg.includes("too many requests"))
-    return "Muitas tentativas. Tente novamente mais tarde.";
-  return "Ocorreu um erro ao cadastrar. Tente novamente.";
-};
-
-/**
- * Registration form UI with validation and submit handling.
+ * Registration form UI with validation and submit handling. Creates the
+ * account with an e-mail address or a Google account.
  */
 export function RegisterForm() {
   const [name, setName] = useState("");
@@ -31,6 +21,12 @@ export function RegisterForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { register, loading, error: apiError } = useRegister();
+  const {
+    signInWithGoogle,
+    loading: googleLoading,
+    error: googleError,
+    isPendingApproval: isGooglePending,
+  } = useGoogleAuth();
 
   /**
    * Updates the password field and runs live validation.
@@ -117,9 +113,18 @@ export function RegisterForm() {
     }
   };
 
+  const handleGoogle = async () => {
+    const success = await signInWithGoogle();
+    if (success) {
+      router.replace("/students");
+    }
+  };
+
+  const displayError = translateAuthError(apiError ?? googleError);
+
   return (
     <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-6 shadow-panelShadow outline outline-1 outline-offset-[-1px] outline-outline">
-      <Text className="mb-5 text-header-3 text-white">Crie sua conta</Text>
+      <Text className="mb-5 text-header-3 text-content">Crie sua conta</Text>
 
       <View className="w-full max-w-[342px] gap-4">
         <View className="gap-1">
@@ -197,14 +202,17 @@ export function RegisterForm() {
             </Text>
           )}
         </View>
-        {apiError && (
-          <Text className="mt-3 text-default-3 text-error">
-            {translateAuthError(apiError)}
+
+        {isGooglePending ? (
+          <Text className="mt-3 text-default-3 text-extra">
+            Sua conta Google foi cadastrada e aguarda aprovação.
           </Text>
-        )}
+        ) : displayError ? (
+          <Text className="mt-3 text-default-3 text-error">{displayError}</Text>
+        ) : null}
       </View>
 
-      <View className="mt-7 w-full max-w-[342px] items-center gap-2">
+      <View className="mt-7 w-full max-w-[342px] items-center gap-3">
         <DefaultButton
           label={loading ? "Cadastrando..." : "Cadastrar-se"}
           onPress={handleRegister}
@@ -217,6 +225,24 @@ export function RegisterForm() {
             !password ||
             !confirmPassword
           }
+        />
+
+        <View className="w-full flex-row items-center gap-3">
+          <View className="h-px flex-1 bg-outline" />
+          <Text className="text-default-3 text-muted">ou</Text>
+          <View className="h-px flex-1 bg-outline" />
+        </View>
+
+        <DefaultButton
+          label={googleLoading ? "Conectando..." : "Cadastrar com Google"}
+          onPress={handleGoogle}
+          sizeClass="w-full h-11"
+          disabled={googleLoading}
+          bgColorClass="bg-level1"
+          hasShadow={false}
+          isOutline
+          outlineBorderClass="border-outline"
+          textClassName="text-content"
         />
       </View>
 

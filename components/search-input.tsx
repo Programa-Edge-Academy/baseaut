@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { ListFilter, Search } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, TextInput, TextInputProps, View } from "react-native";
@@ -31,6 +32,7 @@ export function SearchInput({
   onTagsPress,
   ...rest
 }: SearchInputProps) {
+  const { t } = useI18n();
   const searchBox = (
     <View
       className={`h-[44px] flex-row items-center rounded-[15px] border border-outline bg-level2 px-3 ${
@@ -45,7 +47,7 @@ export function SearchInput({
         multiline={false}
         scrollEnabled={false}
         textAlignVertical="center"
-        className={`ml-2 h-full flex-1 p-0 m-0 text-default-1 text-white ${
+        className={`ml-2 h-full flex-1 p-0 m-0 text-default-1 text-content ${
           inputClassName ?? ""
         }`}
         style={[
@@ -72,7 +74,7 @@ export function SearchInput({
         className="h-[44px] flex-row items-center justify-center gap-2 rounded-[15px] border border-outline bg-level2 px-4 active:opacity-70"
       >
         <ListFilter size={18} color={colors.muted} />
-        <Text className="text-default-1 text-muted">Tags</Text>
+        <Text className="text-default-1 text-muted">{t("common.tags")}</Text>
       </Pressable>
     </View>
   );

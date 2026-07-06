@@ -51,8 +51,7 @@ export async function uploadImage(
       return publicUrl;
     }
     return null;
-  } catch (e) {
-    console.error("Erro no upload da imagem:", e);
+  } catch {
     return null;
   }
 }

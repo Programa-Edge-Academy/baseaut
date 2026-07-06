@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { supabase } from "@/lib/supabase";
+import type { Locale, TranslationKey } from "@/features/settings/constants/translations";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+
+/** A translator function bound to the active locale. */
+type Translate = (key: TranslationKey) => string;
 
 /** Supported protocol types for the US10.6 visualization. */
 export type ProtocolTipo = "ata" | "cars" | "mabc2";
@@ -28,10 +33,10 @@ const PROTOCOL_LABELS: Record<ProtocolTipo, string> = {
   mabc2: "MABC-2",
 };
 
-/** Formats an ISO date as a Brazilian short date, or a placeholder when null. */
-function formatDate(value: string | null): string {
-  if (!value) return "Data não definida";
-  return new Date(value).toLocaleDateString("pt-BR");
+/** Formats an ISO date as a locale short date, or a placeholder when null. */
+function formatDate(value: string | null, t: Translate, locale: Locale): string {
+  if (!value) return t("common.dateNotSet");
+  return new Date(value).toLocaleDateString(locale === "en" ? "en-US" : "pt-BR");
 }
 
 /** Sums every numeric answer of a form, ignoring text answers (e.g. notes). */
@@ -54,9 +59,20 @@ function sumNumericAnswers(values: (string | null)[]): number | null {
  * front-computed total score; MABC-2 via the dedicated history RPC) for a
  * student, exposing only records that actually have answers.
  */
-export function useProtocolRecords(studentId?: string, tipo?: ProtocolTipo) {
-  const [records, setRecords] = useState<ProtocolRecord[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(Boolean(studentId && tipo));
+/** Seed protocol records for the tutorial's mock analysis. */
+function mockProtocolRecords(tipo?: ProtocolTipo): ProtocolRecord[] {
+  const label = tipo ? PROTOCOL_LABELS[tipo] : "Protocolo";
+  return [
+    { id: `mock-${tipo}-1`, label: `${label} 1`, dateLabel: "26/06/2026", rawDate: "2026-06-26", score: 18, scoreLabel: "Leve", evaluatorName: "Monitor", ageGroupLabel: null, percentile: null },
+    { id: `mock-${tipo}-2`, label: `${label} 2`, dateLabel: "12/05/2026", rawDate: "2026-05-12", score: 22, scoreLabel: "Moderado", evaluatorName: "Monitor", ageGroupLabel: null, percentile: null },
+  ];
+}
+
+export function useProtocolRecords(studentId?: string, tipo?: ProtocolTipo, options?: { mock?: boolean }) {
+  const isMock = options?.mock ?? false;
+  const { t, locale } = useI18n();
+  const [records, setRecords] = useState<ProtocolRecord[]>(isMock ? mockProtocolRecords(tipo) : []);
+  const [isLoading, setIsLoading] = useState<boolean>(!isMock && Boolean(studentId && tipo));
   const [error, setError] = useState<Error | null>(null);
 
   const fetchAtaCars = useCallback(
@@ -113,8 +129,8 @@ export function useProtocolRecords(studentId?: string, tipo?: ProtocolTipo) {
           const score = sumNumericAnswers(formAnswers);
           return {
             id: form.id,
-            label: `Formulário ${protocolLabel} ${index + 1}`,
-            dateLabel: formatDate(form.created_at),
+            label: t("analysis.protocolViz.formLabel").replace("{x}", `${protocolLabel} ${index + 1}`),
+            dateLabel: formatDate(form.created_at, t, locale),
             rawDate: form.created_at,
             score,
             scoreLabel: score != null ? String(score).replace(".", ",") : null,
@@ -127,7 +143,7 @@ export function useProtocolRecords(studentId?: string, tipo?: ProtocolTipo) {
         })
         .filter((r): r is ProtocolRecord => r !== null);
     },
-    [],
+    [t, locale],
   );
 
   const fetchMabc2 = useCallback(
@@ -158,8 +174,8 @@ export function useProtocolRecords(studentId?: string, tipo?: ProtocolTipo) {
         const score = meta.escore_total ?? meta.escore_total_teste ?? null;
         return {
           id: form.id,
-          label: `Formulário MABC-2 ${index + 1}`,
-          dateLabel: formatDate(form.created_at),
+          label: t("analysis.protocolViz.formLabel").replace("{x}", `MABC-2 ${index + 1}`),
+          dateLabel: formatDate(form.created_at, t, locale),
           rawDate: form.created_at,
           score: typeof score === "number" ? score : null,
           scoreLabel: score != null ? String(score) : null,
@@ -171,10 +187,15 @@ export function useProtocolRecords(studentId?: string, tipo?: ProtocolTipo) {
         };
       });
     },
-    [],
+    [t, locale],
   );
 
   const fetchRecords = useCallback(async () => {
+    if (isMock) {
+      setRecords(mockProtocolRecords(tipo));
+      setIsLoading(false);
+      return;
+    }
     if (!studentId || !tipo) return;
 
     setIsLoading(true);
@@ -195,11 +216,11 @@ export function useProtocolRecords(studentId?: string, tipo?: ProtocolTipo) {
     } finally {
       setIsLoading(false);
     }
-  }, [studentId, tipo, fetchAtaCars, fetchMabc2]);
+  }, [studentId, tipo, fetchAtaCars, fetchMabc2, isMock]);
 
   useEffect(() => {
-    if (studentId && tipo) fetchRecords();
-  }, [studentId, tipo, fetchRecords]);
+    if (isMock || (studentId && tipo)) fetchRecords();
+  }, [studentId, tipo, fetchRecords, isMock]);
 
   return { records, isLoading, error, refetch: fetchRecords };
 }

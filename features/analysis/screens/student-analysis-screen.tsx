@@ -6,8 +6,15 @@ import { StudentInfoCard } from "@/features/analysis/components/student-info-car
 import type { ProtocolTipo } from "@/features/analysis/hooks/use-protocol-records";
 import { useProtocolStatuses } from "@/features/analysis/hooks/use-protocol-statuses";
 import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessions";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { User } from "lucide-react-native";
+import { useState } from "react";
 import { ActivityIndicator, Image, ScrollView, Text, View } from "react-native";
 
 /**
@@ -18,23 +25,32 @@ import { ActivityIndicator, Image, ScrollView, Text, View } from "react-native";
  */
 export function StudentAnalysisScreen() {
   const router = useRouter();
+  const { t } = useI18n();
   const { studentId } = useLocalSearchParams();
-  const { sessions, profile, isLoading } = useStudentSessions(studentId as string);
-  const { statuses: protocolStatuses } = useProtocolStatuses(studentId as string);
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const sim = useTutorialSimulation();
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const { sessions, profile, isLoading } = useStudentSessions(studentId as string, { mock: isTutorial });
+  const { statuses: protocolStatuses } = useProtocolStatuses(studentId as string, { mock: isTutorial });
 
   const openProtocol = (tipo: ProtocolTipo) =>
     router.push({
       pathname: "/protocol-records",
       params: {
         studentId: String(studentId ?? ""),
-        studentName: profile?.name ?? "Aluno",
+        studentName: profile?.name ?? t("common.student"),
         tipo,
       },
     });
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" onPressBack={() => router.back()} />
+      <Header
+        variant="back"
+        onPressBack={() => router.back()}
+        onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+      />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }} className="flex-1">
         <View className="mx-8 mt-5">
@@ -59,18 +75,18 @@ export function StudentAnalysisScreen() {
                   </View>
 
                   <View className="flex-1 justify-center">
-                    <Text className="text-xl font-bold text-white leading-tight" numberOfLines={1}>
-                      {profile?.name || "Aluno"}
+                    <Text className="text-xl font-bold text-content leading-tight" numberOfLines={1}>
+                      {profile?.name || t("common.student")}
                     </Text>
                     <Text className="text-sm font-medium text-muted mt-0.5">
-                      {sessions.length} {sessions.length === 1 ? "sessão registrada" : "sessões registradas"}
+                      {(sessions.length === 1 ? t("analysis.list.sessionsRecordedOne") : t("analysis.list.sessionsRecordedMany")).replace("{n}", String(sessions.length))}
                     </Text>
                   </View>
                 </View>
               </View>
 
               <StudentInfoCard
-                name={profile?.name || "Aluno"}
+                name={profile?.name || t("common.student")}
                 avatarUrl={profile?.avatarUrl}
                 height={profile?.height}
                 weight={profile?.weight}
@@ -81,70 +97,105 @@ export function StudentAnalysisScreen() {
               />
 
               <View className="flex-col gap-4">
-                <AnalysisOptionCard
-                  title="Progresso por exercício"
-                  description="Acompanhe a evolução de cada exercício nas sessões."
-                  onPress={() => {
-                    router.push(`/analysis/progress/${studentId}` as any);
-                  }}
-                />
+                <SpotlightTarget targetKey="openProgress">
+                  <AnalysisOptionCard
+                    title={t("analysis.card.progress.title")}
+                    description={t("analysis.card.progress.desc")}
+                    onPress={() => {
+                      if (isTutorial) sim.complete("openProgress");
+                      router.push(`/analysis/progress/${studentId}` as any);
+                    }}
+                  />
+                </SpotlightTarget>
 
-                <AnalysisOptionCard
-                  title="Registros de ajuda por sessão"
-                  description="Acompanhe a evolução da autonomia nas sessões."
-                  onPress={() => {
-                    router.push({
-                      pathname: "/analysis/help/[studentId]",
-                      params: {
-                        studentId: String(studentId ?? ""),
-                        studentName: profile?.name ?? "Aluno",
-                      },
-                    } as any);
-                  }}
-                />
+                <SpotlightTarget targetKey="openHelp">
+                  <AnalysisOptionCard
+                    title={t("analysis.card.help.title")}
+                    description={t("analysis.card.help.desc")}
+                    onPress={() => {
+                      if (isTutorial) sim.complete("openHelp");
+                      router.push({
+                        pathname: "/analysis/help/[studentId]",
+                        params: {
+                          studentId: String(studentId ?? ""),
+                          studentName: profile?.name ?? t("common.student"),
+                        },
+                      } as any);
+                    }}
+                  />
+                </SpotlightTarget>
 
-                <AnalysisOptionCard
-                  title="Comportamentos observados"
-                  description="Visualize a frequência dos comportamentos observados"
-                  onPress={() => {
-                    router.push(`/analysis/behaviors/${studentId}` as any);
-                  }}
-                />
+                <SpotlightTarget targetKey="openBehaviors">
+                  <AnalysisOptionCard
+                    title={t("analysis.card.behaviors.title")}
+                    description={t("analysis.card.behaviors.desc")}
+                    onPress={() => {
+                      if (isTutorial) sim.complete("openBehaviors");
+                      router.push(`/analysis/behaviors/${studentId}` as any);
+                    }}
+                  />
+                </SpotlightTarget>
 
-                <AnalysisOptionCard
-                  title="Comparar desempenho"
-                  description="Compare dois períodos e acompanhe diferenças no desempenho do aluno."
-                  onPress={() => {
-                    router.push(`/analysis/compare/${studentId}` as any);
-                  }}
-                />
+                <SpotlightTarget targetKey="openCompare">
+                  <AnalysisOptionCard
+                    title={t("analysis.card.compare.title")}
+                    description={t("analysis.card.compare.desc")}
+                    onPress={() => {
+                      if (isTutorial) sim.complete("openCompare");
+                      router.push(`/analysis/compare/${studentId}` as any);
+                    }}
+                  />
+                </SpotlightTarget>
 
-                <AppliedProtocolsCard
-                  ataStatus={protocolStatuses.ata}
-                  carsStatus={protocolStatuses.cars}
-                  onAtaPress={() => openProtocol("ata")}
-                  onCarsPress={() => openProtocol("cars")}
-                />
+                <SpotlightTarget targetKey="openProtocols">
+                  <AppliedProtocolsCard
+                    ataStatus={protocolStatuses.ata}
+                    carsStatus={protocolStatuses.cars}
+                    onAtaPress={() => {
+                      if (isTutorial) sim.complete("openProtocols");
+                      openProtocol("ata");
+                    }}
+                    onCarsPress={() => {
+                      if (isTutorial) sim.complete("openProtocols");
+                      openProtocol("cars");
+                    }}
+                  />
+                </SpotlightTarget>
 
-                <AnalysisOptionCard
-                  title="Registros de desenvolvimento motor"
-                  description="Visualize e registre avaliações motoras do aluno."
-                  onPress={() => {
-                    router.push({
-                      pathname: "/mabc2-records",
-                      params: {
-                        studentId: String(studentId ?? ""),
-                        studentName: profile?.name ?? "Aluno",
-                      },
-                    } as any);
-                  }}
-                />
+                <SpotlightTarget targetKey="openMabc">
+                  <AnalysisOptionCard
+                    title={t("analysis.card.mabc.title")}
+                    description={t("analysis.card.mabc.desc")}
+                    onPress={() => {
+                      if (isTutorial) sim.complete("openMabc");
+                      router.push({
+                        pathname: "/mabc2-records",
+                        params: {
+                          studentId: String(studentId ?? ""),
+                          studentName: profile?.name ?? t("common.student"),
+                        },
+                      } as any);
+                    }}
+                  />
+                </SpotlightTarget>
               </View>
             </>
           )}
         </View>
       </ScrollView>
 
+      {isTutorial && (
+        <TutorialPracticeNotice
+          visible={noticeOpen}
+          onClose={() => setNoticeOpen(false)}
+          onExit={() => {
+            setNoticeOpen(false);
+            router.back();
+          }}
+        />
+      )}
+
+      {isTutorial && <TutorialSpotlight />}
     </View>
   );
 }

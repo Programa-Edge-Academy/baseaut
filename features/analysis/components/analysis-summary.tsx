@@ -1,31 +1,40 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import type { TranslationKey } from "@/features/settings/constants/translations";
 import { AlertCircle } from "lucide-react-native";
 import React from "react";
 import { Text, View } from "react-native";
 import { AnalysisSummaryCard, AnalysisSummaryCardProps } from "./analysis-summary-card";
 
-const defaultCards: AnalysisSummaryCardProps[] = [
-  {
-    title: "Exercícios avaliados",
-    period1: { label: "Período 1", value: 6 },
-    period2: { label: "Período 2", value: 8 }
-  },
-  {
-    title: "Registros de ajuda",
-    period1: { label: "Período 1", value: 14 },
-    period2: { label: "Período 2", value: 9 },
-  },
-  {
-    title: "Comportamentos observados",
-    period1: { label: "Período 1", value: 7 },
-    period2: { label: "Período 7", value: 7 },
-  },
-  {
-    title: "Sessões registradas",
-    period1: { label: "Período 1", value: 3 },
-    period2: { label: "Período 2", value: 4 },
-  }
-];
+/** Builds the fallback summary cards using the active locale. */
+function buildDefaultCards(
+  t: (key: TranslationKey) => string,
+): AnalysisSummaryCardProps[] {
+  const p1 = t("analysis.period1");
+  const p2 = t("analysis.period2");
+  return [
+    {
+      title: t("analysis.summary.exercisesEvaluated"),
+      period1: { label: p1, value: 6 },
+      period2: { label: p2, value: 8 },
+    },
+    {
+      title: t("analysis.summary.helpRecords"),
+      period1: { label: p1, value: 14 },
+      period2: { label: p2, value: 9 },
+    },
+    {
+      title: t("analysis.summary.behaviors"),
+      period1: { label: p1, value: 7 },
+      period2: { label: p2, value: 7 },
+    },
+    {
+      title: t("analysis.summary.sessions"),
+      period1: { label: p1, value: 3 },
+      period2: { label: p2, value: 4 },
+    },
+  ];
+}
 
 /** Props for {@link AnalysisSummary}. */
 export type AnalysisSummaryProps = {
@@ -39,10 +48,13 @@ export type AnalysisSummaryProps = {
  * optional explanatory footer note.
  */
 export function AnalysisSummary({
-  title = "Resumo da comparação",
-  cards = defaultCards,
+  title,
+  cards,
   showNote = true,
 }: AnalysisSummaryProps) {
+  const { t } = useI18n();
+  const resolvedTitle = title ?? t("analysis.summary.title");
+  const resolvedCards = cards ?? buildDefaultCards(t);
   return (
     <View
       style={{
@@ -53,12 +65,12 @@ export function AnalysisSummary({
       className="w-full rounded-2xl p-6"
     >
       <View className="flex-col gap-3">
-        <Text className="text-white text-[20px] font-bold mb-1">
-          {title}
+        <Text className="text-content text-[20px] font-bold mb-1">
+          {resolvedTitle}
         </Text>
 
         <View className="gap-3">
-          {cards.map((card, index) => (
+          {resolvedCards.map((card, index) => (
             <AnalysisSummaryCard key={index} {...card} />
           ))}
         </View>
@@ -77,7 +89,7 @@ export function AnalysisSummary({
                 lineHeight: 20,
               }}
             >
-              Os valores exibem a diferença absoluta e percentual entre os dois períodos selecionados.
+              {t("analysis.summary.note")}
             </Text>
           </View>
         )}

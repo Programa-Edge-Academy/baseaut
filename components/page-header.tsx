@@ -1,5 +1,6 @@
-import { colors } from "@/assets/colors";
 import { withOpacity } from "@/components/color-opacity";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { useThemeColors } from "@/features/settings/contexts/theme-context";
 import { Calendar, Check, ClipboardEdit, Download, Edit2, History, Trash2, Share2 } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
@@ -46,6 +47,8 @@ export type PageHeaderProps = {
   completedExercises?: number;
   /** Whether an exercise is currently running (for the progress stepper). */
   isExecuting?: boolean;
+  /** Optional ref on the "new" button wrapper, used by the tutorial spotlight. */
+  newButtonRef?: React.Ref<View>;
 };
 
 /**
@@ -72,15 +75,22 @@ export function PageHeader({
   totalExercises = 1,
   completedExercises = 0,
   isExecuting = false,
+  newButtonRef,
 }: PageHeaderProps) {
+  const colors = useThemeColors();
+  const { t } = useI18n();
 
   const renderNovoBtn = () => (
-    <Pressable
-      onPress={onNewPress}
-      className="h-10 w-20 items-center justify-center rounded-2xl bg-primary shadow-primaryShadow active:opacity-80"
-    >
-      <Text className="text-header-3 text-white">+ Novo</Text>
-    </Pressable>
+    <View ref={newButtonRef} collapsable={false}>
+      <Pressable
+        onPress={onNewPress}
+        className="h-10 min-w-[80px] items-center justify-center rounded-2xl bg-primary px-4 shadow-primaryShadow active:opacity-80"
+      >
+        <Text className="text-header-3 text-content" numberOfLines={1}>
+          {t("pageHeader.new")}
+        </Text>
+      </Pressable>
+    </View>
   );
 
   const renderRightContent = () => {
@@ -219,7 +229,7 @@ export function PageHeader({
                     className="h-7 w-7 items-center justify-center rounded-full"
                     style={{ backgroundColor: isNodeActive ? colors.primary : colors.level2 }}
                   >
-                    <Text className={`text-default-2 ${isNodeActive ? "text-white" : "text-muted"}`}>
+                    <Text className={`text-default-2 ${isNodeActive ? "text-content" : "text-muted"}`}>
                       {node}
                     </Text>
                   </View>
@@ -325,7 +335,7 @@ export function PageHeader({
   return (
     <View className={`w-full min-h-[44px] flex-row items-center justify-between ${containerClassName ?? ""}`}>
       <View className="flex-1 flex-col justify-center gap-1 mr-4">
-        <Text className="text-header-1 text-white">{title}</Text>
+        <Text className="text-header-1 text-content">{title}</Text>
         <Text className="text-default-1 text-muted">{subtitle}</Text>
       </View>
 

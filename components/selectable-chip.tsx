@@ -1,4 +1,6 @@
 import { colors } from "@/assets/colors";
+import type { TranslationKey } from "@/features/settings/constants/translations";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { Check } from "lucide-react-native";
 import React from "react";
 import { Text, View } from "react-native";
@@ -6,10 +8,10 @@ import { DefaultButton } from "./default-button";
 import { RipplePressable } from "./ripple-pressable";
 
 /** Predefined sub-option buttons rendered for the "nivelAjuda" chip type. */
-const subOptionsDict = {
+const subOptionsDict: { nivelAjuda: { id: string; labelKey: TranslationKey }[] } = {
   nivelAjuda: [
-    { id: "verbal", label: "Verbal" },
-    { id: "modelo", label: "Modelo" },
+    { id: "verbal", labelKey: "chip.verbal" },
+    { id: "modelo", labelKey: "chip.model" },
   ],
 };
 
@@ -57,6 +59,7 @@ export function SelectableChip({
   subOptionsHasError = false,
   className = "",
 }: SelectableChipProps) {
+  const { t } = useI18n();
   let activeBgBorder = "bg-primary/20 border-primary";
   let iconColor = colors.primary;
   let rippleInactive = "rgba(255, 255, 255, 0.2)";
@@ -91,7 +94,7 @@ export function SelectableChip({
             <Check color={iconColor} size={20} />
           </View>
         )}
-        <Text className="text-white text-default1">
+        <Text className="text-content text-default1">
           {label}
         </Text>
       </View>
@@ -104,7 +107,7 @@ export function SelectableChip({
             const subBorderClass =
               subOptionsHasError && !isActive ? "border-error" : "border-primary";
             const subTextClass = isActive
-              ? "text-white"
+              ? "text-content"
               : subOptionsHasError
               ? "text-error"
               : "text-primary";
@@ -112,7 +115,7 @@ export function SelectableChip({
             return (
               <DefaultButton
                 key={option.id}
-                label={option.label}
+                label={t(option.labelKey)}
                 sizeClass="h-[32px] px-[16px]"
                 hasShadow={false}
                 isOutline={true}

@@ -17,16 +17,22 @@ documented with TypeDoc-style `/** */` comments, in English.
 
 ## Auth
 
-- components/login-form.tsx: Login form with client-side validation and localized error mapping.
-- components/register-form.tsx: Registration form with validation, password checks, and submit.
+- components/login-form.tsx: Login form (e-mail or phone) with validation, Google sign-in, and localized errors.
+- components/register-form.tsx: Registration form (e-mail or phone) with validation, password checks, Google sign-up, and submit.
 - components/password-input.tsx: Password input with a show/hide toggle.
 - components/auth-feedback-card.tsx: Status card for success and pending-approval auth states.
-- hooks/use-login.ts: Supabase login wrapper that checks profile status and pending approval.
-- hooks/use-register.ts: Supabase sign-up wrapper that normalizes input and exposes loading/error state.
+- hooks/use-login.ts: Supabase login wrapper (e-mail/phone) that checks profile status and pending approval.
+- hooks/use-register.ts: Supabase sign-up wrapper for e-mail and phone (SMS OTP verify/resend).
+- hooks/use-google-auth.ts: Google OAuth sign-in/sign-up backed by Supabase.
+- hooks/use-account.ts: Loads the signed-in profile and manages name/email/phone/password/avatar and Google link/unlink.
 - hooks/use-password-recovery.ts: Drives the recovery flow via the recovery Edge Functions.
 - hooks/password-checker.tsx: Pure helper that validates password length and allowed characters.
+- utils/phone.ts: Phone detection, E.164 normalization, and display formatting.
+- utils/translate-auth-error.ts: Maps Supabase auth errors to localized messages (e-mail/phone/Google).
 - screens/login-screen.tsx: Screen layout that renders the logo and the login form.
 - screens/register-screen.tsx: Screen layout that renders the logo and the register form.
+- screens/verify-phone-screen.tsx: SMS code confirmation step of the phone sign-up flow.
+- screens/account-screen.tsx: Account page: profile photo, personal data, password, Google link, and logout.
 - screens/feedback-screen.tsx: Renders the auth feedback card based on the route mode.
 - screens/reset-password-code-screen.tsx: Requests a password reset code by e-mail.
 - screens/reset-password-screen.tsx: Validates the recovery code and sets a new password.
@@ -37,8 +43,6 @@ documented with TypeDoc-style `/** */` comments, in English.
 - components/tag-group.tsx: Grouped tag/subtag selector (single or multiple).
 - components/exercise-row.tsx: Compact row item used in selection lists.
 - components/new-exercise.tsx: Create/edit exercise modal with photo and tag selection.
-- components/new-circuit.tsx: Create/edit circuit modal with exercise selection and drag-to-reorder.
-- components/view-circuit.tsx: Read-only modal showing a circuit and its exercises.
 - components/start-activity.tsx: Card used to launch an activity, with an optional media preview.
 - components/stopwatch.tsx: In-activity stopwatch with crisis/flight pills and play/pause/stop controls.
 - components/activity-result-modal.tsx: Records the outcome of an activity (level, help, or reason).
@@ -48,8 +52,13 @@ documented with TypeDoc-style `/** */` comments, in English.
 - components/warning-banner.tsx: Highlighted warning banner used after session completion.
 - constants/mabc-exercise-configs.ts: MABC-2 field configs per age band and exercise.
 - hooks/use-exercises.ts: Supabase-backed CRUD for exercises (add/update/delete/duplicate).
-- hooks/use-circuits.ts: Supabase-backed CRUD for circuits; seeds the fixed MABC-2 circuits.
 - screens/exercises-screen.tsx: Exercises list with search, tag filtering, and CRUD modals.
+
+## Circuits
+
+- components/new-circuit.tsx: Create/edit circuit modal with exercise selection and drag-to-reorder.
+- components/view-circuit.tsx: Read-only modal showing a circuit and its exercises.
+- hooks/use-circuits.ts: Supabase-backed CRUD for circuits; seeds the fixed MABC-2 circuits.
 - screens/circuits-screen.tsx: Circuits list with search and create/edit/duplicate/delete.
 
 ## Forms
@@ -148,3 +157,16 @@ documented with TypeDoc-style `/** */` comments, in English.
 - screens/mabc2-records-list-screen.tsx / mabc2-record-form-screen.tsx: MABC-2 record list and form.
 - screens/no-records-screen.tsx: Reusable empty/error state screen for analysis views.
 - utils/export-mabc.ts: Exports a MABC-2 record as PDF and/or CSV.
+
+## Settings
+
+- contexts/theme-context.tsx: Light/dark theme with persistence, driving NativeWind's color scheme and exposing the resolved palette (useTheme / useThemeColors).
+- contexts/i18n-context.tsx: App language (pt/en/es) with persistence and the `t()` translator (useI18n).
+- constants/translations.ts: Locale catalog and translation keys.
+
+## Tutorial
+
+- constants/modules.ts: Interactive tutorial modules (one per feature) split into short steps.
+- contexts/tutorial-context.tsx: Persists which modules were completed; mock data is ephemeral.
+- screens/tutorial-list-screen.tsx: Lists modules with completion state.
+- screens/tutorial-module-screen.tsx: Plays a module's steps from the start.

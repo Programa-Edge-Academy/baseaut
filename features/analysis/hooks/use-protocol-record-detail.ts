@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { supabase } from "@/lib/supabase";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import type { ProtocolTipo } from "./use-protocol-records";
 
 /** A scored section of an ATA record. */
@@ -84,6 +85,7 @@ function questionTitle(text: string): string {
  * screens can render it: ATA sections, CARS domains, or the MABC-2 structure.
  */
 export function useProtocolRecordDetail(tipo?: ProtocolTipo, recordId?: string) {
+  const { t, locale } = useI18n();
   const [detail, setDetail] = useState<ProtocolRecordDetail | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(Boolean(tipo && recordId));
   const [error, setError] = useState<Error | null>(null);
@@ -207,8 +209,8 @@ export function useProtocolRecordDetail(tipo?: ProtocolTipo, recordId?: string) 
             ageGroupLabel: meta.faixa_mabc ?? meta.grupo_idade ?? null,
             evaluatorName: payload.avaliador?.nome_completo ?? null,
             dateLabel: payload.formulario?.created_at
-              ? new Date(payload.formulario.created_at).toLocaleDateString("pt-BR")
-              : "Data não definida",
+              ? new Date(payload.formulario.created_at).toLocaleDateString(locale === "en" ? "en-US" : "pt-BR")
+              : t("common.dateNotSet"),
             totalScore: meta.escore_total ?? null,
             standardScore: meta.escore_padrao ?? null,
             totalPercentile: meta.percentil ?? null,
@@ -221,7 +223,7 @@ export function useProtocolRecordDetail(tipo?: ProtocolTipo, recordId?: string) 
     } finally {
       setIsLoading(false);
     }
-  }, [tipo, recordId, fetchAtaCars]);
+  }, [tipo, recordId, fetchAtaCars, t, locale]);
 
   useEffect(() => {
     if (tipo && recordId) fetchDetail();

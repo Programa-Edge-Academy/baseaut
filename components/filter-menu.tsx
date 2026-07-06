@@ -88,7 +88,7 @@ export function FilterMenu({
             }}
           >
             <Text
-              className={`text-default-2 ${isActive ? "text-white" : "text-muted"}`}
+              className={`text-default-2 ${isActive ? "text-content" : "text-muted"}`}
             >
               {option.label}
             </Text>

@@ -1,6 +1,7 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import React, { useState } from "react";
-import { LayoutChangeEvent, Text, View } from "react-native";
+import { LayoutChangeEvent, ScrollView, Text, View } from "react-native";
 import Svg, {
   Line,
   Rect,
@@ -23,6 +24,10 @@ export interface HelpSessionRecord {
 export interface HelpRecordsBarChartProps {
   /** Sessions in chronological order. */
   sessions: HelpSessionRecord[];
+  /** Card title. Defaults to "Registros de ajuda por sessão". */
+  title?: string;
+  /** Explanatory footer. Pass an empty string to omit it. */
+  footerText?: string;
 }
 
 /** Intrusive-help bar color (theme cyan). */
@@ -93,9 +98,18 @@ function valueToBarHeight(value: number, yMax: number): number {
 
 /**
  * Grouped bar chart showing, per session in chronological order, the count of
- * intrusive-help and autonomous records.
+ * intrusive-help and autonomous records. Each session keeps a minimum slot
+ * width; when the sessions no longer fit the card, the plot scrolls
+ * horizontally while the Y axis stays fixed.
  */
-export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
+export function HelpRecordsBarChart({
+  sessions,
+  title,
+  footerText,
+}: HelpRecordsBarChartProps) {
+  const { t } = useI18n();
+  const resolvedTitle = title ?? t("analysis.helpChart.title");
+  const resolvedFooter = footerText ?? t("analysis.helpChart.explanation");
   const [containerWidth, setContainerWidth] = useState<number>(340);
 
   const handleLayout = (event: LayoutChangeEvent) => {
@@ -114,42 +128,20 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
   const X_START_PADDING = 15;
   const X_END_PADDING = X_START_PADDING;
 
-  const baseBarWidth = 18;
-  const baseBarGap = 4;
-  const baseGroupWidth = baseBarWidth * 2 + baseBarGap;
+  const barWidth = 18;
+  const barGap = 4;
+  const groupWidth = barWidth * 2 + barGap;
+  const MIN_SLOT_WIDTH = groupWidth + 10;
 
   const usableWidth = availableWidth - X_START_PADDING - X_END_PADDING;
-  const slotWidth = N > 0 ? usableWidth / N : usableWidth;
+  const slotWidth = Math.max(N > 0 ? usableWidth / N : usableWidth, MIN_SLOT_WIDTH);
 
-  const needsReduction = baseGroupWidth + 6 > slotWidth;
+  const svgWidth = Math.max(
+    availableWidth,
+    X_START_PADDING + X_END_PADDING + slotWidth * N,
+  );
 
-  let groupWidth = baseGroupWidth;
-  let barWidth = baseBarWidth;
-  let barGap = baseBarGap;
-
-  if (needsReduction && slotWidth > 0) {
-    groupWidth = slotWidth * 0.80;
-    barGap = Math.max(1, groupWidth * 0.15);
-    barWidth = Math.max(2, (groupWidth - barGap) / 2);
-    groupWidth = barWidth * 2 + barGap;
-  }
-
-  const svgWidth = availableWidth;
-
-  const labelFontSize = slotWidth < 25 ? Math.max(8, Math.round(slotWidth * 0.5)) : 12;
-
-  let labelStep = 1;
-  if (N > 7) {
-    if (N <= 14) {
-      labelStep = 2;
-    } else if (N <= 35) {
-      labelStep = 5;
-    } else if (N <= 70) {
-      labelStep = 10;
-    } else {
-      labelStep = Math.ceil(N / 7);
-    }
-  }
+  const labelFontSize = 12;
 
   const tickToSvgY = (tick: number) =>
     CHART_HEIGHT -
@@ -162,10 +154,10 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
       className="w-full bg-level2 rounded-[8px] border border-outline p-[15px] flex-col gap-[10px]"
     >
       <Text
-        className="text-white font-bold"
+        className="text-content font-bold"
         style={{ fontSize: 16, lineHeight: 20 }}
       >
-        Registros de ajuda por sessão
+        {resolvedTitle}
       </Text>
 
       <View className="flex-row items-center gap-[10px]">
@@ -178,7 +170,7 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
             className="text-muted font-medium"
             style={{ fontSize: 11, lineHeight: 20 }}
           >
-            Ajuda Intrusiva
+            {t("analysis.help.intrusive")}
           </Text>
         </View>
 
@@ -191,7 +183,7 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
             className="text-muted font-medium"
             style={{ fontSize: 11, lineHeight: 20 }}
           >
-            Autônomo
+            {t("analysis.help.autonomous")}
           </Text>
         </View>
       </View>
@@ -216,7 +208,12 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
           </Svg>
         </View>
 
-        <View className="flex-1" style={{ height: CHART_HEIGHT }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="flex-1"
+          style={{ height: CHART_HEIGHT }}
+        >
           <Svg width={svgWidth} height={CHART_HEIGHT} pointerEvents="none">
 
             {yTicks.map((tick) => {
@@ -246,9 +243,6 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
               const intrusiveY = valueToY(session.intrusiveCount, yMax);
               const autonomousY = valueToY(session.autonomousCount, yMax);
 
-              const num = index + 1;
-              const shouldShowLabel = (N - num) % labelStep === 0;
-
               return (
                 <React.Fragment key={session.sessionId}>
                   {intrusiveH > 0 && (
@@ -275,40 +269,39 @@ export function HelpRecordsBarChart({ sessions }: HelpRecordsBarChartProps) {
                     />
                   )}
 
-                  {shouldShowLabel && (
-                    <SvgText
-                      x={groupCenterX}
-                      y={CHART_HEIGHT - BOTTOM_PADDING + 16}
-                      fill={colors.muted}
-                      fontSize={labelFontSize}
-                      fontFamily="Inter-Medium"
-                      textAnchor="middle"
-                    >
-                      {session.sessionLabel}
-                    </SvgText>
-                  )}
+                  <SvgText
+                    x={groupCenterX}
+                    y={CHART_HEIGHT - BOTTOM_PADDING + 16}
+                    fill={colors.muted}
+                    fontSize={labelFontSize}
+                    fontFamily="Inter-Medium"
+                    textAnchor="middle"
+                  >
+                    {session.sessionLabel}
+                  </SvgText>
                 </React.Fragment>
               );
             })}
 
           </Svg>
-        </View>
+        </ScrollView>
       </View>
 
       <Text
         className="text-center text-muted font-medium"
         style={{ fontSize: 12, lineHeight: 20 }}
       >
-        Sessão
+        {t("analysis.helpChart.session")}
       </Text>
 
-      <Text
-        className="text-muted font-medium"
-        style={{ fontSize: 12, lineHeight: 20 }}
-      >
-        A redução de Ajuda Intrusiva e o aumento de registros Autônomos indicam
-        evolução na autonomia do aluno.
-      </Text>
+      {resolvedFooter !== "" && (
+        <Text
+          className="text-muted font-medium"
+          style={{ fontSize: 12, lineHeight: 20 }}
+        >
+          {resolvedFooter}
+        </Text>
+      )}
     </View>
   );
 }

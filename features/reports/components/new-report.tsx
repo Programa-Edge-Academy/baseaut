@@ -128,7 +128,7 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
               showsVerticalScrollIndicator={false}
             >
               <View className="flex-row items-center justify-between">
-                <Text className="text-header-2 text-white">
+                <Text className="text-header-2 text-content">
                   {isEdit ? "Editar relatório" : "Novo relatório"}
                 </Text>
                 <Pressable onPress={onClose} hitSlop={10}>

@@ -10,18 +10,36 @@ export interface StudentHistoryData {
   avatarUrl: string | null;
 }
 
+/** Seed student for the tutorial's mock history list. */
+const MOCK_HISTORY: StudentHistoryData[] = [
+  { id: "mock-aluno", name: "Ana Beatriz", sessions: 4, pendencyAlert: true, avatarUrl: null },
+];
+
+/** Options for {@link useHistory}. */
+export type UseHistoryOptions = {
+  /** When true, returns seeded mock data (tutorial only). */
+  mock?: boolean;
+};
+
 /**
  * Loads all active students with their record counts (sessions plus non-control
  * forms, excluding cancelled sessions) and pending-item flags.
+ *
+ * @param options - Pass `{ mock: true }` (tutorial only) for seeded data.
  */
-export function useHistory() {
+export function useHistory(options?: UseHistoryOptions) {
+  const isMock = options?.mock ?? false;
   const [studentsHistory, setStudentsHistory] = useState<StudentHistoryData[]>(
-    [],
+    isMock ? MOCK_HISTORY : [],
   );
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(!isMock);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchHistory = useCallback(async () => {
+    if (isMock) {
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
       setError(null);
@@ -78,7 +96,7 @@ export function useHistory() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isMock]);
 
   useEffect(() => {
     fetchHistory();

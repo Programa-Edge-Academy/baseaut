@@ -1,7 +1,7 @@
-import { colors } from '@/assets/colors';
 import { withOpacity } from '@/components/color-opacity';
+import { useThemeColors } from '@/features/settings/contexts/theme-context';
 import React, { useState } from 'react';
-import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleProp, View, ViewStyle } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { DateData, MarkedDates } from 'react-native-calendars/src/types';
 
@@ -13,14 +13,6 @@ LocaleConfig.locales['pt-br'] = {
     today: ['Hoje']
 };
 LocaleConfig.defaultLocale = 'pt-br';
-
-const CALENDAR_BG = colors.level2;
-const ACCENT_COLOR = colors.primary;
-const ACCENT_RANGE_BG = withOpacity(colors.primary, 0.1);
-const DAY_TEXT = '#FFFFFF';
-const HEADER_TEXT = colors.muted;
-const MONTH_TEXT = '#FFFFFF';
-const ARROW_COLOR = colors.muted;
 
 /** Props for {@link RangeCalendar}. */
 interface RangeCalendarProps {
@@ -39,6 +31,15 @@ interface RangeCalendarProps {
  * themed to match the app. Dates after today are disabled.
  */
 const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected, mode = 'range', style }) => {
+    const colors = useThemeColors();
+    const CALENDAR_BG = colors.level2;
+    const ACCENT_COLOR = colors.primary;
+    const ACCENT_RANGE_BG = withOpacity(colors.primary, 0.1);
+    const DAY_TEXT = colors.content;
+    const HEADER_TEXT = colors.muted;
+    const MONTH_TEXT = colors.content;
+    const ARROW_COLOR = colors.muted;
+
     const [markedDates, setMarkedDates] = useState<MarkedDates>({});
     const [startDate, setStartDate] = useState<string | null>(null);
 
@@ -126,7 +127,21 @@ const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected, mode = '
     };
 
     return (
-        <View style={[styles.card, style]}>
+        <View
+            style={[
+                {
+                    backgroundColor: CALENDAR_BG,
+                    borderRadius: 8,
+                    elevation: 6,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 2, height: 16 },
+                    shadowOpacity: 0.09,
+                    shadowRadius: 19,
+                    overflow: 'hidden',
+                },
+                style,
+            ]}
+        >
             <Calendar
                 markingType={mode === 'single' ? 'dot' : 'period'}
                 markedDates={markedDates}
@@ -148,28 +163,10 @@ const RangeCalendar: React.FC<RangeCalendarProps> = ({ onRangeSelected, mode = '
                     textDayHeaderFontFamily: 'Inter-Bold',
                     arrowColor: ARROW_COLOR,
                 }}
-                style={styles.calendar}
+                style={{ borderRadius: 8, paddingVertical: 4, width: '100%' }}
             />
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    card: {
-        backgroundColor: CALENDAR_BG,
-        borderRadius: 8,
-        elevation: 6,
-        shadowColor: '#000',
-        shadowOffset: { width: 2, height: 16 },
-        shadowOpacity: 0.09,
-        shadowRadius: 19,
-        overflow: 'hidden',
-    },
-    calendar: {
-        borderRadius: 8,
-        paddingVertical: 4,
-        width: '100%',
-    },
-});
 
 export default RangeCalendar;

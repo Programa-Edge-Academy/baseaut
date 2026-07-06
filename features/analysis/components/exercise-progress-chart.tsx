@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, LayoutChangeEvent } from "react-native";
+import { View, Text, LayoutChangeEvent, ScrollView } from "react-native";
 import Svg, { Line, Circle, Defs, LinearGradient, Stop, Text as SvgText } from "react-native-svg";
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 
 /** A single exercise execution record plotted on the progress chart. */
 export interface ExerciseProgressRecord {
@@ -25,9 +26,10 @@ export interface ExerciseProgressChartProps {
 }
 
 /**
- * Renders a student's development-level progress over time for one exercise. The
- * chart fits the available width, distributing all points evenly without
- * horizontal scrolling.
+ * Renders a student's development-level progress over time for one exercise.
+ * Points are spread over the available width; once they would get closer than
+ * a minimum spacing, the plot grows and scrolls horizontally while the level
+ * axis stays fixed.
  */
 export function ExerciseProgressChart({
   exerciseName,
@@ -36,6 +38,7 @@ export function ExerciseProgressChart({
   endDate,
   hideShadow = false,
 }: ExerciseProgressChartProps) {
+  const { t } = useI18n();
   const [containerWidth, setContainerWidth] = useState<number>(340);
 
   const filteredRecords = useMemo(() => {
@@ -108,8 +111,12 @@ export function ExerciseProgressChart({
   };
 
   const N = filteredRecords.length;
-  const plotWidth = availableWidth;
   const EDGE_PADDING = 10;
+  const MIN_POINT_SPACING = 48;
+  const plotWidth =
+    N > 1
+      ? Math.max(availableWidth, EDGE_PADDING * 2 + (N - 1) * MIN_POINT_SPACING)
+      : availableWidth;
   const usableWidth = plotWidth - EDGE_PADDING * 2;
   const spacing = N > 1 ? usableWidth / (N - 1) : 0;
 
@@ -126,22 +133,22 @@ export function ExerciseProgressChart({
       className={`w-full bg-level2 rounded-[20px] border border-outline p-5 flex-col gap-4 ${hideShadow ? "" : "shadow-panelShadow"}`}
     >
       <View className="flex-col gap-1">
-        <Text className="text-white font-bold" style={{ fontSize: 16 }}>
-          Exercício selecionado: {exerciseName}
+        <Text className="text-content font-bold" style={{ fontSize: 16 }}>
+          {t("analysis.progressChart.selectedExercise")}: {exerciseName}
         </Text>
-        
+
         <View className="flex-row items-center gap-4 mt-1">
           <View className="flex-row items-center gap-1.5">
             <View className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors.secondary }} />
-            <Text className="text-xs text-muted font-medium">Maduro</Text>
+            <Text className="text-xs text-muted font-medium">{t("analysis.level.maduro")}</Text>
           </View>
           <View className="flex-row items-center gap-1.5">
             <View className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors.extra }} />
-            <Text className="text-xs text-muted font-medium">Intermediário</Text>
+            <Text className="text-xs text-muted font-medium">{t("analysis.level.intermediario")}</Text>
           </View>
           <View className="flex-row items-center gap-1.5">
             <View className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors.error }} />
-            <Text className="text-xs text-muted font-medium">Inicial</Text>
+            <Text className="text-xs text-muted font-medium">{t("analysis.level.inicial")}</Text>
           </View>
         </View>
       </View>
@@ -157,7 +164,7 @@ export function ExerciseProgressChart({
               fontSize={12}
               fontFamily="Inter-Medium"
             >
-              Maduro
+              {t("analysis.level.maduro")}
             </SvgText>
 
             <SvgText
@@ -167,7 +174,7 @@ export function ExerciseProgressChart({
               fontSize={12}
               fontFamily="Inter-Medium"
             >
-              Intermediário
+              {t("analysis.level.intermediario")}
             </SvgText>
 
             <SvgText
@@ -177,12 +184,17 @@ export function ExerciseProgressChart({
               fontSize={12}
               fontFamily="Inter-Medium"
             >
-              Inicial
+              {t("analysis.level.inicial")}
             </SvgText>
           </Svg>
         </View>
 
-        <View className="flex-1" style={{ height: chartHeight }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="flex-1"
+          style={{ height: chartHeight }}
+        >
           <Svg width={plotWidth} height={chartHeight} pointerEvents="none">
             
               <Line
@@ -298,12 +310,12 @@ export function ExerciseProgressChart({
                 );
               })}
             </Svg>
-          </View>
+          </ScrollView>
       </View>
 
       {filteredRecords.length > 0 && (
         <Text className="text-center text-xs font-bold text-muted mt-2">
-          Sessão
+          {t("analysis.helpChart.session")}
         </Text>
       )}
     </View>

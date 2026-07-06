@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { Check, ChevronDown } from "lucide-react-native";
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -18,14 +19,15 @@ const OPTION_HEIGHT = 44;
 
 /** Dropdown selector for filtering analysis views by a single exercise (or all). */
 export function ExerciseSelectionCard({
-  options = ["Todos"],
+  options,
   selectedIndex = 0,
   onSelect,
   className,
 }: ExerciseSelectionCardProps) {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
 
-  const displayOptions = Array.isArray(options) && options.length > 0 ? options : ["Todos"];
+  const displayOptions = Array.isArray(options) && options.length > 0 ? options : [t("common.allM")];
   
   const safeSelectedIndex = selectedIndex >= 0 && selectedIndex < displayOptions.length ? selectedIndex : 0;
   const selectedOption = displayOptions[safeSelectedIndex];
@@ -44,8 +46,8 @@ export function ExerciseSelectionCard({
           borderRadius: BORDER_RADIUS,
         }}
       >
-        <Text numberOfLines={1} className="flex-1 text-white text-[14px] font-normal">
-          Exercício: {selectedOption}
+        <Text numberOfLines={1} className="flex-1 text-content text-[14px] font-normal">
+          {t("analysis.compare.exercise")}: {selectedOption}
         </Text>
         <ChevronDown size={24} color={colors.muted} />
       </Pressable>

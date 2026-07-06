@@ -1,6 +1,7 @@
 import { BarChart3, Dumbbell, Users } from "lucide-react-native";
 import React from "react";
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, Text, View } from "react-native";
 import { usePathname, useRouter } from "expo-router";
@@ -13,6 +14,7 @@ import { usePathname, useRouter } from "expo-router";
 export function Footer() {
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useI18n();
   const isActivityActive = (pathname === "/exercises" || pathname === "/circuits");
   const isStartActive = pathname === "/students";
   const isAnalysisActive = (pathname.startsWith("/analysis") || pathname.startsWith("/reports"));
@@ -43,7 +45,7 @@ export function Footer() {
                 isActivityActive ? "text-primary" : "text-muted"
               }`}
             >
-              Atividades
+              {t("nav.activities")}
             </Text>
 
             {isActivityActive && (
@@ -67,7 +69,7 @@ export function Footer() {
                 isStartActive ? "text-primary" : "text-muted"
               }`}
             >
-              Início
+              {t("nav.home")}
             </Text>
 
             {isStartActive && (
@@ -91,7 +93,7 @@ export function Footer() {
                 isAnalysisActive ? "text-primary" : "text-muted"
               }`}
             >
-              Análises
+              {t("nav.analysis")}
             </Text>
 
             {isAnalysisActive && (

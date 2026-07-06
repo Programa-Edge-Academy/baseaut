@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { ChevronRight } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
@@ -20,13 +21,14 @@ export function AnalysisOptionCard({
   onPress,
   className,
 }: AnalysisOptionCardProps) {
+  const { t } = useI18n();
   return (
     <Pressable
       onPress={onPress}
       className={`w-full flex-row items-center rounded-lg border border-outline bg-level2 p-[15px] active:opacity-80 ${className ?? ""}`}
     >
       <View className="flex-1 pr-4 gap-1">
-        <Text className="text-[16px] font-bold text-white" style={{ fontFamily: "Inter-Bold" }}>
+        <Text className="text-[16px] font-bold text-content" style={{ fontFamily: "Inter-Bold" }}>
           {title}
         </Text>
         <Text className="text-[12px] font-medium text-muted leading-[16px]" style={{ fontFamily: "Inter-Medium" }}>
@@ -37,12 +39,12 @@ export function AnalysisOptionCard({
       <View className="flex-row items-center gap-2">
         {status === "registrado" && (
           <Text className="text-[12px] font-medium text-[#34C759]" style={{ fontFamily: "Inter-Medium" }}>
-            Registrado
+            {t("analysis.status.registered")}
           </Text>
         )}
         {status === "nao_registrado" && (
           <Text className="text-[12px] font-medium text-muted" style={{ fontFamily: "Inter-Medium" }}>
-            Não registrado
+            {t("analysis.status.notRegistered")}
           </Text>
         )}
         {status && status !== "registrado" && status !== "nao_registrado" && (

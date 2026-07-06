@@ -55,7 +55,7 @@ export function Mabc2ExerciseItem({
       className={`w-full rounded-xl border border-outline bg-level1 px-3 py-2 ${className ?? ""}`}
     >
       <Text
-        className="mb-0.5 text-sm font-medium text-white"
+        className="mb-0.5 text-sm font-medium text-content"
         numberOfLines={2}
       >
         {name}
@@ -74,14 +74,14 @@ export function Mabc2ExerciseItem({
           } bg-level2 px-4 py-1`}
         >
           {readOnly ? (
-            <Text className="text-sm font-medium text-white">
+            <Text className="text-sm font-medium text-content">
               {displayAttemptCount}
             </Text>
           ) : (
             <TextInput
               testID={testID ? `${testID}-attempt-count-input` : undefined}
               accessibilityLabel={`Tentativas de ${name}`}
-              className="m-0 w-full p-0 text-center text-sm font-medium text-white"
+              className="m-0 w-full p-0 text-center text-sm font-medium text-content"
               value={attemptCount !== null ? String(attemptCount) : ""}
               onChangeText={onChangeAttemptCount}
               keyboardType="numeric"
@@ -94,7 +94,7 @@ export function Mabc2ExerciseItem({
         <View className="flex-row items-center gap-2">
           <Text className="text-sm font-medium text-muted">Score:</Text>
           {readOnly ? (
-            <Text className="text-white">{displayScore}</Text>
+            <Text className="text-content">{displayScore}</Text>
           ) : (
             <View
               className={`min-w-[60px] items-center justify-center rounded-xl border ${
@@ -106,7 +106,7 @@ export function Mabc2ExerciseItem({
               <TextInput
                 testID={testID ? `${testID}-score-input` : undefined}
                 accessibilityLabel={`Score de ${name}`}
-                className="m-0 w-full p-0 text-center text-sm font-medium text-white"
+                className="m-0 w-full p-0 text-center text-sm font-medium text-content"
                 value={score !== null ? String(score) : ""}
                 onChangeText={onChangeScore}
                 keyboardType="numeric"

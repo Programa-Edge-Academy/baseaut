@@ -55,7 +55,7 @@ export function ResetPasswordCodeScreen() {
 
       <View className="mt-10 w-full items-center">
         <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-6 shadow-panelShadow border border-outline">
-          <Text className="text-header-3 text-white mb-5">Redefinir senha</Text>
+          <Text className="text-header-3 text-content mb-5">Redefinir senha</Text>
 
           <View className="w-full gap-7">
             <View className="w-full gap-1">

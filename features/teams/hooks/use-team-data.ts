@@ -31,6 +31,7 @@ export type CompanionData = {
   name: string;
   email: string;
   status: "ativo" | "pendente" | "removido";
+  avatarUrl: string | null;
 };
 
 /**
@@ -88,14 +89,14 @@ export function useTeamData() {
       const { data: membrosData, error: membrosError } = await supabase
         .from("membros_equipe")
         .select(
-          `id, status, usuario_id, profiles:usuario_id (nome_completo, email)`,
+          `id, status, usuario_id, profiles:usuario_id (nome_completo, email, avatar_url)`,
         )
         .eq("equipe_id", resolvedId)
         .neq("status", "removido");
 
       const { data: pendentesData, error: pendentesError } = await supabase
         .from("profiles")
-        .select("id, nome_completo, email, status_conta")
+        .select("id, nome_completo, email, status_conta, avatar_url")
         .eq("role", "monitor")
         .eq("status_conta", "pendente");
 
@@ -111,6 +112,7 @@ export function useTeamData() {
               name: membro.profiles.nome_completo,
               email: membro.profiles.email,
               status: membro.status === "pendente" ? "pendente" : (membro.status === "removido" ? "removido" : "ativo"),
+              avatarUrl: membro.profiles.avatar_url ?? null,
             });
             addedProfileIds.add(membro.usuario_id);
           }
@@ -126,6 +128,7 @@ export function useTeamData() {
               name: profile.nome_completo,
               email: profile.email,
               status: "pendente",
+              avatarUrl: profile.avatar_url ?? null,
             });
           }
         });

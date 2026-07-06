@@ -10,15 +10,28 @@ import { Header } from "@/components/header";
 import { ListCard } from "@/components/list-card";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 
 import { useHistory } from "@/features/sessions/hooks/use-history";
 
 /**
  * Route listing students that have session history, with real-time name search
- * and navigation into each student's record history.
+ * and navigation into each student's record history. Also serves as the entry
+ * point of the History guided tutorial simulation.
  */
 export default function HistoryScreen() {
-  const { studentsHistory, isLoading, error, refetch } = useHistory();
+  const { t } = useI18n();
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "history";
+  const sim = useTutorialSimulation();
+  const [noticeOpen, setNoticeOpen] = useState(false);
+
+  const { studentsHistory, isLoading, error, refetch } = useHistory({ mock: isTutorial });
   useFocusEffect(useCallback(() => { refetch(); }, [refetch]));
   const [query, setQuery] = useState("");
 
@@ -52,50 +65,63 @@ export default function HistoryScreen() {
       <DataList
         className="mt-5 px-8"
         data={filteredHistory}
-        emptyMessage="Nenhum histórico encontrado."
+        emptyMessage={t("history.empty")}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <ListCard
-            title={item.name}
-            subtitle={`${item.sessions} registros`}
-            pendencyAlert={item.pendencyAlert}
-            icon={
-              item.avatarUrl ? (
-                <Image
-                  source={{ uri: item.avatarUrl }}
-                  style={{ width: "100%", height: "100%", borderRadius: 12 }}
-                  resizeMode="cover"
-                />
-              ) : (
-                <User size={20} color={colors.muted} />
-              )
-            }
-            iconBgColor={item.avatarUrl ? "transparent" : undefined}
-            onPress={() => {
-              router.push(`../history/${item.id}`);
-            }}
-            enableRipple={true}
-          />
-        )}
+        renderItem={({ item }) => {
+          const card = (
+            <ListCard
+              title={item.name}
+              subtitle={`${item.sessions} ${t("history.recordsSuffix")}`}
+              pendencyAlert={item.pendencyAlert}
+              icon={
+                item.avatarUrl ? (
+                  <Image
+                    source={{ uri: item.avatarUrl }}
+                    style={{ width: "100%", height: "100%", borderRadius: 12 }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <User size={20} color={colors.muted} />
+                )
+              }
+              iconBgColor={item.avatarUrl ? "transparent" : undefined}
+              onPress={() => {
+                if (isTutorial) sim.complete("selectStudent");
+                router.push(`../history/${item.id}`);
+              }}
+              enableRipple={true}
+            />
+          );
+
+          return isTutorial ? (
+            <SpotlightTarget targetKey="selectStudent">{card}</SpotlightTarget>
+          ) : (
+            card
+          );
+        }}
       />
     );
   };
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" onPressBack={() => router.back()} />
+      <Header
+        variant="back"
+        onPressBack={() => router.back()}
+        onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+      />
 
       <View className="mx-8 mt-5">
         <PageHeader
-          title="Histórico de registros"
-          subtitle="Selecione um aluno para acessar registros passados"
+          title={t("history.title")}
+          subtitle={t("history.subtitle")}
         />
       </View>
 
       <View className="flex-1">
         <View className="relative z-10 mx-8 mt-5">
           <SearchInput
-            placeholder="Buscar aluno no histórico..."
+            placeholder={t("common.searchPlaceholder")}
             value={query}
             onChangeText={setQuery}
             showTags={false}
@@ -105,6 +131,19 @@ export default function HistoryScreen() {
         {renderListBody()}
       </View>
 
+      {isTutorial && (
+        <TutorialPracticeNotice
+          visible={noticeOpen}
+          onClose={() => setNoticeOpen(false)}
+          onExit={() => {
+            setNoticeOpen(false);
+            sessionSim.stop();
+            router.back();
+          }}
+        />
+      )}
+
+      {isTutorial && <TutorialSpotlight />}
     </View>
   );
 }

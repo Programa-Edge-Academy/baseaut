@@ -1,4 +1,6 @@
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { Pressable, Text, View } from "react-native";
+import { translateSubtag, translateTag } from "../utils/tag-labels";
 
 /** Selection behaviour for a {@link TagGroup}. */
 export type TagGroupMode = "single" | "multiple";
@@ -28,6 +30,7 @@ export function TagGroup({
   onChangeTags,
   onChangeSubtags,
 }: TagGroupProps) {
+  const { t } = useI18n();
   const toggleTag = (label: string) => {
     if (mode === "single") {
       onChangeTags(selectedTags.includes(label) ? [] : [label]);
@@ -72,8 +75,8 @@ export function TagGroup({
                 : "bg-level1 border-outline"
             } justify-center pl-4 pr-4 py-3 relative`}
           >
-            <Text className="text-white text-[14px] leading-[20px] font-medium mb-1.5">
-              {tagLabel}
+            <Text className="text-content text-[14px] leading-[20px] font-medium mb-1.5">
+              {translateTag(tagLabel, t)}
             </Text>
             <View className="flex-row flex-wrap gap-[10px]">
               {availableSubtags.map((subLabel) => {
@@ -92,8 +95,8 @@ export function TagGroup({
                         : "bg-level2 border-outline"
                     }`}
                   >
-                    <Text className="text-white text-[12px] leading-[20px] font-medium">
-                      {subLabel.charAt(0).toUpperCase() + subLabel.slice(1)}
+                    <Text className="text-content text-[12px] leading-[20px] font-medium">
+                      {translateSubtag(subLabel, t)}
                     </Text>
                   </Pressable>
                 );

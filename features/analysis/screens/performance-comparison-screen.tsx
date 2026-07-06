@@ -5,6 +5,10 @@ import { Header } from "@/components/header";
 import RangeCalendar from "@/components/range-calendar";
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
@@ -16,22 +20,30 @@ import ExerciceComparisonCard from "@/features/analysis/components/exercice-comp
 import { usePerformanceComparison } from "@/features/analysis/hooks/use-performance-comparison";
 import { PageHeader } from "@/components/page-header";
 
-const monthsPt = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-];
+/** Month names per supported locale, used to format "D Month YYYY". */
+const MONTHS: Record<string, string[]> = {
+  pt: [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+  ],
+  en: [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ],
+};
 
-/** Formats a date as "D Month YYYY" in Portuguese. */
-function formatSingleDate(date: Date): string {
+/** Formats a date as "D Month YYYY" in the given locale. */
+function formatSingleDate(date: Date, locale: string): string {
   const day = date.getDate();
-  const month = monthsPt[date.getMonth()];
+  const months = MONTHS[locale] ?? MONTHS.pt;
+  const month = months[date.getMonth()];
   const year = date.getFullYear();
   return `${day} ${month} ${year}`;
 }
 
 /** Formats a date range as "start - end". */
-function formatDateRange(start: Date, end: Date): string {
-  return `${formatSingleDate(start)} - ${formatSingleDate(end)}`;
+function formatDateRange(start: Date, end: Date, locale: string): string {
+  return `${formatSingleDate(start, locale)} - ${formatSingleDate(end, locale)}`;
 }
 
 /** Parses a "YYYY-MM-DD" string into a local Date. */
@@ -56,9 +68,13 @@ function formatToISODate(date: Date | undefined | null): string | undefined {
  */
 export function PerformanceComparisonScreen() {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const { studentId: rawStudentId } = useLocalSearchParams();
   const studentId = Array.isArray(rawStudentId) ? rawStudentId[0] : rawStudentId ?? "";
-  const { profile, isLoading } = useStudentProfile(studentId);
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const { profile, isLoading } = useStudentProfile(studentId, { mock: isTutorial });
 
   const [period1Range, setPeriod1Range] = useState<{ start: Date; end: Date } | null>(null);
   const [period2Range, setPeriod2Range] = useState<{ start: Date; end: Date } | null>(null);
@@ -82,7 +98,8 @@ export function PerformanceComparisonScreen() {
     formatToISODate(period1Range?.end),
     formatToISODate(period2Range?.start),
     formatToISODate(period2Range?.end),
-    showResults
+    showResults,
+    { mock: isTutorial }
   );
 
   const handlePeriodPress = (periodNum: 1 | 2) => {
@@ -98,7 +115,7 @@ export function PerformanceComparisonScreen() {
     setModalError(null);
 
     if (!tempStart || !tempEnd) {
-      setModalError("O Período é obrigatório. Selecione o início e o fim no calendário.");
+      setModalError(t("analysis.compareScreen.periodRequired"));
       return;
     }
 
@@ -107,7 +124,7 @@ export function PerformanceComparisonScreen() {
     const nowMs = new Date().setHours(23, 59, 59, 999);
 
     if (startMs > nowMs || endMs > nowMs) {
-      setModalError("Data inválida. Não é possível selecionar períodos futuros.");
+      setModalError(t("analysis.compareScreen.futureDate"));
       return;
     }
 
@@ -116,11 +133,11 @@ export function PerformanceComparisonScreen() {
       const p2EndMs = period2Range.end.getTime();
 
       if (startMs > p2StartMs) {
-        setModalError("O Período 1 não pode iniciar depois do Período 2.");
+        setModalError(t("analysis.compareScreen.p1AfterP2"));
         return;
       }
       if (startMs <= p2EndMs && endMs >= p2StartMs) {
-        setModalError("As datas não podem coincidir com o Período 2.");
+        setModalError(t("analysis.compareScreen.overlapP2"));
         return;
       }
     }
@@ -130,11 +147,11 @@ export function PerformanceComparisonScreen() {
       const p1EndMs = period1Range.end.getTime();
 
       if (p1StartMs > startMs) {
-        setModalError("O Período 2 não pode iniciar antes do Período 1.");
+        setModalError(t("analysis.compareScreen.p2BeforeP1"));
         return;
       }
       if (p1StartMs <= endMs && p1EndMs >= startMs) {
-        setModalError("As datas não podem coincidir com o Período 1.");
+        setModalError(t("analysis.compareScreen.overlapP1"));
         return;
       }
     }
@@ -170,7 +187,7 @@ export function PerformanceComparisonScreen() {
     setCompareError(null);
     
     if (!period1Range || !period2Range) {
-      setCompareError("Ambos os períodos são obrigatórios para a comparação.");
+      setCompareError(t("analysis.compareScreen.bothRequired"));
       return;
     }
 
@@ -181,10 +198,11 @@ export function PerformanceComparisonScreen() {
   const isCompareDisabled = !period1Range || !period2Range;
 
   const getLabel = (periodNum: 1 | 2, range: { start: Date; end: Date } | null) => {
+    const prefix = t("analysis.compareScreen.periodValue").replace("{n}", String(periodNum));
     if (range) {
-      return `Período ${periodNum}: ${formatDateRange(range.start, range.end)}`;
+      return `${prefix}: ${formatDateRange(range.start, range.end, locale)}`;
     }
-    return `Período ${periodNum}: selecionar intervalo de datas`;
+    return `${prefix}: ${t("analysis.compareScreen.selectRange")}`;
   };
 
   const summaryCards = useMemo(() => {
@@ -217,33 +235,39 @@ export function PerformanceComparisonScreen() {
       (comportamentos?.inapto?.p2 || 0) +
       (comportamentos?.atividade_preferencial?.p2 || 0);
 
+    const p1 = t("analysis.period1");
+    const p2 = t("analysis.period2");
     return [
       {
-        title: "Exercícios avaliados",
-        period1: { label: "Período 1", value: exerciciosP1 },
-        period2: { label: "Período 2", value: exerciciosP2 },
+        title: t("analysis.summary.exercisesEvaluated"),
+        period1: { label: p1, value: exerciciosP1 },
+        period2: { label: p2, value: exerciciosP2 },
       },
       {
-        title: "Registros de ajuda",
-        period1: { label: "Período 1", value: ajudaP1 },
-        period2: { label: "Período 2", value: ajudaP2 },
+        title: t("analysis.summary.helpRecords"),
+        period1: { label: p1, value: ajudaP1 },
+        period2: { label: p2, value: ajudaP2 },
       },
       {
-        title: "Comportamentos observados",
-        period1: { label: "Período 1", value: comportamentosP1 },
-        period2: { label: "Período 2", value: comportamentosP2 },
+        title: t("analysis.summary.behaviors"),
+        period1: { label: p1, value: comportamentosP1 },
+        period2: { label: p2, value: comportamentosP2 },
       },
       {
-        title: "Sessões registradas",
-        period1: { label: "Período 1", value: resumo?.sessoes_p1 ?? 0 },
-        period2: { label: "Período 2", value: resumo?.sessoes_p2 ?? 0 },
+        title: t("analysis.summary.sessions"),
+        period1: { label: p1, value: resumo?.sessoes_p1 ?? 0 },
+        period2: { label: p2, value: resumo?.sessoes_p2 ?? 0 },
       },
     ];
-  }, [comparisonData]);
+  }, [comparisonData, t]);
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" onPressBack={() => router.back()} />
+      <Header
+        variant="back"
+        onPressBack={() => router.back()}
+        onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+      />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }} className="flex-1">
         {isLoading ? (
@@ -252,7 +276,7 @@ export function PerformanceComparisonScreen() {
           </View>
         ) : (
           <View className="mx-8 mt-5">
-            <PageHeader title={`Comparar desempenho - ${profile?.name || "Aluno"}`} subtitle=""></PageHeader>
+            <PageHeader title={`${t("analysis.card.compare.title")} - ${profile?.name || t("common.student")}`} subtitle=""></PageHeader>
 
             <PeriodSelector
               containerStyle={{marginHorizontal: 0}}
@@ -274,7 +298,7 @@ export function PerformanceComparisonScreen() {
 
             <View className="items-center mt-2">
               <DefaultButton
-                label="Comparar"
+                label={t("common.compare")}
                 sizeClass="w-full h-[44px]"
                 disabled={false}
                 style={{ opacity: isCompareDisabled ? 0.5 : 1 }}
@@ -335,7 +359,7 @@ export function PerformanceComparisonScreen() {
 
             <View className="items-center">
               <DefaultButton
-                label="Salvar"
+                label={t("common.save")}
                 sizeClass="w-full h-11"
                 disabled={false}
                 style={{ opacity: isSaveDisabled ? 0.5 : 1 }}
@@ -345,6 +369,16 @@ export function PerformanceComparisonScreen() {
           </Pressable>
         </Pressable>
       </AppModal>
+
+      {isTutorial && (
+        <TutorialPracticeNotice
+          visible={noticeOpen}
+          onClose={() => setNoticeOpen(false)}
+          onExit={() => { setNoticeOpen(false); router.back(); }}
+        />
+      )}
+
+      {isTutorial && <TutorialSpotlight />}
     </View>
   );
 }

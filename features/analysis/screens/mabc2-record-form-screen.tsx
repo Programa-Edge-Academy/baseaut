@@ -4,6 +4,9 @@ import { DefaultScrollView } from "@/components/default-scroll-view";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { Toast, type ToastMode } from "@/components/toast";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { useKeyboardAwareScroll } from "@/lib/use-keyboard-aware-scroll";
+import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
 import { Edit2, Share2, Trash2 } from "lucide-react-native";
 import React, { useState } from "react";
 import { Pressable, View } from "react-native";
@@ -34,7 +37,9 @@ export type Mabc2RecordFormScreenProps = {
 /**
  * Presentational screen for viewing or editing a MABC-2 record: total scores and
  * sections, plus edit/share/delete actions and a delete confirmation in
- * read-only mode.
+ * read-only mode. The focused score input is kept above the keyboard (see
+ * {@link useKeyboardAwareScroll}) and the scroll content grows by the keyboard
+ * height (see {@link useKeyboardPadding}) so inputs are never covered.
  */
 export function Mabc2RecordFormScreen({
   studentName,
@@ -44,7 +49,7 @@ export function Mabc2RecordFormScreen({
   sections,
   readOnly = false,
   showErrors = false,
-  submitLabel = "Registrar",
+  submitLabel,
   toastConfig,
   onHideToast,
   onChangeTotalScore,
@@ -55,7 +60,11 @@ export function Mabc2RecordFormScreen({
   onDelete,
   onShare,
 }: Mabc2RecordFormScreenProps) {
+  const { t } = useI18n();
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const keyboardPadding = useKeyboardPadding();
+  const keyboardAwareScroll = useKeyboardAwareScroll();
+  const resolvedSubmitLabel = submitLabel ?? t("common.register");
 
   return (
     <View className="flex-1 bg-level1">
@@ -65,7 +74,7 @@ export function Mabc2RecordFormScreen({
         <View className="flex-1 mr-3">
           <PageHeader
             title={`MABC-2 - ${studentName}`}
-            subtitle="Desenvolvimento motor"
+            subtitle={t("analysis.motorDev")}
           />
         </View>
 
@@ -108,8 +117,12 @@ export function Mabc2RecordFormScreen({
       </View>
 
       <DefaultScrollView
+        {...keyboardAwareScroll}
         className="flex-1 mt-4"
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingBottom: 32 + keyboardPadding,
+        }}
       >
         <Mabc2MotorDevelopmentCard
           recordCount={recordCount}
@@ -121,7 +134,7 @@ export function Mabc2RecordFormScreen({
           onRegister={onRegister}
           readOnly={readOnly}
           showErrors={showErrors}
-          submitLabel={submitLabel}
+          submitLabel={resolvedSubmitLabel}
         />
       </DefaultScrollView>
 
@@ -132,10 +145,8 @@ export function Mabc2RecordFormScreen({
           setIsDeleteModalVisible(false);
           onDelete?.();
         }}
-        title="Excluir registro?"
-        message={
-          "Tem certeza que deseja excluir este registro de desenvolvimento motor?\nEsta ação não poderá ser desfeita."
-        }
+        title={t("analysis.mabcForm.deleteTitle")}
+        message={t("analysis.mabcForm.deleteMessage")}
         mode="delete"
       />
 

@@ -1,4 +1,5 @@
 import { colors } from '@/assets/colors';
+import { useI18n } from '@/features/settings/contexts/i18n-context';
 import { CircleArrowRightIcon } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, StyleProp, Text, View, ViewStyle } from 'react-native';
@@ -30,22 +31,28 @@ const toneColors = {
  */
 export default function ProgressExerciseCard({
   title,
-  statusLabel = 'Sem registro',
+  statusLabel,
   statusTone = 'gray',
   sessions = 0,
-  evolutionLabel = 'Aguardando novos registros',
+  evolutionLabel,
   evolutionTone = 'gray',
   onPress,
   disabled = false,
   testID,
   style,
 }: ProgressExerciseCardProps) {
+  const { t } = useI18n();
+  const resolvedStatusLabel = statusLabel ?? t('analysis.noRecord');
+  const resolvedEvolutionLabel = evolutionLabel ?? t('analysis.progress.awaiting');
   const statusColor = toneColors[statusTone] ?? colors.muted;
   const evolutionColor = toneColors[evolutionTone] ?? colors.muted;
 
-  const formattedSessions = sessions === 0 
-    ? 'Ainda não registrado' 
-    : `${sessions} sessão${sessions === 1 ? '' : 's'} realizada${sessions === 1 ? '' : 's'}`;
+  const formattedSessions = sessions === 0
+    ? t('analysis.progress.notYetRecorded')
+    : (sessions === 1
+        ? t('analysis.progress.sessionsOne')
+        : t('analysis.progress.sessionsMany')
+      ).replace('{n}', String(sessions));
 
   return (
     <Pressable
@@ -60,16 +67,16 @@ export default function ProgressExerciseCard({
     >
       <View className="flex-row items-center justify-between">
         <View className="flex-1 pr-4 gap-y-2">
-          <Text className="text-base font-bold text-white mb-1">{title}</Text>
+          <Text className="text-base font-bold text-content mb-1">{title}</Text>
           
           <Text className="text-sm text-muted">
-            Último desempenho: <Text style={{ color: statusColor, fontWeight: '600' }}>{statusLabel}</Text>
+            {t('analysis.progress.lastPerformance')}: <Text style={{ color: statusColor, fontWeight: '600' }}>{resolvedStatusLabel}</Text>
           </Text>
-          
+
           <Text className="text-sm text-muted">{formattedSessions}</Text>
-          
+
           <Text className="text-sm text-muted">
-            Evolução: <Text style={{ color: evolutionColor, fontWeight: '600' }}>{evolutionLabel}</Text>
+            {t('analysis.progress.evolution')}: <Text style={{ color: evolutionColor, fontWeight: '600' }}>{resolvedEvolutionLabel}</Text>
           </Text>
         </View>
 

@@ -2,6 +2,8 @@ import { colors } from "@/assets/colors";
 import { DefaultScrollView } from "@/components/default-scroll-view";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
+import type { TranslationKey } from "@/features/settings/constants/translations";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { AlertCircle, ChartNoAxesColumnIncreasingIcon, ChartNoAxesCombined, ClipboardListIcon } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
@@ -25,51 +27,51 @@ export type NoRecordsScreenProps = {
 const VARIANT_CONFIG: Record<
   NoRecordsScreenVariant,
   {
-    title: string;
-    message: string;
+    titleKey: TranslationKey;
+    messageKey: TranslationKey;
     icon: React.ComponentType<{ color?: string; size?: number; strokeWidth?: number }>;
     accentColor: string;
   }
 > = {
   sessions: {
-    title: "Ainda não há registros de sessão",
-    message: "Quando houver uma sessão salva para este aluno, ela aparecerá aqui para acompanhamento.",
+    titleKey: "analysis.noRecords.sessions.title",
+    messageKey: "analysis.noRecords.sessions.message",
     icon: ChartNoAxesCombined,
     accentColor: colors.primary,
   },
   protocol: {
-    title: "Ainda não há registro deste protocolo",
-    message: "Os dados deste protocolo aparecerão aqui assim que houver um registro válido.",
+    titleKey: "analysis.noRecords.protocol.title",
+    messageKey: "analysis.noRecords.protocol.message",
     icon: ClipboardListIcon,
     accentColor: "#F59E0B",
   },
   help: {
-    title: "Não há evolução de ajuda para exibir",
-    message: "Os registros de ajuda por sessão ficarão disponíveis quando houver dados suficientes.",
+    titleKey: "analysis.noRecords.help.title",
+    messageKey: "analysis.noRecords.help.message",
     icon: ChartNoAxesColumnIncreasingIcon,
     accentColor: "#34C759",
   },
   behavior: {
-    title: "Nenhum comportamento observado registrado",
-    message: "Os comportamentos observados aparecerão aqui quando houver registros no período selecionado.",
+    titleKey: "analysis.noRecords.behavior.title",
+    messageKey: "analysis.noRecords.behavior.message",
     icon: ChartNoAxesColumnIncreasingIcon,
     accentColor: "#8B5CF6",
   },
   loadRecords: {
-    title: "Não foi possível carregar os registros",
-    message: "Tente novamente em alguns instantes ou verifique sua conexão para acessar os dados do aluno.",
+    titleKey: "analysis.noRecords.loadRecords.title",
+    messageKey: "analysis.noRecords.loadRecords.message",
     icon: AlertCircle,
     accentColor: "#EF4444",
   },
   loadEvolution: {
-    title: "Não foi possível carregar a evolução",
-    message: "Os dados de evolução de ajuda não puderam ser carregados no momento.",
+    titleKey: "analysis.noRecords.loadEvolution.title",
+    messageKey: "analysis.noRecords.loadEvolution.message",
     icon: AlertCircle,
     accentColor: "#EF4444",
   },
   loadBehavior: {
-    title: "Não foi possível carregar os comportamentos",
-    message: "Não conseguimos acessar os comportamentos observados para este período agora.",
+    titleKey: "analysis.noRecords.loadBehavior.title",
+    messageKey: "analysis.noRecords.loadBehavior.message",
     icon: AlertCircle,
     accentColor: "#EF4444",
   },
@@ -81,17 +83,20 @@ const VARIANT_CONFIG: Record<
  */
 export function NoRecordsScreen({
   variant = "sessions",
-  studentName = "Aluno",
+  studentName,
   title,
   message,
   onPressBack,
   onPrimaryAction,
   onSecondaryAction,
-  primaryActionLabel = "Voltar",
+  primaryActionLabel,
   secondaryActionLabel,
 }: NoRecordsScreenProps) {
+  const { t } = useI18n();
   const config = VARIANT_CONFIG[variant];
   const Icon = config.icon;
+  const resolvedStudentName = studentName ?? t("common.student");
+  const resolvedPrimaryLabel = primaryActionLabel ?? t("common.back");
 
   return (
     <View className="flex-1 bg-level1">
@@ -99,7 +104,7 @@ export function NoRecordsScreen({
 
       <View className="mx-5 mt-5">
         <PageHeader
-          title={`Sem registros — ${studentName}`}
+          title={`${t("analysis.noRecords.header")} — ${resolvedStudentName}`}
           subtitle=""
         />
       </View>
@@ -117,12 +122,12 @@ export function NoRecordsScreen({
               <Icon size={56} color={config.accentColor} strokeWidth={2} />
             </View>
 
-            <Text className="text-center text-[22px] font-bold text-white" style={{ fontFamily: "Inter-Bold" }}>
-              {title ?? config.title}
+            <Text className="text-center text-[22px] font-bold text-content" style={{ fontFamily: "Inter-Bold" }}>
+              {title ?? t(config.titleKey)}
             </Text>
 
             <Text className="mt-3 text-center text-[14px] leading-6 text-muted" style={{ fontFamily: "Inter-Medium" }}>
-              {message ?? config.message}
+              {message ?? t(config.messageKey)}
             </Text>
 
             <View className="mt-6 gap-3">
@@ -132,7 +137,7 @@ export function NoRecordsScreen({
                   className="items-center rounded-2xl px-4 py-3"
                   style={{ backgroundColor: colors.primary }}
                 >
-                  <Text className="text-[14px] font-semibold text-white">{primaryActionLabel}</Text>
+                  <Text className="text-[14px] font-semibold text-content">{resolvedPrimaryLabel}</Text>
                 </Pressable>
               ) : null}
 
@@ -141,7 +146,7 @@ export function NoRecordsScreen({
                   onPress={onSecondaryAction}
                   className="items-center rounded-2xl border border-outline bg-level3 px-4 py-3"
                 >
-                  <Text className="text-[14px] font-semibold text-white">{secondaryActionLabel}</Text>
+                  <Text className="text-[14px] font-semibold text-content">{secondaryActionLabel}</Text>
                 </Pressable>
               ) : null}
             </View>

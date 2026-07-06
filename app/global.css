@@ -2,30 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Theme tokens as space-separated RGB channels consumed by tailwind.config.js
+ * via rgb(var(--color-x) / <alpha-value>). Light is the default; the dark
+ * values (identical to the historical palette) apply when the active color
+ * scheme is dark. On native, NativeWind resolves prefers-color-scheme from its
+ * own color-scheme store, so ThemeProvider's setColorScheme flips these.
+ */
+@layer base {
+  :root {
+    --color-primary: 14 137 229;
+    --color-secondary: 31 168 31;
+    --color-extra: 201 147 10;
+    --color-error: 190 34 35;
+    --color-level1: 245 247 250;
+    --color-level2: 255 255 255;
+    --color-outline: 214 220 228;
+    --color-muted: 90 102 117;
+    --color-placeholder: 150 160 172;
+    --color-content: 20 24 31;
+    --color-content-inverse: 255 255 255;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-primary: 14 137 229;
+      --color-secondary: 37 193 37;
+      --color-extra: 240 189 2;
+      --color-error: 190 34 35;
+      --color-level1: 20 24 31;
+      --color-level2: 27 31 39;
+      --color-outline: 43 48 59;
+      --color-muted: 102 117 138;
+      --color-placeholder: 70 84 96;
+      --color-content: 255 255 255;
+      --color-content-inverse: 20 24 31;
+    }
+  }
+}
+
 @layer components {
+  /*
+   * Line heights stay at ~1.25x the font size: values at or below the font
+   * size clip ascenders/descenders (e.g. "q", "p", "l") on native Text.
+   */
   .text-header-1 {
-    @apply text-2xl font-bold leading-6;
+    @apply text-2xl font-bold leading-[30px];
     font-family: 'Inter-Bold';
   }
   .text-header-2 {
-    @apply text-xl font-bold leading-5;
+    @apply text-xl font-bold leading-[25px];
     font-family: 'Inter-Bold';
   }
   .text-header-3 {
-    @apply text-base font-bold leading-4;
+    @apply text-base font-bold leading-5;
     font-family: 'Inter-Bold';
   }
 
   .text-default-1 {
-    @apply text-base font-medium leading-4;
+    @apply text-base font-medium leading-5;
     font-family: 'Inter-Medium';
   }
   .text-default-2 {
-    @apply text-sm font-medium leading-4;
+    @apply text-sm font-medium leading-[18px];
     font-family: 'Inter-Medium';
   }
   .text-default-3 {
-    @apply text-xs font-medium leading-3;
+    @apply text-xs font-medium leading-[15px];
     font-family: 'Inter-Medium';
   }
   
