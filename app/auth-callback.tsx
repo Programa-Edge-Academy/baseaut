@@ -1,6 +1,5 @@
 import { colors } from "@/assets/colors";
 import { createSessionFromUrl } from "@/features/auth/hooks/use-google-auth";
-import { verifyAccountStatus } from "@/features/auth/hooks/use-login";
 import { supabase } from "@/lib/supabase";
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
@@ -17,7 +16,11 @@ import { ActivityIndicator, View } from "react-native";
  * Without a matching route Expo Router would show "Unmatched route", so this
  * screen completes the login from the callback URL and forwards the user to the
  * right place: the app when approved, the pending-approval feedback when the
- * account still awaits a coordinator, or back to login on failure.
+ * account still awaits a coordinator, or back to login otherwise.
+ *
+ * Navigation is never awaited on `signOut()`: pending/blocked accounts are
+ * signed out in the background so the redirect happens immediately instead of
+ * hanging on the spinner while the revoke request is in flight.
  */
 export default function AuthCallback() {
   const url = Linking.useURL();
@@ -38,7 +41,12 @@ export default function AuthCallback() {
           data: { session },
         } = await supabase.auth.getSession();
         if (!session) {
-          await createSessionFromUrl(callbackUrl);
+          try {
+            await createSessionFromUrl(callbackUrl);
+          } catch {
+            // The code may have already been consumed by the browser session;
+            // fall back to whatever session is now stored.
+          }
           ({
             data: { session },
           } = await supabase.auth.getSession());
@@ -49,16 +57,36 @@ export default function AuthCallback() {
           return;
         }
 
-        const status = await verifyAccountStatus(session.user.id);
-        if (status === "pending") {
+        // Read the approval status directly so navigation does not block on the
+        // sign-out network call. `maybeSingle` avoids throwing when the profile
+        // row was not created yet for a brand-new account.
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("status_conta, role")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        const approved =
+          profile?.role === "coordenador" || profile?.status_conta === "ativa";
+        if (approved) {
+          router.replace("/students");
+          return;
+        }
+
+        const blocked =
+          profile?.status_conta === "bloqueada" ||
+          profile?.status_conta === "rejeitada";
+
+        // Not yet approved: drop the session in the background and forward to the
+        // matching screen without waiting for the revoke request to resolve.
+        void supabase.auth.signOut();
+        if (blocked) {
+          router.replace("/");
+        } else {
           router.replace({
             pathname: "/auth-feedback",
             params: { mode: "pendingApproval" },
           });
-        } else if (status === "blocked") {
-          router.replace("/");
-        } else {
-          router.replace("/students");
         }
       } catch {
         router.replace("/");
