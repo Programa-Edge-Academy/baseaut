@@ -11,8 +11,13 @@ WebBrowser.maybeCompleteAuthSession();
  * Extracts the Supabase session tokens from an OAuth callback URL and creates
  * the local session. Handles both the implicit flow (tokens in the URL
  * fragment) and the PKCE flow (`code` query parameter).
+ *
+ * @remarks
+ * Also used by the `auth-callback` route for the case where the OAuth redirect
+ * re-opens the app via the `baseaut://` deep link instead of being caught by
+ * the in-app browser session.
  */
-async function createSessionFromUrl(url: string): Promise<boolean> {
+export async function createSessionFromUrl(url: string): Promise<boolean> {
   const fragment = url.split("#")[1];
   if (fragment) {
     const params = new URLSearchParams(fragment);
