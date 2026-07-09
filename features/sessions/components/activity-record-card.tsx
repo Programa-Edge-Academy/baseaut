@@ -1,9 +1,10 @@
-import { colors } from "@/assets/colors";
+import { colors as staticColors } from "@/assets/colors";
 import { withOpacity } from "@/components/color-opacity";
 import { RipplePressable } from "@/components/ripple-pressable";
 import { SelectableChip } from "@/components/selectable-chip";
 import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { useThemeColors } from "@/features/settings/contexts/theme-context";
 import { Check, Edit2, X } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
@@ -90,9 +91,9 @@ const NIVEIS: {
   svgXml: string;
   bgColor: string;
 }[] = [
-  { id: "inicial",       labelKey: "analysis.level.inicial",      svgXml: SAD_FACE_XML,     bgColor: colors.error },
-  { id: "intermediario", labelKey: "analysis.level.intermediario", svgXml: NEUTRAL_FACE_XML, bgColor: colors.extra },
-  { id: "maduro",        labelKey: "analysis.level.maduro",        svgXml: SMILE_FACE_XML,   bgColor: colors.secondary },
+  { id: "inicial",       labelKey: "analysis.level.inicial",      svgXml: SAD_FACE_XML,     bgColor: staticColors.error },
+  { id: "intermediario", labelKey: "analysis.level.intermediario", svgXml: NEUTRAL_FACE_XML, bgColor: staticColors.extra },
+  { id: "maduro",        labelKey: "analysis.level.maduro",        svgXml: SMILE_FACE_XML,   bgColor: staticColors.secondary },
 ];
 
 const MOTIVOS: { id: MotivoNaoRealizacao; labelKey: TranslationKey }[] = [
@@ -105,7 +106,6 @@ const MOTIVOS: { id: MotivoNaoRealizacao; labelKey: TranslationKey }[] = [
 ];
 
 const INFO_LABEL_STYLE = {
-  color: colors.muted,
   fontSize: 14,
   fontFamily: "Inter-Medium",
 } as const;
@@ -168,9 +168,16 @@ function getMotivoLabel(value: MotivoNaoRealizacao | null, t: Translate) {
  * Card that displays a recorded execution and lets the user edit it inline:
  * status, duration, development level, and help (or a reason when not
  * performed). Highlights pending records and blocks saving until complete.
+ *
+ * @remarks
+ * Surfaces and text colors follow the active theme via {@link useThemeColors},
+ * so the card reads correctly in both light and dark mode. A pending record uses
+ * a transparent background (with the accent border) so it blends into either
+ * theme. The development-level accent circles keep their fixed vivid colors.
  */
 export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) {
   const { t } = useI18n();
+  const colors = useThemeColors();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<StatusRealizacao>(
     record.statusRealizacao === "nao_realizada" ? "nao_realizada" : "realizada"
@@ -287,7 +294,7 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
         borderWidth: 1,
         borderColor: isPending ? colors.extra : colors.outline,
         borderRadius: 18,
-        backgroundColor: isPending ? withOpacity(colors.extra, 0.1) : colors.level2,
+        backgroundColor: isPending ? "transparent" : colors.level2,
         paddingHorizontal: 18,
         paddingVertical: 18,
         marginBottom: 16,
@@ -298,7 +305,7 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
           <Text
             numberOfLines={1}
             style={{
-              color: "#FFFFFF",
+              color: colors.content,
               fontSize: 20,
               fontWeight: "700",
               fontFamily: "Inter-Bold",
@@ -358,16 +365,16 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
         <View style={{ marginTop: 20, gap: 16 }}>
           {isNaoRealizada ? (
             <>
-              <Text style={INFO_LABEL_STYLE}>
+              <Text style={[INFO_LABEL_STYLE, { color: colors.muted }]}>
                 {t("activityRecord.status")}:{" "}
                 <Text style={[INFO_VALUE_STYLE, { color: colors.error }]}>
                   {t("activityRecord.notPerformed")}
                 </Text>
               </Text>
 
-              <Text style={INFO_LABEL_STYLE}>
+              <Text style={[INFO_LABEL_STYLE, { color: colors.muted }]}>
                 {t("activityRecord.reasonLabel")}:{" "}
-                <Text style={[INFO_VALUE_STYLE, { color: "#FFFFFF" }]}>
+                <Text style={[INFO_VALUE_STYLE, { color: colors.content }]}>
                   {getMotivoLabel(record.motivoNaoRealizacao, t)}
                   {record.motivoNaoRealizacao === "outro" && record.descricaoAdicional
                     ? ` — ${record.descricaoAdicional}`
@@ -377,23 +384,23 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
             </>
           ) : (
             <>
-              <Text style={INFO_LABEL_STYLE}>
+              <Text style={[INFO_LABEL_STYLE, { color: colors.muted }]}>
                 {t("activityRecord.duration")}:{" "}
-                <Text style={[INFO_VALUE_STYLE, { color: "#FFFFFF" }]}>
+                <Text style={[INFO_VALUE_STYLE, { color: colors.content }]}>
                   {formatDuration(record.durationSeconds, t)}
                 </Text>
               </Text>
 
-              <Text style={INFO_LABEL_STYLE}>
+              <Text style={[INFO_LABEL_STYLE, { color: colors.muted }]}>
                 {t("activityResult.developmentLevel")}:{" "}
-                <Text style={[INFO_VALUE_STYLE, { color: nivelData?.bgColor ?? "#FFFFFF" }]}>
+                <Text style={[INFO_VALUE_STYLE, { color: nivelData?.bgColor ?? colors.content }]}>
                   {nivelData ? t(nivelData.labelKey) : t("common.notSelected")}
                 </Text>
               </Text>
 
-              <Text style={INFO_LABEL_STYLE}>
+              <Text style={[INFO_LABEL_STYLE, { color: colors.muted }]}>
                 {t("activityRecord.helpLevel")}:{" "}
-                <Text style={[INFO_VALUE_STYLE, { color: "#FFFFFF" }]}>
+                <Text style={[INFO_VALUE_STYLE, { color: colors.content }]}>
                   {getHelpLabel(record.registroAjuda, t)}
                   {record.registroAjuda === "autonomo" && (record.complementosAjuda?.length ?? 0) > 0
                     ? ` (${record.complementosAjuda!.map((c) => t(c === "modelo" ? "chip.model" : "chip.verbal")).join(", ")})`
@@ -437,7 +444,7 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
                       style={{
                         fontFamily: "Inter-Bold",
                         fontSize: 13,
-                        color: isSelected ? opt.color : "#FFFFFF",
+                        color: isSelected ? opt.color : colors.content,
                       }}
                     >
                       {opt.label}
@@ -478,7 +485,7 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
                     marginTop: 3,
                     minHeight: 70,
                     textAlignVertical: "top",
-                    color: "#FFFFFF",
+                    color: colors.content,
                     fontFamily: "Inter-Medium",
                     fontSize: 14,
                     borderRadius: 12,
@@ -507,7 +514,7 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
                     maxLength={5}
                     style={{
                       flex: 1,
-                      color: "#FFFFFF",
+                      color: colors.content,
                       fontFamily: "Inter-Bold",
                       fontSize: 16,
                       borderRadius: 12,
@@ -518,7 +525,7 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
                       paddingHorizontal: 14,
                     }}
                   />
-                  <Text style={{ color: "#FFFFFF", fontFamily: "Inter-Bold", fontSize: 13, minWidth: 56 }}>
+                  <Text style={{ color: colors.content, fontFamily: "Inter-Bold", fontSize: 13, minWidth: 56 }}>
                     {editedDurationSeconds === null ? "--:--" : formatDuration(editedDurationSeconds, t)}
                   </Text>
                 </View>
@@ -561,7 +568,7 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
                           style={{
                             fontFamily: "Inter-Medium",
                             fontSize: 12,
-                            color: "#fff",
+                            color: colors.content,
                             textAlign: "center",
                           }}
                         >
