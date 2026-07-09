@@ -228,6 +228,14 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
+# Custom template for the password recovery e-mail (link modality). The same
+# HTML must be pasted into Authentication → Email Templates → Reset Password in
+# the Supabase cloud dashboard, and `baseaut://reset-password` added to the
+# allowed Redirect URLs (Authentication → URL Configuration).
+[auth.email.template.recovery]
+subject = "Redefinição de senha — BaseAut"
+content_path = "./supabase/templates/recovery.html"
+
 # Use a production-ready SMTP server
 # [auth.email.smtp]
 # enabled = true
