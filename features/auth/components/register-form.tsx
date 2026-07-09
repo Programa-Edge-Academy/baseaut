@@ -5,9 +5,11 @@ import { passwordChecker } from "@/features/auth/hooks/password-checker";
 import { useGoogleAuth } from "@/features/auth/hooks/use-google-auth";
 import { useRegister } from "@/features/auth/hooks/use-register";
 import { translateAuthError } from "@/features/auth/utils/translate-auth-error";
+import { googleLogoXml } from "@/assets/google-logo";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import { SvgXml } from "react-native-svg";
 
 /**
  * Registration form UI with validation and submit handling. Creates the
@@ -235,6 +237,7 @@ export function RegisterForm() {
 
         <DefaultButton
           label={googleLoading ? "Conectando..." : "Cadastrar com Google"}
+          icon={googleLoading ? undefined : <SvgXml xml={googleLogoXml} width={18} height={18} />}
           onPress={handleGoogle}
           sizeClass="w-full h-11"
           disabled={googleLoading}

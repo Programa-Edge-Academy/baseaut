@@ -1,11 +1,13 @@
 import React from "react";
-import { Text, PressableProps } from "react-native";
+import { Text, PressableProps, View } from "react-native";
 import { RipplePressable } from "./ripple-pressable";
 
 /** Props for {@link DefaultButton}. */
 type DefaultButtonProps = Omit<PressableProps, 'children'> & {
   /** Text rendered inside the button. */
   label: string;
+  /** Optional node rendered before the label (e.g. a provider logo). */
+  icon?: React.ReactNode;
   /** Background utility class. Defaults to "bg-primary". */
   bgColorClass?: string;
   /** Whether to apply the shadow class. Defaults to true. */
@@ -28,10 +30,12 @@ type DefaultButtonProps = Omit<PressableProps, 'children'> & {
 
 /**
  * Primary app button built on {@link RipplePressable}, with configurable
- * background, shadow, outline, size, and text styling.
+ * background, shadow, outline, size, and text styling, plus an optional leading
+ * icon rendered before the label.
  */
 export function DefaultButton({
   label,
+  icon,
   bgColorClass = "bg-primary",
   hasShadow = true,
   shadowClass = "shadow-primaryShadow",
@@ -56,6 +60,7 @@ export function DefaultButton({
       className={`${baseClasses} ${sizeClass} ${outlineClasses} ${appliedShadow} ${className ?? ""}`}
       {...rest}
     >
+      {icon ? <View className="mr-2">{icon}</View> : null}
       <Text
         className={`${customTextSize || "text-header-3"} ${textClassName ? textClassName : defaultTextColor}`}
       >

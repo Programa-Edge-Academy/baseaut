@@ -73,6 +73,7 @@ export type TranslationKey =
   | "auth.noAccount"
   | "auth.signUp"
   | "auth.pendingApproval"
+  | "auth.forgotPassword"
   | "common.searchPlaceholder"
   | "common.saving"
   | "common.gotIt"
@@ -708,6 +709,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "auth.noAccount": "Não tem conta? ",
     "auth.signUp": "Cadastre-se",
     "auth.pendingApproval": "Seu cadastro ainda está aguardando aprovação.",
+    "auth.forgotPassword": "Esqueci a senha",
     "common.searchPlaceholder": "Buscar...",
     "common.saving": "Salvando...",
     "common.gotIt": "Entendi",
@@ -1355,6 +1357,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "auth.noAccount": "No account? ",
     "auth.signUp": "Sign up",
     "auth.pendingApproval": "Your registration is still awaiting approval.",
+    "auth.forgotPassword": "Forgot password",
     "common.searchPlaceholder": "Search...",
     "common.saving": "Saving...",
     "common.gotIt": "Got it",
