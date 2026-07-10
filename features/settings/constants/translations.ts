@@ -53,6 +53,7 @@ export type TranslationKey =
   | "account.saveEmail"
   | "account.savePhone"
   | "account.changePassword"
+  | "account.currentPassword"
   | "account.newPassword"
   | "account.confirmNewPassword"
   | "account.google"
@@ -688,6 +689,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "account.saveEmail": "Salvar e-mail",
     "account.savePhone": "Salvar telefone",
     "account.changePassword": "Alterar senha",
+    "account.currentPassword": "Senha atual",
     "account.newPassword": "Nova senha",
     "account.confirmNewPassword": "Confirmar nova senha",
     "account.google": "Conta Google",
@@ -1337,6 +1339,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "account.saveEmail": "Save email",
     "account.savePhone": "Save phone",
     "account.changePassword": "Change password",
+    "account.currentPassword": "Current password",
     "account.newPassword": "New password",
     "account.confirmNewPassword": "Confirm new password",
     "account.google": "Google account",
