@@ -4,13 +4,14 @@ import { PageHeader } from "@/components/page-header";
 // release (incomplete translations + buggy tutorial). Restore these imports
 // together with the commented-out sections below once both are complete.
 // import { LOCALE_OPTIONS } from "@/features/settings/constants/translations";
+import { FeedbackModal } from "@/features/settings/components/feedback-modal";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { ThemeMode, useTheme, useThemeColors } from "@/features/settings/contexts/theme-context";
 // import { useTutorial } from "@/features/tutorial/contexts/tutorial-context";
 import { useRouter } from "expo-router";
 // LAUNCH-GATE: `GraduationCap` and `Languages` re-add with the sections below.
-import { Check, /* GraduationCap, Languages, */ Monitor, Moon, Sun } from "lucide-react-native";
-import React from "react";
+import { Check, /* GraduationCap, Languages, */ MessageSquareText, Monitor, Moon, Sun } from "lucide-react-native";
+import React, { useState } from "react";
 // LAUNCH-GATE: `Switch` re-add with the tutorial section below.
 import { Pressable, ScrollView, /* Switch, */ Text, View } from "react-native";
 
@@ -44,15 +45,17 @@ function OptionRow({
 }
 
 /**
- * Settings screen exposing the app appearance (theme: system/light/dark) and
- * language (pt-BR/English/Español). Both default to the device setting and are
- * persisted; logout now lives on the account page.
+ * Settings screen exposing the app appearance (theme: system/light/dark) and a
+ * feedback channel to the development team (via {@link FeedbackModal}). The
+ * theme defaults to the device setting and is persisted; logout lives on the
+ * account page.
  */
 export default function SettingsRoute() {
   const router = useRouter();
   const colors = useThemeColors();
   const { mode, setMode } = useTheme();
   const { t } = useI18n();
+  const [feedbackVisible, setFeedbackVisible] = useState(false);
   // LAUNCH-GATE: language + tutorial controls disabled for the public release.
   // Restore these with the commented-out sections below.
   // const { preference, setPreference } = useI18n();
@@ -90,6 +93,20 @@ export default function SettingsRoute() {
               />
             ))}
           </View>
+        </View>
+
+        <View className="mt-8 gap-4">
+          <Text className="text-header-3 text-content">{t("settings.feedback")}</Text>
+          <Pressable
+            onPress={() => setFeedbackVisible(true)}
+            className="flex-row items-center gap-3 rounded-2xl border border-outline bg-level1 p-4 active:opacity-70"
+          >
+            <MessageSquareText size={18} color={colors.muted} />
+            <View className="flex-1">
+              <Text className="text-default-1 text-content">{t("settings.feedback.button")}</Text>
+              <Text className="text-default-3 text-muted">{t("settings.feedback.buttonHint")}</Text>
+            </View>
+          </Pressable>
         </View>
 
         {/*
@@ -151,6 +168,11 @@ export default function SettingsRoute() {
         </View>
         */}
       </ScrollView>
+
+      <FeedbackModal
+        visible={feedbackVisible}
+        onClose={() => setFeedbackVisible(false)}
+      />
     </View>
   );
 }
