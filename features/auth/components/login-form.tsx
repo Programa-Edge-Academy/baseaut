@@ -5,9 +5,11 @@ import { useGoogleAuth } from "@/features/auth/hooks/use-google-auth";
 import { useLogin } from "@/features/auth/hooks/use-login";
 import { translateAuthError } from "@/features/auth/utils/translate-auth-error";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { googleLogoXml } from "@/assets/google-logo";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import { SvgXml } from "react-native-svg";
 
 /**
  * Login form UI with validation and submit handling. Signs in with e-mail and
@@ -143,6 +145,7 @@ export function LoginForm() {
 
         <DefaultButton
           label={googleLoading ? "..." : t("auth.google")}
+          icon={googleLoading ? undefined : <SvgXml xml={googleLogoXml} width={18} height={18} />}
           onPress={handleGoogle}
           sizeClass="w-full h-11"
           disabled={googleLoading}
@@ -161,6 +164,11 @@ export function LoginForm() {
             <Text className="text-secondary text-header-3">{t("auth.signUp")}</Text>
           </Pressable>
         </View>
+        <Pressable onPress={() => router.push("/reset-password-code" as never)}>
+          <Text className="text-header-3 text-primary">
+            {t("auth.forgotPassword")}
+          </Text>
+        </Pressable>
       </View>
     </View>
   );

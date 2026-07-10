@@ -65,6 +65,7 @@ export function AccountScreen() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -178,6 +179,9 @@ export function AccountScreen() {
 
   const handleSavePassword = async () => {
     const newErrors: Record<string, string> = {};
+    if (!currentPassword.trim()) {
+      newErrors.currentPassword = "Senha atual é obrigatória";
+    }
     if (!password.trim()) {
       newErrors.password = "Senha é obrigatória";
     } else if (!passwordChecker(password)) {
@@ -193,9 +197,14 @@ export function AccountScreen() {
       return;
     }
     setSaving("password");
-    const res = await updatePassword(password);
+    const res = await updatePassword(currentPassword, password);
     setSaving(null);
+    if (res.error === "current_password_incorrect") {
+      setErrors((p) => ({ ...p, currentPassword: "Senha atual incorreta" }));
+      return;
+    }
     if (showResult(res, "Senha alterada!")) {
+      setCurrentPassword("");
       setPassword("");
       setConfirmPassword("");
     }
@@ -361,6 +370,23 @@ export function AccountScreen() {
           {profile.hasPassword && (
             <SectionCard title={t("account.changePassword")}>
               <View className="gap-1">
+                <Text className="text-default-2 text-muted">{t("account.currentPassword")}</Text>
+                <PasswordInput
+                  value={currentPassword}
+                  maxLength={20}
+                  onChangeText={(text) => {
+                    setCurrentPassword(text);
+                    clearError("currentPassword");
+                  }}
+                  placeholder="Senha atual"
+                  className="h-11 w-full rounded-[15px]"
+                  outLineBorderClass={errors.currentPassword ? "border-error" : "border-outline"}
+                />
+                {errors.currentPassword && (
+                  <Text className="text-default-3 text-error">{errors.currentPassword}</Text>
+                )}
+              </View>
+              <View className="gap-1">
                 <Text className="text-default-2 text-muted">{t("account.newPassword")}</Text>
                 <PasswordInput
                   value={password}
@@ -398,7 +424,7 @@ export function AccountScreen() {
                 label={saving === "password" ? `${t("common.save")}...` : t("account.changePassword")}
                 onPress={handleSavePassword}
                 sizeClass="w-full h-10"
-                disabled={saving === "password" || !password || !confirmPassword}
+                disabled={saving === "password" || !currentPassword || !password || !confirmPassword}
               />
             </SectionCard>
           )}

@@ -39,6 +39,24 @@ export type TranslationKey =
   | "settings.openTutorial"
   | "settings.showTutorialButton"
   | "settings.showTutorialButtonHint"
+  | "settings.feedback"
+  | "settings.feedback.button"
+  | "settings.feedback.buttonHint"
+  | "feedback.title"
+  | "feedback.subtitle"
+  | "feedback.category"
+  | "feedback.category.problema"
+  | "feedback.category.sugestao"
+  | "feedback.category.outro"
+  | "feedback.messageLabel"
+  | "feedback.messagePlaceholder"
+  | "feedback.categoryRequired"
+  | "feedback.messageRequired"
+  | "feedback.send"
+  | "feedback.sending"
+  | "feedback.cancel"
+  | "feedback.successTitle"
+  | "feedback.successMessage"
   | "account.title"
   | "account.subtitle"
   | "account.photo"
@@ -53,6 +71,7 @@ export type TranslationKey =
   | "account.saveEmail"
   | "account.savePhone"
   | "account.changePassword"
+  | "account.currentPassword"
   | "account.newPassword"
   | "account.confirmNewPassword"
   | "account.google"
@@ -73,6 +92,7 @@ export type TranslationKey =
   | "auth.noAccount"
   | "auth.signUp"
   | "auth.pendingApproval"
+  | "auth.forgotPassword"
   | "common.searchPlaceholder"
   | "common.saving"
   | "common.gotIt"
@@ -673,6 +693,24 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "settings.openTutorial": "Abrir tutorial",
     "settings.showTutorialButton": "Mostrar tutorial no cabeçalho",
     "settings.showTutorialButtonHint": "Exibe o atalho de ajuda no topo das telas principais",
+    "settings.feedback": "Feedback",
+    "settings.feedback.button": "Enviar feedback",
+    "settings.feedback.buttonHint": "Encontrou um problema ou tem uma sugestão? Fale direto com a equipe de desenvolvimento.",
+    "feedback.title": "Enviar feedback",
+    "feedback.subtitle": "Conte o que aconteceu ou o que podemos melhorar. Vai direto para a equipe de desenvolvimento.",
+    "feedback.category": "Categoria",
+    "feedback.category.problema": "Problema",
+    "feedback.category.sugestao": "Sugestão",
+    "feedback.category.outro": "Outro",
+    "feedback.messageLabel": "Mensagem",
+    "feedback.messagePlaceholder": "Descreva o problema ou a sugestão…",
+    "feedback.categoryRequired": "Selecione uma categoria",
+    "feedback.messageRequired": "Escreva sua mensagem",
+    "feedback.send": "Enviar",
+    "feedback.sending": "Enviando...",
+    "feedback.cancel": "Cancelar",
+    "feedback.successTitle": "Feedback enviado!",
+    "feedback.successMessage": "Obrigado por ajudar a melhorar o aplicativo.",
     "account.title": "Minha conta",
     "account.subtitle": "Personalize seus dados e foto de perfil",
     "account.photo": "Foto de perfil",
@@ -687,6 +725,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "account.saveEmail": "Salvar e-mail",
     "account.savePhone": "Salvar telefone",
     "account.changePassword": "Alterar senha",
+    "account.currentPassword": "Senha atual",
     "account.newPassword": "Nova senha",
     "account.confirmNewPassword": "Confirmar nova senha",
     "account.google": "Conta Google",
@@ -708,6 +747,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "auth.noAccount": "Não tem conta? ",
     "auth.signUp": "Cadastre-se",
     "auth.pendingApproval": "Seu cadastro ainda está aguardando aprovação.",
+    "auth.forgotPassword": "Esqueci a senha",
     "common.searchPlaceholder": "Buscar...",
     "common.saving": "Salvando...",
     "common.gotIt": "Entendi",
@@ -1321,6 +1361,24 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "settings.openTutorial": "Open tutorial",
     "settings.showTutorialButton": "Show tutorial in the header",
     "settings.showTutorialButtonHint": "Displays the help shortcut at the top of the main screens",
+    "settings.feedback": "Feedback",
+    "settings.feedback.button": "Send feedback",
+    "settings.feedback.buttonHint": "Found a problem or have a suggestion? Talk directly to the development team.",
+    "feedback.title": "Send feedback",
+    "feedback.subtitle": "Tell us what happened or what we could improve. It goes straight to the development team.",
+    "feedback.category": "Category",
+    "feedback.category.problema": "Problem",
+    "feedback.category.sugestao": "Suggestion",
+    "feedback.category.outro": "Other",
+    "feedback.messageLabel": "Message",
+    "feedback.messagePlaceholder": "Describe the problem or suggestion…",
+    "feedback.categoryRequired": "Select a category",
+    "feedback.messageRequired": "Write your message",
+    "feedback.send": "Send",
+    "feedback.sending": "Sending...",
+    "feedback.cancel": "Cancel",
+    "feedback.successTitle": "Feedback sent!",
+    "feedback.successMessage": "Thanks for helping improve the app.",
     "account.title": "My account",
     "account.subtitle": "Customize your data and profile photo",
     "account.photo": "Profile photo",
@@ -1335,6 +1393,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "account.saveEmail": "Save email",
     "account.savePhone": "Save phone",
     "account.changePassword": "Change password",
+    "account.currentPassword": "Current password",
     "account.newPassword": "New password",
     "account.confirmNewPassword": "Confirm new password",
     "account.google": "Google account",
@@ -1355,6 +1414,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "auth.noAccount": "No account? ",
     "auth.signUp": "Sign up",
     "auth.pendingApproval": "Your registration is still awaiting approval.",
+    "auth.forgotPassword": "Forgot password",
     "common.searchPlaceholder": "Search...",
     "common.saving": "Saving...",
     "common.gotIt": "Got it",

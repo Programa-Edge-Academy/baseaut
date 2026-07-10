@@ -1,22 +1,22 @@
 /**
  * Edge Function: verify-recovery-code
- * US 1.6 — Validar código e redefinir senha
+ * US 1.6 — Validar código de recuperação
  *
  * Fluxo:
- *  1. Recebe { email, code, new_password } via POST JSON
+ *  1. Recebe { email, code } via POST JSON
  *  2. Busca a solicitação mais recente não-validada para o e-mail
- *  3. Verifica se o código não expirou
+ *  3. Verifica limite de tentativas e expiração
  *  4. Compara SHA-256 do código recebido com o hash armazenado
  *  5. Marca a solicitação como validada
- *  6. Atualiza a senha via Supabase Auth Admin API
+ *  6. Emite uma sessão de recuperação (link nativo do Supabase) e a devolve
+ *
+ * @remarks
+ * A função não recebe nem define a nova senha: ela apenas confirma o código e
+ * devolve uma sessão de recuperação. A troca de senha é feita pelo front
+ * (tela reset-password) via `updateUser`, igual ao fluxo do link por e-mail.
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-// ─── Constantes ───────────────────────────────────────────────────────────────
-
-/** Comprimento mínimo da nova senha. */
-const MIN_PASSWORD_LENGTH = 8;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -62,13 +62,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // ── 1. Parse e validação do body ────────────────────────────────────────────
   let email: string;
   let code: string;
-  let newPassword: string;
 
   try {
     const body = await req.json();
     email = (body.email ?? "").trim().toLowerCase();
     code = (body.code ?? "").trim();
-    newPassword = body.new_password ?? "";
   } catch {
     return json({ error: "Body JSON inválido." }, 400);
   }
@@ -82,20 +80,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({ error: "Código inválido. Deve conter 6 dígitos." }, 400);
   }
 
-  if (!newPassword || newPassword.length < MIN_PASSWORD_LENGTH) {
-    return json(
-      {
-        error: `A nova senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.`,
-      },
-      400
-    );
-  }
-
   // ── 2. Inicializa cliente Supabase com service role ─────────────────────────
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
 
-  if (!supabaseUrl || !serviceRoleKey) {
+  if (!supabaseUrl || !serviceRoleKey || !anonKey) {
     console.error("[verify-recovery-code] Variáveis de ambiente ausentes.");
     return json({ error: "Erro interno do servidor." }, 500);
   }
@@ -186,41 +176,44 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({ error: "Código inválido ou expirado." }, 400);
   }
 
-  // ── 7. Marca solicitação como usada (antes de alterar a senha) ──────────────
-  const { error: markError } = await supabase
+  // ── 7. Emite uma sessão de recuperação para o usuário ───────────────────────
+  // Gera um link de recuperação nativo (sem enviar e-mail) e troca o token por
+  // uma sessão real, que é devolvida ao front para trocar a senha via updateUser.
+  const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+    type: "recovery",
+    email,
+  });
+
+  const hashedToken = linkData?.properties?.hashed_token;
+  if (linkError || !hashedToken) {
+    console.error("[verify-recovery-code] Erro ao gerar link de recuperação:", linkError);
+    return json({ error: "Erro interno do servidor." }, 500);
+  }
+
+  const anonClient = createClient(supabaseUrl, anonKey, {
+    auth: { persistSession: false },
+  });
+
+  const { data: otpData, error: otpError } = await anonClient.auth.verifyOtp({
+    type: "recovery",
+    token_hash: hashedToken,
+  });
+
+  const session = otpData?.session;
+  if (otpError || !session) {
+    console.error("[verify-recovery-code] Erro ao emitir sessão de recuperação:", otpError);
+    return json({ error: "Erro interno do servidor." }, 500);
+  }
+
+  // ── 8. Marca a solicitação como usada ───────────────────────────────────────
+  await supabase
     .from("solicitacoes_recuperacao")
     .update({ validada: true })
     .eq("id", solicitacao.id);
 
-  if (markError) {
-    console.error(
-      "[verify-recovery-code] Erro ao marcar solicitação como validada:",
-      markError
-    );
-    return json({ error: "Erro interno do servidor." }, 500);
-  }
-
-  // ── 8. Atualiza a senha via Admin API do Supabase Auth ──────────────────────
-  const { error: updateError } = await supabase.auth.admin.updateUserById(
-    profile.id,
-    { password: newPassword }
-  );
-
-  if (updateError) {
-    console.error(
-      "[verify-recovery-code] Erro ao atualizar senha:",
-      updateError
-    );
-
-    // Desfaz a marcação para permitir nova tentativa
-    await supabase
-      .from("solicitacoes_recuperacao")
-      .update({ validada: false })
-      .eq("id", solicitacao.id);
-
-    return json({ error: "Erro ao atualizar senha. Tente novamente." }, 500);
-  }
-
-  // ── 9. Resposta de sucesso ──────────────────────────────────────────────────
-  return json({ message: "Senha atualizada com sucesso." });
+  // ── 9. Resposta de sucesso com os tokens da sessão ──────────────────────────
+  return json({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+  });
 });

@@ -107,8 +107,26 @@ export function useAccount() {
     return { success: true, needsConfirmation: true };
   };
 
-  const updatePassword = async (password: string): Promise<AccountActionResult> => {
-    const { error } = await supabase.auth.updateUser({ password });
+  /**
+   * Changes the account password after confirming the current one. The current
+   * password is validated by re-authenticating with it; a wrong password fails
+   * with the `current_password_incorrect` code so the UI can flag the field.
+   */
+  const updatePassword = async (
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<AccountActionResult> => {
+    if (!profile?.email) return { success: false };
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: profile.email,
+      password: currentPassword,
+    });
+    if (signInError) {
+      return { success: false, error: "current_password_incorrect" };
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) return { success: false, error: error.message };
     return { success: true };
   };
