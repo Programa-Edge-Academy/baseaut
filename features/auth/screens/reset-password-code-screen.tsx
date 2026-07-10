@@ -8,23 +8,25 @@ import { Pressable, Text, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
 /** Which recovery action is currently in flight, for per-button feedback. */
-type PendingAction = "code" | "link" | "verify" | null;
+type PendingAction = "code" | "verify" | null;
 
 /**
- * Screen to start a password recovery. Offers two modalities: sending a native
- * reset link by e-mail (opens the app on `/reset-password`) or sending a 6-digit
- * code that is verified here before advancing to the reset screen.
+ * Screen to start a password recovery. Sends a 6-digit code by e-mail that is
+ * verified here before advancing to the reset screen.
+ *
+ * @remarks
+ * The reset-by-link modality still exists in {@link usePasswordRecovery}
+ * (`sendRecoveryLink`) but its UI entry point is intentionally disabled.
  */
 export function ResetPasswordCodeScreen() {
   const router = useRouter();
-  const { sendRecoveryLink, sendRecoveryCode, verifyRecoveryCode, loading, error, setError } =
+  const { sendRecoveryCode, verifyRecoveryCode, loading, error, setError } =
     usePasswordRecovery();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [action, setAction] = useState<PendingAction>(null);
   const [codeSent, setCodeSent] = useState(false);
-  const [linkSent, setLinkSent] = useState(false);
 
   /** Validates the e-mail field and updates errors. */
   const validateEmail = (): boolean => {
@@ -47,20 +49,7 @@ export function ResetPasswordCodeScreen() {
     const sent = await sendRecoveryCode(email);
     setAction(null);
     if (sent) {
-      setLinkSent(false);
       setCodeSent(true);
-    }
-  };
-
-  /** Sends the native reset link to the e-mail. */
-  const handleSendLink = async () => {
-    if (!validateEmail()) return;
-    setAction("link");
-    const sent = await sendRecoveryLink(email);
-    setAction(null);
-    if (sent) {
-      setCodeSent(false);
-      setLinkSent(true);
     }
   };
 
@@ -155,41 +144,10 @@ export function ResetPasswordCodeScreen() {
             />
           </View>
 
-          <View className="my-6 w-full max-w-[342px] flex-row items-center gap-3">
-            <View className="h-px flex-1 bg-outline" />
-            <Text className="text-default-3 text-muted">ou</Text>
-            <View className="h-px flex-1 bg-outline" />
-          </View>
-
-          <View className="w-full max-w-[342px] gap-2">
-            <DefaultButton
-              label={action === "link" ? "Enviando..." : "Enviar link por e-mail"}
-              onPress={handleSendLink}
-              sizeClass="w-full h-11"
-              bgColorClass="bg-level1"
-              hasShadow={false}
-              isOutline
-              outlineBorderClass="border-outline"
-              textClassName="text-content"
-              className="rounded-[15px]"
-              disabled={loading}
-            />
-            <Text className="text-default-3 text-muted text-center">
-              O link abre direto no aplicativo, então só funciona quando aberto
-              pelo celular.
-            </Text>
-          </View>
-
           {codeSent ? (
-            <Text className="mt-4 text-default-3 text-secondary text-center">
+            <Text className="mt-6 text-default-3 text-secondary text-center">
               Se esse e-mail estiver cadastrado, você receberá um código em
               instantes.
-            </Text>
-          ) : null}
-          {linkSent ? (
-            <Text className="mt-4 text-default-3 text-secondary text-center">
-              Se esse e-mail estiver cadastrado, você receberá um link para
-              redefinir sua senha.
             </Text>
           ) : null}
           {error ? (
