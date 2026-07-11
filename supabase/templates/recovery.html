@@ -22,36 +22,28 @@
               <td style="padding: 16px 36px 0 36px;">
                 <h1 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 700; color: #14181f;">Redefinição de senha</h1>
                 <p style="margin: 0; font-size: 15px; line-height: 22px; color: #5a6675;">
-                  Recebemos um pedido para redefinir a senha da sua conta. Toque no botão abaixo para escolher uma nova senha.
+                  Recebemos um pedido para redefinir a senha da sua conta. Digite o código abaixo no aplicativo para escolher uma nova senha.
                 </p>
               </td>
             </tr>
             <tr>
               <td style="padding: 28px 36px 8px 36px;">
-                <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                  <tr>
-                    <td align="center" style="border-radius: 12px; background-color: #0e89e5;">
-                      <a href="{{ .ConfirmationURL }}" target="_blank" style="display: block; padding: 14px 24px; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none;">
-                        Redefinir senha
-                      </a>
-                    </td>
-                  </tr>
-                </table>
+                <div style="text-align: center; padding: 20px 16px; background-color: #f0f7ff; border: 1px solid #cfe6fb; border-radius: 12px;">
+                  <div style="font-size: 34px; font-weight: 700; letter-spacing: 10px; color: #0e6bb5; font-family: 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;">{{ .Token }}</div>
+                </div>
               </td>
             </tr>
             <tr>
-              <td style="padding: 12px 36px 0 36px;">
-                <div style="padding: 12px 16px; background-color: #f0f7ff; border: 1px solid #cfe6fb; border-radius: 12px;">
-                  <p style="margin: 0; font-size: 13px; line-height: 19px; color: #0e6bb5;">
-                    📱 Este link abre diretamente no aplicativo BaseAut, então só funciona quando aberto pelo celular com o app instalado.
-                  </p>
-                </div>
+              <td style="padding: 16px 36px 0 36px;">
+                <p style="margin: 0; font-size: 14px; line-height: 20px; color: #5a6675;">
+                  O código é válido por <strong style="color: #14181f;">1 hora</strong>.
+                </p>
               </td>
             </tr>
             <tr>
               <td style="padding: 24px 36px 36px 36px;">
                 <p style="margin: 0; font-size: 13px; line-height: 19px; color: #96a0ac;">
-                  Se você não solicitou a redefinição, ignore este e-mail — sua senha permanecerá a mesma.
+                  Se você não solicitou a redefinição, ignore este e-mail. Sua senha permanecerá a mesma.
                 </p>
               </td>
             </tr>

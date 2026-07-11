@@ -34,10 +34,11 @@ type RecoverySession = {
  *
  * - `sendRecoveryLink` sends the native Supabase recovery e-mail, whose link
  *   deep-links back into the app on `/reset-password` with a live session.
- * - `sendRecoveryCode` / `verifyRecoveryCode` back the code modality via the
- *   `send-recovery-code` and `verify-recovery-code` Edge Functions: the code is
- *   only verified server-side, and on success the returned recovery session is
- *   applied locally so the reset step is identical to the link modality.
+ * - `verifyRecoveryOtp` validates the 8-digit code from the native Supabase
+ *   recovery e-mail (`{{ .Token }}`) — no Edge Function or external provider.
+ * - `sendRecoveryCode` / `verifyRecoveryCode` back an alternative code modality
+ *   via the `send-recovery-code` and `verify-recovery-code` Edge Functions
+ *   (Resend); kept for when that sender domain is verified.
  * - `updatePassword` sets the new password on that session and signs out, so an
  *   unapproved account is not left signed in.
  */
@@ -140,6 +141,46 @@ export function usePasswordRecovery() {
   };
 
   /**
+   * Validates the 8-digit recovery code from the native Supabase recovery e-mail
+   * (`{{ .Token }}`) via {@link supabase.auth.verifyOtp}. On a match Supabase
+   * applies the recovery session locally, so the reset screen updates the
+   * password exactly like the link modality — with no Edge Function or external
+   * e-mail provider involved.
+   */
+  const verifyRecoveryOtp = async (
+    email: string,
+    token: string,
+  ): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+
+    const { data, error: verifyError } = await supabase.auth.verifyOtp({
+      email: email.trim().toLowerCase(),
+      token: token.trim(),
+      type: "recovery",
+    });
+
+    setLoading(false);
+
+    if (verifyError) {
+      const lower = verifyError.message.toLowerCase();
+      if (lower.includes("expired") || lower.includes("invalid") || lower.includes("otp")) {
+        setError("Código inválido ou expirado. Solicite um novo e-mail.");
+      } else {
+        setError(translateAuthError(verifyError.message) ?? genericErrorMessage);
+      }
+      return false;
+    }
+
+    if (!data.session) {
+      setError(genericErrorMessage);
+      return false;
+    }
+
+    return true;
+  };
+
+  /**
    * Sets the new password on the current recovery session and signs out, so an
    * account still awaiting approval is not left authenticated.
    */
@@ -164,6 +205,7 @@ export function usePasswordRecovery() {
 
   return {
     sendRecoveryLink,
+    verifyRecoveryOtp,
     sendRecoveryCode,
     verifyRecoveryCode,
     updatePassword,
