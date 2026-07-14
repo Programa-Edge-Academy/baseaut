@@ -8,25 +8,28 @@ import { Pressable, Text, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
 /** Which recovery action is currently in flight, for per-button feedback. */
-type PendingAction = "code" | "verify" | null;
+type PendingAction = "send" | "verify" | null;
 
 /**
- * Screen to start a password recovery. Sends a 6-digit code by e-mail that is
- * verified here before advancing to the reset screen.
+ * Screen to start a password recovery. Sends the native Supabase recovery
+ * e-mail, which carries both a 8-digit code (`{{ .Token }}`) and a reset link.
  *
  * @remarks
- * The reset-by-link modality still exists in {@link usePasswordRecovery}
- * (`sendRecoveryLink`) but its UI entry point is intentionally disabled.
+ * The code is verified natively via {@link usePasswordRecovery.verifyRecoveryOtp}
+ * (`supabase.auth.verifyOtp`) — no Edge Function or external provider. The code
+ * is preferred over the link for institutional inboxes, whose security scanners
+ * pre-open (and thus consume) one-time links before the user taps them; the link
+ * remains available in the same e-mail for phones with the app installed.
  */
 export function ResetPasswordCodeScreen() {
   const router = useRouter();
-  const { sendRecoveryCode, verifyRecoveryCode, loading, error, setError } =
+  const { sendRecoveryLink, verifyRecoveryOtp, loading, error, setError } =
     usePasswordRecovery();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [action, setAction] = useState<PendingAction>(null);
-  const [codeSent, setCodeSent] = useState(false);
+  const [sent, setSent] = useState(false);
 
   /** Validates the e-mail field and updates errors. */
   const validateEmail = (): boolean => {
@@ -42,28 +45,26 @@ export function ResetPasswordCodeScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  /** Sends the 6-digit recovery code to the e-mail. */
-  const handleSendCode = async () => {
+  /** Sends the recovery e-mail (code + link) to the given address. */
+  const handleSend = async () => {
     if (!validateEmail()) return;
-    setAction("code");
-    const sent = await sendRecoveryCode(email);
+    setAction("send");
+    const ok = await sendRecoveryLink(email);
     setAction(null);
-    if (sent) {
-      setCodeSent(true);
-    }
+    if (ok) setSent(true);
   };
 
-  /** Verifies the code and advances to the reset screen on success. */
+  /** Verifies the 8-digit code and advances to the reset screen on success. */
   const handleConfirmCode = async () => {
     if (!validateEmail()) return;
 
-    if (!/^\d{6}$/.test(code.trim())) {
-      setErrors({ code: "O código deve conter 6 dígitos" });
+    if (!/^\d{8}$/.test(code.trim())) {
+      setErrors({ code: "O código deve conter 8 dígitos" });
       return;
     }
 
     setAction("verify");
-    const verified = await verifyRecoveryCode(email, code);
+    const verified = await verifyRecoveryOtp(email, code);
     setAction(null);
     if (verified) {
       router.replace("/reset-password");
@@ -102,49 +103,46 @@ export function ResetPasswordCodeScreen() {
               ) : null}
             </View>
 
-            <View className="w-full flex-row items-end gap-3">
-              <View className="flex-1 gap-1">
-                <Text className="text-default-2 text-muted">Código</Text>
-                <DefaultTextInput
-                  placeholder="6 dígitos"
-                  value={code}
-                  maxLength={6}
-                  onChangeText={(text) => {
-                    setCode(text.replace(/\D/g, ""));
-                    if (errors.code) setErrors((prev) => ({ ...prev, code: "" }));
-                    if (error) setError(null);
-                  }}
-                  keyboardType="number-pad"
-                  className="h-11 w-full rounded-[15px]"
-                  outLineBorderClass={errors.code ? "border-error" : "border-outline"}
-                />
-              </View>
-              <DefaultButton
-                label={action === "code" ? "Enviando..." : "Enviar código"}
-                onPress={handleSendCode}
-                bgColorClass="bg-secondary"
-                shadowClass="shadow-secondaryShadow"
-                sizeClass="h-11 w-[140px]"
-                className="rounded-[15px]"
-                customTextSize="text-default-2"
-                textClassName="text-white"
-                disabled={loading}
+            <DefaultButton
+              label={action === "send" ? "Enviando..." : "Enviar código por e-mail"}
+              onPress={handleSend}
+              sizeClass="w-full h-11"
+              className="rounded-[15px]"
+              disabled={loading}
+            />
+
+            <View className="w-full gap-1">
+              <Text className="text-default-2 text-muted">Código</Text>
+              <DefaultTextInput
+                placeholder="8 dígitos"
+                value={code}
+                maxLength={8}
+                onChangeText={(text) => {
+                  setCode(text.replace(/\D/g, ""));
+                  if (errors.code) setErrors((prev) => ({ ...prev, code: "" }));
+                  if (error) setError(null);
+                }}
+                keyboardType="number-pad"
+                className="h-11 w-full rounded-[15px]"
+                outLineBorderClass={errors.code ? "border-error" : "border-outline"}
               />
+              {errors.code ? (
+                <Text className="text-default-3 text-error">{errors.code}</Text>
+              ) : null}
             </View>
-            {errors.code ? (
-              <Text className="text-default-3 text-error">{errors.code}</Text>
-            ) : null}
 
             <DefaultButton
               label={action === "verify" ? "Verificando..." : "Confirmar código"}
               onPress={handleConfirmCode}
               sizeClass="w-full h-11"
               className="rounded-[15px]"
+              bgColorClass="bg-secondary"
+              shadowClass="shadow-secondaryShadow"
               disabled={loading}
             />
           </View>
 
-          {codeSent ? (
+          {sent ? (
             <Text className="mt-6 text-default-3 text-secondary text-center">
               Se esse e-mail estiver cadastrado, você receberá um código em
               instantes.
