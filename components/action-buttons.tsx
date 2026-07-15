@@ -1,5 +1,6 @@
 import React from "react";
 import { View } from "react-native";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { DefaultButton } from "./default-button";
 
 /** Props for {@link ActionButtons}. */
@@ -27,20 +28,23 @@ export interface ActionButtonsProps {
 export function ActionButtons({
   onCancel,
   onSave,
-  cancelLabel = "Cancelar",
-  saveLabel = "Salvar",
+  cancelLabel,
+  saveLabel,
   className,
   disabled = false,
   mode = "default",
   saveButtonRef,
 }: ActionButtonsProps) {
+  const { t } = useI18n();
+  const resolvedCancelLabel = cancelLabel ?? t("common.cancel");
+  const resolvedSaveLabel = saveLabel ?? t("common.save");
   const saveBg = disabled ? "bg-muted" : mode === "danger" ? "bg-error" : mode === "warning" ? "bg-extra" : "bg-primary";
   const saveShadow = disabled ? "shadow-none" : mode === "danger" ? "shadow-errorShadow" : "shadow-none";
   const saveText = mode === "warning" ? "text-level1" : "text-content";
   return (
     <View className={`w-full flex-row items-center justify-between gap-4 ${className ?? ""}`}>
       <DefaultButton
-        label={cancelLabel}
+        label={resolvedCancelLabel}
         onPress={onCancel}
         bgColorClass="bg-level1"
         shadowClass=""
@@ -52,7 +56,7 @@ export function ActionButtons({
       />
       <View ref={saveButtonRef} collapsable={false} className="flex-1">
         <DefaultButton
-          label={saveLabel}
+          label={resolvedSaveLabel}
           onPress={onSave}
           bgColorClass={saveBg}
           shadowClass={saveShadow}

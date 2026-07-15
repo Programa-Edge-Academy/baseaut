@@ -1,14 +1,10 @@
 import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
-// LAUNCH-GATE: tutorial access disabled for the public release (buggy tutorial).
-// Restore this import together with the header tutorial button below once the
-// tutorial is finished.
-// import { useTutorial } from "@/features/tutorial/contexts/tutorial-context";
+import { useTutorial } from "@/features/tutorial/contexts/tutorial-context";
 import { useUserRole } from "@/lib/use-user-role";
 import { usePathname, useRouter } from "expo-router";
-// LAUNCH-GATE: `HelpCircle` re-add when the header tutorial button is restored.
-import { ArrowLeft, GraduationCap, /* HelpCircle, */ Save, Settings, User, Users, X } from "lucide-react-native";
+import { ArrowLeft, GraduationCap, HelpCircle, Save, Settings, User, Users, X } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -50,9 +46,7 @@ export function Header({
   const role = useUserRole();
   const colors = useThemeColors();
   const { t } = useI18n();
-  // LAUNCH-GATE: tutorial visibility flag unused while the header tutorial
-  // button is disabled. Restore with the button below.
-  // const { hidden: tutorialHidden } = useTutorial();
+  const { hidden: tutorialHidden } = useTutorial();
 
   const showBack = ["back", "finish", "finishEngagement", "form", "tutorial"].includes(variant);
   const showDefaultActions = variant === "default";
@@ -95,7 +89,7 @@ export function Header({
                 className="flex-row items-center px-4 py-2 rounded-xl border-2 border-error bg-error/10 active:opacity-70"
               >
                 <X color={colors.error} size={24} />
-                <Text className="text-error text-default-1 ml-2">Finalizar</Text>
+                <Text className="text-error text-default-1 ml-2">{t("common.finish")}</Text>
               </Pressable>
             )}
 
@@ -105,7 +99,7 @@ export function Header({
                 className="flex-row items-center px-4 py-2 rounded-xl border-2 border-extra bg-extra/10 active:opacity-70"
               >
                 <X color={colors.extra} size={24} />
-                <Text className="text-extra text-default-1 ml-2">Finalizar</Text>
+                <Text className="text-extra text-default-1 ml-2">{t("common.finish")}</Text>
               </Pressable>
             )}
 
@@ -129,16 +123,11 @@ export function Header({
                   </Pressable>
                 )}
 
-                {/*
-                  LAUNCH-GATE: header tutorial entry disabled for the public
-                  release. The tutorial is still buggy; re-enable this button
-                  (and the imports/flag above) once it is complete.
-                  {!tutorialHidden && (
-                    <Pressable onPress={() => router.push("/tutorial" as never)} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
-                      <HelpCircle color={colors.muted} size={24} />
-                    </Pressable>
-                  )}
-                */}
+                {!tutorialHidden && (
+                  <Pressable onPress={() => router.push("/tutorial" as never)} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
+                    <HelpCircle color={colors.muted} size={24} />
+                  </Pressable>
+                )}
 
                 <Pressable onPress={() => router.push("/account")} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
                   <User color={colors.muted} size={24} />
