@@ -1,4 +1,6 @@
 import { formatAnswer } from "@/features/forms/utils/format-answer";
+import { localizeFormText } from "@/features/forms/utils/form-content-i18n";
+import type { Locale, TranslationKey } from "@/features/settings/constants/translations";
 import { deliverFiles, type DeliveryMode, type ExportableFile } from "@/lib/export-delivery";
 import { supabase } from "@/lib/supabase";
 import * as FileSystem from "expo-file-system/legacy";
@@ -19,8 +21,8 @@ const TD = `border:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:
 /** A question/answer pair prepared for export. */
 type FormRow = { pergunta: string; resposta: string };
 
-/** Loads a form's questions and their answers, joined into export rows. */
-async function fetchFormRows(formularioId: string): Promise<FormRow[]> {
+/** Loads a form's questions and their answers, joined into localized export rows. */
+async function fetchFormRows(formularioId: string, locale: Locale): Promise<FormRow[]> {
   const { data: form } = await supabase
     .from("formularios")
     .select("template_origem_id")
@@ -46,8 +48,10 @@ async function fetchFormRows(formularioId: string): Promise<FormRow[]> {
   );
 
   return (perguntas ?? []).map((q) => {
-    const titulo = (q.texto_pergunta || "").split(/\n(?=\(0=)/)[0].trim();
-    return { pergunta: titulo, resposta: formatAnswer(respByQ.get(q.id)) };
+    const titulo = localizeFormText(q.texto_pergunta || "", locale)
+      .split(/\n(?=\(0=)/)[0]
+      .trim();
+    return { pergunta: titulo, resposta: formatAnswer(respByQ.get(q.id), locale) };
   });
 }
 
@@ -62,15 +66,17 @@ async function fetchFormRows(formularioId: string): Promise<FormRow[]> {
 export async function exportForm(
   data: FormExportData,
   formats: { pdf: boolean; csv: boolean },
+  t: (key: TranslationKey) => string,
+  locale: string,
   mode: DeliveryMode = "share",
 ): Promise<void> {
   if (!formats.pdf && !formats.csv) {
-    throw new Error("Selecione ao menos um formato para exportar.");
+    throw new Error(t("export.selectAtLeastOne"));
   }
 
-  const emissao = new Date().toLocaleDateString("pt-BR");
+  const emissao = new Date().toLocaleDateString(locale === "en" ? "en-US" : "pt-BR");
   const safeName = `${data.title}_${data.studentName}`.replace(/[^a-zA-Z0-9]/g, "_");
-  const rows = await fetchFormRows(data.formularioId);
+  const rows = await fetchFormRows(data.formularioId, locale === "en" ? "en" : "pt");
 
   const buildPdfHtml = () => `<!DOCTYPE html>
 <html><head>
@@ -86,10 +92,10 @@ export async function exportForm(
 </head><body>
   <h1>${data.title}</h1>
   <h2>${data.studentName}</h2>
-  <p class="meta">Emitido em: ${emissao}</p>
+  <p class="meta">${t("export.issuedOn")}: ${emissao}</p>
   <hr/>
   <table>
-    <thead><tr><th style="${TH}">Pergunta</th><th style="${TH}">Resposta</th></tr></thead>
+    <thead><tr><th style="${TH}">${t("export.doc.question")}</th><th style="${TH}">${t("export.doc.answer")}</th></tr></thead>
     <tbody>${rows
       .map(
         (r) => `<tr><td style="${TD}">${r.pergunta}</td><td style="${TD}">${r.resposta}</td></tr>`,
@@ -100,10 +106,10 @@ export async function exportForm(
 
   const buildCsv = () => {
     const allRows: string[][] = [
-      [data.title, "Aluno", "Emissão"],
+      [data.title, t("export.doc.student"), t("export.issue")],
       ["", data.studentName, emissao],
       [],
-      ["Pergunta", "Resposta"],
+      [t("export.doc.question"), t("export.doc.answer")],
       ...rows.map((r) => [r.pergunta, r.resposta]),
     ];
     return allRows
@@ -150,5 +156,5 @@ export async function exportForm(
     files.push({ uri: path, name, mimeType: "text/csv" });
   }
 
-  await deliverFiles(files, mode, `Exportar ${data.title}`);
+  await deliverFiles(files, mode, t("export.doc.shareFormTitle").replace("{title}", data.title));
 }

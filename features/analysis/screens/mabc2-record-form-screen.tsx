@@ -5,6 +5,11 @@ import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { Toast, type ToastMode } from "@/components/toast";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import {
+  localizeFormText,
+  localizeMabcComponent,
+  localizeMabcUnit,
+} from "@/features/forms/utils/form-content-i18n";
 import { useKeyboardAwareScroll } from "@/lib/use-keyboard-aware-scroll";
 import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
 import { Edit2, Share2, Trash2 } from "lucide-react-native";
@@ -60,8 +65,19 @@ export function Mabc2RecordFormScreen({
   onDelete,
   onShare,
 }: Mabc2RecordFormScreenProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  // Canonical MABC-2 section titles and item names are localized for display
+  // only; scores and their bindings are untouched (raw unit codes are kept so
+  // the exercise row's own unit formatter still matches).
+  const localizedSections = sections.map((section) => ({
+    ...section,
+    title: localizeMabcComponent(section.title, locale),
+    exercises: section.exercises.map((exercise) => ({
+      ...exercise,
+      name: localizeFormText(exercise.name, locale),
+    })),
+  }));
   const keyboardPadding = useKeyboardPadding();
   const keyboardAwareScroll = useKeyboardAwareScroll();
   const resolvedSubmitLabel = submitLabel ?? t("common.register");
@@ -128,7 +144,7 @@ export function Mabc2RecordFormScreen({
           recordCount={recordCount}
           totalScore={totalScore}
           totalPercentile={totalPercentile}
-          sections={sections}
+          sections={localizedSections}
           onChangeTotalScore={onChangeTotalScore}
           onChangeTotalPercentile={onChangeTotalPercentile}
           onRegister={onRegister}
