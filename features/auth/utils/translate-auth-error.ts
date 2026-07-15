@@ -1,41 +1,47 @@
+import type { TranslationKey } from "@/features/settings/constants/translations";
+
+/** Localized string getter, matching the shape of `useI18n().t`. */
+type Translate = (key: TranslationKey) => string;
+
 /**
- * Maps Supabase auth errors to localized, UI-friendly pt-BR messages, covering
- * e-mail, phone (SMS OTP) and Google OAuth flows.
+ * Maps Supabase auth errors to localized, UI-friendly messages, covering
+ * e-mail, phone (SMS OTP) and Google OAuth flows. Pass the `t` function from
+ * {@link useI18n} so the message is returned in the active locale.
  */
-export function translateAuthError(msg: string | null | undefined): string | null {
+export function translateAuthError(
+  msg: string | null | undefined,
+  t: Translate,
+): string | null {
   if (!msg) return null;
   const lowerMsg = msg.toLowerCase();
 
   if (lowerMsg.includes("invalid login credentials"))
-    return "Credenciais incorretas. Verifique e tente novamente.";
+    return t("auth.err.invalidCredentials");
   if (lowerMsg.includes("user already registered"))
-    return "Esta conta já está cadastrada.";
+    return t("auth.err.alreadyRegistered");
   if (lowerMsg.includes("rate limit") || lowerMsg.includes("too many requests"))
-    return "Muitas tentativas. Tente novamente mais tarde.";
-  if (lowerMsg.includes("60 seconds"))
-    return "Aguarde 60 segundos para tentar novamente.";
-  if (lowerMsg.includes("email not confirmed")) return "E-mail não confirmado.";
-  if (lowerMsg.includes("phone not confirmed"))
-    return "Telefone não confirmado. Refaça o cadastro para receber um novo código.";
-  if (lowerMsg.includes("invalid phone"))
-    return "Telefone inválido. Use o formato (DDD) 99999-9999.";
+    return t("auth.err.rateLimit");
+  if (lowerMsg.includes("60 seconds")) return t("auth.err.wait60");
+  if (lowerMsg.includes("email not confirmed")) return t("auth.err.emailNotConfirmed");
+  if (lowerMsg.includes("phone not confirmed")) return t("auth.err.phoneNotConfirmed");
+  if (lowerMsg.includes("invalid phone")) return t("auth.err.invalidPhone");
   if (
     lowerMsg.includes("sms") &&
     (lowerMsg.includes("provider") || lowerMsg.includes("disabled") || lowerMsg.includes("not configured"))
   )
-    return "Cadastro por telefone indisponível no momento. Use e-mail ou Google.";
+    return t("auth.err.smsUnavailable");
   if (lowerMsg.includes("phone_provider_disabled") || lowerMsg.includes("phone provider"))
-    return "Cadastro por telefone indisponível no momento. Use e-mail ou Google.";
+    return t("auth.err.smsUnavailable");
   if (lowerMsg.includes("otp") && lowerMsg.includes("expired"))
-    return "Código expirado. Solicite um novo código.";
+    return t("auth.err.otpExpired");
   if (lowerMsg.includes("token has expired") || lowerMsg.includes("invalid otp") || lowerMsg.includes("otp"))
-    return "Código inválido ou expirado. Confira o SMS e tente novamente.";
+    return t("auth.err.otpInvalid");
   if (lowerMsg.includes("provider is not enabled") || lowerMsg.includes("unsupported provider"))
-    return "Login com Google indisponível no momento.";
+    return t("auth.err.googleUnavailable");
   if (lowerMsg.includes("popup") || lowerMsg.includes("cancel"))
-    return "Login cancelado.";
+    return t("auth.err.loginCancelled");
   if (lowerMsg.includes("network") || lowerMsg.includes("fetch"))
-    return "Falha de conexão. Verifique sua internet.";
+    return t("auth.err.network");
 
-  return "Ocorreu um erro. Verifique seus dados e tente novamente.";
+  return t("auth.err.generic");
 }

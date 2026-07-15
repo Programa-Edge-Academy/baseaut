@@ -1,4 +1,5 @@
 import { DefaultButton } from "@/components/default-button";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { router } from "expo-router";
 import React from "react";
 import { Image, Pressable, Text, View } from "react-native";
@@ -23,6 +24,7 @@ interface AuthFeedbackCardProps {
  * Displays a success or status card for auth flows.
  */
 export function AuthFeedbackCard({ mode }: AuthFeedbackCardProps) {
+  const { t } = useI18n();
   /**
    * Navigates back to the login screen.
    */
@@ -43,7 +45,7 @@ export function AuthFeedbackCard({ mode }: AuthFeedbackCardProps) {
         {mode === "accountCreated" && (
           <>
             <Text className="text-header-3 text-content">
-              Conta criada com sucesso!
+              {t("auth.feedback.accountCreated")}
             </Text>
             <Image
               className="my-7"
@@ -51,15 +53,14 @@ export function AuthFeedbackCard({ mode }: AuthFeedbackCardProps) {
               resizeMode="contain"
             />
             <Text className="text-default-2 text-content text-center leading-5">
-              Por favor, aguarde a aprovação da Coordenadora para liberar seu
-              acesso.
+              {t("auth.feedback.accountCreatedMsg")}
             </Text>
           </>
         )}
         {mode === "codeValidated" && (
           <>
             <Text className="text-header-3 text-content">
-              Código validado com sucesso!
+              {t("auth.feedback.codeValidated")}
             </Text>
             <Image
               className="my-7"
@@ -67,14 +68,14 @@ export function AuthFeedbackCard({ mode }: AuthFeedbackCardProps) {
               resizeMode="contain"
             />
             <Text className="text-default-2 text-content text-center leading-5">
-              Agora você pode redefinir sua senha e acessar sua conta.
+              {t("auth.feedback.codeValidatedMsg")}
             </Text>
           </>
         )}
         {mode === "passwordUpdated" && (
           <>
             <Text className="text-header-3 text-content">
-              Senha redefinida com sucesso!
+              {t("auth.feedback.passwordUpdated")}
             </Text>
             <Image
               className="my-7"
@@ -82,7 +83,7 @@ export function AuthFeedbackCard({ mode }: AuthFeedbackCardProps) {
               resizeMode="contain"
             />
             <Text className="text-default-2 text-content text-center leading-5">
-              Agora você pode acessar sua conta com a sua nova senha.
+              {t("auth.feedback.passwordUpdatedMsg")}
             </Text>
           </>
         )}
@@ -90,10 +91,10 @@ export function AuthFeedbackCard({ mode }: AuthFeedbackCardProps) {
         {mode === "pendingApproval" && (
           <>
             <Text className="text-header-3 text-content mb-7">
-              Aprovação pendente
+              {t("auth.feedback.pendingApprovalTitle")}
             </Text>
             <Text className="text-default-2 text-extra text-center leading-5">
-              Seu cadastro ainda está aguardando aprovação.
+              {t("auth.pendingApproval")}
             </Text>
           </>
         )}
@@ -103,8 +104,8 @@ export function AuthFeedbackCard({ mode }: AuthFeedbackCardProps) {
         <DefaultButton
           label={
             mode === "codeValidated" || mode === "passwordUpdated"
-              ? "Continuar"
-              : "Voltar ao login"
+              ? t("auth.feedback.continue")
+              : t("auth.backToLogin")
           }
           onPress={
             mode === "codeValidated" ? continueUpdatePassword : returnToLogin
@@ -117,7 +118,7 @@ export function AuthFeedbackCard({ mode }: AuthFeedbackCardProps) {
       {mode === "codeValidated" ? (
         <View className="items-center mt-7">
           <Pressable onPress={returnToLogin}>
-            <Text className="text-header-3 text-primary">Voltar ao login</Text>
+            <Text className="text-header-3 text-primary">{t("auth.backToLogin")}</Text>
           </Pressable>
         </View>
       ) : null}

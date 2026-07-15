@@ -2,6 +2,7 @@ import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { DefaultButton } from "@/components/default-button";
 import { DefaultTextInput } from "@/components/default-text-input";
 import { usePasswordRecovery } from "@/features/auth/hooks/use-password-recovery";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -23,6 +24,7 @@ type PendingAction = "send" | "verify" | null;
  */
 export function ResetPasswordCodeScreen() {
   const router = useRouter();
+  const { t } = useI18n();
   const { sendRecoveryLink, verifyRecoveryOtp, loading, error, setError } =
     usePasswordRecovery();
   const [email, setEmail] = useState("");
@@ -36,9 +38,9 @@ export function ResetPasswordCodeScreen() {
     const newErrors: Record<string, string> = {};
 
     if (!email.trim()) {
-      newErrors.email = "Email é obrigatório";
+      newErrors.email = t("auth.emailRequired");
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      newErrors.email = "Email inválido";
+      newErrors.email = t("auth.invalidEmail");
     }
 
     setErrors(newErrors);
@@ -59,7 +61,7 @@ export function ResetPasswordCodeScreen() {
     if (!validateEmail()) return;
 
     if (!/^\d{8}$/.test(code.trim())) {
-      setErrors({ code: "O código deve conter 8 dígitos" });
+      setErrors({ code: t("auth.codeLengthError") });
       return;
     }
 
@@ -79,13 +81,13 @@ export function ResetPasswordCodeScreen() {
 
       <View className="mt-10 w-full items-center">
         <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-6 shadow-panelShadow border border-outline">
-          <Text className="text-header-3 text-content mb-5">Redefinir senha</Text>
+          <Text className="text-header-3 text-content mb-5">{t("auth.resetTitle")}</Text>
 
           <View className="w-full max-w-[342px] gap-4">
             <View className="w-full gap-1">
-              <Text className="text-default-2 text-muted">E-mail</Text>
+              <Text className="text-default-2 text-muted">{t("auth.email")}</Text>
               <DefaultTextInput
-                placeholder="Seu e-mail"
+                placeholder={t("auth.emailPlaceholder")}
                 value={email}
                 maxLength={254}
                 onChangeText={(text) => {
@@ -104,7 +106,7 @@ export function ResetPasswordCodeScreen() {
             </View>
 
             <DefaultButton
-              label={action === "send" ? "Enviando..." : "Enviar código por e-mail"}
+              label={action === "send" ? t("auth.sending") : t("auth.sendCode")}
               onPress={handleSend}
               sizeClass="w-full h-11"
               className="rounded-[15px]"
@@ -112,9 +114,9 @@ export function ResetPasswordCodeScreen() {
             />
 
             <View className="w-full gap-1">
-              <Text className="text-default-2 text-muted">Código</Text>
+              <Text className="text-default-2 text-muted">{t("auth.code")}</Text>
               <DefaultTextInput
-                placeholder="8 dígitos"
+                placeholder={t("auth.codeDigitsPlaceholder")}
                 value={code}
                 maxLength={8}
                 onChangeText={(text) => {
@@ -132,7 +134,7 @@ export function ResetPasswordCodeScreen() {
             </View>
 
             <DefaultButton
-              label={action === "verify" ? "Verificando..." : "Confirmar código"}
+              label={action === "verify" ? t("auth.verifying") : t("auth.confirmCode")}
               onPress={handleConfirmCode}
               sizeClass="w-full h-11"
               className="rounded-[15px]"
@@ -144,8 +146,7 @@ export function ResetPasswordCodeScreen() {
 
           {sent ? (
             <Text className="mt-6 text-default-3 text-secondary text-center">
-              Se esse e-mail estiver cadastrado, você receberá um código em
-              instantes.
+              {t("auth.codeSentHint")}
             </Text>
           ) : null}
           {error ? (
@@ -153,7 +154,7 @@ export function ResetPasswordCodeScreen() {
           ) : null}
 
           <Pressable onPress={() => router.replace("/")} className="mt-6">
-            <Text className="text-header-3 text-primary">Voltar ao login</Text>
+            <Text className="text-header-3 text-primary">{t("auth.backToLogin")}</Text>
           </Pressable>
         </View>
       </View>
