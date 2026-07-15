@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useCallback, useEffect, useState } from "react";
 
 /** A student row for the history list, with its record count and pendency flag. */
@@ -28,6 +29,7 @@ export type UseHistoryOptions = {
  * @param options - Pass `{ mock: true }` (tutorial only) for seeded data.
  */
 export function useHistory(options?: UseHistoryOptions) {
+  const { t } = useI18n();
   const isMock = options?.mock ?? false;
   const [studentsHistory, setStudentsHistory] = useState<StudentHistoryData[]>(
     isMock ? MOCK_HISTORY : [],
@@ -92,7 +94,7 @@ export function useHistory(options?: UseHistoryOptions) {
 
       setStudentsHistory(formattedData);
     } catch (err: any) {
-      setError(err instanceof Error ? err : new Error("Erro ao carregar histórico"));
+      setError(err instanceof Error ? err : new Error(t("history.loadError")));
     } finally {
       setIsLoading(false);
     }

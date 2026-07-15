@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { usePathname, useRouter } from "expo-router";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useSessionGlobalContext } from "../contexts/session-global-context";
 import {
   useSessionFlow,
@@ -27,6 +28,7 @@ const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
  * Lets the user switch between concurrent sessions, resume one, or finish it.
  */
 export function GlobalSessionWidget() {
+  const { t } = useI18n();
   const { activeSessions, toggleTimer, closeSession } = useSessionGlobalContext();
   const { finishSessionAndSaveUnexecuted, finalizeSessionAutoFill } = useSessionFlow();
   const router = useRouter();
@@ -92,7 +94,7 @@ export function GlobalSessionWidget() {
           studentName: sessionData.studentName,
           exercises: sessionData.exercisesJson ?? "[]",
           circuitId: sessionData.circuitId ?? "",
-          circuitName: sessionData.circuitName ?? "Circuito",
+          circuitName: sessionData.circuitName ?? t("common.circuit"),
         },
       });
     } else {

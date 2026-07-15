@@ -9,6 +9,7 @@ import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { Check } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
@@ -85,13 +86,14 @@ export function SessionRunningScreen({
   studentId,
   studentName,
   circuitId,
-  circuitName = "Circuito",
+  circuitName = "",
   circuitType = "padrao",
   exercises = [],
   onPressBack,
   onFinishSession,
   onCompleteSession,
 }: SessionRunningScreenProps) {
+  const { t } = useI18n();
   const formRef = useRef<any>(null);
   const sessionSim = useSessionSimController();
   const isTutorial = sessionSim.active && sessionSim.kind === "session";
@@ -168,7 +170,7 @@ export function SessionRunningScreen({
     }
   };
 
-  const safeStudentName = studentName || "Aluno";
+  const safeStudentName = studentName || t("common.student");
 
   useEffect(() => {
     if (!sessionId || exercises.length === 0) return;
@@ -207,7 +209,7 @@ export function SessionRunningScreen({
           type: "structured",
           timeElapsed: 0,
           isRunning: false,
-          exerciseProgress: `Exercício 1/${exercises.length}`,
+          exerciseProgress: t("session.exerciseProgress").replace("{n}", "1").replace("{total}", String(exercises.length)),
           exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description, iconUrl: e.iconUrl ?? null }))),
           circuitId: effectiveCircuitId || undefined,
           circuitName: effectiveCircuitName || undefined,
@@ -292,7 +294,7 @@ export function SessionRunningScreen({
   const controlledIsRunning = currentSessionData?.isRunning ?? false;
 
   const effectiveCircuitId = circuitId || currentSessionData?.circuitId || "";
-  const effectiveCircuitName = circuitName || currentSessionData?.circuitName || "Circuito";
+  const effectiveCircuitName = circuitName || currentSessionData?.circuitName || t("session.defaultCircuit");
 
   useEffect(() => {
     if (!resolvedSid) return;
@@ -520,7 +522,7 @@ export function SessionRunningScreen({
       setCurrentIndex(currentIndex + 1);
       if (effectiveSessionIdRef.current) {
         updateSessionState(effectiveSessionIdRef.current, { activeExerciseId: null });
-        updateSessionProgress(effectiveSessionIdRef.current, `Exercício ${currentIndex + 2}/${total}`);
+        updateSessionProgress(effectiveSessionIdRef.current, t("session.exerciseProgress").replace("{n}", String(currentIndex + 2)).replace("{total}", String(total)));
       }
     } else {
       if (isTutorial) {
@@ -661,7 +663,7 @@ export function SessionRunningScreen({
           <View className="mx-8 mt-5">
             <PageHeader
               mode="execucao"
-              title={`Sessão de ${studentName}`}
+              title={t("sessions.circuitSelection.title").replace("{name}", studentName ?? "")}
               subtitle={subtitle}
               totalExercises={total}
               completedExercises={currentIndex}
@@ -842,6 +844,7 @@ export function SessionRunningScreen({
             onClose={() => setNoticeOpen(false)}
             onExit={() => {
               setNoticeOpen(false);
+              sessionSim.stop();
               handleBack();
             }}
           />

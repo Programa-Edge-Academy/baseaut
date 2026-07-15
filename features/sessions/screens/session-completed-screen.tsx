@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { SelectableChip } from "@/components/selectable-chip";
 import { SessionCompletion } from "@/features/exercises/components/session-completion";
 import { useExercises } from "@/features/exercises/hooks/use-exercises";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useRouter } from "expo-router";
 import { ClipboardList, X } from "lucide-react-native";
 import React, { useState } from "react";
@@ -53,6 +54,7 @@ export function SessionCompletedScreen({
   realized,
 }: SessionCompletedScreenProps) {
   const router = useRouter();
+  const { t } = useI18n();
 
   const filaDePendentes = queue ? JSON.parse(queue) : [];
   const circuitoCompleto = fullCircuit ? JSON.parse(fullCircuit) : [];
@@ -89,7 +91,7 @@ export function SessionCompletedScreen({
         studentName,
         studentId: studentId ?? "",
         sessionId: sessionId ?? "",
-        circuitName: "Outro exercício",
+        circuitName: t("session.otherExerciseName"),
         queue: JSON.stringify(chosen),
       },
     });
@@ -153,7 +155,7 @@ export function SessionCompletedScreen({
 
             <View className="mx-8 mt-5">
               <PageHeader
-                title={`Sessão de ${studentName}`}
+                title={t("sessions.circuitSelection.title").replace("{name}", studentName ?? "")}
                 subtitle={subtitleLabel}
               />
             </View>
@@ -198,7 +200,7 @@ export function SessionCompletedScreen({
             <View className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[600px] overflow-hidden">
               <View className="flex-row justify-between items-center p-5 border-b border-outline/30">
                 <Text className="text-content text-header-2">
-                  Repetir exercícios
+                  {t("session.repeatExercises")}
                 </Text>
                 <Pressable
                   onPress={() => setIsRepeatModalOpen(false)}
@@ -210,7 +212,7 @@ export function SessionCompletedScreen({
 
               <ScrollView className="max-h-[400px] px-5 py-4">
                 <Text className="text-muted text-default-2 mb-4">
-                  Selecione quais exercícios deste circuito você deseja repetir:
+                  {t("session.repeatPrompt")}
                 </Text>
                 <View className="gap-2.5">
                   {circuitoCompleto.map((ex: any) => (
@@ -228,8 +230,8 @@ export function SessionCompletedScreen({
                 <ActionButtons
                   onCancel={() => setIsRepeatModalOpen(false)}
                   onSave={handleConfirmRepeat}
-                  cancelLabel="Cancelar"
-                  saveLabel="Iniciar"
+                  cancelLabel={t("common.cancel")}
+                  saveLabel={t("session.start")}
                   disabled={selectedRepeatIds.length === 0}
                 />
               </View>
@@ -242,7 +244,7 @@ export function SessionCompletedScreen({
             <View className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[600px] overflow-hidden">
               <View className="flex-row justify-between items-center p-5 border-b border-outline/30">
                 <Text className="text-content text-header-2">
-                  Realizar outro exercício
+                  {t("session.doOtherExercise")}
                 </Text>
                 <Pressable
                   onPress={() => setIsOtherModalOpen(false)}
@@ -254,8 +256,7 @@ export function SessionCompletedScreen({
 
               <ScrollView className="max-h-[400px] px-5 py-4">
                 <Text className="text-muted text-default-2 mb-4">
-                  Selecione qualquer exercício da equipe para realizar nesta
-                  sessão:
+                  {t("session.otherExercisePrompt")}
                 </Text>
 
                 {isExercisesLoading ? (
@@ -264,7 +265,7 @@ export function SessionCompletedScreen({
                   </View>
                 ) : teamExercises.length === 0 ? (
                   <Text className="text-muted text-default-2 py-6 text-center">
-                    Nenhum exercício cadastrado na equipe.
+                    {t("session.noTeamExercises")}
                   </Text>
                 ) : (
                   <View className="gap-2.5">
@@ -284,8 +285,8 @@ export function SessionCompletedScreen({
                 <ActionButtons
                   onCancel={() => setIsOtherModalOpen(false)}
                   onSave={handleConfirmOther}
-                  cancelLabel="Cancelar"
-                  saveLabel="Iniciar"
+                  cancelLabel={t("common.cancel")}
+                  saveLabel={t("session.start")}
                   disabled={selectedOtherIds.length === 0}
                 />
               </View>

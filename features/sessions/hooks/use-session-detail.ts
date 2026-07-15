@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useEffect, useState, useCallback } from "react";
 import type { ActivityRecordItem, ActivityRecordUpdate } from "@/features/sessions/components/activity-record-card";
 
@@ -15,6 +16,7 @@ export interface SessionDetailData {
  * cancellation actions.
  */
 export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
+  const { t } = useI18n();
   const [data, setData] = useState<SessionDetailData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -41,11 +43,11 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
 
       const circuitTitle = (sessionData as any)?.circuito_id?.titulo;
       const sessionTitle =
-        circuitTitle || fallbackTitle || "Sessão Clínica";
+        circuitTitle || fallbackTitle || t("session.clinicalSession");
 
       const sessionDate = sessionData?.data_inicio
         ? new Date(sessionData.data_inicio).toLocaleDateString("pt-BR")
-        : "Data não definida";
+        : t("common.dateUndefined");
 
       const { data: execData, error: execError } = await supabase
         .from("execucoes_exercicio")
@@ -67,7 +69,7 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
 
       const executions: ActivityRecordItem[] = (execData || []).map((e: any) => ({
         id: e.id,
-        title: e.exercicio_id?.titulo || "Exercício",
+        title: e.exercicio_id?.titulo || t("export.doc.exercise"),
         durationSeconds: e.duracao_real_segundos ?? null,
         statusRealizacao: e.status_realizacao ?? "realizada",
         nivelDesenvolvimento: e.nivel_desenvolvimento ?? null,
@@ -85,7 +87,7 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
       const parsedPend = typeof pend === "string" ? JSON.parse(pend) : pend;
       setRcPending((parsedPend?.perguntas_pendentes?.length ?? 0) > 0);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Erro ao carregar sessão"));
+      setError(err instanceof Error ? err : new Error(t("sessionDetail.loadError")));
     } finally {
       setIsLoading(false);
     }

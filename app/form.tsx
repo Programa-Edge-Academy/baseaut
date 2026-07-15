@@ -15,14 +15,16 @@ import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
+import type { TranslationKey } from "@/features/settings/constants/translations";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { supabase } from "@/lib/supabase";
 
-const FORM_SUBTITLES: Record<string, string> = {
-  ata: "Pontue conforme os indicadores observados",
-  cars: "Arraste o marcador para definir a pontuação",
-  registro_controle: "Preencha o registro de controle da sessão",
-  rc: "Preencha o registro de controle da sessão",
-  mabc2: "Preencha os itens da avaliação MABC-2",
+const FORM_SUBTITLE_KEYS: Record<string, TranslationKey> = {
+  ata: "form.helpAta",
+  cars: "form.helpCars",
+  registro_controle: "form.helpRc",
+  rc: "form.helpRc",
+  mabc2: "form.helpMabc2",
 };
 
 /**
@@ -53,6 +55,7 @@ async function resolveTemplateId(tipo: string): Promise<string | null> {
  * exporting (ATA/CARS only).
  */
 export default function FormRoute() {
+  const { t, locale } = useI18n();
   const {
     circuitType,
     circuitName,
@@ -212,14 +215,14 @@ export default function FormRoute() {
         router.back();
         showToast({
           mode: "success",
-          title: "Formulário salvo",
-          description: "As respostas foram salvas com sucesso!",
+          title: t("form.savedToast"),
+          description: t("form.answersSaved"),
         });
       } else if (result) {
         setToastConfig({
           visible: true,
           mode: "error",
-          title: result.title || "Erro ao salvar",
+          title: result.title || t("form.saveError"),
           description: result.description
         });
       }
@@ -242,8 +245,8 @@ export default function FormRoute() {
       setToastConfig({
         visible: true,
         mode: "error",
-        title: "Não foi possível remover o formulário.",
-        description: "Tente novamente",
+        title: t("form.removeError"),
+        description: t("common.retry"),
       });
     }
   };
@@ -258,17 +261,19 @@ export default function FormRoute() {
       await exportForm(
         {
           formularioId: formId,
-          title: String(circuitName || circuitType || "Formulário"),
-          studentName: "Aluno",
+          title: String(circuitName || circuitType || t("form.fallbackTitle")),
+          studentName: t("common.student"),
         },
         formats,
+        t,
+        locale,
         deliveryMode,
       );
     } catch (err: any) {
       setToastConfig({
         visible: true,
         mode: "error",
-        title: "Erro ao exportar",
+        title: t("reports.exportError"),
         description: err?.message,
       });
     }
@@ -294,10 +299,10 @@ export default function FormRoute() {
           <View className="mt-5 w-full">
             <PageHeader
               title={
-                (isEditing ? "Editar formulário " : "Preencher formulário ") +
+                (isEditing ? t("form.editForm") : t("form.fillForm")) +
                 circuitName
               }
-              subtitle={FORM_SUBTITLES[circuitType] ?? ""}
+              subtitle={FORM_SUBTITLE_KEYS[circuitType] ? t(FORM_SUBTITLE_KEYS[circuitType]) : ""}
               mode={isEditing && !isRegistroControle ? "historico-estudante" : undefined}
               onSharePress={
                 isEditing && isAtaCars ? () => setIsFormatPickerOpen(true) : undefined
@@ -331,10 +336,10 @@ export default function FormRoute() {
         visible={isDeleteModalVisible}
         onClose={() => setIsDeleteModalVisible(false)}
         onConfirm={handleDeleteForm}
-        title="Remover formulário?"
-        message="Este formulário será removido do histórico permanentemente."
-        confirmLabel={isDeleting ? "Removendo..." : "Remover"}
-        cancelLabel="Cancelar"
+        title={t("form.removeTitle")}
+        message={t("form.removeMessage")}
+        confirmLabel={isDeleting ? t("form.removing") : t("common.remove")}
+        cancelLabel={t("common.cancel")}
         iconType="alert"
       />
 
@@ -391,6 +396,7 @@ function FormFormatPicker({
   onExport: (f: { pdf: boolean; csv: boolean }, mode: "share" | "download") => void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const [pdf, setPdf] = useState(true);
   const [csv, setCsv] = useState(false);
 
@@ -399,7 +405,7 @@ function FormFormatPicker({
       className="bg-level2 border border-outline rounded-2xl p-6 w-full gap-5"
       onPress={(e) => e.stopPropagation()}
     >
-      <Text className="text-header-2 text-content">Selecionar formato</Text>
+      <Text className="text-header-2 text-content">{t("export.selectFormat")}</Text>
 
       <View className="gap-3">
         <Pressable onPress={() => setPdf((v) => !v)} className="flex-row items-center gap-3">
@@ -417,14 +423,14 @@ function FormFormatPicker({
           >
             {csv && <Text className="text-content text-xs font-bold">✓</Text>}
           </View>
-          <Text className="text-content text-default-1">CSV (dados tabulares)</Text>
+          <Text className="text-content text-default-1">{t("export.csvTabular")}</Text>
         </Pressable>
       </View>
 
       <View className="gap-3">
         <View className="flex-row gap-3">
           <DefaultButton
-            label="Cancelar"
+            label={t("common.cancel")}
             onPress={onClose}
             bgColorClass="bg-level1"
             shadowClass=""
@@ -433,7 +439,7 @@ function FormFormatPicker({
             textClassName="text-muted"
           />
           <DefaultButton
-            label="Exportar"
+            label={t("export.exportAction")}
             onPress={() => onExport({ pdf, csv }, "share")}
             sizeClass="flex-1 h-11"
             bgColorClass="bg-primary"
@@ -443,7 +449,7 @@ function FormFormatPicker({
 
         {Platform.OS === "android" && (
           <DefaultButton
-            label="Baixar"
+            label={t("export.downloadAction")}
             onPress={() => onExport({ pdf, csv }, "download")}
             sizeClass="w-full h-11"
             bgColorClass="bg-secondary"

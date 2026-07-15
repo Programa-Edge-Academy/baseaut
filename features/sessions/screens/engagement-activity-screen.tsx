@@ -15,6 +15,7 @@ import {
   type MotivoNaoRealizacao,
 } from "../hooks/use-session-flow";
 import { formatSessionClock, useSessionGlobalContext } from "../contexts/session-global-context";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { CheckCircle2 } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
@@ -37,13 +38,14 @@ const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
  */
 export function EngagementActivityScreen() {
   const router = useRouter();
+  const { t } = useI18n();
   const { studentName, sessionId, studentId, fromWidget } = useLocalSearchParams<{
     studentName: string;
     studentId: string;
     sessionId: string;
     fromWidget?: string;
   }>();
-  const safeStudentName = studentName || "Aluno";
+  const safeStudentName = studentName || t("common.student");
 
   const { persistExecutions } = useSessionFlow();
   const {
@@ -112,7 +114,7 @@ export function EngagementActivityScreen() {
                 studentId: currentSessionData.studentId,
                 studentName: currentSessionData.studentName,
                 circuitId: currentSessionData.circuitId || "",
-                circuitName: currentSessionData.circuitName || "Circuito",
+                circuitName: currentSessionData.circuitName || t("common.circuit"),
                 queue: currentSessionData.exercisesJson || "[]",
               },
             });
@@ -207,7 +209,7 @@ export function EngagementActivityScreen() {
       activeExerciseId: engagementExerciseIdRef.current,
       isEngagementRunning: true,
     });
-    updateSessionProgress(sessionId, "Atividade de engajamento");
+    updateSessionProgress(sessionId, t("engagement.title"));
     updateTimeElapsed(sessionId, 0);
     toggleTimer(sessionId, true);
   };
@@ -228,23 +230,23 @@ export function EngagementActivityScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View className="mx-8 mt-5">
           <PageHeader
-            title={`Sessão de ${safeStudentName}`}
-            subtitle={`Circuito Semi-estruturado · Engajamento - ${formatSessionClock(currentSessionData?.totalElapsed ?? 0)}`}
+            title={t("sessions.circuitSelection.title").replace("{name}", safeStudentName)}
+            subtitle={t("session.subtitleEngagement").replace("{clock}", formatSessionClock(currentSessionData?.totalElapsed ?? 0))}
           />
         </View>
 
         <View className="top-[4%] p-5 rounded-2xl w-[100%] justify-center align-center">
           {stage === "ready" ? (
             <StartActivity
-              title="Atividade de engajamento"
-              subtitle="Momento focado na interação com o aluno"
+              title={t("engagement.title")}
+              subtitle={t("engagement.subtitle")}
               onStart={handleStart}
               onStartAndRecord={handleStart}
             />
           ) : (
             <Stopwatch
-              title="Atividade de engajamento"
-              subtitle="Momento focado na interação com o aluno"
+              title={t("engagement.title")}
+              subtitle={t("engagement.subtitle")}
               autoStart={true}
               controlledSeconds={currentSessionData?.timeElapsed ?? 0}
               controlledIsRunning={currentSessionData?.isRunning ?? false}
@@ -270,7 +272,7 @@ export function EngagementActivityScreen() {
 
       <ActivityResultModal
         visible={isResultModalOpen}
-        exerciseTitle="Atividade de engajamento"
+        exerciseTitle={t("engagement.title")}
         elapsedTime={elapsedTimeStr}
         onClose={() => setIsResultModalOpen(false)}
         onDefer={() => handleResult("adiado")}
