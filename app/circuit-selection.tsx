@@ -5,6 +5,7 @@ import { calculateAge } from "@/lib/date-utils";
 import { getStartGuard, type StartGuardState } from "@/lib/session-start-guard";
 import { supabase } from "@/lib/supabase";
 import { ConcurrentSessionModal } from "@/components/concurrent-session-modal";
+import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useSessionGlobalContext } from "@/features/sessions/contexts/session-global-context";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
@@ -71,18 +72,23 @@ function isCircuitAvailableForStudentAge(
 }
 
 /** Builds the subtitle describing a circuit's exercises and, for MABC, its age band. */
-function getCircuitDescription(circuit: Circuit) {
+function getCircuitDescription(circuit: Circuit, t: (key: TranslationKey) => string) {
   if (isMabcCircuitType(circuit.type)) {
     const range = MABC_AGE_RANGES[circuit.type];
 
     return circuit.exercisesCount > 0
-      ? `${circuit.exercisesCount} exercícios - Faixa etária ${range.label} - ${circuit.exercisesSummary}`
-      : `Faixa etária ${range.label} - Sem exercícios vinculados`;
+      ? t("circuits.descMabc")
+          .replace("{n}", String(circuit.exercisesCount))
+          .replace("{range}", range.label)
+          .replace("{summary}", circuit.exercisesSummary)
+      : t("circuits.descMabcEmpty").replace("{range}", range.label);
   }
 
   return circuit.exercisesCount > 0
-    ? `${circuit.exercisesCount} exercícios - ${circuit.exercisesSummary}`
-    : "Sem exercícios vinculados";
+    ? t("circuits.desc")
+        .replace("{n}", String(circuit.exercisesCount))
+        .replace("{summary}", circuit.exercisesSummary)
+    : t("circuits.descEmpty");
 }
 
 type GuardModalType =
@@ -194,7 +200,7 @@ export default function CircuitSelectionRoute() {
     const real: CircuitItem[] = availableCircuits.map((circuit) => ({
       id: circuit.id,
       name: circuit.name,
-      description: getCircuitDescription(circuit),
+      description: getCircuitDescription(circuit, t),
       type:
         circuit.executionMode === "semi-estruturado"
           ? "semi-estruturado"
@@ -211,13 +217,13 @@ export default function CircuitSelectionRoute() {
       {
         id: "formulario-ata",
         name: "ATA",
-        description: "Iniciar um novo registro ATA",
+        description: t("circuits.ataNewDesc"),
         type: "ata",
       },
       {
         id: "formulario-cars",
         name: "CARS",
-        description: "Iniciar um novo registro CARS",
+        description: t("circuits.carsNewDesc"),
         type: "cars",
       },
     ];
@@ -225,14 +231,14 @@ export default function CircuitSelectionRoute() {
     const mabcForms: CircuitItem[] = [];
     if (studentAge !== null && studentAge >= 3 && studentAge <= 16) {
       let faixaLabel = "";
-      if (studentAge <= 6) faixaLabel = "3 a 6 anos";
-      else if (studentAge <= 10) faixaLabel = "7 a 10 anos";
-      else faixaLabel = "11 a 16 anos";
+      if (studentAge <= 6) faixaLabel = t("circuits.ageRange36");
+      else if (studentAge <= 10) faixaLabel = t("circuits.ageRange710");
+      else faixaLabel = t("circuits.ageRange1116");
 
       mabcForms.push({
         id: "formulario-mabc2",
         name: "MABC-2",
-        description: `Iniciar uma nova avaliação MABC-2 — Faixa ${faixaLabel}`,
+        description: t("circuits.mabcNewDesc").replace("{range}", faixaLabel),
         type: "mabc",
       });
     }
@@ -333,12 +339,12 @@ export default function CircuitSelectionRoute() {
         params: {
           sessionId: session.id,
           studentId: studentId ?? "",
-          studentName: studentName ?? "Aluno",
+          studentName: studentName ?? t("common.student"),
           circuitId: circuitoId ?? "",
           circuitType: circuit
             ? (dbTipoById.get(circuit.id) ?? "padrao")
             : "padrao",
-          circuitName: circuit?.name ?? "Sessão",
+          circuitName: circuit?.name ?? t("sessionDetail.session"),
           exercises: exercisesParam,
         },
       });
@@ -467,11 +473,10 @@ export default function CircuitSelectionRoute() {
     }
     if (guardModal === "rc-pending") {
       return {
-        title: "Registro de Controle pendente",
-        message:
-          "Existe um Registro de Controle de uma sessão anterior que ainda não foi preenchido.",
-        continueLabel: "Preencher registro de controle",
-        finishLabel: "Iniciar nova sessão",
+        title: t("circuits.rcPendingTitle"),
+        message: t("circuits.rcPendingMsg"),
+        continueLabel: t("circuits.fillRc"),
+        finishLabel: t("circuits.startNewSession"),
       };
     }
     if (guardModal === "form-conflict") {
@@ -497,7 +502,7 @@ export default function CircuitSelectionRoute() {
   return (
     <>
       <CircuitSelectionScreen
-        studentName={studentName || "Aluno"}
+        studentName={studentName || t("common.student")}
         circuits={items}
         isLoading={circuitsLoading || !ageResolved}
         onPressBack={() => router.back()}

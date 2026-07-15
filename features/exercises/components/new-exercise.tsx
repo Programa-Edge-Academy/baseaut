@@ -55,7 +55,7 @@ export function NewExercise({
   onClose,
   availableTags = ["Coordenação", "Força", "Equilíbrio"],
   onSave,
-  title = "Novo exercício",
+  title,
   initialData,
 }: NewExerciseProps) {
   const { width } = useWindowDimensions();
@@ -219,7 +219,7 @@ export function NewExercise({
               contentContainerStyle={{ padding: 25, gap: 25 }}
             >
               <View className="flex-row items-center justify-between">
-                <Text className="text-header-2 text-content">{title}</Text>
+                <Text className="text-header-2 text-content">{title ?? t("exercises.form.createTitle")}</Text>
                 <Pressable onPress={onClose} className="p-1 active:opacity-70">
                   <X color={colors.muted} size={28} />
                 </Pressable>

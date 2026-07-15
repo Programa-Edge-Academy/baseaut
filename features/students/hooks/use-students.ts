@@ -93,7 +93,7 @@ const loadStudents = useCallback(async (showLoader = true) => {
     try {
       const teamId = await resolveEquipeId();
       if (!teamId) {
-        throw new Error("Usuário não está associado a nenhuma equipe ativa.");
+        throw new Error(t("common.err.noActiveTeam"));
       }
       setEquipeId(teamId);
 
@@ -179,7 +179,7 @@ const loadStudents = useCallback(async (showLoader = true) => {
     }
 
     try {
-      if (!equipeId) throw new Error("ID da equipe não identificado.");
+      if (!equipeId) throw new Error(t("common.err.teamNotIdentified"));
 
       let finalAvatarUrl: string | null = null;
       if (photoUri) {

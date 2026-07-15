@@ -1,6 +1,8 @@
 import { colors } from "@/assets/colors";
 import { RipplePressable } from "@/components/ripple-pressable";
 import { SelectableChip } from "@/components/selectable-chip";
+import type { TranslationKey } from "@/features/settings/constants/translations";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import React, { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -52,6 +54,37 @@ const MOTIVOS = [
   "Outro",
 ];
 
+/** Maps each reason value (persisted identifier) to its localized display key. */
+const MOTIVO_LABEL_KEYS: Record<string, TranslationKey> = {
+  "Recusa do aluno": "activityResult.motive.refusal",
+  "Comportamento disruptivo": "activityResult.motive.disruptive",
+  "Fadiga ou cansaço": "activityResult.motive.fatigue",
+  "Tempo insuficiente": "activityResult.motive.insufficientTime",
+  "Dificuldade física": "activityResult.motive.physicalDifficulty",
+  Outro: "activityResult.motive.other",
+};
+
+/**
+ * Maps the MABC-2 config's display labels (sides, fields, sections) to their
+ * localized keys. The config keys/exercise names stay pt because they identify
+ * the DB exercise; only these display labels are translated when rendered.
+ */
+const MABC_LABEL_KEYS: Record<string, TranslationKey> = {
+  "Destreza Manual": "reports.mabc.manualDexterity",
+  "Pegar e Lançar": "mabc.section.aimingThrowing",
+  Equilíbrio: "reports.mabc.balance",
+  "Mão Preferida": "mabc.side.prefHand",
+  "Mão Não Preferida": "mabc.side.nonPrefHand",
+  "Melhor Perna": "mabc.side.bestLeg",
+  "Outra Perna": "mabc.side.otherLeg",
+  "Melhor Mão": "mabc.side.bestHand",
+  "Outra Mão": "mabc.side.otherHand",
+  "Tempo (s)": "mabc.field.time",
+  Falhas: "mabc.field.failures",
+  Acertos: "mabc.field.hits",
+  Passos: "mabc.field.steps",
+};
+
 /**
  * Modal for recording a MABC-2 exercise outcome. Renders the exercise's raw
  * score inputs (per side, trial, and field) defined in
@@ -67,6 +100,10 @@ export function MabcResultModal({
   onNotCompleted,
   onConfirm,
 }: MabcResultModalProps) {
+  const { t } = useI18n();
+  /** Localizes a MABC config display label, falling back to the raw value. */
+  const mabcLabel = (label: string) =>
+    MABC_LABEL_KEYS[label] ? t(MABC_LABEL_KEYS[label]) : label;
   const [viewMode, setViewMode] = useState<"result" | "reasons">("result");
   const [values, setValues] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -116,20 +153,20 @@ export function MabcResultModal({
           const val = values[key]?.trim() || "";
 
           if (!val) {
-            newErrors[key] = "Requerido";
+            newErrors[key] = t("mabc.required");
             hasValidationError = true;
             continue;
           }
 
           const num = Number(val);
           if (isNaN(num) || num < 0) {
-            newErrors[key] = "Inválido";
+            newErrors[key] = t("mabc.invalid");
             hasValidationError = true;
             continue;
           }
 
           if (field.max !== undefined && num > field.max) {
-            newErrors[key] = `Máx ${field.max}`;
+            newErrors[key] = t("mabc.max").replace("{n}", String(field.max));
             hasValidationError = true;
           }
         }
@@ -217,7 +254,7 @@ export function MabcResultModal({
                     color: "#fff",
                   }}
                 >
-                  {viewMode === "result" ? "Resultado da atividade" : "Não realizada"}
+                  {viewMode === "result" ? t("mabc.resultTitle") : t("mabc.notCompleted")}
                 </Text>
                 <Text
                   style={{
@@ -250,7 +287,7 @@ export function MabcResultModal({
                       color: colors.extra,
                     }}
                   >
-                    Adiar resposta
+                    {t("mabc.deferAnswer")}
                   </Text>
                 </RipplePressable>
               )}
@@ -279,7 +316,7 @@ export function MabcResultModal({
                         marginBottom: 10,
                       }}
                     >
-                      Dados de execução (Escores brutos)
+                      {t("mabc.rawScores")}
                     </Text>
 
                     {config.sides.map((side) => (
@@ -295,7 +332,7 @@ export function MabcResultModal({
                               letterSpacing: 0.5,
                             }}
                           >
-                            {side.label}
+                            {mabcLabel(side.label)}
                           </Text>
                         )}
 
@@ -320,7 +357,7 @@ export function MabcResultModal({
                                   marginBottom: 6,
                                 }}
                               >
-                                {trial === "T1" ? "Tentativa 1" : "Tentativa 2"}
+                                {trial === "T1" ? t("mabc.trial1") : t("mabc.trial2")}
                               </Text>
 
                               <View style={{ flexDirection: "row", gap: 8 }}>
@@ -339,7 +376,7 @@ export function MabcResultModal({
                                         }}
                                         numberOfLines={1}
                                       >
-                                        {field.label}
+                                        {mabcLabel(field.label)}
                                       </Text>
                                       <TextInput
                                         value={values[key] || ""}
@@ -416,7 +453,7 @@ export function MabcResultModal({
                         color: "#fff",
                       }}
                     >
-                      Não realizada
+                      {t("mabc.notCompleted")}
                     </Text>
                   </RipplePressable>
 
@@ -445,7 +482,7 @@ export function MabcResultModal({
                         color: "#fff",
                       }}
                     >
-                      Concluir
+                      {t("mabc.complete")}
                     </Text>
                   </RipplePressable>
                 </View>
@@ -464,14 +501,14 @@ export function MabcResultModal({
                         color: colors.muted,
                       }}
                     >
-                      Motivo:
+                      {t("session.reasonLabel")}
                     </Text>
 
                     <View style={{ gap: 6 }}>
                       {MOTIVOS.map((motivo) => (
                         <SelectableChip
                           key={motivo}
-                          label={motivo}
+                          label={MOTIVO_LABEL_KEYS[motivo] ? t(MOTIVO_LABEL_KEYS[motivo]) : motivo}
                           type="motivos"
                           isSelected={selectedMotivo === motivo}
                           onToggle={() => setSelectedMotivo(motivo)}
@@ -488,12 +525,12 @@ export function MabcResultModal({
                             color: colors.muted,
                           }}
                         >
-                          Descrição do motivo:
+                          {t("activityResult.motiveDescription")}
                         </Text>
                         <TextInput
                           value={outroDescricao}
                           onChangeText={setOutroDescricao}
-                          placeholder="Descreva o motivo..."
+                          placeholder={t("session.reasonPlaceholder")}
                           placeholderTextColor={colors.placeholder}
                           multiline
                           numberOfLines={3}
@@ -540,7 +577,7 @@ export function MabcResultModal({
                         color: colors.muted,
                       }}
                     >
-                      Voltar
+                      {t("common.back")}
                     </Text>
                   </RipplePressable>
 
@@ -571,7 +608,7 @@ export function MabcResultModal({
                         color: isRegistrarDisabled ? colors.muted : "#fff",
                       }}
                     >
-                      Registrar
+                      {t("mabc.register")}
                     </Text>
                   </RipplePressable>
                 </View>

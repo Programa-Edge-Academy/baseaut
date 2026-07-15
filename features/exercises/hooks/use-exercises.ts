@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { uploadImage } from "@/lib/upload-image";
@@ -19,12 +20,16 @@ export type Exercise = {
   iconUrl?: string | null;
 };
 
-/** Seed exercises for the tutorial's mock mode (kept entirely in memory). */
-const MOCK_EXERCISES: Exercise[] = [
+/**
+ * Seed exercises for the tutorial's mock mode (kept entirely in memory). The
+ * display fields (name/description) are localized; `tag`/`subtags` stay as the
+ * stored identifier values (translated for display by the tag components).
+ */
+const buildMockExercises = (t: (key: TranslationKey) => string): Exercise[] => [
   {
     id: "mock-linha",
-    name: "Andar na linha",
-    description: "Equilíbrio sobre uma linha reta",
+    name: t("mock.exWalkLine"),
+    description: t("mock.exWalkLineDesc"),
     durationSeconds: 60,
     tag: "Equilíbrio",
     subtags: ["estabilizador"],
@@ -32,8 +37,8 @@ const MOCK_EXERCISES: Exercise[] = [
   },
   {
     id: "mock-bambole",
-    name: "Girar bambolê",
-    description: "Coordenação com bambolê",
+    name: t("mock.exHoop"),
+    description: t("mock.exHoopDesc"),
     durationSeconds: 90,
     tag: "Coordenação",
     subtags: ["manipulativo"],
@@ -56,7 +61,7 @@ export type UseExercisesOptions = {
 export function useExercises(options?: UseExercisesOptions) {
   const isMock = options?.mock ?? false;
   const { t } = useI18n();
-  const [exercises, setExercises] = useState<Exercise[]>(isMock ? MOCK_EXERCISES : []);
+  const [exercises, setExercises] = useState<Exercise[]>(isMock ? buildMockExercises(t) : []);
   const [isLoading, setIsLoading] = useState(!isMock);
   const [error, setError] = useState<Error | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
@@ -75,7 +80,7 @@ export function useExercises(options?: UseExercisesOptions) {
     try {
       const teamId = await resolveEquipeId();
       if (!teamId) {
-        throw new Error("Usuário não está associado a nenhuma equipe ativa.");
+        throw new Error(t("common.err.noActiveTeam"));
       }
       setEquipeId(teamId);
 
@@ -135,7 +140,7 @@ export function useExercises(options?: UseExercisesOptions) {
     }
 
     try {
-      if (!equipeId) throw new Error("ID da equipe não identificado.");
+      if (!equipeId) throw new Error(t("common.err.teamNotIdentified"));
       let finalIconUrl = null;
       if (photoUri && !photoUri.startsWith("http")) {
         finalIconUrl = await uploadImage("exercicio-media", photoUri, "icons");
@@ -265,7 +270,7 @@ export function useExercises(options?: UseExercisesOptions) {
     }
 
     try {
-      if (!equipeId) throw new Error("ID da equipe não identificado.");
+      if (!equipeId) throw new Error(t("common.err.teamNotIdentified"));
 
       const payload = {
         titulo: `${exercise.name} (Cópia)`,

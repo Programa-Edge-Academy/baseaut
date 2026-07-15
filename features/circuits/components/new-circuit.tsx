@@ -50,7 +50,7 @@ export function NewCircuit({
   visible,
   onClose,
   onSave,
-  title = "Novo circuito",
+  title,
   mock = false,
   initialData
 }: NewCircuitProps) {
@@ -83,7 +83,7 @@ export function NewCircuit({
   const [isSaving, setIsSaving] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  const frozenTitle = useRef(title);
+  const frozenTitle = useRef(title ?? t("circuits.form.createTitle"));
 
   const isEditing = !!initialData;
   const successMessage = isEditing
@@ -92,7 +92,7 @@ export function NewCircuit({
 
   useEffect(() => {
     if (visible) {
-      frozenTitle.current = title;
+      frozenTitle.current = title ?? t("circuits.form.createTitle");
       if (initialData) {
         setName(initialData.name);
         setExecutionMode(initialData.executionMode);

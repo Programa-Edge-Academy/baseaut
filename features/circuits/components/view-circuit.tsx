@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } fr
 
 import { colors } from "@/assets/colors";
 import { Exercise } from "@/features/exercises/hooks/use-exercises";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 
 type ExecutionMode = "estruturado" | "semi-estruturado";
 
@@ -62,9 +63,10 @@ export function ViewCircuit({
   onClose,
   circuitData
 }: ViewCircuitProps) {
+  const { t } = useI18n();
   const { height: screenHeight } = useWindowDimensions();
 
-  const frozenTitle = useRef(circuitData?.name || "Detalhes do Circuito");
+  const frozenTitle = useRef(circuitData?.name || t("circuits.circuitDetails"));
   if (circuitData?.name) {
     frozenTitle.current = circuitData.name;
   }
@@ -99,21 +101,21 @@ export function ViewCircuit({
           >
             <View className="gap-5 mb-5">
               <View>
-                <Text className="text-muted text-default-2 mb-1">Nome do circuito</Text>
+                <Text className="text-muted text-default-2 mb-1">{t("circuits.form.name")}</Text>
                 <Text className="text-content text-default-1">{circuitData.name}</Text>
               </View>
 
               <View>
-                <Text className="text-muted text-default-2 mb-2">Tipo do circuito</Text>
+                <Text className="text-muted text-default-2 mb-2">{t("circuits.form.type")}</Text>
                 {circuitData.executionMode === "estruturado" ? (
                   <View className="p-3.5 rounded-xl border border-primary bg-primary/10">
-                    <Text className="text-content text-default-1 mb-1 font-bold">Estruturado</Text>
-                    <Text className="text-muted text-default-3">Realiza todos os exercícios definidos</Text>
+                    <Text className="text-content text-default-1 mb-1 font-bold">{t("circuits.form.structured")}</Text>
+                    <Text className="text-muted text-default-3">{t("circuits.doesAllExercises")}</Text>
                   </View>
                 ) : (
                   <View className="p-3.5 rounded-xl border border-primary bg-primary/10">
-                    <Text className="text-content text-default-1 mb-1 font-bold">Semi-estruturado</Text>
-                    <Text className="text-muted text-default-3">Para engajamento e atividades parciais</Text>
+                    <Text className="text-content text-default-1 mb-1 font-bold">{t("circuits.form.semi")}</Text>
+                    <Text className="text-muted text-default-3">{t("circuits.form.semiDesc")}</Text>
                   </View>
                 )}
               </View>
@@ -123,7 +125,7 @@ export function ViewCircuit({
             {circuitData.exercises.length > 0 && (
               <View className="mt-2">
                 <Text className="text-content text-default-1 mb-4 font-bold">
-                  {circuitData.executionMode === "estruturado" ? "Ordem dos exercícios" : "Exercícios inclusos"}
+                  {circuitData.executionMode === "estruturado" ? t("circuits.exerciseOrder") : t("circuits.includedExercises")}
                 </Text>
 
                 {circuitData.exercises.map((item, index) => (

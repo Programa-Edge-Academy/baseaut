@@ -1,5 +1,6 @@
 import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import {
   ChevronLeft,
   ChevronRight,
@@ -40,6 +41,7 @@ export function StartActivity({
   defaultPreviewVisible = false,
   className,
 }: StartActivityProps) {
+  const { t } = useI18n();
   const [isPreviewVisible, setIsPreviewVisible] = useState(defaultPreviewVisible);
   const hasMedia = !!iconUrl;
 
@@ -97,7 +99,7 @@ export function StartActivity({
 
       <View className="mt-4 flex-row gap-2.5">
         <DefaultButton
-          label="Iniciar atividade"
+          label={t("exercises.startActivity")}
           onPress={onStart}
           bgColorClass="bg-primary"
           shadowClass="shadow-primaryShadow"

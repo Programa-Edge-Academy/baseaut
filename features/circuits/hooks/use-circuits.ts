@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -186,23 +187,23 @@ async function seedMabcCircuits(teamId: string): Promise<void> {
 }
 
 /** Seed exercises available for selection inside the tutorial's mock circuit modal. */
-const MOCK_CIRCUIT_EXERCISES: Exercise[] = [
-  { id: "mock-linha", name: "Andar na linha", description: "", tag: "Equilíbrio", subtags: ["estabilizador"], iconUrl: null },
-  { id: "mock-bambole", name: "Girar bambolê", description: "", tag: "Coordenação", subtags: ["manipulativo"], iconUrl: null },
+const buildMockCircuitExercises = (t: (key: TranslationKey) => string): Exercise[] => [
+  { id: "mock-linha", name: t("mock.exWalkLine"), description: "", tag: "Equilíbrio", subtags: ["estabilizador"], iconUrl: null },
+  { id: "mock-bambole", name: t("mock.exHoop"), description: "", tag: "Coordenação", subtags: ["manipulativo"], iconUrl: null },
 ];
 
 /** Seed circuits for the tutorial's mock mode (kept entirely in memory). */
-const MOCK_CIRCUITS: Circuit[] = [
+const buildMockCircuits = (t: (key: TranslationKey) => string): Circuit[] => [
   {
     id: "mock-circ-ex",
-    name: "Circuito exemplo",
+    name: t("mock.exampleCircuit"),
     description: null,
     formId: null,
     type: "padrao",
     executionMode: "estruturado",
     exercisesCount: 2,
-    exercisesSummary: "Andar na linha, Girar bambolê",
-    exercises: MOCK_CIRCUIT_EXERCISES,
+    exercisesSummary: `${t("mock.exWalkLine")}, ${t("mock.exHoop")}`,
+    exercises: buildMockCircuitExercises(t),
   },
 ];
 
@@ -221,7 +222,7 @@ export type UseCircuitsOptions = {
 export function useCircuits(options?: UseCircuitsOptions) {
   const isMock = options?.mock ?? false;
   const { t } = useI18n();
-  const [circuits, setCircuits] = useState<Circuit[]>(isMock ? MOCK_CIRCUITS : []);
+  const [circuits, setCircuits] = useState<Circuit[]>(isMock ? buildMockCircuits(t) : []);
   const [isLoading, setIsLoading] = useState(!isMock);
   const [error, setError] = useState<Error | null>(null);
   const [equipeId, setEquipeId] = useState<string | null>(null);
