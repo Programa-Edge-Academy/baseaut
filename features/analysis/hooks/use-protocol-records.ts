@@ -60,18 +60,18 @@ function sumNumericAnswers(values: (string | null)[]): number | null {
  * student, exposing only records that actually have answers.
  */
 /** Seed protocol records for the tutorial's mock analysis. */
-function mockProtocolRecords(tipo?: ProtocolTipo): ProtocolRecord[] {
-  const label = tipo ? PROTOCOL_LABELS[tipo] : "Protocolo";
+function mockProtocolRecords(tipo: ProtocolTipo | undefined, t: Translate): ProtocolRecord[] {
+  const label = tipo ? PROTOCOL_LABELS[tipo] : t("mock.protocol");
   return [
-    { id: `mock-${tipo}-1`, label: `${label} 1`, dateLabel: "26/06/2026", rawDate: "2026-06-26", score: 18, scoreLabel: "Leve", evaluatorName: "Monitor", ageGroupLabel: null, percentile: null },
-    { id: `mock-${tipo}-2`, label: `${label} 2`, dateLabel: "12/05/2026", rawDate: "2026-05-12", score: 22, scoreLabel: "Moderado", evaluatorName: "Monitor", ageGroupLabel: null, percentile: null },
+    { id: `mock-${tipo}-1`, label: `${label} 1`, dateLabel: "26/06/2026", rawDate: "2026-06-26", score: 18, scoreLabel: t("mock.scoreLight"), evaluatorName: "Monitor", ageGroupLabel: null, percentile: null },
+    { id: `mock-${tipo}-2`, label: `${label} 2`, dateLabel: "12/05/2026", rawDate: "2026-05-12", score: 22, scoreLabel: t("mock.scoreModerate"), evaluatorName: "Monitor", ageGroupLabel: null, percentile: null },
   ];
 }
 
 export function useProtocolRecords(studentId?: string, tipo?: ProtocolTipo, options?: { mock?: boolean }) {
   const isMock = options?.mock ?? false;
   const { t, locale } = useI18n();
-  const [records, setRecords] = useState<ProtocolRecord[]>(isMock ? mockProtocolRecords(tipo) : []);
+  const [records, setRecords] = useState<ProtocolRecord[]>(isMock ? mockProtocolRecords(tipo, t) : []);
   const [isLoading, setIsLoading] = useState<boolean>(!isMock && Boolean(studentId && tipo));
   const [error, setError] = useState<Error | null>(null);
 
@@ -192,7 +192,7 @@ export function useProtocolRecords(studentId?: string, tipo?: ProtocolTipo, opti
 
   const fetchRecords = useCallback(async () => {
     if (isMock) {
-      setRecords(mockProtocolRecords(tipo));
+      setRecords(mockProtocolRecords(tipo, t));
       setIsLoading(false);
       return;
     }

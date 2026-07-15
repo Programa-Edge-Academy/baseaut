@@ -91,7 +91,7 @@ export function Mabc2RecordsListScreen({
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => { setNoticeOpen(false); onPressBack?.(); }}
+          onExit={() => { setNoticeOpen(false); sessionSim.stop(); onPressBack?.(); }}
         />
       )}
 

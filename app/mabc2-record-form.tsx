@@ -100,7 +100,7 @@ export default function Mabc2RecordFormRoute() {
 
       try {
         if (currentMode === "create") {
-          const created = await startMabc2Record(currentStudentId);
+          const created = await startMabc2Record(currentStudentId, t);
           if (isAbortedRef.current) {
             deleteMabc2Record(created.formularioId).catch(() => {});
             return;

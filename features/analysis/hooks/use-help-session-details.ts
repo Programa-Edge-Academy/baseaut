@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useCallback, useEffect, useState } from "react";
 
 /** A single exercise execution's help record within a session. */
@@ -42,6 +43,7 @@ export function useHelpSessionDetails(
   startDate?: string | null,
   endDate?: string | null,
 ) {
+  const { t } = useI18n();
   const [sessions, setSessions] = useState<HelpSessionDetail[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -99,7 +101,7 @@ export function useHelpSessionDetails(
         const list = bySession.get(e.sessao_id) ?? [];
         list.push({
           exerciseId: e.exercicio_id,
-          name: tituloById.get(e.exercicio_id) ?? "Exercício",
+          name: tituloById.get(e.exercicio_id) ?? t("export.doc.exercise"),
           registroAjuda: e.registro_ajuda,
         });
         bySession.set(e.sessao_id, list);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { HelpSessionRecord } from "../components/help-records-bar-chart";
 
 /**
@@ -19,6 +20,7 @@ export function useHelpRecords(
   endDate?: string | null,
   options?: { mock?: boolean }
 ) {
+  const { t } = useI18n();
   const isMock = options?.mock ?? false;
   const [records, setRecords] = useState<HelpSessionRecord[]>(isMock ? MOCK_HELP_RECORDS : []);
   const [explanatoryText, setExplanatoryText] = useState<string>("");
@@ -28,7 +30,7 @@ export function useHelpRecords(
   async function fetchHelpRecords() {
     if (isMock) {
       setRecords(MOCK_HELP_RECORDS);
-      setExplanatoryText("A autonomia do aluno aumentou ao longo das sessões.");
+      setExplanatoryText(t("mock.helpAutonomyText"));
       setIsLoading(false);
       return;
     }

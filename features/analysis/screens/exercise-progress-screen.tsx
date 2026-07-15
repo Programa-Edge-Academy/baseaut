@@ -263,7 +263,7 @@ export function ExerciseProgressScreen() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => { setNoticeOpen(false); router.back(); }}
+          onExit={() => { setNoticeOpen(false); sessionSim.stop(); router.back(); }}
         />
       )}
 

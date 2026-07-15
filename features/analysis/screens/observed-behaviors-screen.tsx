@@ -386,7 +386,7 @@ export function ObservedBehaviorsScreen() {
 
             <View className="items-center">
               <DefaultButton
-                label="Salvar"
+                label={t("common.save")}
                 sizeClass="w-[168px] h-[44px]"
                 disabled={isSaveDisabled}
                 style={{ opacity: isSaveDisabled ? 0.5 : 1 }}
@@ -401,7 +401,7 @@ export function ObservedBehaviorsScreen() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => { setNoticeOpen(false); router.back(); }}
+          onExit={() => { setNoticeOpen(false); sessionSim.stop(); router.back(); }}
         />
       )}
 

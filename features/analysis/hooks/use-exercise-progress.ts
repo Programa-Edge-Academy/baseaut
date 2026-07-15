@@ -26,7 +26,7 @@ function buildMockExerciseProgress(t: Translate): ExerciseProgress[] {
   return [
     {
       id: "mock-ex-1",
-      title: "Andar na linha",
+      title: t("mock.exWalkLine"),
       statusLabel: p1.label,
       statusTone: p1.tone,
       sessions: 5,
@@ -40,7 +40,7 @@ function buildMockExerciseProgress(t: Translate): ExerciseProgress[] {
     },
     {
       id: "mock-ex-2",
-      title: "Girar bambolê",
+      title: t("mock.exHoop"),
       statusLabel: p2.label,
       statusTone: p2.tone,
       sessions: 4,

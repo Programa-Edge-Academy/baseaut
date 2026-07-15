@@ -55,7 +55,7 @@ export default function HistoryScreen() {
       return (
         <View className="mt-16 items-center justify-center px-8">
           <Text className="text-center text-base font-medium text-extra">
-            {error.message || "Erro ao carregar o histórico."}
+            {error.message || t("history.loadError")}
           </Text>
         </View>
       );

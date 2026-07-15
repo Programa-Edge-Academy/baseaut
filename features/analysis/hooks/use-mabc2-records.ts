@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useState } from "react";
-import type { Locale } from "@/features/settings/constants/translations";
+import type { Locale, TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import type { Mabc2Record } from "../components/mabc2-record-card";
 
@@ -416,14 +416,17 @@ export function useMabc2Records(studentId: string, options?: { mock?: boolean })
 }
 
 /** Creates a new MABC-2 record for a student and returns it as an empty draft. */
-export async function startMabc2Record(studentId: string) {
+export async function startMabc2Record(
+  studentId: string,
+  t: (key: TranslationKey) => string,
+) {
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
 
   if (userError) throw userError;
-  if (!user) throw new Error("Usuário não autenticado.");
+  if (!user) throw new Error(t("common.err.notAuthenticated"));
 
   const { data, error } = await supabase.rpc("rpc_iniciar_mabc2", {
     p_aluno_id: studentId,

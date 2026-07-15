@@ -190,6 +190,7 @@ export function StudentAnalysisScreen() {
           onClose={() => setNoticeOpen(false)}
           onExit={() => {
             setNoticeOpen(false);
+            sessionSim.stop();
             router.back();
           }}
         />
