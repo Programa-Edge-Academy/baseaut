@@ -46,6 +46,17 @@ export type TutorialSimulationValue = {
   unregisterTarget: (keys: string | string[]) => void;
   /** Returns the spotlight target registered for a key, if any. */
   getTarget: (key: string) => SpotlightTarget | undefined;
+  /**
+   * Registers a mounted {@link TutorialSpotlight} overlay and returns its id.
+   * The most recently mounted overlay is the topmost surface (a modal mounts
+   * after the screen), and only it draws the highlight — see
+   * {@link activeSpotlightId}.
+   */
+  registerSpotlight: () => number;
+  /** Removes a previously registered overlay by id. */
+  unregisterSpotlight: (id: number) => void;
+  /** Id of the topmost mounted overlay; only that overlay draws the highlight. */
+  activeSpotlightId: number | null;
 };
 
 const INACTIVE: TutorialSimulationValue = {
@@ -57,6 +68,9 @@ const INACTIVE: TutorialSimulationValue = {
   registerTarget: () => {},
   unregisterTarget: () => {},
   getTarget: () => undefined,
+  registerSpotlight: () => 0,
+  unregisterSpotlight: () => {},
+  activeSpotlightId: null,
 };
 
 const TutorialSimulationContext = createContext<TutorialSimulationValue>(INACTIVE);
@@ -88,6 +102,12 @@ export function TutorialSimulationProvider({
   const [index, setIndex] = useState(0);
   const targetsRef = useRef<Map<string, SpotlightTarget>>(new Map());
   const [, forceRender] = useState(0);
+
+  // Registry of mounted spotlight overlays. The last one mounted (a modal, which
+  // mounts over the screen) is the topmost surface and the only one that draws.
+  const spotlightSeq = useRef(0);
+  const spotlightStack = useRef<number[]>([]);
+  const [activeSpotlightId, setActiveSpotlightId] = useState<number | null>(null);
 
   const currentKey = index < subSteps.length ? subSteps[index].key : null;
   const currentHintKey =
@@ -135,6 +155,20 @@ export function TutorialSimulationProvider({
     [],
   );
 
+  const registerSpotlight = useCallback((): number => {
+    const id = ++spotlightSeq.current;
+    spotlightStack.current.push(id);
+    setActiveSpotlightId(id);
+    return id;
+  }, []);
+
+  const unregisterSpotlight = useCallback((id: number) => {
+    spotlightStack.current = spotlightStack.current.filter((x) => x !== id);
+    setActiveSpotlightId(
+      spotlightStack.current[spotlightStack.current.length - 1] ?? null,
+    );
+  }, []);
+
   const value = useMemo<TutorialSimulationValue>(
     () => ({
       active: true,
@@ -145,8 +179,21 @@ export function TutorialSimulationProvider({
       registerTarget,
       unregisterTarget,
       getTarget,
+      registerSpotlight,
+      unregisterSpotlight,
+      activeSpotlightId,
     }),
-    [currentKey, currentHintKey, complete, registerTarget, unregisterTarget, getTarget],
+    [
+      currentKey,
+      currentHintKey,
+      complete,
+      registerTarget,
+      unregisterTarget,
+      getTarget,
+      registerSpotlight,
+      unregisterSpotlight,
+      activeSpotlightId,
+    ],
   );
 
   return (
