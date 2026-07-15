@@ -2,6 +2,7 @@ import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { supabase } from "@/lib/supabase";
 import { calculateAge } from "@/lib/date-utils";
 import { uploadImage } from "@/lib/upload-image";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
 
@@ -38,6 +39,7 @@ export type CompanionData = {
  * Provides data and actions for team management.
  */
 export function useTeamData() {
+  const { t } = useI18n();
   const [students, setStudents] = useState<StudentData[]>([]);
   const [companions, setCompanions] = useState<CompanionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -158,7 +160,7 @@ export function useTeamData() {
     });
 
     if (error) {
-      Alert.alert("Erro", "Não foi possível aprovar o monitor.");
+      Alert.alert(t("common.error"), t("teams.approveError"));
     }
 
     fetchData();
@@ -176,7 +178,7 @@ export function useTeamData() {
     });
 
     if (error) {
-      Alert.alert("Erro", "Não foi possível rejeitar o monitor.");
+      Alert.alert(t("common.error"), t("teams.rejectError"));
     }
 
     fetchData();
@@ -194,7 +196,7 @@ export function useTeamData() {
     });
 
     if (error) {
-      Alert.alert("Erro", "Não foi possível remover o monitor.");
+      Alert.alert(t("common.error"), t("teams.removeCompanionError"));
     }
 
     fetchData();
@@ -274,8 +276,8 @@ export function useTeamData() {
       await fetchData();
     } catch (error: any) {
       Alert.alert(
-        "Erro ao Salvar",
-        `Não foi possível salvar o aluno. Detalhes: ${error.message}`,
+        t("teams.saveErrorTitle"),
+        t("teams.saveError").replace("{msg}", error.message),
       );
     } finally {
       setIsLoading(false);

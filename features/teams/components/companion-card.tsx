@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { GraduationCap } from "lucide-react-native";
 import React from "react";
 import { Text, View } from "react-native";
@@ -37,6 +38,9 @@ export function CompanionCard({
   onAcceptCompanion,
   onRejectCompanion,
 }: CompanionCardProps) {
+  const { t } = useI18n();
+  const activeCount =
+    companions.length - companions.filter((c) => c.status === "pendente").length;
   return (
     <View
       className={`w-full max-w-[380px] rounded-[20px] bg-level2 p-5 border border-outline ${className ?? ""}`}
@@ -44,14 +48,13 @@ export function CompanionCard({
       <View className="mb-4 flex-row items-center gap-3">
         <GraduationCap size={24} color={colors.secondary} />
         <Text className="text-lg font-bold text-content">
-          Monitores ({companions.length - companions.filter((c) => c.status === "pendente").length})
+          {t("teams.companions").replace("{n}", String(activeCount))}
         </Text>
       </View>
 
       {companions.length === 0 ? (
         <Text className="text-sm font-medium text-muted leading-5">
-          Nenhum monitor na equipe. Convide usando email/telefone ou compartilhe
-          o código da equipe.
+          {t("teams.noCompanions")}
         </Text>
       ) : (
         <View className="gap-2">
