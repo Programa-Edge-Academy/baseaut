@@ -35,6 +35,7 @@ function FormatPicker({
   onClose: () => void;
   onExport: (formats: { pdf: boolean; csv: boolean }, mode: "share" | "download") => void;
 }) {
+  const { t } = useI18n();
   const [pdf, setPdf] = useState(true);
   const [csv, setCsv] = useState(false);
 
@@ -48,7 +49,7 @@ function FormatPicker({
           className="bg-level2 border border-outline rounded-2xl p-6 w-full gap-5"
           onPress={(e) => e.stopPropagation()}
         >
-          <Text className="text-header-2 text-content">Selecionar formato</Text>
+          <Text className="text-header-2 text-content">{t("export.selectFormat")}</Text>
 
           <View className="gap-3">
             <Pressable onPress={() => setPdf((v) => !v)} className="flex-row items-center gap-3">
@@ -59,7 +60,7 @@ function FormatPicker({
               >
                 {pdf && <Text className="text-content text-xs font-bold">✓</Text>}
               </View>
-              <Text className="text-content text-default-1">PDF (com gráficos)</Text>
+              <Text className="text-content text-default-1">{t("export.pdfWithCharts")}</Text>
             </Pressable>
             <Pressable onPress={() => setCsv((v) => !v)} className="flex-row items-center gap-3">
               <View
@@ -69,14 +70,14 @@ function FormatPicker({
               >
                 {csv && <Text className="text-content text-xs font-bold">✓</Text>}
               </View>
-              <Text className="text-content text-default-1">CSV (dados tabulares)</Text>
+              <Text className="text-content text-default-1">{t("export.csvTabular")}</Text>
             </Pressable>
           </View>
 
           <View className="gap-3">
             <View className="flex-row gap-3">
               <DefaultButton
-                label="Cancelar"
+                label={t("common.cancel")}
                 onPress={onClose}
                 bgColorClass="bg-level1"
                 shadowClass=""
@@ -85,7 +86,7 @@ function FormatPicker({
                 textClassName="text-muted"
               />
               <DefaultButton
-                label="Exportar"
+                label={t("export.exportAction")}
                 onPress={() => onExport({ pdf, csv }, "share")}
                 sizeClass="flex-1 h-11"
                 bgColorClass="bg-primary"
@@ -95,7 +96,7 @@ function FormatPicker({
 
             {Platform.OS === "android" && (
               <DefaultButton
-                label="Baixar"
+                label={t("export.downloadAction")}
                 onPress={() => onExport({ pdf, csv }, "download")}
                 sizeClass="w-full h-11"
                 bgColorClass="bg-secondary"
@@ -119,7 +120,7 @@ function FormatPicker({
  */
 export default function ReportsRoute() {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const sessionSim = useSessionSimController();
   const isTutorial = sessionSim.active && sessionSim.kind === "reports";
   const sim = useTutorialSimulation();
@@ -193,8 +194,8 @@ export default function ReportsRoute() {
       setToast({
         visible: true,
         mode: "error",
-        title: "Nenhum aluno selecionado",
-        description: "Selecione ao menos um aluno para cruzar os dados.",
+        title: t("reports.noStudentSelected"),
+        description: t("reports.noStudentSelectedDesc"),
       });
       return;
     }
@@ -219,8 +220,8 @@ export default function ReportsRoute() {
       setToast({
         visible: true,
         mode: "success",
-        title: deliveryMode === "download" ? "Relatório baixado!" : "Relatório exportado!",
-        description: "Simulação: nada foi enviado ao servidor.",
+        title: deliveryMode === "download" ? t("reports.downloaded") : t("reports.exported"),
+        description: t("reports.simulationNoServer"),
       });
       setIsCrossMode(false);
       setSelectedIds([]);
@@ -233,12 +234,15 @@ export default function ReportsRoute() {
       .map((s) => ({ id: s.id, name: s.name }));
     try {
       setExporting(true);
-      await exportConsolidatedReport(selected, period.start, period.end, formats, deliveryMode);
+      await exportConsolidatedReport(selected, period.start, period.end, formats, t, locale, deliveryMode);
       setToast({
         visible: true,
         mode: "success",
-        title: deliveryMode === "download" ? "Relatório baixado!" : "Relatório exportado!",
-        description: `Dados de ${selected.length} aluno${selected.length !== 1 ? "s" : ""} consolidados.`,
+        title: deliveryMode === "download" ? t("reports.downloaded") : t("reports.exported"),
+        description: (selected.length === 1
+          ? t("reports.consolidatedDescOne")
+          : t("reports.consolidatedDescMany")
+        ).replace("{n}", String(selected.length)),
       });
       setIsCrossMode(false);
       setSelectedIds([]);
@@ -246,8 +250,8 @@ export default function ReportsRoute() {
       setToast({
         visible: true,
         mode: "error",
-        title: "Erro ao exportar",
-        description: err?.message ?? "Tente novamente.",
+        title: t("reports.exportError"),
+        description: err?.message ?? t("reports.tryAgain"),
       });
     } finally {
       setExporting(false);
@@ -317,7 +321,7 @@ export default function ReportsRoute() {
             <ActivityIndicator size="large" color={colors.primary} />
             {exporting && (
               <Text className="mt-3 text-default-2 text-muted">
-                Gerando relatório consolidado...
+                {t("reports.generatingConsolidated")}
               </Text>
             )}
           </View>
@@ -377,14 +381,14 @@ export default function ReportsRoute() {
         {isCrossMode && !exporting && (
           <View className="absolute bottom-8 left-0 right-0 flex-row gap-4">
             <DefaultButton
-              label="Cancelar"
+              label={t("common.cancel")}
               onPress={toggleCrossMode}
               bgColorClass="bg-error"
               sizeClass="flex-1 h-11"
               shadowClass="shadow-errorShadow"
             />
             <DefaultButton
-              label={`Confirmar (${selectedIds.length})`}
+              label={t("reports.confirmCount").replace("{n}", String(selectedIds.length))}
               onPress={handleConfirmSelection}
               bgColorClass="bg-primary"
               sizeClass="flex-1 h-11"
@@ -418,7 +422,7 @@ export default function ReportsRoute() {
             </View>
             <View className="items-center">
               <DefaultButton
-                label="Salvar"
+                label={t("common.save")}
                 sizeClass="w-full h-11"
                 disabled={!tempStart || !tempEnd}
                 style={{ opacity: !tempStart || !tempEnd ? 0.5 : 1 }}

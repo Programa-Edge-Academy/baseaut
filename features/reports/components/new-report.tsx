@@ -6,6 +6,7 @@ import { DefaultTextInput } from "@/components/default-text-input";
 import RangeCalendar from "@/components/range-calendar";
 import { Report, ReportFormData } from "@/features/reports/hooks/use-student-reports";
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
@@ -33,6 +34,7 @@ export type NewReportProps = {
  * range calendar) before saving.
  */
 export function NewReport({ visible, onClose, onSave, initialData, defaultTitle }: NewReportProps) {
+  const { t } = useI18n();
   const { width, height } = useWindowDimensions();
   const isEdit = !!initialData;
 
@@ -84,8 +86,8 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!titulo.trim()) newErrors.titulo = "Nome do relatório é obrigatório.";
-    if (!dataInicio) newErrors.periodo = "Selecione o período do relatório.";
+    if (!titulo.trim()) newErrors.titulo = t("reports.nameError");
+    if (!dataInicio) newErrors.periodo = t("reports.periodError");
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -129,7 +131,7 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
             >
               <View className="flex-row items-center justify-between">
                 <Text className="text-header-2 text-content">
-                  {isEdit ? "Editar relatório" : "Novo relatório"}
+                  {isEdit ? t("reports.editReport") : t("reports.newReport")}
                 </Text>
                 <Pressable onPress={onClose} hitSlop={10}>
                   <X color={colors.muted} size={24} />
@@ -137,9 +139,9 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
               </View>
 
               <View className="gap-1">
-                <Text className="text-default-2 text-muted">Nome do relatório*</Text>
+                <Text className="text-default-2 text-muted">{t("reports.nameLabel")}</Text>
                 <DefaultTextInput
-                  placeholder="Nome do relatório"
+                  placeholder={t("reports.namePlaceholder")}
                   value={titulo}
                   outLineBorderClass={errors.titulo ? "border-error" : "border-outline"}
                   onChangeText={(text: string) => {
@@ -153,9 +155,9 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
               </View>
 
               <View className="gap-1">
-                <Text className="text-default-2 text-muted">Período*</Text>
+                <Text className="text-default-2 text-muted">{t("reports.periodLabel")}</Text>
                 <PeriodSelector
-                  label={periodLabel ?? "Selecionar período"}
+                  label={periodLabel ?? t("reports.selectPeriod")}
                   onPress={openCalendar}
                   containerStyle={{ marginHorizontal: 0 }}
                 />
@@ -167,7 +169,7 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
               <ActionButtons
                 onCancel={onClose}
                 onSave={handleSave}
-                saveLabel={saving ? "Salvando..." : "Salvar"}
+                saveLabel={saving ? t("common.saving") : t("common.save")}
                 disabled={saving}
               />
             </ScrollView>
@@ -201,7 +203,7 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
             </View>
             <View className="items-center">
               <DefaultButton
-                label="Salvar"
+                label={t("common.save")}
                 sizeClass="w-full h-11"
                 disabled={!tempInicio || !tempFim}
                 style={{ opacity: !tempInicio || !tempFim ? 0.5 : 1 }}

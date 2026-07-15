@@ -19,6 +19,8 @@ import { useReportData } from "@/features/reports/hooks/use-report-data";
 import { Report, StudentSnapshot, useStudentReports } from "@/features/reports/hooks/use-student-reports";
 import { exportReports } from "@/features/reports/utils/export-report";
 import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import type { TranslationKey } from "@/features/settings/constants/translations";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
@@ -55,11 +57,14 @@ const getLocalEndOfDay = (dateStr: string) => {
 };
 
 /** Maps a stored support level code to its display label. */
-function fmtSupportLevel(raw: string | null | undefined): string | null {
+function fmtSupportLevel(
+  raw: string | null | undefined,
+  t: (key: TranslationKey) => string,
+): string | null {
   if (!raw) return null;
-  if (raw === "nivel_1") return "Nível 1";
-  if (raw === "nivel_2") return "Nível 2";
-  if (raw === "nivel_3") return "Nível 3";
+  if (raw === "nivel_1") return t("reports.supportLevel1");
+  if (raw === "nivel_2") return t("reports.supportLevel2");
+  if (raw === "nivel_3") return t("reports.supportLevel3");
   return raw;
 }
 
@@ -103,6 +108,7 @@ export function ReportDetailScreen() {
   }>();
 
   const router = useRouter();
+  const { t, locale } = useI18n();
   const { studentId, reportId, titulo, dataInicio, dataFim } = params;
   const imagemUrl = params.imagemUrl || null;
   const snapshot: StudentSnapshot | null = params.snapshotAluno
@@ -141,10 +147,10 @@ export function ReportDetailScreen() {
     setIsFormatPickerOpen(false);
     try {
       setExporting(true);
-      await exportReports([currentReport], formats, titulo ?? "", studentId ?? "", deliveryMode);
-      setToast({ visible: true, mode: "success", title: "Relatório exportado!" });
+      await exportReports([currentReport], formats, titulo ?? "", studentId ?? "", t, locale, deliveryMode);
+      setToast({ visible: true, mode: "success", title: t("reports.exported") });
     } catch (err: any) {
-      setToast({ visible: true, mode: "error", title: "Erro ao exportar", description: err?.message });
+      setToast({ visible: true, mode: "error", title: t("reports.exportError"), description: err?.message });
     } finally {
       setExporting(false);
     }
@@ -156,7 +162,7 @@ export function ReportDetailScreen() {
       await deleteReport(reportId ?? "");
       router.back();
     } catch {
-      setToast({ visible: true, mode: "error", title: "Erro ao excluir relatório." });
+      setToast({ visible: true, mode: "error", title: t("reports.deleteError") });
     }
   };
 
@@ -174,11 +180,13 @@ export function ReportDetailScreen() {
     const comportamentosP1 = compKeys.reduce((sum, k) => sum + (c.comportamentos[k]?.p1 ?? 0), 0);
     const comportamentosP2 = compKeys.reduce((sum, k) => sum + (c.comportamentos[k]?.p2 ?? 0), 0);
 
+    const p1 = t("analysis.period1");
+    const p2 = t("analysis.period2");
     return [
-      { title: "Exercícios avaliados", period1: { label: "Período 1", value: exerciciosP1 }, period2: { label: "Período 2", value: exerciciosP2 } },
-      { title: "Registros de ajuda", period1: { label: "Período 1", value: ajudaP1 }, period2: { label: "Período 2", value: ajudaP2 } },
-      { title: "Comportamentos observados", period1: { label: "Período 1", value: comportamentosP1 }, period2: { label: "Período 2", value: comportamentosP2 } },
-      { title: "Sessões registradas", period1: { label: "Período 1", value: c.resumo?.sessoes_p1 ?? 0 }, period2: { label: "Período 2", value: c.resumo?.sessoes_p2 ?? 0 } },
+      { title: t("analysis.summary.exercisesEvaluated"), period1: { label: p1, value: exerciciosP1 }, period2: { label: p2, value: exerciciosP2 } },
+      { title: t("analysis.summary.helpRecords"), period1: { label: p1, value: ajudaP1 }, period2: { label: p2, value: ajudaP2 } },
+      { title: t("analysis.summary.behaviors"), period1: { label: p1, value: comportamentosP1 }, period2: { label: p2, value: comportamentosP2 } },
+      { title: t("analysis.summary.sessions"), period1: { label: p1, value: c.resumo?.sessoes_p1 ?? 0 }, period2: { label: p2, value: c.resumo?.sessoes_p2 ?? 0 } },
     ];
   };
 
@@ -208,7 +216,7 @@ export function ReportDetailScreen() {
               <StudentInfoCard
                 name={snapshot.nome_completo} avatarUrl={imagemUrl}
                 height={snapshot.altura} weight={snapshot.peso} waist={snapshot.cintura}
-                birthDate={snapshot.data_nascimento} supportLevel={fmtSupportLevel(snapshot.nivel_suporte)}
+                birthDate={snapshot.data_nascimento} supportLevel={fmtSupportLevel(snapshot.nivel_suporte, t)}
                 observations={snapshot.observacoes_clinicas}
               />
             </View>
@@ -229,7 +237,7 @@ export function ReportDetailScreen() {
             </View>
           ) : data ? (
             <>
-              <SectionHeader title="Progresso por exercício" />
+              <SectionHeader title={t("reports.section.progress")} />
               {data.progresso && data.progresso.length > 0 ? (
                 data.progresso.map((ex: any) => {
                   const records: ExerciseProgressRecord[] = (ex.historico ?? []).map((h: any, i: number) => ({
@@ -254,10 +262,10 @@ export function ReportDetailScreen() {
                   );
                 })
               ) : (
-                <EmptySection message="Nenhum exercício registrado no período." />
+                <EmptySection message={t("reports.empty.progress")} />
               )}
 
-              <SectionHeader title="Registros de ajuda por sessão" />
+              <SectionHeader title={t("reports.section.help")} />
               {data.ajuda && data.ajuda.length > 0 ? (
                 <>
                   <HelpRecordsBarChart
@@ -275,10 +283,10 @@ export function ReportDetailScreen() {
                   />
                 </>
               ) : (
-                <EmptySection message="Nenhum registro de ajuda no período." />
+                <EmptySection message={t("reports.empty.help")} />
               )}
 
-              <SectionHeader title="Comportamentos observados" />
+              <SectionHeader title={t("reports.section.behaviors")} />
               {data.comportamentos && data.comportamentos.length > 0 ? (
                 <ObservedBehaviorsChart
                   records={data.comportamentos as BehaviorRecord[]}
@@ -287,10 +295,10 @@ export function ReportDetailScreen() {
                   hideShadow
                 />
               ) : (
-                <EmptySection message="Nenhum comportamento registrado no período." />
+                <EmptySection message={t("reports.empty.behaviors")} />
               )}
 
-              <SectionHeader title="Comparação de desempenho" />
+              <SectionHeader title={t("reports.section.comparison")} />
               {data.comparacao ? (
                 <View className="gap-4">
                   <AnalysisSummary cards={buildSummaryCards()} />
@@ -307,10 +315,10 @@ export function ReportDetailScreen() {
                   <ComparisonBehaviors data={data.comparacao.comportamentos} />
                 </View>
               ) : (
-                <EmptySection message="Dados insuficientes para comparação no período." />
+                <EmptySection message={t("reports.empty.comparison")} />
               )}
 
-              <SectionHeader title="Protocolos/Testes aplicados" />
+              <SectionHeader title={t("reports.section.protocols")} />
               {hasProtocols ? (
                 <View>
                   {(data.consolidado!.historico_cars ?? []).map((item: any) => (
@@ -342,16 +350,16 @@ export function ReportDetailScreen() {
                   ))}
                 </View>
               ) : (
-                <EmptySection message="Nenhum protocolo ou teste aplicado no período." />
+                <EmptySection message={t("reports.empty.protocols")} />
               )}
 
-              <SectionHeader title="Desenvolvimento motor" />
+              <SectionHeader title={t("reports.section.motor")} />
               {data.consolidado?.registros_controle?.length > 0 ? (
                 data.consolidado.registros_controle.map((rc: any, idx: number) => (
                   <View key={idx} className="mb-3 border border-outline rounded-lg bg-level2 overflow-hidden">
                     <View className="bg-level1 px-4 py-2 border-b border-outline">
                       <Text className="text-xs font-bold text-content">
-                        {fmtDate(rc.data_sessao)} — {rc.monitor ?? "Sem monitor"}
+                        {fmtDate(rc.data_sessao)} — {rc.monitor ?? t("reports.noMonitor")}
                       </Text>
                     </View>
                     <View className="px-4 py-3">
@@ -363,18 +371,18 @@ export function ReportDetailScreen() {
                           </View>
                         ))
                       ) : (
-                        <Text className="text-xs text-muted">Sem respostas registradas.</Text>
+                        <Text className="text-xs text-muted">{t("reports.noAnswers")}</Text>
                       )}
                     </View>
                   </View>
                 ))
               ) : (
-                <EmptySection message="Nenhum registro de desenvolvimento motor no período." />
+                <EmptySection message={t("reports.empty.motor")} />
               )}
             </>
           ) : (
             <View className="items-center justify-center py-16">
-              <EmptySection message="Nenhum dado encontrado para este período." />
+              <EmptySection message={t("reports.empty.noData")} />
             </View>
           )}
         </View>
@@ -390,8 +398,8 @@ export function ReportDetailScreen() {
         visible={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={handleDelete}
-        title="Excluir relatório?"
-        message="O relatório será excluído permanentemente. Esta ação não poderá ser desfeita."
+        title={t("reports.deleteTitle")}
+        message={t("reports.deleteMessage")}
       />
 
       <Toast
@@ -406,7 +414,7 @@ export function ReportDetailScreen() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => { setNoticeOpen(false); router.back(); }}
+          onExit={() => { setNoticeOpen(false); sessionSim.stop(); router.back(); }}
         />
       )}
 
@@ -417,32 +425,33 @@ export function ReportDetailScreen() {
 
 /** Modal content for choosing report export formats (PDF/CSV) and delivery mode. */
 function FormatPicker({ onExport, onClose }: { onExport: (f: { pdf: boolean; csv: boolean }, mode: "share" | "download") => void; onClose: () => void }) {
+  const { t } = useI18n();
   const [pdf, setPdf] = useState(true);
   const [csv, setCsv] = useState(false);
   return (
     <Pressable className="bg-level2 border border-outline rounded-2xl p-6 w-full gap-5" onPress={(e) => e.stopPropagation()}>
-      <Text className="text-header-2 text-content">Selecionar formato</Text>
+      <Text className="text-header-2 text-content">{t("export.selectFormat")}</Text>
       <View className="gap-3">
         <Pressable onPress={() => setPdf((v) => !v)} className="flex-row items-center gap-3">
           <View className={`w-5 h-5 rounded border items-center justify-center ${pdf ? "bg-primary border-primary" : "border-outline bg-transparent"}`}>
             {pdf && <Text className="text-content text-xs font-bold">✓</Text>}
           </View>
-          <Text className="text-content text-default-1">PDF (com gráficos)</Text>
+          <Text className="text-content text-default-1">{t("export.pdfWithCharts")}</Text>
         </Pressable>
         <Pressable onPress={() => setCsv((v) => !v)} className="flex-row items-center gap-3">
           <View className={`w-5 h-5 rounded border items-center justify-center ${csv ? "bg-primary border-primary" : "border-outline bg-transparent"}`}>
             {csv && <Text className="text-content text-xs font-bold">✓</Text>}
           </View>
-          <Text className="text-content text-default-1">CSV (dados tabulares)</Text>
+          <Text className="text-content text-default-1">{t("export.csvTabular")}</Text>
         </Pressable>
       </View>
       <View className="gap-3">
         <View className="flex-row gap-3">
-          <DefaultButton label="Cancelar" onPress={onClose} bgColorClass="bg-level1" shadowClass="" sizeClass="flex-1 h-11" className="border border-outline" textClassName="text-muted" />
-          <DefaultButton label="Exportar" onPress={() => onExport({ pdf, csv }, "share")} sizeClass="flex-1 h-11" bgColorClass="bg-primary" hasShadow />
+          <DefaultButton label={t("common.cancel")} onPress={onClose} bgColorClass="bg-level1" shadowClass="" sizeClass="flex-1 h-11" className="border border-outline" textClassName="text-muted" />
+          <DefaultButton label={t("export.exportAction")} onPress={() => onExport({ pdf, csv }, "share")} sizeClass="flex-1 h-11" bgColorClass="bg-primary" hasShadow />
         </View>
         {Platform.OS === "android" && (
-          <DefaultButton label="Baixar" onPress={() => onExport({ pdf, csv }, "download")} sizeClass="w-full h-11" bgColorClass="bg-secondary" hasShadow={false} className="border border-secondary" textClassName="text-content" />
+          <DefaultButton label={t("export.downloadAction")} onPress={() => onExport({ pdf, csv }, "download")} sizeClass="w-full h-11" bgColorClass="bg-secondary" hasShadow={false} className="border border-secondary" textClassName="text-content" />
         )}
       </View>
     </Pressable>
