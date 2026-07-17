@@ -113,7 +113,13 @@ export function NewCircuit({
       setSelectedTags([]);
       setSelectedSubtags({});
     }
-  }, [visible, initialData]);
+    // Sync only when the modal opens. `initialData` is rebuilt on every parent
+    // render, so depending on it would re-seed the form mid-edit whenever the
+    // parent re-renders — which happens each time the guided simulation
+    // advances, silently reverting the user's own edits (e.g. the execution
+    // mode back to the saved one).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   // Register the simulation spotlight targets living inside this modal.
   useEffect(() => {

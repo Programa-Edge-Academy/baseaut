@@ -41,6 +41,13 @@ export type ListCardProps = {
   editLabel?: string;
   /** Uses {@link RipplePressable} instead of {@link Pressable}. Defaults to false. */
   enableRipple?: boolean;
+  /**
+   * Tutorial spotlight key(s) registered on the card itself. Prefer this over
+   * wrapping the card in a {@link SpotlightTarget}: the wrapper's height would
+   * also count the card's bottom margin, drawing the ring 16px lower than the
+   * card and leaving it visibly off-center.
+   */
+  spotlightKeys?: string | string[];
   /** Tutorial spotlight keys registered on the "more" (⋮) button. */
   moreButtonSpotlightKeys?: string[];
   /** Tutorial spotlight key for the menu's edit item. */
@@ -75,6 +82,7 @@ export function ListCard({
   showDuplicate = false,
   editLabel,
   enableRipple = false,
+  spotlightKeys,
   moreButtonSpotlightKeys,
   editSpotlightKey,
   duplicateSpotlightKey,
@@ -83,9 +91,21 @@ export function ListCard({
 }: ListCardProps) {
   const [menuVisible, setMenuVisible] = useState(false);
   const buttonRef = useRef<View>(null);
+  const cardRef = useRef<View>(null);
   const [menuLayout, setMenuLayout] = useState({ top: 0, left: 0, width: 0 });
   const hasMenuOptions = !!(onEdit || onDelete || onDuplicate);
   const sim = useTutorialSimulation();
+
+  const spotlightDep = Array.isArray(spotlightKeys)
+    ? spotlightKeys.join(",")
+    : spotlightKeys;
+  useEffect(() => {
+    if (!spotlightKeys || (Array.isArray(spotlightKeys) && !spotlightKeys.length))
+      return;
+    sim.registerTarget(spotlightKeys, cardRef, { rounded: true });
+    return () => sim.unregisterTarget(spotlightKeys);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spotlightDep, sim]);
 
   useEffect(() => {
     if (!moreButtonSpotlightKeys?.length) return;
@@ -143,6 +163,13 @@ export function ListCard({
       } ${className ?? ""}`}
       style={{ zIndex: menuVisible ? 10 : 1 }}
     >
+      <View
+        ref={cardRef}
+        collapsable={false}
+        pointerEvents="none"
+        className="absolute inset-0"
+      />
+
       <View className="relative mr-3.5 h-11 w-11">
         <View
           className="h-full w-full items-center justify-center rounded-2xl"
