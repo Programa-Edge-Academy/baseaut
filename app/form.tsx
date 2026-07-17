@@ -77,6 +77,25 @@ export default function FormRoute() {
   const sim = useTutorialSimulation();
   const [noticeOpen, setNoticeOpen] = useState(false);
 
+  /**
+   * Sub-step advanced (and highlighted on the header's save button) by saving
+   * this form. The forms simulation runs one cycle per type, and the history one
+   * distinguishes a session's Control Record from a standalone form record.
+   */
+  const saveSpotlightKey = isFormsSim
+    ? circuitType === "ata"
+      ? "saveAta"
+      : circuitType === "cars"
+        ? "saveCars"
+        : circuitType === "mabc2"
+          ? "saveMabc"
+          : undefined
+    : isHistorySim
+      ? isRegistroControle
+        ? "saveSessionRc"
+        : "editSave"
+      : undefined;
+
   const [formId, setFormId] = useState<string | null>(
     formularioIdParam ?? null,
   );
@@ -210,8 +229,7 @@ export default function FormRoute() {
       const result = await formRef.current.handleSave(true);
 
       if (result && result.success) {
-        if (isFormsSim) sim.complete("fillAndSave");
-        if (isHistorySim) sim.complete("editSave");
+        if (saveSpotlightKey) sim.complete(saveSpotlightKey);
         router.back();
         showToast({
           mode: "success",
@@ -294,6 +312,8 @@ export default function FormRoute() {
           }}
           onPressSave={handleSaveForm}
           onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+          backSpotlightKey={isFormsSim ? "goBackAta" : undefined}
+          saveSpotlightKey={saveSpotlightKey}
         />
         <View className="flex-1 mx-8">
           <View className="mt-5 w-full">
@@ -372,11 +392,7 @@ export default function FormRoute() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => {
-            setNoticeOpen(false);
-            if (isFormsSim) sim.complete("goBackAta");
-            router.back();
-          }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 
