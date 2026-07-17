@@ -49,11 +49,15 @@ export interface StudentProfile {
  * localized display text; `formType`/`type`/dates stay as stored values. The
  * `status` display strings are also localized (the "concluida" one is an enum
  * used only for logic, so it is kept as-is).
+ *
+ * @remarks
+ * The session record's counts must match the executions seeded in
+ * {@link file://./use-session-detail.ts}, which the history simulation opens.
  */
 const buildMockSessions = (t: (key: TranslationKey) => string): SessionItem[] => [
   { id: "mock-rc-form", title: t("mock.controlRecord"), date: "28/06/2026", status: t("mock.statusPending"), hasPendency: true, type: "form", rawDate: "2026-06-28", isResumable: false, circuitId: null, circuitType: null, resumeExercises: null, formType: "registro_controle" },
   { id: "mock-ata-form", title: "ATA", date: "27/06/2026", status: t("mock.statusFilled"), hasPendency: false, type: "form", rawDate: "2026-06-27", isResumable: false, circuitId: null, circuitType: null, resumeExercises: null, formType: "ata" },
-  { id: "mock-hist-session", title: t("mock.circuit1"), date: "26/06/2026", status: "concluida", hasPendency: false, type: "session", rawDate: "2026-06-26", isResumable: false, circuitId: null, circuitType: null, resumeExercises: null, totalPrevisto: 4, totalRealizado: 4 },
+  { id: "mock-hist-session", title: t("mock.circuit1"), date: "26/06/2026", status: "concluida", hasPendency: false, type: "session", rawDate: "2026-06-26", isResumable: false, circuitId: null, circuitType: null, resumeExercises: null, totalPrevisto: 2, totalRealizado: 2 },
 ];
 
 const buildMockProfile = (t: (key: TranslationKey) => string): StudentProfile => ({
