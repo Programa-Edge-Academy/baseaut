@@ -15,7 +15,6 @@ import { exportReports } from "@/features/reports/utils/export-report";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
-import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import RangeCalendar from "@/components/range-calendar";
@@ -310,7 +309,6 @@ export function StudentReportsScreen() {
       );
       setIsExportMode(false);
       setSelectedIds([]);
-      sim.complete("exportReport");
       return;
     }
     const selected = reports.filter((r) => selectedIds.includes(r.id));
@@ -385,8 +383,12 @@ export function StudentReportsScreen() {
     <View className="flex-1 bg-level1">
       <Header
         variant="back"
-        onPressBack={() => router.back()}
+        onPressBack={() => {
+          if (isTutorial) sim.complete("backToReportsHome");
+          router.back();
+        }}
         onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+        backSpotlightKey={isTutorial ? "backToReportsHome" : undefined}
       />
 
       <View className="flex-1 mx-8">
@@ -445,13 +447,14 @@ export function StudentReportsScreen() {
                     enableRipple
                     onPress={isExportMode ? () => toggleSelect(item.id) : () => openReport(item)}
                     className={isSelected ? "border border-primary" : undefined}
+                    spotlightKeys={
+                      isTutorial && !isExportMode && item.id === createdReport?.id
+                        ? "openReport"
+                        : undefined
+                    }
                   />
                 );
-                return isTutorial && !isExportMode && item.id === createdReport?.id ? (
-                  <SpotlightTarget targetKey="openReport">{card}</SpotlightTarget>
-                ) : (
-                  card
-                );
+                return card;
               }}
             />
           </View>
@@ -481,6 +484,8 @@ export function StudentReportsScreen() {
         onClose={() => setIsNewOpen(false)}
         onSave={handleCreate}
         defaultTitle={t("reports.defaultTitle").replace("{n}", String(reports.length + 1))}
+        periodSpotlightKey={isTutorial ? "periodReport" : undefined}
+        saveSpotlightKey={isTutorial ? "saveReport" : undefined}
       />
 
       <RenameModal
@@ -557,7 +562,7 @@ export function StudentReportsScreen() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => { setNoticeOpen(false); sessionSim.stop(); router.back(); }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

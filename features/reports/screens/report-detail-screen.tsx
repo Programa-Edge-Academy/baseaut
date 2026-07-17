@@ -24,9 +24,10 @@ import type { TranslationKey } from "@/features/settings/constants/translations"
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { BarChart3 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from "react-native";
 
 /** Formats an ISO date as a Brazilian short date. */
@@ -117,6 +118,7 @@ export function ReportDetailScreen() {
 
   const sessionSim = useSessionSimController();
   const isTutorial = sessionSim.active && sessionSim.kind === "reports";
+  const sim = useTutorialSimulation();
   const [noticeOpen, setNoticeOpen] = useState(false);
 
   const { profile: liveProfile } = useStudentProfile(snapshot ? undefined : (studentId ?? ""), { mock: isTutorial });
@@ -145,6 +147,16 @@ export function ReportDetailScreen() {
     deliveryMode: "share" | "download" = "share",
   ) => {
     setIsFormatPickerOpen(false);
+    if (isTutorial) {
+      sim.complete("exportConfirm");
+      setToast({
+        visible: true,
+        mode: "success",
+        title: deliveryMode === "download" ? t("reports.downloaded") : t("reports.exported"),
+        description: t("reports.simulationNoServer"),
+      });
+      return;
+    }
     try {
       setExporting(true);
       await exportReports([currentReport], formats, titulo ?? "", studentId ?? "", t, locale, deliveryMode);
@@ -197,8 +209,12 @@ export function ReportDetailScreen() {
     <View className="flex-1 bg-level1">
       <Header
         variant="back"
-        onPressBack={() => router.back()}
+        onPressBack={() => {
+          if (isTutorial) sim.complete("backFromReport");
+          router.back();
+        }}
         onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+        backSpotlightKey={isTutorial ? "backFromReport" : undefined}
       />
 
       <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}>
@@ -207,7 +223,11 @@ export function ReportDetailScreen() {
             mode="relatorio-detalhe"
             title={titulo ?? ""}
             subtitle={dataInicio && dataFim ? `${fmtDate(dataInicio)} – ${fmtDate(dataFim)}` : ""}
-            onExportPress={() => setIsFormatPickerOpen(true)}
+            onExportPress={() => {
+              if (isTutorial) sim.complete("exportReport");
+              setIsFormatPickerOpen(true);
+            }}
+            exportSpotlightKey={isTutorial ? "exportReport" : undefined}
             onDeletePress={() => setIsDeleteOpen(true)}
           />
 
@@ -390,7 +410,11 @@ export function ReportDetailScreen() {
 
       <AppModal visible={isFormatPickerOpen} transparent animationType="fade" onRequestClose={() => setIsFormatPickerOpen(false)}>
         <Pressable className="flex-1 bg-black/60 justify-center items-center px-6" onPress={() => setIsFormatPickerOpen(false)}>
-          <FormatPicker onExport={handleExport} onClose={() => setIsFormatPickerOpen(false)} />
+          <FormatPicker
+            onExport={handleExport}
+            onClose={() => setIsFormatPickerOpen(false)}
+            exportSpotlightKey={isTutorial ? "exportConfirm" : undefined}
+          />
         </Pressable>
       </AppModal>
 
@@ -414,7 +438,7 @@ export function ReportDetailScreen() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => { setNoticeOpen(false); sessionSim.stop(); router.back(); }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 
@@ -424,10 +448,28 @@ export function ReportDetailScreen() {
 }
 
 /** Modal content for choosing report export formats (PDF/CSV) and delivery mode. */
-function FormatPicker({ onExport, onClose }: { onExport: (f: { pdf: boolean; csv: boolean }, mode: "share" | "download") => void; onClose: () => void }) {
+function FormatPicker({
+  onExport,
+  onClose,
+  exportSpotlightKey,
+}: {
+  onExport: (f: { pdf: boolean; csv: boolean }, mode: "share" | "download") => void;
+  onClose: () => void;
+  /** Tutorial spotlight key for the share/export action. */
+  exportSpotlightKey?: string;
+}) {
   const { t } = useI18n();
+  const sim = useTutorialSimulation();
   const [pdf, setPdf] = useState(true);
   const [csv, setCsv] = useState(false);
+  const exportRef = useRef<View>(null);
+
+  useEffect(() => {
+    if (!exportSpotlightKey) return;
+    sim.registerTarget(exportSpotlightKey, exportRef, { rounded: true });
+    return () => sim.unregisterTarget(exportSpotlightKey);
+  }, [sim, exportSpotlightKey]);
+
   return (
     <Pressable className="bg-level2 border border-outline rounded-2xl p-6 w-full gap-5" onPress={(e) => e.stopPropagation()}>
       <Text className="text-header-2 text-content">{t("export.selectFormat")}</Text>
@@ -448,12 +490,16 @@ function FormatPicker({ onExport, onClose }: { onExport: (f: { pdf: boolean; csv
       <View className="gap-3">
         <View className="flex-row gap-3">
           <DefaultButton label={t("common.cancel")} onPress={onClose} bgColorClass="bg-level1" shadowClass="" sizeClass="flex-1 h-11" className="border border-outline" textClassName="text-muted" />
-          <DefaultButton label={t("export.exportAction")} onPress={() => onExport({ pdf, csv }, "share")} sizeClass="flex-1 h-11" bgColorClass="bg-primary" hasShadow />
+          <View ref={exportRef} collapsable={false} className="flex-1">
+            <DefaultButton label={t("export.exportAction")} onPress={() => onExport({ pdf, csv }, "share")} sizeClass="w-full h-11" bgColorClass="bg-primary" hasShadow />
+          </View>
         </View>
         {Platform.OS === "android" && (
           <DefaultButton label={t("export.downloadAction")} onPress={() => onExport({ pdf, csv }, "download")} sizeClass="w-full h-11" bgColorClass="bg-secondary" hasShadow={false} className="border border-secondary" textClassName="text-content" />
         )}
       </View>
+
+      <TutorialSpotlight />
     </Pressable>
   );
 }
