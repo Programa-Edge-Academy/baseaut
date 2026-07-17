@@ -3,8 +3,10 @@ import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { AlertCircle, Check, X } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -49,12 +51,21 @@ export type FinishSessionModalProps = {
   confirmLabel?: string;
   /** Names of pending exercises that will be recorded as not performed. */
   pendingExercises?: string[];
+  /**
+   * Tutorial spotlight key for the reason options. "Outro" is deliberately left
+   * outside the highlight, since it also demands a free-text description.
+   */
+  reasonSpotlightKey?: string;
 };
 
 /**
  * Modal shown when finalizing a session before completion. Forces the user to
  * select a "motivo" before confirming. Uses the project's error tokens for the
  * destructive confirm action.
+ *
+ * @remarks
+ * It renders its own {@link TutorialSpotlight} so a sub-step targeting the
+ * reason options is highlighted over the modal instead of behind it.
  */
 export function FinishSessionModal({
   visible,
@@ -66,8 +77,17 @@ export function FinishSessionModal({
   cancelLabel,
   confirmLabel,
   pendingExercises = [],
+  reasonSpotlightKey,
 }: FinishSessionModalProps) {
   const { t } = useI18n();
+  const sim = useTutorialSimulation();
+  const reasonsRef = useRef<View>(null);
+
+  useEffect(() => {
+    if (!reasonSpotlightKey) return;
+    sim.registerTarget(reasonSpotlightKey, reasonsRef, { rounded: true });
+    return () => sim.unregisterTarget(reasonSpotlightKey);
+  }, [sim, reasonSpotlightKey]);
   const resolvedTitle = title ?? t("session.finishTitle");
   const resolvedMessage = message ?? t("session.finishMessage");
   const resolvedCancelLabel = cancelLabel ?? t("common.cancel");
@@ -92,6 +112,28 @@ export function FinishSessionModal({
     if (!selected) return;
     if (isOutro && outroDescricao.trim() === "") return;
     onConfirm(selected, isOutro ? outroDescricao.trim() : undefined);
+  };
+
+  const renderMotivo = (motivo: string) => {
+    const isActive = selected === motivo;
+    return (
+      <Pressable
+        key={motivo}
+        onPress={() => {
+          setSelected(motivo);
+          setSubmitted(false);
+        }}
+        className="flex-row items-center justify-between rounded-2xl border bg-level1 p-3 active:opacity-70"
+        style={{
+          borderColor: isActive ? colors.primary : colors.outline,
+        }}
+      >
+        <Text className="text-default-1 text-content">
+          {MOTIVO_LABEL_KEYS[motivo] ? t(MOTIVO_LABEL_KEYS[motivo]) : motivo}
+        </Text>
+        {isActive && <Check size={18} color={colors.primary} />}
+      </Pressable>
+    );
   };
 
   return (
@@ -135,27 +177,10 @@ export function FinishSessionModal({
 
           <ScrollView style={{ maxHeight: 260 }}>
             <View className="gap-2.5">
-              {motivos.map((motivo) => {
-                const isActive = selected === motivo;
-                return (
-                  <Pressable
-                    key={motivo}
-                    onPress={() => {
-                      setSelected(motivo);
-                      setSubmitted(false);
-                    }}
-                    className="flex-row items-center justify-between rounded-2xl border bg-level1 p-3 active:opacity-70"
-                    style={{
-                      borderColor: isActive ? colors.primary : colors.outline,
-                    }}
-                  >
-                    <Text className="text-default-1 text-content">
-                      {MOTIVO_LABEL_KEYS[motivo] ? t(MOTIVO_LABEL_KEYS[motivo]) : motivo}
-                    </Text>
-                    {isActive && <Check size={18} color={colors.primary} />}
-                  </Pressable>
-                );
-              })}
+              <View ref={reasonsRef} collapsable={false} className="gap-2.5">
+                {motivos.filter((motivo) => motivo !== "Outro").map(renderMotivo)}
+              </View>
+              {motivos.filter((motivo) => motivo === "Outro").map(renderMotivo)}
             </View>
           </ScrollView>
 
@@ -215,6 +240,8 @@ export function FinishSessionModal({
               textClassName="text-content"
             />
           </View>
+
+          <TutorialSpotlight />
         </Pressable>
       </Pressable>
     </AppModal>

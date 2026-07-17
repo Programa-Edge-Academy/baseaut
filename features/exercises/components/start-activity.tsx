@@ -1,13 +1,9 @@
 import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Image as ImageIcon,
-  ReplaceAll,
-} from "lucide-react-native";
-import React, { useState } from "react";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
+import { Image as ImageIcon, ReplaceAll } from "lucide-react-native";
+import React, { useEffect, useRef, useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 
 /** Props for {@link StartActivity}. */
@@ -25,11 +21,23 @@ export type StartActivityProps = {
   /** Initial state of the preview toggle. Defaults to `false` (collapsed). */
   defaultPreviewVisible?: boolean;
   className?: string;
+  /**
+   * Tutorial spotlight key(s) for the reorder action, which is what
+   * {@link StartActivityProps.onPressInfo} opens on a running session.
+   */
+  infoSpotlightKeys?: string | string[];
+  /** Tutorial spotlight key(s) for the start button. */
+  startSpotlightKeys?: string | string[];
 };
 
 /**
  * Card used to launch an activity. The eye toggle reveals/hides a media
  * carousel between the header and the action buttons.
+ *
+ * @remarks
+ * The preview toggle only exists when the exercise has media, so it is not a
+ * usable tutorial target; only the reorder action and the start button take
+ * spotlight keys.
  */
 export function StartActivity({
   title,
@@ -40,10 +48,38 @@ export function StartActivity({
   iconUrl,
   defaultPreviewVisible = false,
   className,
+  infoSpotlightKeys,
+  startSpotlightKeys,
 }: StartActivityProps) {
   const { t } = useI18n();
+  const sim = useTutorialSimulation();
   const [isPreviewVisible, setIsPreviewVisible] = useState(defaultPreviewVisible);
   const hasMedia = !!iconUrl;
+
+  const infoRef = useRef<View>(null);
+  const startRef = useRef<View>(null);
+
+  const infoDep = Array.isArray(infoSpotlightKeys)
+    ? infoSpotlightKeys.join(",")
+    : infoSpotlightKeys;
+  const startDep = Array.isArray(startSpotlightKeys)
+    ? startSpotlightKeys.join(",")
+    : startSpotlightKeys;
+
+  useEffect(() => {
+    const registered: (string | string[])[] = [];
+    if (infoSpotlightKeys?.length) {
+      sim.registerTarget(infoSpotlightKeys, infoRef, { rounded: true });
+      registered.push(infoSpotlightKeys);
+    }
+    if (startSpotlightKeys?.length) {
+      sim.registerTarget(startSpotlightKeys, startRef, { rounded: true });
+      registered.push(startSpotlightKeys);
+    }
+    if (registered.length === 0) return;
+    return () => registered.forEach((keys) => sim.unregisterTarget(keys));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sim, infoDep, startDep]);
 
   return (
     <View
@@ -62,6 +98,8 @@ export function StartActivity({
         <View className="flex-row items-center gap-3">
           {onPressInfo && (
             <Pressable
+              ref={infoRef}
+              collapsable={false}
               onPress={onPressInfo}
               hitSlop={8}
               className="active:opacity-70"
@@ -97,7 +135,7 @@ export function StartActivity({
         </View>
       )}
 
-      <View className="mt-4 flex-row gap-2.5">
+      <View ref={startRef} collapsable={false} className="mt-4 flex-row gap-2.5">
         <DefaultButton
           label={t("exercises.startActivity")}
           onPress={onStart}

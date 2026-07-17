@@ -2,8 +2,9 @@ import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import { RipplePressable } from "@/components/ripple-pressable";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { Check, RotateCcw } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import { ContinuationOptions } from "./continuation-options";
 import { WarningBanner } from "./warning-banner";
@@ -20,6 +21,8 @@ interface SessionCompletionProps {
   onSelectContinuation: (id: string) => void;
   onBackToStart: () => void;
   className?: string;
+  /** Tutorial spotlight key(s) for the "back to start" button. */
+  backToStartSpotlightKeys?: string | string[];
 }
 
 /**
@@ -35,11 +38,25 @@ export function SessionCompletion({
   onSelectContinuation,
   onBackToStart,
   className = "",
+  backToStartSpotlightKeys,
 }: SessionCompletionProps) {
   const { t } = useI18n();
+  const sim = useTutorialSimulation();
+  const [showOptions, setShowOptions] = useState(false);
+  const backToStartRef = useRef<View>(null);
   const resolvedTitle = title ?? t("sessionCompletion.title");
   const resolvedStatusLabel = statusLabel ?? t("sessionCompletion.completed");
-  const [showOptions, setShowOptions] = useState(false);
+
+  const backToStartDep = Array.isArray(backToStartSpotlightKeys)
+    ? backToStartSpotlightKeys.join(",")
+    : backToStartSpotlightKeys;
+
+  useEffect(() => {
+    if (!backToStartSpotlightKeys?.length) return;
+    sim.registerTarget(backToStartSpotlightKeys, backToStartRef, { rounded: true });
+    return () => sim.unregisterTarget(backToStartSpotlightKeys);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sim, backToStartDep]);
 
   return (
     <View className={`w-full max-w-md items-center p-6 ${className}`}>
@@ -77,12 +94,14 @@ export function SessionCompletion({
           </Text>
         </RipplePressable>
 
-        <DefaultButton
-          label={t("sessionCompletion.backToStart")}
-          sizeClass="flex-1 py-4"
-          hasShadow={true}
-          onPress={onBackToStart}
-        />
+        <View ref={backToStartRef} collapsable={false} className="flex-1">
+          <DefaultButton
+            label={t("sessionCompletion.backToStart")}
+            sizeClass="w-full py-4"
+            hasShadow={true}
+            onPress={onBackToStart}
+          />
+        </View>
       </View>
 
       {showOptions && (

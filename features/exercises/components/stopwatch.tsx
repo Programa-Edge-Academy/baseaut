@@ -1,4 +1,5 @@
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import {
   ClipboardEdit,
   Footprints,
@@ -53,6 +54,18 @@ export type StopwatchProps = {
   onPressCorner?: () => void;
   className?: string;
   isFormVisible?: boolean;
+  /** Tutorial spotlight key for the "Crise" pill. */
+  criseSpotlightKey?: string;
+  /** Tutorial spotlight key for the "Fuga" pill. */
+  fugaSpotlightKey?: string;
+  /** Tutorial spotlight key for the timer (play/pause) pressable. */
+  timerSpotlightKey?: string;
+  /** Tutorial spotlight key for the corner action (minimize, or show/hide form). */
+  cornerSpotlightKey?: string;
+  /** Tutorial spotlight key for the restart button. */
+  restartSpotlightKey?: string;
+  /** Tutorial spotlight key for the stop button. */
+  stopSpotlightKey?: string;
 };
 
 function formatTime(seconds: number): string {
@@ -74,6 +87,13 @@ function formatTime(seconds: number): string {
  * "Parar" (stop, right) buttons fill the row. While a crisis or flight episode
  * is being timed, the corresponding pill label is replaced by a live elapsed
  * counter for that episode.
+ *
+ * @remarks
+ * Each of the six controls can be registered as a tutorial spotlight target via
+ * its own `*SpotlightKey` prop. The targets are the control pressables
+ * themselves rather than a wrapper around the card, so the highlight ring hugs
+ * the individual control. Advancing the sub-step stays with the parent, which
+ * already owns every control's press handler.
  */
 export function Stopwatch({
   title,
@@ -94,13 +114,53 @@ export function Stopwatch({
   onPressCorner,
   className,
   isFormVisible = true,
+  criseSpotlightKey,
+  fugaSpotlightKey,
+  timerSpotlightKey,
+  cornerSpotlightKey,
+  restartSpotlightKey,
+  stopSpotlightKey,
 }: StopwatchProps) {
   const colors = useThemeColors();
+  const sim = useTutorialSimulation();
   const [internalIsRunning, setInternalIsRunning] = useState(autoStart);
   const [internalSeconds, setInternalSeconds] = useState(initialSeconds);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const criseStartedAtRef = useRef<number | null>(null);
   const fugaStartedAtRef = useRef<number | null>(null);
+
+  const criseRef = useRef<View>(null);
+  const fugaRef = useRef<View>(null);
+  const timerRef = useRef<View>(null);
+  const cornerRef = useRef<View>(null);
+  const restartRef = useRef<View>(null);
+  const stopRef = useRef<View>(null);
+
+  useEffect(() => {
+    const entries: [string | undefined, React.RefObject<View | null>][] = [
+      [criseSpotlightKey, criseRef],
+      [fugaSpotlightKey, fugaRef],
+      [timerSpotlightKey, timerRef],
+      [cornerSpotlightKey, cornerRef],
+      [restartSpotlightKey, restartRef],
+      [stopSpotlightKey, stopRef],
+    ];
+    const present = entries.filter(([key]) => !!key) as [
+      string,
+      React.RefObject<View | null>,
+    ][];
+    if (present.length === 0) return;
+    present.forEach(([key, ref]) => sim.registerTarget(key, ref, { rounded: true }));
+    return () => sim.unregisterTarget(present.map(([key]) => key));
+  }, [
+    sim,
+    criseSpotlightKey,
+    fugaSpotlightKey,
+    timerSpotlightKey,
+    cornerSpotlightKey,
+    restartSpotlightKey,
+    stopSpotlightKey,
+  ]);
 
   if (isCriseActive && criseStartedAtRef.current == null) {
     criseStartedAtRef.current = Date.now();
@@ -191,6 +251,8 @@ export function Stopwatch({
 
         <View className="items-end gap-1.5">
           <Pressable
+            ref={criseRef}
+            collapsable={false}
             onPress={onPressCrise}
             hitSlop={6}
             className={`w-[88px] flex-row items-center justify-center gap-1.5 rounded-full border px-3 py-1 active:opacity-70 ${
@@ -209,6 +271,8 @@ export function Stopwatch({
           </Pressable>
 
           <Pressable
+            ref={fugaRef}
+            collapsable={false}
             onPress={onPressFuga}
             hitSlop={6}
             className={`w-[88px] flex-row items-center justify-center gap-1.5 rounded-full border px-3 py-1 active:opacity-70 ${
@@ -230,6 +294,8 @@ export function Stopwatch({
 
       <View className="mt-3 flex-row items-stretch gap-3">
         <Pressable
+          ref={timerRef}
+          collapsable={false}
           onPress={handleToggle}
           className="h-12 flex-1 flex-row items-center justify-center gap-3 rounded-2xl border border-outline bg-content/5 active:opacity-70"
         >
@@ -256,6 +322,8 @@ export function Stopwatch({
         </Pressable>
 
         <Pressable
+          ref={cornerRef}
+          collapsable={false}
           onPress={onPressCorner}
           className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-outline bg-level1 active:opacity-70"
         >
@@ -278,6 +346,8 @@ export function Stopwatch({
 
       <View className="mt-3 flex-row gap-3">
         <Pressable
+          ref={restartRef}
+          collapsable={false}
           onPress={handleRestart}
           className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-outline bg-level1 active:opacity-70"
         >
@@ -286,6 +356,8 @@ export function Stopwatch({
         </Pressable>
 
         <Pressable
+          ref={stopRef}
+          collapsable={false}
           onPress={handleStop}
           className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-error bg-error/10 active:opacity-70"
         >

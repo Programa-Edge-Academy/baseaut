@@ -7,8 +7,10 @@ import RangeCalendar from "@/components/range-calendar";
 import { Report, ReportFormData } from "@/features/reports/hooks/use-student-reports";
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { X } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Keyboard,
   Pressable,
@@ -27,16 +29,41 @@ export type NewReportProps = {
   initialData?: Report | null;
   /** Default title used when creating a new report. */
   defaultTitle?: string;
+  /** Tutorial spotlight key for the period selector. */
+  periodSpotlightKey?: string;
+  /** Tutorial spotlight key for the save action. */
+  saveSpotlightKey?: string;
 };
 
 /**
  * Modal for creating or editing a report: sets its title and date range (via a
  * range calendar) before saving.
+ *
+ * @remarks
+ * Both the modal and its nested calendar render a {@link TutorialSpotlight}, so
+ * a sub-step targeting the period selector or the save action is highlighted
+ * over the modal rather than behind it.
  */
-export function NewReport({ visible, onClose, onSave, initialData, defaultTitle }: NewReportProps) {
+export function NewReport({
+  visible,
+  onClose,
+  onSave,
+  initialData,
+  defaultTitle,
+  periodSpotlightKey,
+  saveSpotlightKey,
+}: NewReportProps) {
   const { t } = useI18n();
   const { width, height } = useWindowDimensions();
   const isEdit = !!initialData;
+  const sim = useTutorialSimulation();
+  const saveRef = useRef<View>(null);
+
+  useEffect(() => {
+    if (!saveSpotlightKey) return;
+    sim.registerTarget(saveSpotlightKey, saveRef, { rounded: true });
+    return () => sim.unregisterTarget(saveSpotlightKey);
+  }, [sim, saveSpotlightKey]);
 
   const [titulo, setTitulo] = useState("");
   const [dataInicio, setDataInicio] = useState<string>("");
@@ -72,6 +99,7 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
 
   const savePeriod = () => {
     if (!tempInicio || !tempFim) return;
+    if (periodSpotlightKey) sim.complete(periodSpotlightKey);
     setDataInicio(tempInicio);
     setDataFim(tempFim);
     setIsCalendarOpen(false);
@@ -160,6 +188,7 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
                   label={periodLabel ?? t("reports.selectPeriod")}
                   onPress={openCalendar}
                   containerStyle={{ marginHorizontal: 0 }}
+                  spotlightKey={periodSpotlightKey}
                 />
                 {errors.periodo ? (
                   <Text className="mt-1 text-default-3 text-error">{errors.periodo}</Text>
@@ -171,8 +200,11 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
                 onSave={handleSave}
                 saveLabel={saving ? t("common.saving") : t("common.save")}
                 disabled={saving}
+                saveButtonRef={saveRef}
               />
             </ScrollView>
+
+            <TutorialSpotlight />
           </View>
         </View>
       </AppModal>

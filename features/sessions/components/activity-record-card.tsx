@@ -5,8 +5,9 @@ import { SelectableChip } from "@/components/selectable-chip";
 import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { Check, Edit2, X } from "lucide-react-native";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
@@ -62,6 +63,12 @@ type ActivityRecordCardProps = {
     recordId: string,
     values: ActivityRecordUpdate
   ) => Promise<void> | void;
+  /** Called when the user opens the inline editor. */
+  onStartEdit?: () => void;
+  /** Tutorial spotlight key for the button that opens the inline editor. */
+  editSpotlightKey?: string;
+  /** Tutorial spotlight key for the editor's confirm (save) button. */
+  saveSpotlightKey?: string;
 };
 
 const SAD_FACE_XML = `
@@ -174,11 +181,39 @@ function getMotivoLabel(value: MotivoNaoRealizacao | null, t: Translate) {
  * so the card reads correctly in both light and dark mode. A pending record uses
  * a transparent background (with the accent border) so it blends into either
  * theme. The development-level accent circles keep their fixed vivid colors.
+ *
+ * The tutorial spotlight keys are registered on the edit and confirm buttons
+ * themselves. The card must not be wrapped in a `SpotlightTarget`: its root
+ * carries a bottom margin, which the wrapper would measure as part of the card
+ * and draw the ring off-center.
  */
-export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) {
+export function ActivityRecordCard({
+  record,
+  onSave,
+  onStartEdit,
+  editSpotlightKey,
+  saveSpotlightKey,
+}: ActivityRecordCardProps) {
   const { t } = useI18n();
   const colors = useThemeColors();
+  const sim = useTutorialSimulation();
+  const editRef = useRef<View>(null);
+  const saveRef = useRef<View>(null);
   const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    const keys: string[] = [];
+    if (editSpotlightKey) {
+      sim.registerTarget(editSpotlightKey, editRef, { rounded: true });
+      keys.push(editSpotlightKey);
+    }
+    if (saveSpotlightKey) {
+      sim.registerTarget(saveSpotlightKey, saveRef, { rounded: true });
+      keys.push(saveSpotlightKey);
+    }
+    if (keys.length === 0) return;
+    return () => sim.unregisterTarget(keys);
+  }, [sim, editSpotlightKey, saveSpotlightKey]);
   const [selectedStatus, setSelectedStatus] = useState<StatusRealizacao>(
     record.statusRealizacao === "nao_realizada" ? "nao_realizada" : "realizada"
   );
@@ -331,6 +366,8 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
             </Pressable>
 
             <Pressable
+              ref={saveRef}
+              collapsable={false}
               onPress={handleSave}
               disabled={isSaving || isPending}
               style={{
@@ -353,7 +390,12 @@ export function ActivityRecordCard({ record, onSave }: ActivityRecordCardProps) 
           </View>
         ) : (
           <Pressable
-            onPress={() => setIsEditing(true)}
+            ref={editRef}
+            collapsable={false}
+            onPress={() => {
+              onStartEdit?.();
+              setIsEditing(true);
+            }}
             style={{ width: 42, height: 42, alignItems: "center", justifyContent: "center", borderRadius: 12 }}
           >
             <Edit2 size={22} color={colors.muted} />

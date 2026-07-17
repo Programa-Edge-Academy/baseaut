@@ -1,7 +1,9 @@
 import { AppModal } from "@/components/app-modal";
 import { DraggableList, DraggableItem } from "@/components/draggable-list";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { X } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/assets/colors";
@@ -14,6 +16,8 @@ interface ReorderModalProps {
   currentIndex: number;
   onClose: () => void;
   onReorder: (items: SessionExercise[]) => void;
+  /** Tutorial spotlight key for the drag-and-drop area. */
+  reorderSpotlightKey?: string;
 }
 
 /**
@@ -23,6 +27,9 @@ interface ReorderModalProps {
  * @remarks
  * The sheet's bottom padding includes the safe-area inset so the confirm button
  * is never covered by the device's system navigation bar.
+ *
+ * It renders its own {@link TutorialSpotlight} so a sub-step targeting the
+ * drag area is highlighted over the sheet instead of behind it.
  */
 export function ReorderModal({
   visible,
@@ -30,9 +37,18 @@ export function ReorderModal({
   currentIndex,
   onClose,
   onReorder,
+  reorderSpotlightKey,
 }: ReorderModalProps) {
   const [isDragging, setIsDragging] = useState(false);
   const insets = useSafeAreaInsets();
+  const sim = useTutorialSimulation();
+  const reorderRef = useRef<View>(null);
+
+  useEffect(() => {
+    if (!reorderSpotlightKey) return;
+    sim.registerTarget(reorderSpotlightKey, reorderRef, { rounded: true });
+    return () => sim.unregisterTarget(reorderSpotlightKey);
+  }, [sim, reorderSpotlightKey]);
 
   const draggableItems: DraggableItem[] = items.map((ex) => ({
     id: ex.id,
@@ -72,11 +88,13 @@ export function ReorderModal({
             showsVerticalScrollIndicator={false}
             scrollEnabled={!isDragging}
           >
-            <DraggableList
-              items={draggableItems}
-              onReorder={handleReorder}
-              onDragActiveChange={setIsDragging}
-            />
+            <View ref={reorderRef} collapsable={false}>
+              <DraggableList
+                items={draggableItems}
+                onReorder={handleReorder}
+                onDragActiveChange={setIsDragging}
+              />
+            </View>
           </ScrollView>
 
           <Pressable
@@ -85,6 +103,8 @@ export function ReorderModal({
           >
             <Text className="text-content font-bold">Concluir reordenagem</Text>
           </Pressable>
+
+          <TutorialSpotlight />
         </View>
       </View>
     </AppModal>

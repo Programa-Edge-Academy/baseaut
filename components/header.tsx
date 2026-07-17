@@ -1,6 +1,7 @@
 import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { useTutorial } from "@/features/tutorial/contexts/tutorial-context";
 import { useUserRole } from "@/lib/use-user-role";
 import { usePathname, useRouter } from "expo-router";
@@ -26,7 +27,21 @@ type HeaderProps = {
    * keep their real back/finish variants). Opens the practice notice.
    */
   onPressTutorial?: () => void;
+  /** Tutorial spotlight key for the back button. */
+  backSpotlightKey?: string;
+  /** Tutorial spotlight key for the finish button ("finish"/"finishEngagement"). */
+  finishSpotlightKey?: string;
+  /** Tutorial spotlight key for the form save button. */
+  saveSpotlightKey?: string;
 };
+
+function withSpotlight(node: React.ReactNode, targetKey?: string) {
+  return targetKey ? (
+    <SpotlightTarget targetKey={targetKey}>{node}</SpotlightTarget>
+  ) : (
+    node
+  );
+}
 
 /**
  * App top bar with the logo and variant-driven actions: default (team, account,
@@ -40,6 +55,9 @@ export function Header({
   onPressFinish,
   onPressSave,
   onPressTutorial,
+  backSpotlightKey,
+  finishSpotlightKey,
+  saveSpotlightKey,
 }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -83,35 +101,41 @@ export function Header({
           </View>
 
           <View className="flex-1 flex-row justify-center items-center">
-            {showFinishError && (
-              <Pressable
-                onPress={onPressFinish}
-                className="flex-row items-center px-4 py-2 rounded-xl border-2 border-error bg-error/10 active:opacity-70"
-              >
-                <X color={colors.error} size={24} />
-                <Text className="text-error text-default-1 ml-2">{t("common.finish")}</Text>
-              </Pressable>
-            )}
+            {showFinishError &&
+              withSpotlight(
+                <Pressable
+                  onPress={onPressFinish}
+                  className="flex-row items-center px-4 py-2 rounded-xl border-2 border-error bg-error/10 active:opacity-70"
+                >
+                  <X color={colors.error} size={24} />
+                  <Text className="text-error text-default-1 ml-2">{t("common.finish")}</Text>
+                </Pressable>,
+                finishSpotlightKey,
+              )}
 
-            {showFinishExtra && (
-              <Pressable
-                onPress={onPressFinish}
-                className="flex-row items-center px-4 py-2 rounded-xl border-2 border-extra bg-extra/10 active:opacity-70"
-              >
-                <X color={colors.extra} size={24} />
-                <Text className="text-extra text-default-1 ml-2">{t("common.finish")}</Text>
-              </Pressable>
-            )}
+            {showFinishExtra &&
+              withSpotlight(
+                <Pressable
+                  onPress={onPressFinish}
+                  className="flex-row items-center px-4 py-2 rounded-xl border-2 border-extra bg-extra/10 active:opacity-70"
+                >
+                  <X color={colors.extra} size={24} />
+                  <Text className="text-extra text-default-1 ml-2">{t("common.finish")}</Text>
+                </Pressable>,
+                finishSpotlightKey,
+              )}
 
-            {showFormSave && (
-              <Pressable
-                onPress={onPressSave}
-                className="flex-row items-center px-4 py-2.5 rounded-2xl bg-primary shadow-primaryShadow active:opacity-70"
-              >
-                <Save color="#FFFFFF" size={20} />
-                <Text className="text-content text-default-1 ml-2">{t("common.save")}</Text>
-              </Pressable>
-            )}
+            {showFormSave &&
+              withSpotlight(
+                <Pressable
+                  onPress={onPressSave}
+                  className="flex-row items-center px-4 py-2.5 rounded-2xl bg-primary shadow-primaryShadow active:opacity-70"
+                >
+                  <Save color="#FFFFFF" size={20} />
+                  <Text className="text-content text-default-1 ml-2">{t("common.save")}</Text>
+                </Pressable>,
+                saveSpotlightKey,
+              )}
           </View>
 
           <View className="flex-1 flex-row justify-end items-center">
@@ -139,15 +163,17 @@ export function Header({
               </View>
             )}
 
-            {showBack && (
-              <Pressable
-                onPress={onPressBack}
-                className="flex-row items-center px-4 py-2 rounded-xl border-2 border-outline bg-level2 active:opacity-70"
-              >
-                <ArrowLeft color={colors.muted} size={24} />
-                <Text className="text-muted text-default-1 ml-2">{t("common.back")}</Text>
-              </Pressable>
-            )}
+            {showBack &&
+              withSpotlight(
+                <Pressable
+                  onPress={onPressBack}
+                  className="flex-row items-center px-4 py-2 rounded-xl border-2 border-outline bg-level2 active:opacity-70"
+                >
+                  <ArrowLeft color={colors.muted} size={24} />
+                  <Text className="text-muted text-default-1 ml-2">{t("common.back")}</Text>
+                </Pressable>,
+                backSpotlightKey,
+              )}
           </View>
         </View>
       </View>
