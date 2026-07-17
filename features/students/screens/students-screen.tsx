@@ -227,10 +227,7 @@ export function StudentsScreen({ tutorial = false }: StudentsScreenProps) {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => {
-            setNoticeOpen(false);
-            router.back();
-          }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

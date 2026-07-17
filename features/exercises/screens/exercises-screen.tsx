@@ -403,10 +403,7 @@ export function ExercisesScreen({ tutorial = false }: ExercisesScreenProps) {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => {
-            setNoticeOpen(false);
-            router.back();
-          }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 
