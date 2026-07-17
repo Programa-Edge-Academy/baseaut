@@ -198,32 +198,73 @@ export type TranslationKey =
   | "tutorial.hint.circuitos.deleteSelect"
   | "tutorial.hint.circuitos.deleteConfirm"
   | "tutorial.hint.sessoes.selectStructured"
+  | "tutorial.hint.sessoes.openReorder"
+  | "tutorial.hint.sessoes.reorder"
   | "tutorial.hint.sessoes.startExercise"
+  | "tutorial.hint.sessoes.crise"
+  | "tutorial.hint.sessoes.fuga"
+  | "tutorial.hint.sessoes.pauseResume"
+  | "tutorial.hint.sessoes.toggleForm"
+  | "tutorial.hint.sessoes.restart"
+  | "tutorial.hint.sessoes.stop"
+  | "tutorial.hint.sessoes.backToSelection"
+  | "tutorial.hint.sessoes.selectAgain"
+  | "tutorial.hint.sessoes.startAgain"
   | "tutorial.hint.sessoes.goBack"
   | "tutorial.hint.sessoes.reopenCircuit"
   | "tutorial.hint.sessoes.concurrentContinue"
   | "tutorial.hint.sessoes.finish"
+  | "tutorial.hint.sessoes.finishReason"
+  | "tutorial.hint.sessoes.finishSession"
   | "tutorial.hint.formularios.selectAta"
   | "tutorial.hint.formularios.goBackAta"
   | "tutorial.hint.formularios.reopenAta"
   | "tutorial.hint.formularios.continueAta"
-  | "tutorial.hint.formularios.fillAndSave"
+  | "tutorial.hint.formularios.saveAta"
+  | "tutorial.hint.formularios.selectCars"
+  | "tutorial.hint.formularios.saveCars"
+  | "tutorial.hint.formularios.selectMabc"
+  | "tutorial.hint.formularios.saveMabc"
   | "tutorial.hint.historico.selectStudent"
   | "tutorial.hint.historico.openRecord"
+  | "tutorial.hint.historico.editExercise"
+  | "tutorial.hint.historico.saveExercise"
+  | "tutorial.hint.historico.openSessionRc"
+  | "tutorial.hint.historico.saveSessionRc"
+  | "tutorial.hint.historico.backToRecords"
+  | "tutorial.hint.historico.openFormRecord"
   | "tutorial.hint.historico.editSave"
   | "tutorial.hint.analises.selectStudent"
   | "tutorial.hint.analises.openProgress"
+  | "tutorial.hint.analises.periodProgress"
+  | "tutorial.hint.analises.backProgress"
   | "tutorial.hint.analises.openHelp"
+  | "tutorial.hint.analises.periodHelp"
+  | "tutorial.hint.analises.backHelp"
   | "tutorial.hint.analises.openBehaviors"
+  | "tutorial.hint.analises.periodBehaviors"
+  | "tutorial.hint.analises.backBehaviors"
   | "tutorial.hint.analises.openCompare"
+  | "tutorial.hint.analises.periodCompare"
+  | "tutorial.hint.analises.backCompare"
   | "tutorial.hint.analises.openProtocols"
+  | "tutorial.hint.analises.backProtocols"
   | "tutorial.hint.analises.openMabc"
+  | "tutorial.hint.analises.backMabc"
   | "tutorial.hint.relatorios.selectStudent"
   | "tutorial.hint.relatorios.newReport"
+  | "tutorial.hint.relatorios.periodReport"
   | "tutorial.hint.relatorios.saveReport"
   | "tutorial.hint.relatorios.openReport"
   | "tutorial.hint.relatorios.exportReport"
+  | "tutorial.hint.relatorios.exportConfirm"
+  | "tutorial.hint.relatorios.backFromReport"
+  | "tutorial.hint.relatorios.backToReportsHome"
   | "tutorial.hint.relatorios.consolidated"
+  | "tutorial.hint.relatorios.consolidatedSelect"
+  | "tutorial.hint.relatorios.consolidatedConfirm"
+  | "tutorial.hint.relatorios.consolidatedPeriod"
+  | "tutorial.hint.relatorios.consolidatedExport"
   | "common.allM"
   | "common.register"
   | "analysis.level.maduro"
@@ -1233,32 +1274,73 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.circuitos.deleteSelect": "No menu, toque em \"Excluir\".",
     "tutorial.hint.circuitos.deleteConfirm": "Confirme a exclusão tocando em \"Excluir\".",
     "tutorial.hint.sessoes.selectStructured": "Toque no circuito estruturado para iniciar a sessão.",
-    "tutorial.hint.sessoes.startExercise": "Toque em \"Iniciar atividade\". Depois pratique livremente: cronômetro, registrar crise/fuga, parar e marcar o resultado (realizada — com ajuda intrusiva ou verbal —, não realizada ou adiado), e mostrar/ocultar o Registro de Controle (que pode ficar vazio para preencher depois no Histórico).",
+    "tutorial.hint.sessoes.openReorder": "Antes de começar, toque no ícone de trocar ordem para reorganizar os exercícios.",
+    "tutorial.hint.sessoes.reorder": "Segure pela alça e arraste um exercício para mudar a ordem. Depois feche a janela.",
+    "tutorial.hint.sessoes.startExercise": "Toque em \"Iniciar atividade\" para começar o primeiro exercício.",
+    "tutorial.hint.sessoes.crise": "Toque em \"Crise\" para começar a cronometrar um episódio de crise. Toque de novo para encerrá-lo.",
+    "tutorial.hint.sessoes.fuga": "Toque em \"Fuga\" para registrar um episódio de fuga. Toque de novo para encerrá-lo.",
+    "tutorial.hint.sessoes.pauseResume": "Toque no cronômetro para pausar e retomar a contagem.",
+    "tutorial.hint.sessoes.toggleForm": "Toque em \"Ocultar\"/\"Exibir\" para esconder ou mostrar o Registro de Controle, que pode ficar vazio para preencher depois no Histórico.",
+    "tutorial.hint.sessoes.restart": "Toque em \"Redefinir\" para zerar o cronômetro e recomeçar a contagem.",
+    "tutorial.hint.sessoes.stop": "Toque em \"Parar\" para encerrar a atividade e marcar o resultado.",
+    "tutorial.hint.sessoes.backToSelection": "Marque o resultado (realizada — com ajuda intrusiva ou verbal —, não realizada ou adiado) e conclua os exercícios restantes: a sessão termina sozinha. Na tela de sessão concluída, toque em \"Voltar ao início\" — a simulação continua.",
+    "tutorial.hint.sessoes.selectAgain": "Toque no circuito estruturado outra vez para iniciar uma segunda sessão.",
+    "tutorial.hint.sessoes.startAgain": "Toque em \"Iniciar atividade\": só depois de iniciar é que a sessão fica em andamento.",
     "tutorial.hint.sessoes.goBack": "Toque em \"Voltar\" para sair sem finalizar — a sessão continua em andamento.",
     "tutorial.hint.sessoes.reopenCircuit": "Toque num circuito novamente para ver o aviso de sessão em andamento.",
     "tutorial.hint.sessoes.concurrentContinue": "Toque em \"Continuar sessão em andamento\" para retomar. Esse aviso também aparece quando há um Registro de Controle pendente ou um formulário do mesmo tipo pendente para o aluno.",
-    "tutorial.hint.sessoes.finish": "Toque em \"Finalizar\" e confirme para encerrar a sessão.",
+    "tutorial.hint.sessoes.finish": "Pare a atividade e marque o resultado. Com pelo menos um exercício concluído, o botão \"Finalizar\" aparece no cabeçalho: toque nele para encerrar a sessão antes do fim.",
+    "tutorial.hint.sessoes.finishReason": "Escolha um motivo para o encerramento e confirme. Os exercícios que sobraram são registrados como não realizados.",
+    "tutorial.hint.sessoes.finishSession": "Esta é a tela de sessão concluída. Toque em \"Voltar ao início\" para encerrar a simulação.",
     "tutorial.hint.formularios.selectAta": "Toque no formulário ATA para iniciá-lo.",
     "tutorial.hint.formularios.goBackAta": "Toque em \"Voltar\" para sair sem preencher — o ATA fica pendente.",
     "tutorial.hint.formularios.reopenAta": "Toque no ATA novamente para ver o aviso de formulário do mesmo tipo pendente.",
     "tutorial.hint.formularios.continueAta": "Toque em \"Continuar formulário anterior\" para retomar o ATA pendente.",
-    "tutorial.hint.formularios.fillAndSave": "Responda a pergunta obrigatória e toque em salvar (no cabeçalho). Campos opcionais podem ficar em branco. CARS e MABC-2 funcionam igual — o MABC-2 é dividido por faixa etária (3-6, 7-10 e 11-16 anos).",
+    "tutorial.hint.formularios.saveAta": "Responda a pergunta obrigatória e toque em salvar (no cabeçalho). Campos opcionais podem ficar em branco. Você volta para a lista e a simulação continua.",
+    "tutorial.hint.formularios.selectCars": "Agora toque no formulário CARS: o fluxo é o mesmo do ATA.",
+    "tutorial.hint.formularios.saveCars": "Preencha e salve o CARS para voltar à lista.",
+    "tutorial.hint.formularios.selectMabc": "Por fim, toque no MABC-2. Ele é dividido por faixa etária (3-6, 7-10 e 11-16 anos) e só aparece para alunos elegíveis.",
+    "tutorial.hint.formularios.saveMabc": "Preencha e salve o MABC-2 para encerrar a simulação.",
     "tutorial.hint.historico.selectStudent": "Toque no aluno para ver seus registros passados.",
-    "tutorial.hint.historico.openRecord": "Toque no Registro de Controle pendente para editá-lo.",
-    "tutorial.hint.historico.editSave": "Complete o que faltava e salve. Da mesma forma você edita os resultados das atividades de uma sessão e os formulários ATA, CARS e MABC-2.",
+    "tutorial.hint.historico.openRecord": "Toque no registro de sessão para ver os exercícios executados.",
+    "tutorial.hint.historico.editExercise": "Toque no lápis para editar o resultado do exercício.",
+    "tutorial.hint.historico.saveExercise": "Ajuste o que quiser (status, duração, nível ou ajuda) e toque no visto para salvar.",
+    "tutorial.hint.historico.openSessionRc": "Toque no lápis do cabeçalho para abrir o Registro de Controle da sessão, que está pendente.",
+    "tutorial.hint.historico.saveSessionRc": "Complete o que faltava e salve. Você volta para a sessão e a simulação continua.",
+    "tutorial.hint.historico.backToRecords": "Toque em \"Voltar\" para retornar aos registros do aluno.",
+    "tutorial.hint.historico.openFormRecord": "Agora toque no registro de formulário (ATA): formulários também podem ser editados depois.",
+    "tutorial.hint.historico.editSave": "Edite o que quiser e salve. Da mesma forma você edita os formulários CARS e MABC-2.",
     "tutorial.hint.analises.selectStudent": "Toque no aluno para ver as análises dele.",
-    "tutorial.hint.analises.openProgress": "Abra \"Progresso por exercício\". Veja o gráfico com dados; se filtrar por um período sem registros, ele aparece vazio — volte a um período com dados. Depois volte.",
-    "tutorial.hint.analises.openHelp": "Abra \"Registros de ajuda por sessão\" para ver a evolução da autonomia. Depois volte.",
-    "tutorial.hint.analises.openBehaviors": "Abra \"Comportamentos observados\" para ver as frequências. Depois volte.",
-    "tutorial.hint.analises.openCompare": "Abra \"Comparar desempenho\" para ver dois períodos lado a lado. Depois volte.",
-    "tutorial.hint.analises.openProtocols": "Abra os protocolos aplicados (ATA/CARS) para ver os registros. Depois volte.",
+    "tutorial.hint.analises.openProgress": "Abra \"Progresso por exercício\" para ver a evolução do nível de desenvolvimento.",
+    "tutorial.hint.analises.periodProgress": "Toque num exercício para expandi-lo, depois escolha um período e salve. Se filtrar um período sem registros, o gráfico aparece vazio — volte a um período com dados.",
+    "tutorial.hint.analises.backProgress": "Explore o gráfico e toque em \"Voltar\" para seguir para a próxima análise.",
+    "tutorial.hint.analises.openHelp": "Abra \"Registros de ajuda por sessão\" para ver a evolução da autonomia.",
+    "tutorial.hint.analises.periodHelp": "Escolha um período e salve para carregar os registros de ajuda.",
+    "tutorial.hint.analises.backHelp": "Use o botão abaixo do gráfico para ver os registros por sessão e exercício. Depois toque em \"Voltar\".",
+    "tutorial.hint.analises.openBehaviors": "Abra \"Comportamentos observados\" para ver as frequências.",
+    "tutorial.hint.analises.periodBehaviors": "Escolha um período e salve para carregar os comportamentos.",
+    "tutorial.hint.analises.backBehaviors": "Explore o gráfico e os detalhes por comportamento, depois toque em \"Voltar\".",
+    "tutorial.hint.analises.openCompare": "Abra \"Comparar desempenho\" para ver dois períodos lado a lado.",
+    "tutorial.hint.analises.periodCompare": "Escolha os dois períodos a comparar. Eles não podem se sobrepor nem estar no futuro.",
+    "tutorial.hint.analises.backCompare": "Toque em \"Comparar\" para ver o cruzamento dos dois períodos e depois em \"Voltar\".",
+    "tutorial.hint.analises.openProtocols": "Abra os protocolos aplicados (ATA/CARS) para ver os registros.",
+    "tutorial.hint.analises.backProtocols": "Veja os registros do protocolo e toque em \"Voltar\".",
     "tutorial.hint.analises.openMabc": "Abra \"Registros de desenvolvimento motor\" (MABC-2) para ver as avaliações.",
+    "tutorial.hint.analises.backMabc": "Veja as avaliações do MABC-2 e toque em \"Voltar\" para encerrar a simulação.",
     "tutorial.hint.relatorios.selectStudent": "Toque no aluno para ver os relatórios dele.",
     "tutorial.hint.relatorios.newReport": "Toque em \"+ Novo\" para criar um relatório.",
-    "tutorial.hint.relatorios.saveReport": "Escolha o período e salve para gerar o relatório.",
+    "tutorial.hint.relatorios.periodReport": "Toque no período e escolha as datas que o relatório vai cobrir.",
+    "tutorial.hint.relatorios.saveReport": "Dê um nome ao relatório e toque em \"Salvar\" para gerá-lo.",
     "tutorial.hint.relatorios.openReport": "Toque no relatório criado para abri-lo.",
-    "tutorial.hint.relatorios.exportReport": "Toque no ícone de exportar, selecione um ou mais relatórios, confirme e exporte (ou baixe no dispositivo).",
-    "tutorial.hint.relatorios.consolidated": "Volte e toque em \"Cruzar dados de alunos\" para gerar um relatório consolidado de vários alunos.",
+    "tutorial.hint.relatorios.exportReport": "Toque no ícone de exportar para baixar apenas este relatório.",
+    "tutorial.hint.relatorios.exportConfirm": "Escolha os formatos (PDF e/ou CSV) e toque em \"Exportar\" para compartilhar — no Android também dá para baixar no dispositivo.",
+    "tutorial.hint.relatorios.backFromReport": "Toque em \"Voltar\" para retornar aos relatórios do aluno.",
+    "tutorial.hint.relatorios.backToReportsHome": "Toque em \"Voltar\" outra vez para chegar à tela inicial de relatórios.",
+    "tutorial.hint.relatorios.consolidated": "Toque em \"Cruzar dados de alunos\" para gerar um relatório consolidado de vários alunos.",
+    "tutorial.hint.relatorios.consolidatedSelect": "Toque nos alunos que entram no relatório consolidado. Dá para escolher mais de um.",
+    "tutorial.hint.relatorios.consolidatedConfirm": "Toque em \"Confirmar\" para seguir com os alunos selecionados.",
+    "tutorial.hint.relatorios.consolidatedPeriod": "Escolha o período do cruzamento e salve.",
+    "tutorial.hint.relatorios.consolidatedExport": "Escolha os formatos e toque em \"Exportar\" para encerrar a simulação.",
     "common.allM": "Todos",
     "common.register": "Registrar",
     "analysis.level.maduro": "Maduro",
@@ -2277,32 +2359,73 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.circuitos.deleteSelect": "In the menu, tap \"Delete\".",
     "tutorial.hint.circuitos.deleteConfirm": "Confirm deletion by tapping \"Delete\".",
     "tutorial.hint.sessoes.selectStructured": "Tap the structured circuit to start the session.",
-    "tutorial.hint.sessoes.startExercise": "Tap \"Start activity\". Then practice freely: the stopwatch, recording crisis/flight, stopping and marking the result (completed — with intrusive or verbal help —, not completed, or deferred), and showing/hiding the Control Record (which can be left empty to fill later in History).",
+    "tutorial.hint.sessoes.openReorder": "Before starting, tap the change-order icon to rearrange the exercises.",
+    "tutorial.hint.sessoes.reorder": "Hold an exercise by its handle and drag it to change the order. Then close the sheet.",
+    "tutorial.hint.sessoes.startExercise": "Tap \"Start activity\" to begin the first exercise.",
+    "tutorial.hint.sessoes.crise": "Tap \"Crise\" to start timing a crisis episode. Tap it again to end it.",
+    "tutorial.hint.sessoes.fuga": "Tap \"Fuga\" to record a flight episode. Tap it again to end it.",
+    "tutorial.hint.sessoes.pauseResume": "Tap the stopwatch to pause and resume the count.",
+    "tutorial.hint.sessoes.toggleForm": "Tap \"Ocultar\"/\"Exibir\" to hide or show the Control Record, which can be left empty to fill later in History.",
+    "tutorial.hint.sessoes.restart": "Tap \"Redefinir\" to reset the stopwatch and start counting again.",
+    "tutorial.hint.sessoes.stop": "Tap \"Parar\" to end the activity and mark its result.",
+    "tutorial.hint.sessoes.backToSelection": "Mark the result (completed — with intrusive or verbal help —, not completed, or deferred) and finish the remaining exercises: the session ends on its own. On the completed screen, tap \"Back to start\" — the simulation continues.",
+    "tutorial.hint.sessoes.selectAgain": "Tap the structured circuit again to start a second session.",
+    "tutorial.hint.sessoes.startAgain": "Tap \"Start activity\": a session is only in progress once it has been started.",
     "tutorial.hint.sessoes.goBack": "Tap \"Back\" to leave without finishing — the session stays in progress.",
     "tutorial.hint.sessoes.reopenCircuit": "Tap a circuit again to see the in-progress session warning.",
     "tutorial.hint.sessoes.concurrentContinue": "Tap \"Continue session in progress\" to resume. This warning also appears when there is a pending Control Record or a pending form of the same type for the student.",
-    "tutorial.hint.sessoes.finish": "Tap \"Finish\" and confirm to end the session.",
+    "tutorial.hint.sessoes.finish": "Stop the activity and mark its result. With at least one exercise done, the \"Finish\" button appears in the header: tap it to end the session early.",
+    "tutorial.hint.sessoes.finishReason": "Pick a reason for ending the session and confirm. The remaining exercises are recorded as not performed.",
+    "tutorial.hint.sessoes.finishSession": "This is the session completed screen. Tap \"Back to start\" to end the simulation.",
     "tutorial.hint.formularios.selectAta": "Tap the ATA form to start it.",
     "tutorial.hint.formularios.goBackAta": "Tap \"Back\" to leave without filling it — the ATA stays pending.",
     "tutorial.hint.formularios.reopenAta": "Tap the ATA again to see the pending same-type form warning.",
     "tutorial.hint.formularios.continueAta": "Tap \"Continue previous form\" to resume the pending ATA.",
-    "tutorial.hint.formularios.fillAndSave": "Answer the required question and tap save (in the header). Optional fields can be left blank. CARS and MABC-2 work the same — MABC-2 is split by age band (3-6, 7-10 and 11-16 years).",
+    "tutorial.hint.formularios.saveAta": "Answer the required question and tap save (in the header). Optional fields can be left blank. You return to the list and the simulation continues.",
+    "tutorial.hint.formularios.selectCars": "Now tap the CARS form: the flow is the same as the ATA.",
+    "tutorial.hint.formularios.saveCars": "Fill the CARS in and save it to return to the list.",
+    "tutorial.hint.formularios.selectMabc": "Finally, tap MABC-2. It is split by age band (3-6, 7-10 and 11-16 years) and only shows for eligible students.",
+    "tutorial.hint.formularios.saveMabc": "Fill the MABC-2 in and save it to end the simulation.",
     "tutorial.hint.historico.selectStudent": "Tap the student to see their past records.",
-    "tutorial.hint.historico.openRecord": "Tap the pending Control Record to edit it.",
-    "tutorial.hint.historico.editSave": "Complete what was missing and save. You edit a session's activity results and the ATA, CARS and MABC-2 forms the same way.",
+    "tutorial.hint.historico.openRecord": "Tap the session record to see the exercises that were run.",
+    "tutorial.hint.historico.editExercise": "Tap the pencil to edit the activity's result.",
+    "tutorial.hint.historico.saveExercise": "Adjust whatever you want (status, duration, level or help) and tap the check to save.",
+    "tutorial.hint.historico.openSessionRc": "Tap the pencil in the header to open the session's Control Record, which is still pending.",
+    "tutorial.hint.historico.saveSessionRc": "Complete what was missing and save. You return to the session and the simulation continues.",
+    "tutorial.hint.historico.backToRecords": "Tap \"Back\" to return to the student's records.",
+    "tutorial.hint.historico.openFormRecord": "Now tap the form record (ATA): forms can also be edited later.",
+    "tutorial.hint.historico.editSave": "Edit whatever you want and save. You edit the CARS and MABC-2 forms the same way.",
     "tutorial.hint.analises.selectStudent": "Tap the student to see their analyses.",
-    "tutorial.hint.analises.openProgress": "Open \"Exercise progress\". View the chart with data; if you filter by a period with no records it shows empty — return to a period with data. Then go back.",
-    "tutorial.hint.analises.openHelp": "Open \"Help records per session\" to see the autonomy trend. Then go back.",
-    "tutorial.hint.analises.openBehaviors": "Open \"Observed behaviors\" to see the frequencies. Then go back.",
-    "tutorial.hint.analises.openCompare": "Open \"Compare performance\" to see two periods side by side. Then go back.",
-    "tutorial.hint.analises.openProtocols": "Open the applied protocols (ATA/CARS) to see the records. Then go back.",
+    "tutorial.hint.analises.openProgress": "Open \"Exercise progress\" to see how the development level evolves.",
+    "tutorial.hint.analises.periodProgress": "Tap an exercise to expand it, then pick a period and save. If you filter by a period with no records the chart shows empty — return to a period with data.",
+    "tutorial.hint.analises.backProgress": "Explore the chart and tap \"Back\" to move on to the next analysis.",
+    "tutorial.hint.analises.openHelp": "Open \"Help records per session\" to see the autonomy trend.",
+    "tutorial.hint.analises.periodHelp": "Pick a period and save to load the help records.",
+    "tutorial.hint.analises.backHelp": "Use the button below the chart to see the records per session and exercise. Then tap \"Back\".",
+    "tutorial.hint.analises.openBehaviors": "Open \"Observed behaviors\" to see the frequencies.",
+    "tutorial.hint.analises.periodBehaviors": "Pick a period and save to load the behaviors.",
+    "tutorial.hint.analises.backBehaviors": "Explore the chart and the per-behavior details, then tap \"Back\".",
+    "tutorial.hint.analises.openCompare": "Open \"Compare performance\" to see two periods side by side.",
+    "tutorial.hint.analises.periodCompare": "Pick the two periods to compare. They cannot overlap or be in the future.",
+    "tutorial.hint.analises.backCompare": "Tap \"Compare\" to cross-reference both periods, then tap \"Back\".",
+    "tutorial.hint.analises.openProtocols": "Open the applied protocols (ATA/CARS) to see the records.",
+    "tutorial.hint.analises.backProtocols": "Look through the protocol's records and tap \"Back\".",
     "tutorial.hint.analises.openMabc": "Open \"Motor development records\" (MABC-2) to see the assessments.",
+    "tutorial.hint.analises.backMabc": "Look through the MABC-2 assessments and tap \"Back\" to end the simulation.",
     "tutorial.hint.relatorios.selectStudent": "Tap the student to see their reports.",
     "tutorial.hint.relatorios.newReport": "Tap \"+ New\" to create a report.",
-    "tutorial.hint.relatorios.saveReport": "Choose the period and save to generate the report.",
+    "tutorial.hint.relatorios.periodReport": "Tap the period and choose the dates the report will cover.",
+    "tutorial.hint.relatorios.saveReport": "Name the report and tap \"Save\" to generate it.",
     "tutorial.hint.relatorios.openReport": "Tap the created report to open it.",
-    "tutorial.hint.relatorios.exportReport": "Tap the export icon, select one or more reports, confirm and export (or download to the device).",
-    "tutorial.hint.relatorios.consolidated": "Go back and tap \"Cross-student data\" to build a consolidated report of several students.",
+    "tutorial.hint.relatorios.exportReport": "Tap the export icon to download just this report.",
+    "tutorial.hint.relatorios.exportConfirm": "Choose the formats (PDF and/or CSV) and tap \"Export\" to share — on Android you can also download it to the device.",
+    "tutorial.hint.relatorios.backFromReport": "Tap \"Back\" to return to the student's reports.",
+    "tutorial.hint.relatorios.backToReportsHome": "Tap \"Back\" again to reach the reports home screen.",
+    "tutorial.hint.relatorios.consolidated": "Tap \"Cross-student data\" to build a consolidated report of several students.",
+    "tutorial.hint.relatorios.consolidatedSelect": "Tap the students to include in the consolidated report. You can pick more than one.",
+    "tutorial.hint.relatorios.consolidatedConfirm": "Tap \"Confirm\" to continue with the selected students.",
+    "tutorial.hint.relatorios.consolidatedPeriod": "Choose the period to cross-reference and save.",
+    "tutorial.hint.relatorios.consolidatedExport": "Choose the formats and tap \"Export\" to end the simulation.",
     "common.allM": "All",
     "common.register": "Register",
     "analysis.level.maduro": "Mature",
