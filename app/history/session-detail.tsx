@@ -13,6 +13,10 @@ import {
 import { useSessionDetail } from "@/features/sessions/hooks/use-session-detail";
 import { exportSession } from "@/features/sessions/utils/export-session";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -28,6 +32,11 @@ import {
  * Route showing the executions recorded in a single session. Allows editing
  * each execution, opening the linked control record, deleting the session, and
  * exporting it (PDF/CSV) once no executions remain pending.
+ *
+ * @remarks
+ * During the tutorial's history simulation it runs on seeded mock data and
+ * guides the user through editing an activity record and then the session's
+ * Control Record, each with its own save.
  */
 export default function SessionDetailScreen() {
   const { sessionId, studentId, studentName, sessionTitle } =
@@ -39,9 +48,13 @@ export default function SessionDetailScreen() {
     }>();
 
   const { t, locale } = useI18n();
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "history";
+  const sim = useTutorialSimulation();
+  const [noticeOpen, setNoticeOpen] = useState(false);
   const safeName = studentName || t("common.student");
   const { data, isLoading, error, rcPending, updateExecution, deleteSession } =
-    useSessionDetail(sessionId as string, sessionTitle);
+    useSessionDetail(sessionId as string, sessionTitle, { mock: isTutorial });
 
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -60,6 +73,7 @@ export default function SessionDetailScreen() {
   ) {
     try {
       await updateExecution(execId, values);
+      if (isTutorial) sim.complete("saveExercise");
       setToastConfig({
         visible: true,
         mode: "success",
@@ -153,7 +167,15 @@ export default function SessionDetailScreen() {
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" onPressBack={() => router.back()} />
+      <Header
+        variant="back"
+        onPressBack={() => {
+          if (isTutorial) sim.complete("backToRecords");
+          router.back();
+        }}
+        onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+        backSpotlightKey={isTutorial ? "backToRecords" : undefined}
+      />
 
       <View className="mx-8 mt-5">
         <PageHeader
@@ -161,7 +183,8 @@ export default function SessionDetailScreen() {
           subtitle={subtitle}
           mode="historico-estudante"
           editPending={rcPending}
-          onEditPress={() =>
+          onEditPress={() => {
+            if (isTutorial) sim.complete("openSessionRc");
             router.push({
               pathname: "/form",
               params: {
@@ -171,8 +194,9 @@ export default function SessionDetailScreen() {
                 circuitType: "registro_controle",
                 circuitName: t("sessionDetail.controlRecord"),
               },
-            } as any)
-          }
+            } as any);
+          }}
+          editSpotlightKey={isTutorial ? "openSessionRc" : undefined}
           onSharePress={handleSharePress}
           onDeletePress={() => setIsDeleteModalVisible(true)}
         />
@@ -199,11 +223,22 @@ export default function SessionDetailScreen() {
               {t("sessionDetail.empty")}
             </Text>
           ) : (
-            (data?.executions ?? []).map((exec) => (
+            (data?.executions ?? []).map((exec, index) => (
               <ActivityRecordCard
                 key={exec.id}
                 record={exec}
                 onSave={handleSaveExecution}
+                onStartEdit={
+                  isTutorial && index === 0
+                    ? () => sim.complete("editExercise")
+                    : undefined
+                }
+                editSpotlightKey={
+                  isTutorial && index === 0 ? "editExercise" : undefined
+                }
+                saveSpotlightKey={
+                  isTutorial && index === 0 ? "saveExercise" : undefined
+                }
               />
             ))
           )}
@@ -245,6 +280,16 @@ export default function SessionDetailScreen() {
         description={isExporting ? undefined : toastConfig.description}
         onHide={() => setToastConfig((prev) => ({ ...prev, visible: false }))}
       />
+
+      {isTutorial && (
+        <TutorialPracticeNotice
+          visible={noticeOpen}
+          onClose={() => setNoticeOpen(false)}
+          onExit={() => setNoticeOpen(false)}
+        />
+      )}
+
+      {isTutorial && <TutorialSpotlight />}
     </View>
   );
 }
