@@ -14,6 +14,7 @@ import { useObservedBehaviors } from "@/features/analysis/hooks/use-observed-beh
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
@@ -62,6 +63,7 @@ export function ObservedBehaviorsScreen() {
 
   const sessionSim = useSessionSimController();
   const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const sim = useTutorialSimulation();
   const [noticeOpen, setNoticeOpen] = useState(false);
 
   const { profile: dbProfile, isLoading: isDbLoading } = useStudentProfile(studentId as string, { mock: isTutorial });
@@ -111,6 +113,7 @@ export function ObservedBehaviorsScreen() {
       return;
     }
 
+    if (isTutorial) sim.complete("periodBehaviors");
     setStartDate(tempStart);
     setEndDate(tempEnd);
     setIsModalVisible(false);
@@ -295,8 +298,12 @@ export function ObservedBehaviorsScreen() {
     <View className="flex-1 bg-level1">
       <Header
         variant="back"
-        onPressBack={() => router.back()}
+        onPressBack={() => {
+          if (isTutorial) sim.complete("backBehaviors");
+          router.back();
+        }}
         onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+        backSpotlightKey={isTutorial ? "backBehaviors" : undefined}
       />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }} className="flex-1">
@@ -316,6 +323,7 @@ export function ObservedBehaviorsScreen() {
             <PeriodSelector
               label={periodLabel}
               onPress={handlePeriodPress}
+              spotlightKey={isTutorial ? "periodBehaviors" : undefined}
             />
 
             {showResults ? (
@@ -401,7 +409,7 @@ export function ObservedBehaviorsScreen() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => { setNoticeOpen(false); sessionSim.stop(); router.back(); }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

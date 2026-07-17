@@ -11,6 +11,7 @@ import { useHelpRecords } from "../hooks/use-help-records";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { BarChart3 } from "lucide-react-native";
 import React, { useState } from "react";
@@ -111,6 +112,7 @@ export function HelpRecordsScreen() {
 
   const sessionSim = useSessionSimController();
   const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const sim = useTutorialSimulation();
   const [noticeOpen, setNoticeOpen] = useState(false);
 
   const { profile, isLoading: isProfileLoading } = useStudentProfile(studentId as string, { mock: isTutorial });
@@ -162,6 +164,7 @@ export function HelpRecordsScreen() {
       return;
     }
 
+    if (isTutorial) sim.complete("periodHelp");
     setStartDate(tempStartDate);
     setEndDate(tempEndDate);
     setIsModalVisible(false);
@@ -176,8 +179,12 @@ export function HelpRecordsScreen() {
     <View className="flex-1 bg-level1">
       <Header
         variant="back"
-        onPressBack={() => router.back()}
+        onPressBack={() => {
+          if (isTutorial) sim.complete("backHelp");
+          router.back();
+        }}
         onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+        backSpotlightKey={isTutorial ? "backHelp" : undefined}
       />
 
       <ScrollView
@@ -201,7 +208,11 @@ export function HelpRecordsScreen() {
               {t("analysis.helpScreen.title")} - {studentName}
             </Text>
 
-            <PeriodSelector label={periodLabel} onPress={openCalendar} />
+            <PeriodSelector
+              label={periodLabel}
+              onPress={openCalendar}
+              spotlightKey={isTutorial ? "periodHelp" : undefined}
+            />
 
             {hasSelectedPeriod && selectedPeriodHasError && (
               <View style={styles.stateWrapper}>
@@ -267,7 +278,7 @@ export function HelpRecordsScreen() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => { setNoticeOpen(false); sessionSim.stop(); router.back(); }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

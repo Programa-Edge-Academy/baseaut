@@ -16,11 +16,17 @@ import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 
 /**
  * Screen showing a student's exercise progress. Loads the data, lets the user
  * select individual exercises, filter by a date range via a calendar, and view
  * the evolution in a chart.
+ *
+ * @remarks
+ * During the analysis tutorial the period selector only exists once an exercise
+ * is selected, so the simulation's period sub-step is only reachable after the
+ * user picks one — its hint says so.
  */
 export function ExerciseProgressScreen() {
   const router = useRouter();
@@ -29,6 +35,7 @@ export function ExerciseProgressScreen() {
   const { studentId, studentName } = useLocalSearchParams<{ studentId: string; studentName: string }>();
   const sessionSim = useSessionSimController();
   const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const sim = useTutorialSimulation();
   const [noticeOpen, setNoticeOpen] = useState(false);
 
   const { exercises, isLoading, error, refetch } = useExerciseProgress(studentId ?? "", { mock: isTutorial });
@@ -109,6 +116,7 @@ export function ExerciseProgressScreen() {
 
   const handleSaveDate = () => {
     if (tempRange.startDate) {
+      if (isTutorial) sim.complete("periodProgress");
       setSelectedRange({
         startDate: tempRange.startDate,
         endDate: tempRange.endDate || tempRange.startDate
@@ -140,8 +148,12 @@ export function ExerciseProgressScreen() {
     <View className="flex-1 bg-level1">
       <Header
         variant="back"
-        onPressBack={() => {router.back();}}
+        onPressBack={() => {
+          if (isTutorial) sim.complete("backProgress");
+          router.back();
+        }}
         onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+        backSpotlightKey={isTutorial ? "backProgress" : undefined}
       />
 
       <View className="mt-5 w-full">
@@ -204,8 +216,9 @@ export function ExerciseProgressScreen() {
                     <View className="gap-2 mt-2 mb-4">
                       <PeriodSelector
                         containerStyle={{marginVertical: 0, marginHorizontal: 0}}
-                        label={getPeriodLabel()} 
+                        label={getPeriodLabel()}
                         onPress={() => setIsCalendarOpen(true)}
+                        spotlightKey={isTutorial ? "periodProgress" : undefined}
                       />
 
                       {hasSavedRange && (
@@ -263,7 +276,7 @@ export function ExerciseProgressScreen() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => { setNoticeOpen(false); sessionSim.stop(); router.back(); }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

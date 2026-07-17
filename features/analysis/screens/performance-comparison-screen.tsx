@@ -9,6 +9,7 @@ import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
@@ -73,6 +74,7 @@ export function PerformanceComparisonScreen() {
   const studentId = Array.isArray(rawStudentId) ? rawStudentId[0] : rawStudentId ?? "";
   const sessionSim = useSessionSimController();
   const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const sim = useTutorialSimulation();
   const [noticeOpen, setNoticeOpen] = useState(false);
   const { profile, isLoading } = useStudentProfile(studentId, { mock: isTutorial });
 
@@ -161,6 +163,12 @@ export function PerformanceComparisonScreen() {
       setPeriod1Range(range);
     } else {
       setPeriod2Range(range);
+    }
+
+    // The comparison needs both periods, so the sub-step only clears once the
+    // other one is already set.
+    if (isTutorial && (activePeriod === 1 ? period2Range : period1Range)) {
+      sim.complete("periodCompare");
     }
 
     setCompareError(null);
@@ -265,8 +273,12 @@ export function PerformanceComparisonScreen() {
     <View className="flex-1 bg-level1">
       <Header
         variant="back"
-        onPressBack={() => router.back()}
+        onPressBack={() => {
+          if (isTutorial) sim.complete("backCompare");
+          router.back();
+        }}
         onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+        backSpotlightKey={isTutorial ? "backCompare" : undefined}
       />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }} className="flex-1">
@@ -282,12 +294,18 @@ export function PerformanceComparisonScreen() {
               containerStyle={{marginHorizontal: 0}}
               label={getLabel(1, period1Range)}
               onPress={() => handlePeriodPress(1)}
+              spotlightKey={
+                isTutorial && !period1Range ? "periodCompare" : undefined
+              }
               />
 
             <PeriodSelector
               containerStyle={{marginHorizontal: 0}}
               label={getLabel(2, period2Range)}
               onPress={() => handlePeriodPress(2)}
+              spotlightKey={
+                isTutorial && period1Range ? "periodCompare" : undefined
+              }
             />
 
             {compareError && (
@@ -374,7 +392,7 @@ export function PerformanceComparisonScreen() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => { setNoticeOpen(false); sessionSim.stop(); router.back(); }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

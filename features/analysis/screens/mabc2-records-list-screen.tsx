@@ -7,6 +7,7 @@ import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import React, { useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Mabc2Record, Mabc2RecordCard } from "../components/mabc2-record-card";
@@ -39,13 +40,18 @@ export function Mabc2RecordsListScreen({
   const { t } = useI18n();
   const sessionSim = useSessionSimController();
   const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const sim = useTutorialSimulation();
   const [noticeOpen, setNoticeOpen] = useState(false);
   return (
     <View className="flex-1 bg-level1">
       <Header
         variant="back"
-        onPressBack={onPressBack}
+        onPressBack={() => {
+          if (isTutorial) sim.complete("backMabc");
+          onPressBack?.();
+        }}
         onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+        backSpotlightKey={isTutorial ? "backMabc" : undefined}
       />
 
       <View className="mx-5 mt-5">
@@ -91,7 +97,7 @@ export function Mabc2RecordsListScreen({
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => { setNoticeOpen(false); sessionSim.stop(); onPressBack?.(); }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

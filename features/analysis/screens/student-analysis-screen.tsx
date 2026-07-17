@@ -188,11 +188,7 @@ export function StudentAnalysisScreen() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => {
-            setNoticeOpen(false);
-            sessionSim.stop();
-            router.back();
-          }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

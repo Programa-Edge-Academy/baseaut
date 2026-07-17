@@ -11,7 +11,6 @@ import { useStudents } from "@/features/students/hooks/use-students";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
-import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { supabase } from "@/lib/supabase";
@@ -116,7 +115,7 @@ export default function AnalysisScreen() {
                         emptyMessage={t("students.empty")}
                         onRefresh={refreshStudents}
                         contentContainerStyle={{ flexGrow: 1 }}
-                        renderItem={({ item }) => {
+                        renderItem={({ item, index }) => {
                             const count = sessionsCounts[item.id] || 0;
                             const card = (
                                 <ListCard
@@ -140,13 +139,14 @@ export default function AnalysisScreen() {
                                         if (isTutorial) sim.complete("selectStudent");
                                         router.push(`/analysis/${item.id}` as any);
                                     }}
+                                    spotlightKeys={
+                                        // A key maps to a single target, so only the first
+                                        // card is highlighted — any student works here.
+                                        isTutorial && index === 0 ? "selectStudent" : undefined
+                                    }
                                 />
                             );
-                            return isTutorial ? (
-                                <SpotlightTarget targetKey="selectStudent">{card}</SpotlightTarget>
-                            ) : (
-                                card
-                            );
+                            return card;
                         }}
                     />
                 </View>
@@ -180,11 +180,7 @@ export default function AnalysisScreen() {
                 <TutorialPracticeNotice
                     visible={noticeOpen}
                     onClose={() => setNoticeOpen(false)}
-                    onExit={() => {
-                        setNoticeOpen(false);
-                        sessionSim.stop();
-                        router.back();
-                    }}
+                    onExit={() => setNoticeOpen(false)}
                 />
             )}
 
