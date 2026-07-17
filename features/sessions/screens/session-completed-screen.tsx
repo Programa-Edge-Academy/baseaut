@@ -7,6 +7,10 @@ import { SelectableChip } from "@/components/selectable-chip";
 import { SessionCompletion } from "@/features/exercises/components/session-completion";
 import { useExercises } from "@/features/exercises/hooks/use-exercises";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { useRouter } from "expo-router";
 import { ClipboardList, X } from "lucide-react-native";
 import React, { useState } from "react";
@@ -42,6 +46,12 @@ interface SessionCompletedScreenProps {
  * Post-session screen showing completion progress and continuation options:
  * retry unrealized exercises, repeat selected ones, or run another team
  * exercise — all within the same session.
+ *
+ * @remarks
+ * During the session tutorial it is reached twice: once when the first session
+ * ends naturally, where "back to start" returns to the circuit selection and the
+ * simulation continues, and once after the second session is finished early,
+ * where the same button ends the simulation.
  */
 export function SessionCompletedScreen({
   type,
@@ -55,6 +65,10 @@ export function SessionCompletedScreen({
 }: SessionCompletedScreenProps) {
   const router = useRouter();
   const { t } = useI18n();
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "session";
+  const sim = useTutorialSimulation();
+  const [noticeOpen, setNoticeOpen] = useState(false);
 
   const filaDePendentes = queue ? JSON.parse(queue) : [];
   const circuitoCompleto = fullCircuit ? JSON.parse(fullCircuit) : [];
@@ -63,9 +77,31 @@ export function SessionCompletedScreen({
   const [selectedRepeatIds, setSelectedRepeatIds] = useState<string[]>([]);
 
   const { exercises: teamExercises, isLoading: isExercisesLoading } =
-    useExercises();
+    useExercises({ mock: isTutorial });
   const [isOtherModalOpen, setIsOtherModalOpen] = useState(false);
   const [selectedOtherIds, setSelectedOtherIds] = useState<string[]>([]);
+
+  /**
+   * Leaves the completed screen. Outside the tutorial that is the students hub;
+   * during it, the first (intermediate) session pops back to the circuit
+   * selection, and the last one only advances the simulation, which navigates to
+   * the tutorial module itself.
+   */
+  const handleBackToStart = () => {
+    if (isTutorial) {
+      if (sim.currentKey === "finishSession") {
+        sim.complete("finishSession");
+        return;
+      }
+      sim.complete("backToSelection");
+      router.dismissTo({
+        pathname: "/circuit-selection",
+        params: { studentId: studentId ?? "", studentName },
+      } as never);
+      return;
+    }
+    router.replace("/students");
+  };
 
   const handleToggleOther = (id: string) => {
     setSelectedOtherIds((prev) =>
@@ -150,7 +186,8 @@ export function SessionCompletedScreen({
           <View>
             <Header
               variant="back"
-              onPressBack={() => router.replace("/students")}
+              onPressBack={handleBackToStart}
+              onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
             />
 
             <View className="mx-8 mt-5">
@@ -168,9 +205,10 @@ export function SessionCompletedScreen({
                 hasWarnings={temWarnings}
                 unrealizedCount={filaDePendentes.length}
                 progress={progressLabel}
-                onBackToStart={() => {
-                  router.replace("/students");
-                }}
+                onBackToStart={handleBackToStart}
+                backToStartSpotlightKeys={
+                  isTutorial ? ["backToSelection", "finishSession"] : undefined
+                }
                 onSelectContinuation={(id) => {
                   if (id === "try_unrealized") {
                     router.push({
@@ -293,6 +331,16 @@ export function SessionCompletedScreen({
             </View>
           </View>
         </AppModal>
+
+        {isTutorial && (
+          <TutorialPracticeNotice
+            visible={noticeOpen}
+            onClose={() => setNoticeOpen(false)}
+            onExit={() => setNoticeOpen(false)}
+          />
+        )}
+
+        {isTutorial && <TutorialSpotlight />}
       </View>
     </>
   );

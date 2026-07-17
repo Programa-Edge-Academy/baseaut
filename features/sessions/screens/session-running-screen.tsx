@@ -7,7 +7,6 @@ import { useKeyboardAwareScroll } from "@/lib/use-keyboard-aware-scroll";
 import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
-import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
@@ -132,6 +131,7 @@ export function SessionRunningScreen({
   };
 
   const handleCrisePress = () => {
+    if (isTutorial) sim.complete("crise");
     if (criseStartRef.current == null) {
       criseStartRef.current = Date.now();
       setIsCriseActive(true);
@@ -161,6 +161,7 @@ export function SessionRunningScreen({
   };
 
   const handleFugaPress = () => {
+    if (isTutorial) sim.complete("fuga");
     if (fugaStartRef.current == null) {
       fugaStartRef.current = Date.now();
       fugaStartTotalRef.current = currentSessionData?.totalElapsed ?? 0;
@@ -301,7 +302,7 @@ export function SessionRunningScreen({
     setTimerVisible(resolvedSid, true);
     return () => setTimerVisible(resolvedSid, false);
   }, [resolvedSid, setTimerVisible]);
-  const [hasAdvanced, setHasAdvanced] = useState(isTutorial);
+  const [hasAdvanced, setHasAdvanced] = useState(false);
   const [isReorderOpen, setIsReorderOpen] = useState(false);
   const [isFinishOpen, setIsFinishOpen] = useState(false);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
@@ -525,10 +526,6 @@ export function SessionRunningScreen({
         updateSessionProgress(effectiveSessionIdRef.current, t("session.exerciseProgress").replace("{n}", String(currentIndex + 2)).replace("{total}", String(total)));
       }
     } else {
-      if (isTutorial) {
-        sim.complete("finish");
-        return;
-      }
       const pendentes = order.filter(
         (ex) =>
           historicoAtualizado[ex.id] !== "concluido" &&
@@ -579,8 +576,18 @@ export function SessionRunningScreen({
     onPressBack?.();
   };
 
+  /**
+   * Advances the start gate of whichever session the simulation is on: the first
+   * one ("startExercise") or the second, which must be started for real before
+   * it can be left in progress ("startAgain").
+   */
+  const completeStartSubStep = () => {
+    if (!isTutorial) return;
+    sim.complete(sim.currentKey === "startAgain" ? "startAgain" : "startExercise");
+  };
+
   const handleStart = async () => {
-    if (isTutorial) sim.complete("startExercise");
+    completeStartSubStep();
     setStage("running");
     const sid = await ensureSessionId();
     if (sid) {
@@ -591,7 +598,7 @@ export function SessionRunningScreen({
   };
 
   const handleStartAndRecord = async () => {
-    if (isTutorial) sim.complete("startExercise");
+    completeStartSubStep();
     setStage("running");
     const sid = await ensureSessionId();
     if (sid) {
@@ -602,6 +609,7 @@ export function SessionRunningScreen({
   };
 
   const handleStop = (elapsed: number) => {
+    if (isTutorial) sim.complete("stop");
     lastElapsedSecondsRef.current = elapsed;
     if (resolvedSid) toggleTimer(resolvedSid, false);
 
@@ -618,11 +626,7 @@ export function SessionRunningScreen({
     finalizeActiveCrise();
     finalizeActiveFuga();
 
-    if (isTutorial) {
-      setIsFinishOpen(false);
-      sim.complete("finish");
-      return;
-    }
+    if (isTutorial) sim.complete("finishReason");
 
     if (formRef.current) {
       formRef.current.handleSave(true, true);
@@ -655,8 +659,13 @@ export function SessionRunningScreen({
         <Header
           variant={hasAdvanced ? "finish" : "back"}
           onPressBack={handleBack}
-          onPressFinish={() => setIsFinishOpen(true)}
+          onPressFinish={() => {
+            if (isTutorial) sim.complete("finish");
+            setIsFinishOpen(true);
+          }}
           onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+          backSpotlightKey={isTutorial ? "goBack" : undefined}
+          finishSpotlightKey={isTutorial ? "finish" : undefined}
         />
 
         <View className="flex-1">
@@ -673,27 +682,21 @@ export function SessionRunningScreen({
 
           <View className="mt-5 px-8">
             {stage === "ready" ? (
-              isTutorial ? (
-                <SpotlightTarget targetKey="startExercise">
-                  <StartActivity
-                    title={currentExercise.name}
-                    subtitle={currentExercise.description}
-                    iconUrl={currentExercise.iconUrl}
-                    onStart={handleStart}
-                    onStartAndRecord={handleStartAndRecord}
-                    onPressInfo={() => setIsReorderOpen(true)}
-                  />
-                </SpotlightTarget>
-              ) : (
-                <StartActivity
-                  title={currentExercise.name}
-                  subtitle={currentExercise.description}
-                  iconUrl={currentExercise.iconUrl}
-                  onStart={handleStart}
-                  onStartAndRecord={handleStartAndRecord}
-                  onPressInfo={() => setIsReorderOpen(true)}
-                />
-              )
+              <StartActivity
+                title={currentExercise.name}
+                subtitle={currentExercise.description}
+                iconUrl={currentExercise.iconUrl}
+                onStart={handleStart}
+                onStartAndRecord={handleStartAndRecord}
+                onPressInfo={() => {
+                  if (isTutorial) sim.complete("openReorder");
+                  setIsReorderOpen(true);
+                }}
+                infoSpotlightKeys={isTutorial ? "openReorder" : undefined}
+                startSpotlightKeys={
+                  isTutorial ? ["startExercise", "startAgain"] : undefined
+                }
+              />
             ) : (
               <Stopwatch
                 title={currentExercise.name}
@@ -707,17 +710,26 @@ export function SessionRunningScreen({
                 isFugaActive={isFugaActive}
                 onStop={handleStop}
                 onRestart={() => {
+                  if (isTutorial) sim.complete("restart");
                   if (resolvedSid) updateTimeElapsed(resolvedSid, 0);
                 }}
                 controlledSeconds={controlledSeconds}
                 controlledIsRunning={controlledIsRunning}
                 onToggleRunning={(isRunning) => {
+                  if (isTutorial) sim.complete("pauseResume");
                   if (resolvedSid) toggleTimer(resolvedSid, isRunning);
                 }}
                 isFormVisible={isFormVisible}
                 onPressCorner={() => {
+                  if (isTutorial) sim.complete("toggleForm");
                   if (resolvedSid) setFormVisible(resolvedSid, !isFormVisible);
                 }}
+                criseSpotlightKey={isTutorial ? "crise" : undefined}
+                fugaSpotlightKey={isTutorial ? "fuga" : undefined}
+                timerSpotlightKey={isTutorial ? "pauseResume" : undefined}
+                cornerSpotlightKey={isTutorial ? "toggleForm" : undefined}
+                restartSpotlightKey={isTutorial ? "restart" : undefined}
+                stopSpotlightKey={isTutorial ? "stop" : undefined}
               />
             )}
           </View>
@@ -750,12 +762,17 @@ export function SessionRunningScreen({
           items={reorderableExercises}
           currentIndex={0}
           onClose={() => setIsReorderOpen(false)}
-          onReorder={handleReorderPending}
+          onReorder={(reordered) => {
+            if (isTutorial) sim.complete("reorder");
+            handleReorderPending(reordered);
+          }}
+          reorderSpotlightKey={isTutorial ? "reorder" : undefined}
         />
 
         <FinishSessionModal
           visible={isFinishOpen}
           motivos={DEFAULT_FINISH_MOTIVOS}
+          reasonSpotlightKey={isTutorial ? "finishReason" : undefined}
           pendingExercises={order
             .filter(
               (ex) =>
@@ -842,11 +859,7 @@ export function SessionRunningScreen({
           <TutorialPracticeNotice
             visible={noticeOpen}
             onClose={() => setNoticeOpen(false)}
-            onExit={() => {
-              setNoticeOpen(false);
-              sessionSim.stop();
-              handleBack();
-            }}
+            onExit={() => setNoticeOpen(false)}
           />
         )}
 

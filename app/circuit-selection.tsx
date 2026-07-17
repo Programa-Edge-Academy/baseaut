@@ -367,8 +367,11 @@ export default function CircuitSelectionRoute() {
           if (isTutorial) sim.complete("reopenCircuit");
           return;
         }
-        if (isTutorial && circuit.type === "estruturado") {
-          sim.complete("selectStructured");
+        if (isSessionTutorial && circuit.type === "estruturado") {
+          // The same card starts the tutorial's first and second sessions.
+          sim.complete(
+            sim.currentKey === "selectAgain" ? "selectAgain" : "selectStructured",
+          );
         }
         if (guard.pendingByType.registro_controle) {
           pendingCircuitRef.current = circuit;
@@ -385,9 +388,16 @@ export default function CircuitSelectionRoute() {
           if (isFormsTutorial && guardKey === "ata") sim.complete("reopenAta");
           return;
         }
-        if (isFormsTutorial && guardKey === "ata") {
-          setPendingMockForms((prev) => ({ ...prev, ata: true }));
-          sim.complete("selectAta");
+        if (isFormsTutorial) {
+          if (guardKey === "ata") {
+            // Only the ATA is left pending, to demo the same-type form warning.
+            setPendingMockForms((prev) => ({ ...prev, ata: true }));
+            sim.complete("selectAta");
+          } else if (guardKey === "cars") {
+            sim.complete("selectCars");
+          } else if (guardKey === "mabc2") {
+            sim.complete("selectMabc");
+          }
         }
       }
 
@@ -397,7 +407,16 @@ export default function CircuitSelectionRoute() {
         navigateToSession(circuit);
       }
     },
-    [studentId, navigateToSession, navigateToForm, isTutorial, isFormsTutorial, buildMockGuard, sim]
+    [
+      studentId,
+      navigateToSession,
+      navigateToForm,
+      isTutorial,
+      isSessionTutorial,
+      isFormsTutorial,
+      buildMockGuard,
+      sim,
+    ]
   );
 
   const handleContinueCurrent = useCallback(async () => {
@@ -512,10 +531,17 @@ export default function CircuitSelectionRoute() {
           isSessionTutorial
             ? (item) =>
                 item.type === "estruturado"
-                  ? ["selectStructured", "reopenCircuit"]
+                  ? ["selectStructured", "selectAgain", "reopenCircuit"]
                   : undefined
             : isFormsTutorial
-            ? (item) => (item.type === "ata" ? ["selectAta", "reopenAta"] : undefined)
+            ? (item) =>
+                item.type === "ata"
+                  ? ["selectAta", "reopenAta"]
+                  : item.type === "cars"
+                  ? ["selectCars"]
+                  : item.type === "mabc"
+                  ? ["selectMabc"]
+                  : undefined
             : undefined
         }
       />
