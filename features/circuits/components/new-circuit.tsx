@@ -127,7 +127,9 @@ export function NewCircuit({
     sim.registerTarget(["mode", "changeStructured"], modeFieldRef, { rounded: true });
     sim.registerTarget("selectExercises", exercisesFieldRef, { rounded: true });
     sim.registerTarget("reorder", reorderFieldRef, { rounded: true });
-    sim.registerTarget("save", saveFieldRef, { rounded: true });
+    // The save button is the target for both the creation save ("save") and the
+    // edit save that follows reordering ("editSave").
+    sim.registerTarget(["save", "editSave"], saveFieldRef, { rounded: true });
     return () =>
       sim.unregisterTarget([
         "name",
@@ -136,6 +138,7 @@ export function NewCircuit({
         "selectExercises",
         "reorder",
         "save",
+        "editSave",
       ]);
   }, [sim]);
 

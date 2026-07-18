@@ -96,6 +96,20 @@ export default function FormRoute() {
         : "editSave"
       : undefined;
 
+  /**
+   * Sub-step highlighting the mock question's answer control: the forms
+   * simulation asks the user to change an answer before saving each form.
+   */
+  const answerSpotlightKey = isFormsSim
+    ? circuitType === "ata"
+      ? "answerAta"
+      : circuitType === "cars"
+        ? "answerCars"
+        : circuitType === "mabc2"
+          ? "answerMabc"
+          : undefined
+    : undefined;
+
   const [formId, setFormId] = useState<string | null>(
     formularioIdParam ?? null,
   );
@@ -346,6 +360,7 @@ export default function FormRoute() {
                 sessaoId={isRegistroControle ? sessaoAtualId : ""}
                 alunoId={isRegistroControle ? "" : alunoSelecionadoId}
                 mock={isTutorial}
+                answerSpotlightKey={answerSpotlightKey}
               />
             )}
           </View>

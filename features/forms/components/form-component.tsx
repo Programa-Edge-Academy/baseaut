@@ -3,6 +3,8 @@ import { FormQuestion } from "@/features/forms/components/form-question";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import type { TranslationKey } from "@/features/settings/constants/translations";
 import { localizeFormText } from "@/features/forms/utils/form-content-i18n";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardAwareScroll } from "@/lib/use-keyboard-aware-scroll";
 import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
@@ -92,6 +94,12 @@ export interface FormComponentProps {
    * (tutorial session simulation), so answers can be filled or left pending.
    */
   mock?: boolean;
+  /**
+   * Tutorial spotlight key for the mock question's answer control. When set (in
+   * the forms simulation), the linear-scale question is highlighted and the
+   * sub-step advances once the user changes its answer.
+   */
+  answerSpotlightKey?: string;
 }
 
 /**
@@ -109,10 +117,11 @@ export interface FormComponentProps {
  * moves.
  */
 export const FormComponent = forwardRef(function FormComponent(
-  { formularioId, sessaoId, alunoId, onSuccess, hideAutoFilledSessionFields, scrollable = true, mock = false }: FormComponentProps,
+  { formularioId, sessaoId, alunoId, onSuccess, hideAutoFilledSessionFields, scrollable = true, mock = false, answerSpotlightKey }: FormComponentProps,
   ref
 ) {
   const { t, locale } = useI18n();
+  const sim = useTutorialSimulation();
   const [questions, setQuestions] = useState<any[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
@@ -418,17 +427,33 @@ export const FormComponent = forwardRef(function FormComponent(
           <Text className="text-muted">{t("form.noQuestions")}</Text>
         </View>
       ) : (
-        questions.map((question) => (
-          <View key={question.id} className="w-full mt-4">
+        questions.map((question) => {
+          // In the forms simulation, highlight the mock scale question and
+          // advance the sub-step once the user changes its answer.
+          const isAnswerTarget =
+            mock && !!answerSpotlightKey && question.type === "linear_scale";
+          const questionNode = (
             <FormQuestion
               question={question}
               value={answers[question.id]}
-              onChange={(val: any) =>
-                setAnswers((prev) => ({ ...prev, [question.id]: val }))
-              }
+              onChange={(val: any) => {
+                setAnswers((prev) => ({ ...prev, [question.id]: val }));
+                if (isAnswerTarget && sim.active && sim.currentKey === answerSpotlightKey) {
+                  sim.complete(answerSpotlightKey!);
+                }
+              }}
             />
-          </View>
-        ))
+          );
+          return (
+            <View key={question.id} className="w-full mt-4">
+              {isAnswerTarget ? (
+                <SpotlightTarget targetKey={answerSpotlightKey!}>{questionNode}</SpotlightTarget>
+              ) : (
+                questionNode
+              )}
+            </View>
+          );
+        })
       )}
     </View>
   );
