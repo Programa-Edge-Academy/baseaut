@@ -3,6 +3,7 @@ import type {
 } from "@/features/analysis/hooks/use-mabc2-records";
 import type { Locale, TranslationKey } from "@/features/settings/constants/translations";
 import { deliverFiles, type DeliveryMode, type ExportableFile } from "@/lib/export-delivery";
+import { pdfDocument, pdfRunningHeaderReport } from "@/lib/pdf-layout";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Print from "expo-print";
 import { Platform } from "react-native";
@@ -69,28 +70,18 @@ export async function exportMabc(
       })
       .join("");
 
-    return `<!DOCTYPE html>
-<html><head>
-<meta charset="utf-8"/>
-<style>
-  body { font-family: Arial, sans-serif; color: #1e293b; margin: 40px; }
-  h1 { font-size: 20px; color: #0ea5e9; margin: 0 0 4px; }
-  h2 { font-size: 14px; color: #334155; margin: 0 0 2px; }
-  .meta { font-size: 11px; color: #94a3b8; margin-bottom: 24px; }
-  .totals { font-size: 13px; color: #1e293b; margin-bottom: 16px; font-weight: bold; }
-  hr { border: none; border-top: 1px solid #e2e8f0; margin: 16px 0; }
-  table { border-collapse: collapse; width: 100%; page-break-inside: avoid; }
-</style>
-</head><body>
-  <h1>MABC-2</h1>
-  <h2>${studentName}</h2>
-  <p class="meta">${t("export.issuedOn")}: ${emissao}</p>
-  <p class="totals">
-    ${t("export.totalScore")}: ${str(draft.totalScore)} &nbsp;|&nbsp;
-    ${t("export.totalPercentile")}: ${str(draft.totalPercentile)}
-  </p>
-  <hr/>
-  <table>
+    // Instrument + student identification and totals repeat as the running
+    // header on every page.
+    const runningHeader = `
+      <h1>MABC-2</h1>
+      <h2>${studentName}</h2>
+      <p class="meta">${t("export.issuedOn")}: ${emissao}</p>
+      <p style="font-size:13px;color:#1e293b;margin:6px 0 0;font-weight:bold">
+        ${t("export.totalScore")}: ${str(draft.totalScore)} &nbsp;|&nbsp;
+        ${t("export.totalPercentile")}: ${str(draft.totalPercentile)}
+      </p>`;
+    const scoresSection = `
+  <table style="border-collapse:collapse;width:100%">
     <thead>
       <tr>
         <th style="${TH}">${t("export.category")}</th>
@@ -101,8 +92,8 @@ export async function exportMabc(
       </tr>
     </thead>
     <tbody>${sectionRows}</tbody>
-  </table>
-</body></html>`;
+  </table>`;
+    return pdfDocument(pdfRunningHeaderReport(runningHeader, [scoresSection]));
   };
 
   const buildCsv = () => {

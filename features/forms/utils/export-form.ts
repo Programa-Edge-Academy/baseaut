@@ -1,5 +1,6 @@
 import { formatAnswer } from "@/features/forms/utils/format-answer";
 import { localizeFormText } from "@/features/forms/utils/form-content-i18n";
+import { pdfDocument, pdfRunningHeaderReport } from "@/lib/pdf-layout";
 import type { Locale, TranslationKey } from "@/features/settings/constants/translations";
 import { deliverFiles, type DeliveryMode, type ExportableFile } from "@/lib/export-delivery";
 import { supabase } from "@/lib/supabase";
@@ -78,31 +79,23 @@ export async function exportForm(
   const safeName = `${data.title}_${data.studentName}`.replace(/[^a-zA-Z0-9]/g, "_");
   const rows = await fetchFormRows(data.formularioId, locale === "en" ? "en" : "pt");
 
-  const buildPdfHtml = () => `<!DOCTYPE html>
-<html><head>
-<meta charset="utf-8"/>
-<style>
-  body { font-family: Arial, sans-serif; color: #1e293b; margin: 40px; }
-  h1 { font-size: 20px; color: #0ea5e9; margin: 0 0 4px; }
-  h2 { font-size: 14px; color: #334155; margin: 0 0 2px; }
-  .meta { font-size: 11px; color: #94a3b8; margin-bottom: 24px; }
-  hr { border: none; border-top: 1px solid #e2e8f0; margin: 16px 0; }
-  table { border-collapse: collapse; width: 100%; page-break-inside: avoid; }
-</style>
-</head><body>
-  <h1>${data.title}</h1>
-  <h2>${data.studentName}</h2>
-  <p class="meta">${t("export.issuedOn")}: ${emissao}</p>
-  <hr/>
-  <table>
+  const buildPdfHtml = () => {
+    // Form + student identification repeat as the running header on every page.
+    const runningHeader = `
+      <h1>${data.title}</h1>
+      <h2>${data.studentName}</h2>
+      <p class="meta">${t("export.issuedOn")}: ${emissao}</p>`;
+    const answersSection = `
+  <table style="border-collapse:collapse;width:100%">
     <thead><tr><th style="${TH}">${t("export.doc.question")}</th><th style="${TH}">${t("export.doc.answer")}</th></tr></thead>
     <tbody>${rows
       .map(
         (r) => `<tr><td style="${TD}">${r.pergunta}</td><td style="${TD}">${r.resposta}</td></tr>`,
       )
       .join("")}</tbody>
-  </table>
-</body></html>`;
+  </table>`;
+    return pdfDocument(pdfRunningHeaderReport(runningHeader, [answersSection]));
+  };
 
   const buildCsv = () => {
     const allRows: string[][] = [

@@ -3,6 +3,7 @@ import type {
 } from "@/features/sessions/components/activity-record-card";
 import { formatAnswer } from "@/features/forms/utils/format-answer";
 import { localizeFormText } from "@/features/forms/utils/form-content-i18n";
+import { pdfDocument, pdfRunningHeaderReport } from "@/lib/pdf-layout";
 import type { Locale, TranslationKey } from "@/features/settings/constants/translations";
 import { deliverFiles, type DeliveryMode, type ExportableFile } from "@/lib/export-delivery";
 import { supabase } from "@/lib/supabase";
@@ -147,36 +148,8 @@ export async function exportSession(
       )
       .join("");
 
-    const rcHtml = rcRows.length
-      ? `
-  <h2 style="margin-top:24px">${t("sessionDetail.controlRecord")}</h2>
-  <table>
-    <thead><tr><th style="${TH}">${t("export.doc.question")}</th><th style="${TH}">${t("export.doc.answer")}</th></tr></thead>
-    <tbody>${rcRows
-      .map(
-        (r) => `<tr><td style="${TD}">${r.pergunta}</td><td style="${TD}">${r.resposta}</td></tr>`,
-      )
-      .join("")}</tbody>
-  </table>`
-      : "";
-
-    return `<!DOCTYPE html>
-<html><head>
-<meta charset="utf-8"/>
-<style>
-  body { font-family: Arial, sans-serif; color: #1e293b; margin: 40px; }
-  h1 { font-size: 20px; color: #0ea5e9; margin: 0 0 4px; }
-  h2 { font-size: 14px; color: #334155; margin: 0 0 2px; }
-  .meta { font-size: 11px; color: #94a3b8; margin-bottom: 24px; }
-  hr { border: none; border-top: 1px solid #e2e8f0; margin: 16px 0; }
-  table { border-collapse: collapse; width: 100%; page-break-inside: avoid; }
-</style>
-</head><body>
-  <h1>${data.sessionTitle}</h1>
-  <h2>${data.studentName}</h2>
-  <p class="meta">${t("export.doc.date")}: ${data.sessionDate} &nbsp;|&nbsp; ${t("export.issuedOn")}: ${emissao}</p>
-  <hr/>
-  <table>
+    const executionsSection = `
+  <table style="border-collapse:collapse;width:100%">
     <thead>
       <tr>
         <th style="${TH}">${t("export.doc.exercise")}</th>
@@ -186,9 +159,30 @@ export async function exportSession(
       </tr>
     </thead>
     <tbody>${bodyRows}</tbody>
-  </table>
-  ${rcHtml}
-</body></html>`;
+  </table>`;
+
+    const rcSection = rcRows.length
+      ? `
+  <h2 style="margin:0 0 10px">${t("sessionDetail.controlRecord")}</h2>
+  <table style="border-collapse:collapse;width:100%">
+    <thead><tr><th style="${TH}">${t("export.doc.question")}</th><th style="${TH}">${t("export.doc.answer")}</th></tr></thead>
+    <tbody>${rcRows
+      .map(
+        (r) => `<tr><td style="${TD}">${r.pergunta}</td><td style="${TD}">${r.resposta}</td></tr>`,
+      )
+      .join("")}</tbody>
+  </table>`
+      : "";
+
+    // Session + student identification repeat as the running header on every page.
+    const runningHeader = `
+      <h1>${data.sessionTitle}</h1>
+      <h2>${data.studentName}</h2>
+      <p class="meta">${t("export.doc.date")}: ${data.sessionDate} &nbsp;|&nbsp; ${t("export.issuedOn")}: ${emissao}</p>`;
+
+    return pdfDocument(
+      pdfRunningHeaderReport(runningHeader, [executionsSection, rcSection]),
+    );
   };
 
   const buildCsv = () => {

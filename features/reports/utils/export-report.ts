@@ -1,4 +1,5 @@
 import { deliverFiles, type DeliveryMode, type ExportableFile } from "@/lib/export-delivery";
+import { pdfDocument, pdfRunningHeaderReport } from "@/lib/pdf-layout";
 import type { TranslationKey } from "@/features/settings/constants/translations";
 import { supabase } from "@/lib/supabase";
 import * as FileSystem from "expo-file-system/legacy";
@@ -365,13 +366,17 @@ function sectionTitle(title: string): string {
   return `<h3 style="font-size:14px;font-weight:bold;color:#0ea5e9;margin:20px 0 8px">${title}</h3>`;
 }
 
-/** Assembles the full HTML body (charts and tables) for a report's data. */
-async function buildSections(dataMap: Record<string, any>, inicio: string, fim: string, t: T, locale: string): Promise<string> {
-  let html = "";
+/**
+ * Assembles the report's content as an array of major sections (progress, help,
+ * behaviors, comparison, protocols). Each entry is a full section (title +
+ * cards); the caller places each on its own page under a repeating header.
+ */
+async function buildSections(dataMap: Record<string, any>, inicio: string, fim: string, t: T, locale: string): Promise<string[]> {
+  const sections: string[] = [];
   const meio = midDate(inicio, fim);
   const noDataPeriod = `<p style="color:#888;font-size:11px">${t("export.doc.noDataPeriod")}</p>`;
 
-  html += sectionTitle(t("reports.section.progress"));
+  let html = sectionTitle(t("reports.section.progress"));
   const exs: any[] = dataMap.progresso_exercicio ?? [];
   const exsWithData = exs.filter((ex: any) => (ex.historico ?? []).length > 0);
   if (exsWithData.length) {
@@ -381,19 +386,22 @@ async function buildSections(dataMap: Record<string, any>, inicio: string, fim: 
   } else {
     html += sectionCard(t("reports.section.progress"), noDataPeriod);
   }
+  sections.push(html);
 
-  html += sectionTitle(t("reports.section.help"));
+  html = sectionTitle(t("reports.section.help"));
   const ajuda: any[] = dataMap.ajuda_sessao ?? [];
   html += sectionCard(t("export.doc.cardHelpPerSession"),
     ajuda.length ? svgAjudaSessao(ajuda, t) : noDataPeriod);
+  sections.push(html);
 
-  html += sectionTitle(t("reports.section.behaviors"));
+  html = sectionTitle(t("reports.section.behaviors"));
   const counts = dataMap.comportamentos ?? {};
   const hasBehaviors = Object.values(counts).some((v: any) => v > 0);
   html += sectionCard(t("export.doc.cardBehaviorFreq"),
     hasBehaviors ? svgComportamentos(counts, t) : `<p style="color:#888;font-size:11px">${t("export.doc.noBehaviors")}</p>`);
+  sections.push(html);
 
-  html += sectionTitle(t("reports.section.comparison"));
+  html = sectionTitle(t("reports.section.comparison"));
   const comp = dataMap.comparar_desempenho;
   if (comp) {
     const { resumo, ajuda: compAjuda, exercicios, comportamentos: compComps } = comp;
@@ -459,8 +467,9 @@ async function buildSections(dataMap: Record<string, any>, inicio: string, fim: 
   } else {
     html += sectionCard(t("reports.section.comparison"), `<p style="color:#888;font-size:11px">${t("export.doc.insufficient")}</p>`);
   }
+  sections.push(html);
 
-  html += sectionTitle(t("reports.section.protocols"));
+  html = sectionTitle(t("reports.section.protocols"));
   const cons = dataMap.protocolos_testes;
   if (cons) {
     const { historico_cars = [], historico_ata = [], historico_mabc2 = [] } = cons;
@@ -497,8 +506,9 @@ async function buildSections(dataMap: Record<string, any>, inicio: string, fim: 
       html += sectionCard(t("reports.section.protocols"), `<p style="color:#888;font-size:11px">${t("export.doc.noProtocolPeriod")}</p>`);
     }
   }
+  sections.push(html);
 
-  return html;
+  return sections;
 }
 
 
@@ -551,33 +561,22 @@ export async function exportReports(
     };
 
     if (formats.pdf) {
-      const sectionsHtml = await buildSections(dataMap, data_inicio, data_fim, t, locale);
+      const sections = await buildSections(dataMap, data_inicio, data_fim, t, locale);
 
       const snapshot = (report.snapshot_aluno as StudentProfile | null) ?? fallbackProfile;
       const studentInfoHtml = snapshot
         ? buildStudentInfoHtml(snapshot, t, report.imagem_url)
         : "";
 
-      const html = `<!DOCTYPE html>
-<html><head>
-<meta charset="utf-8"/>
-<style>
-  body { font-family: Arial, sans-serif; color: #1e293b; margin: 40px; }
-  h1 { font-size: 22px; color: #0ea5e9; margin: 0 0 4px; }
-  h2 { font-size: 16px; color: #334155; margin: 0 0 2px; }
-  .meta { font-size: 11px; color: #94a3b8; margin-bottom: 24px; }
-  hr { border: none; border-top: 1px solid #e2e8f0; margin: 16px 0; }
-  table { page-break-inside: avoid; }
-  svg { page-break-inside: avoid; }
-</style>
-</head><body>
-  <h1>${studentName}</h1>
-  <h2>${report.titulo}</h2>
-  <p class="meta">${t("export.doc.period")}: ${fmtDate(data_inicio, locale)} – ${fmtDate(data_fim, locale)} &nbsp;|&nbsp; ${t("export.issuedOn")}: ${emissao}</p>
-  <hr/>
-  ${studentInfoHtml}
-  ${sectionsHtml}
-</body></html>`;
+      // Student identification + report metadata form the running header that
+      // repeats on every page of this report's section.
+      const runningHeader = `
+        <h1>${studentName}</h1>
+        <h2>${report.titulo}</h2>
+        <p class="meta">${t("export.doc.period")}: ${fmtDate(data_inicio, locale)} – ${fmtDate(data_fim, locale)} &nbsp;|&nbsp; ${t("export.issuedOn")}: ${emissao}</p>
+        ${studentInfoHtml}`;
+
+      const html = pdfDocument(pdfRunningHeaderReport(runningHeader, sections));
 
       if (Platform.OS === "web") {
         await Print.printAsync({ html });
@@ -795,14 +794,14 @@ export async function exportConsolidatedReport(
     });
 
     if (formats.pdf) {
-      const sectionsHtml = await buildSections(dataMap, dataInicio, dataFim, t, locale);
+      const sections = await buildSections(dataMap, dataInicio, dataFim, t, locale);
       const infoHtml = profile ? buildStudentInfoHtml(profile, t) : "";
-      studentSectionsHtml.push(`
-        <div style="page-break-before:always">
-          <h2 style="font-size:18px;color:#0ea5e9;margin:0 0 12px">${student.name}</h2>
-          ${infoHtml}
-          ${sectionsHtml}
-        </div>`);
+      // Each student is a new section (new page) whose identifying data repeats
+      // as the running header across all of that student's pages.
+      const studentHeader = `<h2 style="font-size:18px;color:#0ea5e9;margin:0 0 10px">${student.name}</h2>${infoHtml}`;
+      studentSectionsHtml.push(
+        pdfRunningHeaderReport(studentHeader, sections, { breakBefore: true }),
+      );
     }
 
     if (formats.csv) {
@@ -844,26 +843,14 @@ export async function exportConsolidatedReport(
           .join("")}
       </table>`;
 
-    const html = `<!DOCTYPE html>
-<html><head>
-<meta charset="utf-8"/>
-<style>
-  body { font-family: Arial, sans-serif; color: #1e293b; margin: 40px; }
-  h1 { font-size: 22px; color: #0ea5e9; margin: 0 0 4px; }
-  h2 { font-size: 16px; color: #334155; margin: 0 0 2px; }
-  .meta { font-size: 11px; color: #94a3b8; margin-bottom: 24px; }
-  hr { border: none; border-top: 1px solid #e2e8f0; margin: 16px 0; }
-  table { page-break-inside: avoid; }
-  svg { page-break-inside: avoid; }
-</style>
-</head><body>
-  <h1>${t("export.doc.consolidatedTitle")}</h1>
-  <p class="meta">${t("export.doc.students")}: ${students.map((s) => s.name).join(", ")}<br/>
-  ${t("export.doc.period")}: ${fmtDate(dataInicio, locale)} – ${fmtDate(dataFim, locale)} &nbsp;|&nbsp; ${t("export.issuedOn")}: ${emissao}</p>
-  <hr/>
-  ${sectionCard(t("export.doc.studentsSummary"), summaryTable)}
-  ${studentSectionsHtml.join("")}
-</body></html>`;
+    const overview = `
+      <h1>${t("export.doc.consolidatedTitle")}</h1>
+      <p class="meta">${t("export.doc.students")}: ${students.map((s) => s.name).join(", ")}<br/>
+      ${t("export.doc.period")}: ${fmtDate(dataInicio, locale)} – ${fmtDate(dataFim, locale)} &nbsp;|&nbsp; ${t("export.issuedOn")}: ${emissao}</p>
+      <hr/>
+      ${sectionCard(t("export.doc.studentsSummary"), summaryTable)}`;
+
+    const html = pdfDocument(`${overview}${studentSectionsHtml.join("")}`);
 
     if (Platform.OS === "web") {
       await Print.printAsync({ html });
