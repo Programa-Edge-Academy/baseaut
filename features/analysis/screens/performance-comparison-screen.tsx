@@ -7,6 +7,7 @@ import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
@@ -199,6 +200,7 @@ export function PerformanceComparisonScreen() {
       return;
     }
 
+    if (isTutorial && sim.currentKey === "compareRun") sim.complete("compareRun");
     setShowResults(true);
   };
 
@@ -315,13 +317,25 @@ export function PerformanceComparisonScreen() {
             )}
 
             <View className="items-center mt-2">
-              <DefaultButton
-                label={t("common.compare")}
-                sizeClass="w-full h-[44px]"
-                disabled={false}
-                style={{ opacity: isCompareDisabled ? 0.5 : 1 }}
-                onPress={handleComparePress}
-              />
+              {isTutorial ? (
+                <SpotlightTarget targetKey="compareRun" className="w-full">
+                  <DefaultButton
+                    label={t("common.compare")}
+                    sizeClass="w-full h-[44px]"
+                    disabled={false}
+                    style={{ opacity: isCompareDisabled ? 0.5 : 1 }}
+                    onPress={handleComparePress}
+                  />
+                </SpotlightTarget>
+              ) : (
+                <DefaultButton
+                  label={t("common.compare")}
+                  sizeClass="w-full h-[44px]"
+                  disabled={false}
+                  style={{ opacity: isCompareDisabled ? 0.5 : 1 }}
+                  onPress={handleComparePress}
+                />
+              )}
             </View>
 
             {showResults && (

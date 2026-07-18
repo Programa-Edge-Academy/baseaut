@@ -49,6 +49,51 @@ const SECTION_ALIASES: Record<SectionId, string[]> = {
   equilibrio: ["equilibrio", "equilíbrio"],
 };
 
+/**
+ * A seeded MABC-2 draft used to *view* a record during the analysis tutorial,
+ * so opening a mock record shows sample data instead of hitting the database.
+ * Exercise names/units are the canonical values, localized for display by the
+ * form screen.
+ */
+export function buildMockMabc2Draft(): Mabc2Draft {
+  return {
+    formularioId: "mock-mabc2-1",
+    totalScore: 62,
+    totalPercentile: "50",
+    metadados: {},
+    sections: [
+      {
+        id: "destreza_manual",
+        title: SECTION_LABELS.destreza_manual,
+        categoryScore: 22,
+        categoryPercentile: "50",
+        exercises: [
+          { id: "mm-dm1", perguntaId: "mm-dm1", name: "DM 1 Colocar os Pinos no Tabuleiro (Mão Preferida)", unit: "seg", attemptCount: 24, score: 10, valorAjuda: null },
+          { id: "mm-dm2", perguntaId: "mm-dm2", name: "DM 2 Entrelaçar o Cordão", unit: "seg", attemptCount: 30, score: 9, valorAjuda: null },
+        ],
+      },
+      {
+        id: "pontaria",
+        title: SECTION_LABELS.pontaria,
+        categoryScore: 20,
+        categoryPercentile: "50",
+        exercises: [
+          { id: "mm-mp1", perguntaId: "mm-mp1", name: "MP 1 Pegar com as Duas Mãos", unit: "tentativas", attemptCount: 8, score: 11, valorAjuda: null },
+        ],
+      },
+      {
+        id: "equilibrio",
+        title: SECTION_LABELS.equilibrio,
+        categoryScore: 20,
+        categoryPercentile: "50",
+        exercises: [
+          { id: "mm-e1", perguntaId: "mm-e1", name: "E 1 Equilíbrio sobre uma Prancha (Melhor Perna)", unit: "seg", attemptCount: 30, score: 12, valorAjuda: null },
+        ],
+      },
+    ],
+  };
+}
+
 function parseNumber(value: any): number | null {
   if (value == null || value === "") return null;
   const parsed = Number(String(value).replace(",", "."));

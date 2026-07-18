@@ -7,6 +7,9 @@ import { ClipboardList } from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { Mabc2MotorDevelopmentCard } from "../components/mabc2-motor-development-card";
 import {
   useProtocolRecordDetail,
@@ -108,6 +111,15 @@ export function ProtocolVisualizationScreen({
   const formRef = useRef<any>(null);
   const [saving, setSaving] = useState(false);
 
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const sim = useTutorialSimulation();
+  const isMockRecord = !!recordId && recordId.startsWith("mock");
+  const handleBack = () => {
+    if (isTutorial && sim.currentKey === "backProtocolRecord") sim.complete("backProtocolRecord");
+    onPressBack?.();
+  };
+
   const isEditable = tipo === "ata" || tipo === "cars";
 
   const handleSave = async () => {
@@ -146,8 +158,9 @@ export function ProtocolVisualizationScreen({
       <View className="flex-1 bg-level1">
         <Header
           variant="form"
-          onPressBack={onPressBack}
+          onPressBack={handleBack}
           onPressSave={handleSave}
+          backSpotlightKey={isTutorial ? "backProtocolRecord" : undefined}
         />
 
         <View className="mx-8 mt-5">
@@ -177,11 +190,13 @@ export function ProtocolVisualizationScreen({
                   ref={formRef}
                   formularioId={recordId}
                   alunoId={studentId ?? ""}
+                  mock={isMockRecord}
                 />
               </View>
             </>
           )}
         </View>
+        {isTutorial && <TutorialSpotlight />}
       </View>
     );
   }

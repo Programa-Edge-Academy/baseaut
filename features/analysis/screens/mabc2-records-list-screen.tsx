@@ -6,6 +6,7 @@ import { Toast, type ToastMode } from "@/components/toast";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import React, { useState } from "react";
@@ -74,12 +75,24 @@ export function Mabc2RecordsListScreen({
           emptyMessage={t("analysis.mabcList.empty")}
           onRefresh={onRefresh}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <Mabc2RecordCard
-              record={item}
-              onPress={() => onPressRecord?.(item)}
-            />
-          )}
+          renderItem={({ item, index }) => {
+            const cardNode = (
+              <Mabc2RecordCard
+                record={item}
+                onPress={() => {
+                  if (isTutorial && sim.currentKey === "openMabcRecord") {
+                    sim.complete("openMabcRecord");
+                  }
+                  onPressRecord?.(item);
+                }}
+              />
+            );
+            return isTutorial && index === 0 ? (
+              <SpotlightTarget targetKey="openMabcRecord">{cardNode}</SpotlightTarget>
+            ) : (
+              cardNode
+            );
+          }}
         />
       )}
 

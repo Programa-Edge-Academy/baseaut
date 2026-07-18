@@ -125,6 +125,17 @@ export function useProtocolRecordDetail(tipo?: ProtocolTipo, recordId?: string) 
 
     setIsLoading(true);
     setError(null);
+
+    // Tutorial mock: seeded record ids never hit the database. Provide sample
+    // totals so the ATA/CARS visualization renders (its form uses mock mode).
+    if (recordId.startsWith("mock")) {
+      if (tipo === "ata") setDetail({ ata: { sections: [], total: 18 } });
+      else if (tipo === "cars") setDetail({ cars: { domains: [], total: 22 } });
+      else setDetail(null);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       if (tipo === "ata") {
         const { perguntas, answers } = await fetchAtaCars(recordId);

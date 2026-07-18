@@ -10,6 +10,7 @@ import {
   localizeMabcComponent,
   localizeMabcUnit,
 } from "@/features/forms/utils/form-content-i18n";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useKeyboardAwareScroll } from "@/lib/use-keyboard-aware-scroll";
 import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
 import { Edit2, Share2, Trash2 } from "lucide-react-native";
@@ -28,6 +29,8 @@ export type Mabc2RecordFormScreenProps = {
   readOnly?: boolean;
   showErrors?: boolean;
   submitLabel?: string;
+  /** Tutorial spotlight key for the header back button (analysis simulation). */
+  backSpotlightKey?: string;
   toastConfig?: { visible: boolean; mode: ToastMode; title: string; description?: string };
   onHideToast?: () => void;
   onChangeTotalScore?: (value: string) => void;
@@ -55,6 +58,7 @@ export function Mabc2RecordFormScreen({
   readOnly = false,
   showErrors = false,
   submitLabel,
+  backSpotlightKey,
   toastConfig,
   onHideToast,
   onChangeTotalScore,
@@ -84,7 +88,7 @@ export function Mabc2RecordFormScreen({
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" onPressBack={onPressBack} />
+      <Header variant="back" onPressBack={onPressBack} backSpotlightKey={backSpotlightKey} />
 
       <View className="mx-5 mt-5 flex-row items-center justify-between">
         <View className="flex-1 mr-3">
@@ -175,6 +179,8 @@ export function Mabc2RecordFormScreen({
           onHide={onHideToast}
         />
       )}
+
+      {backSpotlightKey && <TutorialSpotlight />}
     </View>
   );
 }

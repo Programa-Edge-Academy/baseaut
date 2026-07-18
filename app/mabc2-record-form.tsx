@@ -5,6 +5,7 @@ import { DefaultButton } from "@/components/default-button";
 import { type ToastMode } from "@/components/toast";
 import type { Mabc2SectionProps } from "@/features/analysis/components/mabc2-section";
 import {
+  buildMockMabc2Draft,
   deleteMabc2Record,
   getMabc2Record,
   saveMabc2Record,
@@ -15,6 +16,8 @@ import { Mabc2RecordFormScreen } from "@/features/analysis/screens/mabc2-record-
 import { exportMabc } from "@/features/analysis/utils/export-mabc";
 import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, Text, View } from "react-native";
@@ -51,6 +54,9 @@ export default function Mabc2RecordFormRoute() {
   }>();
 
   const { t, locale } = useI18n();
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const sim = useTutorialSimulation();
   const currentMode = mode ?? "create";
   const currentStudentId = studentId ?? "";
   const currentStudentName = studentName ?? t("common.student");
@@ -99,6 +105,12 @@ export default function Mabc2RecordFormRoute() {
       setLoadFailed(false);
 
       try {
+        // Tutorial mock: seeded record ids never hit the database.
+        if (currentRecordId.startsWith("mock")) {
+          setDraft(buildMockMabc2Draft());
+          setIsLoading(false);
+          return;
+        }
         if (currentMode === "create") {
           const created = await startMabc2Record(currentStudentId, t);
           if (isAbortedRef.current) {
@@ -367,6 +379,12 @@ export default function Mabc2RecordFormRoute() {
     }
   }
 
+  /** Back handler that advances the analysis tutorial before leaving. */
+  const handleTutorialBack = () => {
+    if (isTutorial && sim.currentKey === "backMabcRecord") sim.complete("backMabcRecord");
+    router.back();
+  };
+
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-level1">
@@ -424,7 +442,8 @@ export default function Mabc2RecordFormRoute() {
               : current
           );
         }}
-        onPressBack={() => router.back()}
+        onPressBack={handleTutorialBack}
+        backSpotlightKey={isTutorial ? "backMabcRecord" : undefined}
         onRegister={handleSave}
         onShare={currentMode === "view" ? () => setIsFormatPickerOpen(true) : undefined}
         onEdit={() => {

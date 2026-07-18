@@ -13,6 +13,7 @@ import ProgressExerciseCard from "../components/progress-exercise-card";
 import { useExerciseProgress } from "../hooks/use-exercise-progress";
 import { useStudentProfile } from "@/features/sessions/hooks/use-student-profile";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
@@ -184,33 +185,44 @@ export function ExerciseProgressScreen() {
       ) : (
         <ScrollView className="flex-1 px-8" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
           <View className="mt-6 gap-2">
-            {exercises.map((exercise) => {
+            {exercises.map((exercise, index) => {
               const isSelected = selectedExercise?.id === exercise.id;
               const hasSavedRange = !!(selectedRange.startDate && selectedRange.endDate);
               const hasOnlyOneSession = exercise.sessions === 1;
 
+              const card = (
+                <ProgressExerciseCard
+                  title={exercise.title}
+                  statusLabel={exercise.statusLabel}
+                  statusTone={exercise.statusTone}
+                  sessions={exercise.sessions}
+                  evolutionLabel={exercise.evolutionLabel}
+                  evolutionTone={exercise.evolutionTone}
+                  style={isSelected ? { borderWidth: 1, borderColor: colors.primary } : undefined}
+                  onPress={() => {
+                    if (isSelected) {
+                      setSelectedExercise(null);
+                      setSelectedRange({ startDate: null, endDate: null });
+                      setTempRange({ startDate: null, endDate: null });
+                    } else {
+                      setSelectedExercise({ id: exercise.id, title: exercise.title, sessions: exercise.sessions });
+                      setSelectedRange({ startDate: null, endDate: null });
+                      setTempRange({ startDate: null, endDate: null });
+                      if (isTutorial && sim.currentKey === "selectExerciseProgress") {
+                        sim.complete("selectExerciseProgress");
+                      }
+                    }
+                  }}
+                />
+              );
+
               return (
                 <View key={exercise.id} className="gap-2">
-                  <ProgressExerciseCard
-                    title={exercise.title}
-                    statusLabel={exercise.statusLabel}
-                    statusTone={exercise.statusTone}
-                    sessions={exercise.sessions}
-                    evolutionLabel={exercise.evolutionLabel}
-                    evolutionTone={exercise.evolutionTone} 
-                    style={isSelected ? { borderWidth: 1, borderColor: colors.primary } : undefined}
-                    onPress={() => {
-                      if (isSelected) {
-                        setSelectedExercise(null);
-                        setSelectedRange({ startDate: null, endDate: null });
-                        setTempRange({ startDate: null, endDate: null });
-                      } else {
-                        setSelectedExercise({ id: exercise.id, title: exercise.title, sessions: exercise.sessions });
-                        setSelectedRange({ startDate: null, endDate: null }); 
-                        setTempRange({ startDate: null, endDate: null });
-                      }
-                    }}
-                  />
+                  {isTutorial && index === 0 ? (
+                    <SpotlightTarget targetKey="selectExerciseProgress">{card}</SpotlightTarget>
+                  ) : (
+                    card
+                  )}
 
                   {isSelected && (
                     <View className="gap-2 mt-2 mb-4">

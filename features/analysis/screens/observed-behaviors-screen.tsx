@@ -195,6 +195,19 @@ export function ObservedBehaviorsScreen() {
 
   const showResults = startDate && endDate;
 
+  // In the tutorial the mock behaviors have fixed dates; the chart filters by
+  // the selected period, so override its range to span the mock records (any
+  // period keeps the chart populated, matching the always-shown detail cards).
+  const tutorialChartRange = useMemo(() => {
+    if (!isTutorial || records.length === 0) return null;
+    const parse = (s: string) => {
+      const [y, m, d] = s.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    };
+    const sorted = [...records].map((r) => r.date).sort();
+    return { start: parse(sorted[0]), end: parse(sorted[sorted.length - 1]) };
+  }, [isTutorial, records]);
+
   if (showResults && hasError) {
     return (
       <View className="flex-1 bg-level1">
@@ -331,8 +344,8 @@ export function ObservedBehaviorsScreen() {
                 <View style={{ marginHorizontal: 22 }}>
                   <ObservedBehaviorsChart
                     records={records}
-                    startDate={startDate}
-                    endDate={endDate}
+                    startDate={tutorialChartRange ? tutorialChartRange.start : startDate}
+                    endDate={tutorialChartRange ? tutorialChartRange.end : endDate}
                   />
                 </View>
 
