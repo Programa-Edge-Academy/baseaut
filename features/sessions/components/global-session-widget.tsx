@@ -44,7 +44,8 @@ export function GlobalSessionWidget() {
 
   const sessionIds = Object.keys(activeSessions).filter((id) => {
     const session = activeSessions[id];
-    return !session.isTimerVisibleOnScreen;
+    // Practice sessions started inside a tutorial never surface in the widget.
+    return !session.isTimerVisibleOnScreen && !session.isTutorial;
   });
 
   if (sessionIds.length === 0) {

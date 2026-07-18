@@ -25,6 +25,7 @@ import {
   type MotivoNaoRealizacao,
 } from "../hooks/use-session-flow";
 import { formatSessionClock, useSessionGlobalContext } from "../contexts/session-global-context";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 
 /** Whether the active exercise is awaiting start or actively running. */
 type ExerciseStage = "ready" | "running";
@@ -68,6 +69,9 @@ export function SessionRunningSemiStructuredScreen({
 
   const { createSession, persistExecutions, saveSession, finalizeSessionAutoFill } = useSessionFlow();
   const { registerSession, updateSessionProgress, updateSessionState, toggleTimer, closeSession, activeSessions, updateTimeElapsed, setTimerVisible, setFormVisible, addFugaInterval } = useSessionGlobalContext();
+  // Any session started while a tutorial simulation is active is mock/practice.
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active;
 
   const [effectiveSessionId, setEffectiveSessionId] = useState<string>(sessionId || "");
   const effectiveSessionIdRef = useRef<string>(sessionId || "");
@@ -166,6 +170,7 @@ export function SessionRunningSemiStructuredScreen({
         exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description, iconUrl: e.iconUrl ?? null }))),
         circuitId: circuitId || undefined,
         circuitName: circuitName || undefined,
+        isTutorial,
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -192,6 +197,7 @@ export function SessionRunningSemiStructuredScreen({
           exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description, iconUrl: e.iconUrl ?? null }))),
           circuitId: circuitId || undefined,
           circuitName: circuitName || undefined,
+          isTutorial,
         });
         return id;
       })();

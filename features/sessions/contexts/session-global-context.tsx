@@ -29,6 +29,13 @@ export interface ActiveSessionInfo {
   totalElapsed?: number;
   /** Flight intervals (start/end on the total stopwatch) used by the Control Record. */
   fugaIntervals?: { start: number; end: number }[];
+  /**
+   * True when the session was started inside a tutorial simulation (mock data).
+   * The global session widget never surfaces these, and concurrent-session
+   * detection ignores them outside a tutorial, so a practice session left
+   * running never leaks into the real app.
+   */
+  isTutorial?: boolean;
 }
 
 /** Cap for the total session stopwatch: 3 hours. */

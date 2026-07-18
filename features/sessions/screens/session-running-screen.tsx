@@ -203,6 +203,7 @@ export function SessionRunningScreen({
         exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description, iconUrl: e.iconUrl ?? null }))),
         circuitId: circuitId || undefined,
         circuitName: circuitName || undefined,
+        isTutorial,
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -229,6 +230,7 @@ export function SessionRunningScreen({
           exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description, iconUrl: e.iconUrl ?? null }))),
           circuitId: effectiveCircuitId || undefined,
           circuitName: effectiveCircuitName || undefined,
+          isTutorial,
         });
         return id;
       })();
