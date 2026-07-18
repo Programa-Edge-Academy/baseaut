@@ -200,13 +200,27 @@ export type TranslationKey =
   | "tutorial.hint.sessoes.selectStructured"
   | "tutorial.hint.sessoes.openReorder"
   | "tutorial.hint.sessoes.reorder"
+  | "tutorial.hint.sessoes.confirmReorder"
   | "tutorial.hint.sessoes.startExercise"
   | "tutorial.hint.sessoes.crise"
+  | "tutorial.hint.sessoes.crise2"
   | "tutorial.hint.sessoes.fuga"
+  | "tutorial.hint.sessoes.fuga2"
   | "tutorial.hint.sessoes.pauseResume"
+  | "tutorial.hint.sessoes.pauseResume2"
   | "tutorial.hint.sessoes.toggleForm"
+  | "tutorial.hint.sessoes.toggleForm2"
   | "tutorial.hint.sessoes.restart"
   | "tutorial.hint.sessoes.stop"
+  | "tutorial.hint.sessoes.deferResult"
+  | "tutorial.hint.sessoes.stopSecond"
+  | "tutorial.hint.sessoes.selectLevel"
+  | "tutorial.hint.sessoes.selectHelp"
+  | "tutorial.hint.sessoes.conclude"
+  | "tutorial.hint.sessoes.stopNotDone"
+  | "tutorial.hint.sessoes.markNotCompleted"
+  | "tutorial.hint.sessoes.selectMotive"
+  | "tutorial.hint.sessoes.registerNotCompleted"
   | "tutorial.hint.sessoes.backToSelection"
   | "tutorial.hint.sessoes.selectAgain"
   | "tutorial.hint.sessoes.startAgain"
@@ -220,6 +234,7 @@ export type TranslationKey =
   | "tutorial.hint.formularios.goBackAta"
   | "tutorial.hint.formularios.reopenAta"
   | "tutorial.hint.formularios.continueAta"
+  | "tutorial.hint.formularios.answer"
   | "tutorial.hint.formularios.saveAta"
   | "tutorial.hint.formularios.selectCars"
   | "tutorial.hint.formularios.saveCars"
@@ -236,6 +251,7 @@ export type TranslationKey =
   | "tutorial.hint.historico.editSave"
   | "tutorial.hint.analises.selectStudent"
   | "tutorial.hint.analises.openProgress"
+  | "tutorial.hint.analises.selectExerciseProgress"
   | "tutorial.hint.analises.periodProgress"
   | "tutorial.hint.analises.backProgress"
   | "tutorial.hint.analises.openHelp"
@@ -246,10 +262,15 @@ export type TranslationKey =
   | "tutorial.hint.analises.backBehaviors"
   | "tutorial.hint.analises.openCompare"
   | "tutorial.hint.analises.periodCompare"
+  | "tutorial.hint.analises.compareRun"
   | "tutorial.hint.analises.backCompare"
   | "tutorial.hint.analises.openProtocols"
+  | "tutorial.hint.analises.openProtocolRecord"
+  | "tutorial.hint.analises.backProtocolRecord"
   | "tutorial.hint.analises.backProtocols"
   | "tutorial.hint.analises.openMabc"
+  | "tutorial.hint.analises.openMabcRecord"
+  | "tutorial.hint.analises.backMabcRecord"
   | "tutorial.hint.analises.backMabc"
   | "tutorial.hint.relatorios.selectStudent"
   | "tutorial.hint.relatorios.newReport"
@@ -1045,6 +1066,9 @@ export type TranslationKey =
   | "session.noTeamExercises"
   | "session.start"
   | "session.clinicalSession"
+  | "session.reorderTitle"
+  | "session.reorderHint"
+  | "session.reorderConfirm"
   | "circuits.doesAllExercises"
   | "circuits.exerciseOrder"
   | "circuits.includedExercises"
@@ -1275,15 +1299,29 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.circuitos.deleteConfirm": "Confirme a exclusão tocando em \"Excluir\".",
     "tutorial.hint.sessoes.selectStructured": "Toque no circuito estruturado para iniciar a sessão.",
     "tutorial.hint.sessoes.openReorder": "Antes de começar, toque no ícone de trocar ordem para reorganizar os exercícios.",
-    "tutorial.hint.sessoes.reorder": "Segure pela alça e arraste um exercício para mudar a ordem. Depois feche a janela.",
+    "tutorial.hint.sessoes.reorder": "Segure pela alça e arraste um exercício para mudar a ordem.",
+    "tutorial.hint.sessoes.confirmReorder": "Toque em \"Concluir reordenação\" para confirmar a nova ordem e fechar a janela.",
     "tutorial.hint.sessoes.startExercise": "Toque em \"Iniciar atividade\" para começar o primeiro exercício.",
-    "tutorial.hint.sessoes.crise": "Toque em \"Crise\" para começar a cronometrar um episódio de crise. Toque de novo para encerrá-lo.",
-    "tutorial.hint.sessoes.fuga": "Toque em \"Fuga\" para registrar um episódio de fuga. Toque de novo para encerrá-lo.",
-    "tutorial.hint.sessoes.pauseResume": "Toque no cronômetro para pausar e retomar a contagem.",
-    "tutorial.hint.sessoes.toggleForm": "Toque em \"Ocultar\"/\"Exibir\" para esconder ou mostrar o Registro de Controle, que pode ficar vazio para preencher depois no Histórico.",
+    "tutorial.hint.sessoes.crise": "Toque em \"Crise\" para começar a cronometrar um episódio de crise.",
+    "tutorial.hint.sessoes.crise2": "Toque em \"Crise\" novamente para encerrar o episódio — ele será registrado com a duração cronometrada.",
+    "tutorial.hint.sessoes.fuga": "Toque em \"Fuga\" para começar a cronometrar um episódio de fuga.",
+    "tutorial.hint.sessoes.fuga2": "Toque em \"Fuga\" novamente para encerrar o episódio — ele será registrado com a duração cronometrada.",
+    "tutorial.hint.sessoes.pauseResume": "Toque no cronômetro para pausar a contagem.",
+    "tutorial.hint.sessoes.pauseResume2": "Toque no cronômetro novamente para retomar a contagem.",
+    "tutorial.hint.sessoes.toggleForm": "Toque em \"Ocultar\"/\"Exibir\" para esconder o Registro de Controle, que pode ficar vazio para preencher depois no Histórico.",
+    "tutorial.hint.sessoes.toggleForm2": "Toque novamente para exibir o Registro de Controle de volta.",
     "tutorial.hint.sessoes.restart": "Toque em \"Redefinir\" para zerar o cronômetro e recomeçar a contagem.",
     "tutorial.hint.sessoes.stop": "Toque em \"Parar\" para encerrar a atividade e marcar o resultado.",
-    "tutorial.hint.sessoes.backToSelection": "Marque o resultado (realizada — com ajuda intrusiva ou verbal —, não realizada ou adiado) e conclua os exercícios restantes: a sessão termina sozinha. Na tela de sessão concluída, toque em \"Voltar ao início\" — a simulação continua.",
+    "tutorial.hint.sessoes.deferResult": "Toque em \"Adiar resposta\" para adiar o resultado deste exercício e respondê-lo depois.",
+    "tutorial.hint.sessoes.stopSecond": "No segundo exercício, toque em \"Parar\" para encerrá-lo e marcar o resultado.",
+    "tutorial.hint.sessoes.selectLevel": "Selecione um nível de desenvolvimento (inicial, intermediário ou maduro).",
+    "tutorial.hint.sessoes.selectHelp": "Selecione um registro de ajuda (autônomo ou ajuda intrusiva).",
+    "tutorial.hint.sessoes.conclude": "Toque em \"Concluir\" para confirmar a finalização do exercício.",
+    "tutorial.hint.sessoes.stopNotDone": "Toque em \"Parar\" para encerrar este exercício e marcar o resultado.",
+    "tutorial.hint.sessoes.markNotCompleted": "Toque em \"Não realizado\" para registrar que o exercício não foi realizado.",
+    "tutorial.hint.sessoes.selectMotive": "Selecione um motivo para a não realização.",
+    "tutorial.hint.sessoes.registerNotCompleted": "Toque em \"Registrar\" para confirmar o exercício como não realizado.",
+    "tutorial.hint.sessoes.backToSelection": "Na tela de sessão concluída, toque em \"Voltar ao início\" — a simulação continua.",
     "tutorial.hint.sessoes.selectAgain": "Toque no circuito estruturado outra vez para iniciar uma segunda sessão.",
     "tutorial.hint.sessoes.startAgain": "Toque em \"Iniciar atividade\": só depois de iniciar é que a sessão fica em andamento.",
     "tutorial.hint.sessoes.goBack": "Toque em \"Voltar\" para sair sem finalizar — a sessão continua em andamento.",
@@ -1296,7 +1334,8 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.formularios.goBackAta": "Toque em \"Voltar\" para sair sem preencher — o ATA fica pendente.",
     "tutorial.hint.formularios.reopenAta": "Toque no ATA novamente para ver o aviso de formulário do mesmo tipo pendente.",
     "tutorial.hint.formularios.continueAta": "Toque em \"Continuar formulário anterior\" para retomar o ATA pendente.",
-    "tutorial.hint.formularios.saveAta": "Responda a pergunta obrigatória e toque em salvar (no cabeçalho). Campos opcionais podem ficar em branco. Você volta para a lista e a simulação continua.",
+    "tutorial.hint.formularios.answer": "Arraste o controle da pergunta para mudar a resposta antes de salvar.",
+    "tutorial.hint.formularios.saveAta": "Toque em salvar (no cabeçalho). Campos opcionais podem ficar em branco. Você volta para a lista e a simulação continua.",
     "tutorial.hint.formularios.selectCars": "Agora toque no formulário CARS: o fluxo é o mesmo do ATA.",
     "tutorial.hint.formularios.saveCars": "Preencha e salve o CARS para voltar à lista.",
     "tutorial.hint.formularios.selectMabc": "Por fim, toque no MABC-2. Ele é dividido por faixa etária (3-6, 7-10 e 11-16 anos) e só aparece para alunos elegíveis.",
@@ -1312,7 +1351,8 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.historico.editSave": "Edite o que quiser e salve. Da mesma forma você edita os formulários CARS e MABC-2.",
     "tutorial.hint.analises.selectStudent": "Toque no aluno para ver as análises dele.",
     "tutorial.hint.analises.openProgress": "Abra \"Progresso por exercício\" para ver a evolução do nível de desenvolvimento.",
-    "tutorial.hint.analises.periodProgress": "Toque num exercício para expandi-lo, depois escolha um período e salve. Se filtrar um período sem registros, o gráfico aparece vazio — volte a um período com dados.",
+    "tutorial.hint.analises.selectExerciseProgress": "Toque num exercício para expandi-lo e ver seu progresso.",
+    "tutorial.hint.analises.periodProgress": "Agora escolha um período e salve. Se filtrar um período sem registros, o gráfico aparece vazio — volte a um período com dados.",
     "tutorial.hint.analises.backProgress": "Explore o gráfico e toque em \"Voltar\" para seguir para a próxima análise.",
     "tutorial.hint.analises.openHelp": "Abra \"Registros de ajuda por sessão\" para ver a evolução da autonomia.",
     "tutorial.hint.analises.periodHelp": "Escolha um período e salve para carregar os registros de ajuda.",
@@ -1322,11 +1362,16 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.analises.backBehaviors": "Explore o gráfico e os detalhes por comportamento, depois toque em \"Voltar\".",
     "tutorial.hint.analises.openCompare": "Abra \"Comparar desempenho\" para ver dois períodos lado a lado.",
     "tutorial.hint.analises.periodCompare": "Escolha os dois períodos a comparar. Eles não podem se sobrepor nem estar no futuro.",
-    "tutorial.hint.analises.backCompare": "Toque em \"Comparar\" para ver o cruzamento dos dois períodos e depois em \"Voltar\".",
+    "tutorial.hint.analises.compareRun": "Toque em \"Comparar\" para ver o cruzamento dos dois períodos.",
+    "tutorial.hint.analises.backCompare": "Toque em \"Voltar\".",
     "tutorial.hint.analises.openProtocols": "Abra os protocolos aplicados (ATA/CARS) para ver os registros.",
-    "tutorial.hint.analises.backProtocols": "Veja os registros do protocolo e toque em \"Voltar\".",
+    "tutorial.hint.analises.openProtocolRecord": "Toque num registro para abri-lo (carregado com respostas de exemplo).",
+    "tutorial.hint.analises.backProtocolRecord": "Veja o protocolo aplicado e toque em \"Voltar\" para retornar à lista.",
+    "tutorial.hint.analises.backProtocols": "Toque em \"Voltar\" para retornar às opções de análise do aluno.",
     "tutorial.hint.analises.openMabc": "Abra \"Registros de desenvolvimento motor\" (MABC-2) para ver as avaliações.",
-    "tutorial.hint.analises.backMabc": "Veja as avaliações do MABC-2 e toque em \"Voltar\" para encerrar a simulação.",
+    "tutorial.hint.analises.openMabcRecord": "Toque num registro para abri-lo (carregado com dados de exemplo).",
+    "tutorial.hint.analises.backMabcRecord": "Veja a avaliação e toque em \"Voltar\" para retornar à lista.",
+    "tutorial.hint.analises.backMabc": "Toque em \"Voltar\" para encerrar a simulação.",
     "tutorial.hint.relatorios.selectStudent": "Toque no aluno para ver os relatórios dele.",
     "tutorial.hint.relatorios.newReport": "Toque em \"+ Novo\" para criar um relatório.",
     "tutorial.hint.relatorios.periodReport": "Toque no período e escolha as datas que o relatório vai cobrir.",
@@ -2133,6 +2178,9 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "session.noTeamExercises": "Nenhum exercício cadastrado na equipe.",
     "session.start": "Iniciar",
     "session.clinicalSession": "Sessão Clínica",
+    "session.reorderTitle": "Mudar ordem",
+    "session.reorderHint": "Segure e arraste pelo ícone de alça para reordenar",
+    "session.reorderConfirm": "Concluir reordenação",
     "circuits.doesAllExercises": "Realiza todos os exercícios definidos",
     "circuits.exerciseOrder": "Ordem dos exercícios",
     "circuits.includedExercises": "Exercícios inclusos",
@@ -2360,15 +2408,29 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.circuitos.deleteConfirm": "Confirm deletion by tapping \"Delete\".",
     "tutorial.hint.sessoes.selectStructured": "Tap the structured circuit to start the session.",
     "tutorial.hint.sessoes.openReorder": "Before starting, tap the change-order icon to rearrange the exercises.",
-    "tutorial.hint.sessoes.reorder": "Hold an exercise by its handle and drag it to change the order. Then close the sheet.",
+    "tutorial.hint.sessoes.reorder": "Hold an exercise by its handle and drag it to change the order.",
+    "tutorial.hint.sessoes.confirmReorder": "Tap \"Finish reordering\" to confirm the new order and close the sheet.",
     "tutorial.hint.sessoes.startExercise": "Tap \"Start activity\" to begin the first exercise.",
-    "tutorial.hint.sessoes.crise": "Tap \"Crise\" to start timing a crisis episode. Tap it again to end it.",
-    "tutorial.hint.sessoes.fuga": "Tap \"Fuga\" to record a flight episode. Tap it again to end it.",
-    "tutorial.hint.sessoes.pauseResume": "Tap the stopwatch to pause and resume the count.",
-    "tutorial.hint.sessoes.toggleForm": "Tap \"Ocultar\"/\"Exibir\" to hide or show the Control Record, which can be left empty to fill later in History.",
+    "tutorial.hint.sessoes.crise": "Tap \"Crise\" to start timing a crisis episode.",
+    "tutorial.hint.sessoes.crise2": "Tap \"Crise\" again to end the episode — it is recorded with the timed duration.",
+    "tutorial.hint.sessoes.fuga": "Tap \"Fuga\" to start timing a flight episode.",
+    "tutorial.hint.sessoes.fuga2": "Tap \"Fuga\" again to end the episode — it is recorded with the timed duration.",
+    "tutorial.hint.sessoes.pauseResume": "Tap the stopwatch to pause the count.",
+    "tutorial.hint.sessoes.pauseResume2": "Tap the stopwatch again to resume the count.",
+    "tutorial.hint.sessoes.toggleForm": "Tap \"Ocultar\"/\"Exibir\" to hide the Control Record, which can be left empty to fill later in History.",
+    "tutorial.hint.sessoes.toggleForm2": "Tap it again to show the Control Record back.",
     "tutorial.hint.sessoes.restart": "Tap \"Redefinir\" to reset the stopwatch and start counting again.",
     "tutorial.hint.sessoes.stop": "Tap \"Parar\" to end the activity and mark its result.",
-    "tutorial.hint.sessoes.backToSelection": "Mark the result (completed — with intrusive or verbal help —, not completed, or deferred) and finish the remaining exercises: the session ends on its own. On the completed screen, tap \"Back to start\" — the simulation continues.",
+    "tutorial.hint.sessoes.deferResult": "Tap \"Defer answer\" to postpone this exercise's result and answer it later.",
+    "tutorial.hint.sessoes.stopSecond": "On the second exercise, tap \"Parar\" to end it and mark the result.",
+    "tutorial.hint.sessoes.selectLevel": "Select a development level (initial, intermediate, or mature).",
+    "tutorial.hint.sessoes.selectHelp": "Select a help record (autonomous or intrusive help).",
+    "tutorial.hint.sessoes.conclude": "Tap \"Done\" to confirm the exercise as completed.",
+    "tutorial.hint.sessoes.stopNotDone": "Tap \"Parar\" to end this exercise and mark its result.",
+    "tutorial.hint.sessoes.markNotCompleted": "Tap \"Not completed\" to record that the exercise was not performed.",
+    "tutorial.hint.sessoes.selectMotive": "Select a reason for not performing it.",
+    "tutorial.hint.sessoes.registerNotCompleted": "Tap \"Register\" to confirm the exercise as not performed.",
+    "tutorial.hint.sessoes.backToSelection": "On the completed session screen, tap \"Back to start\" — the simulation continues.",
     "tutorial.hint.sessoes.selectAgain": "Tap the structured circuit again to start a second session.",
     "tutorial.hint.sessoes.startAgain": "Tap \"Start activity\": a session is only in progress once it has been started.",
     "tutorial.hint.sessoes.goBack": "Tap \"Back\" to leave without finishing — the session stays in progress.",
@@ -2381,7 +2443,8 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.formularios.goBackAta": "Tap \"Back\" to leave without filling it — the ATA stays pending.",
     "tutorial.hint.formularios.reopenAta": "Tap the ATA again to see the pending same-type form warning.",
     "tutorial.hint.formularios.continueAta": "Tap \"Continue previous form\" to resume the pending ATA.",
-    "tutorial.hint.formularios.saveAta": "Answer the required question and tap save (in the header). Optional fields can be left blank. You return to the list and the simulation continues.",
+    "tutorial.hint.formularios.answer": "Drag the question's control to change the answer before saving.",
+    "tutorial.hint.formularios.saveAta": "Tap save (in the header). Optional fields can be left blank. You return to the list and the simulation continues.",
     "tutorial.hint.formularios.selectCars": "Now tap the CARS form: the flow is the same as the ATA.",
     "tutorial.hint.formularios.saveCars": "Fill the CARS in and save it to return to the list.",
     "tutorial.hint.formularios.selectMabc": "Finally, tap MABC-2. It is split by age band (3-6, 7-10 and 11-16 years) and only shows for eligible students.",
@@ -2397,7 +2460,8 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.historico.editSave": "Edit whatever you want and save. You edit the CARS and MABC-2 forms the same way.",
     "tutorial.hint.analises.selectStudent": "Tap the student to see their analyses.",
     "tutorial.hint.analises.openProgress": "Open \"Exercise progress\" to see how the development level evolves.",
-    "tutorial.hint.analises.periodProgress": "Tap an exercise to expand it, then pick a period and save. If you filter by a period with no records the chart shows empty — return to a period with data.",
+    "tutorial.hint.analises.selectExerciseProgress": "Tap an exercise to expand it and see its progress.",
+    "tutorial.hint.analises.periodProgress": "Now pick a period and save. If you filter by a period with no records the chart shows empty — return to a period with data.",
     "tutorial.hint.analises.backProgress": "Explore the chart and tap \"Back\" to move on to the next analysis.",
     "tutorial.hint.analises.openHelp": "Open \"Help records per session\" to see the autonomy trend.",
     "tutorial.hint.analises.periodHelp": "Pick a period and save to load the help records.",
@@ -2407,11 +2471,16 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.analises.backBehaviors": "Explore the chart and the per-behavior details, then tap \"Back\".",
     "tutorial.hint.analises.openCompare": "Open \"Compare performance\" to see two periods side by side.",
     "tutorial.hint.analises.periodCompare": "Pick the two periods to compare. They cannot overlap or be in the future.",
-    "tutorial.hint.analises.backCompare": "Tap \"Compare\" to cross-reference both periods, then tap \"Back\".",
+    "tutorial.hint.analises.compareRun": "Tap \"Compare\" to cross-reference both periods.",
+    "tutorial.hint.analises.backCompare": "Tap \"Back\".",
     "tutorial.hint.analises.openProtocols": "Open the applied protocols (ATA/CARS) to see the records.",
-    "tutorial.hint.analises.backProtocols": "Look through the protocol's records and tap \"Back\".",
+    "tutorial.hint.analises.openProtocolRecord": "Tap a record to open it (loaded with sample answers).",
+    "tutorial.hint.analises.backProtocolRecord": "Look through the applied protocol and tap \"Back\" to return to the list.",
+    "tutorial.hint.analises.backProtocols": "Tap \"Back\" to return to the student's analysis options.",
     "tutorial.hint.analises.openMabc": "Open \"Motor development records\" (MABC-2) to see the assessments.",
-    "tutorial.hint.analises.backMabc": "Look through the MABC-2 assessments and tap \"Back\" to end the simulation.",
+    "tutorial.hint.analises.openMabcRecord": "Tap a record to open it (loaded with sample data).",
+    "tutorial.hint.analises.backMabcRecord": "Look through the assessment and tap \"Back\" to return to the list.",
+    "tutorial.hint.analises.backMabc": "Tap \"Back\" to end the simulation.",
     "tutorial.hint.relatorios.selectStudent": "Tap the student to see their reports.",
     "tutorial.hint.relatorios.newReport": "Tap \"+ New\" to create a report.",
     "tutorial.hint.relatorios.periodReport": "Tap the period and choose the dates the report will cover.",
@@ -3217,6 +3286,9 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "session.noTeamExercises": "No exercise registered for the team.",
     "session.start": "Start",
     "session.clinicalSession": "Clinical Session",
+    "session.reorderTitle": "Change order",
+    "session.reorderHint": "Press and drag by the handle icon to reorder",
+    "session.reorderConfirm": "Finish reordering",
     "circuits.doesAllExercises": "Performs all defined exercises",
     "circuits.exerciseOrder": "Exercise order",
     "circuits.includedExercises": "Included exercises",
