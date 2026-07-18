@@ -42,6 +42,17 @@ const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
   Outro: "outro",
 };
 
+// Each stopwatch control the sessions tutorial spotlights twice (press, then
+// press again) uses a stable key pair so the highlight persists across both
+// presses. Module-level so the array identity is stable across renders.
+const CRISE_SIM_KEYS = ["crise", "crise2"];
+const FUGA_SIM_KEYS = ["fuga", "fuga2"];
+const PAUSE_SIM_KEYS = ["pauseResume", "pauseResume2"];
+const TOGGLE_FORM_SIM_KEYS = ["toggleForm", "toggleForm2"];
+// The stop button spotlights three exercises: session 1 ex1 ("stop"), session 1
+// ex2 ("stopSecond") and session 2 ex1 ("stopNotDone").
+const STOP_SIM_KEYS = ["stop", "stopSecond", "stopNotDone"];
+
 /** An exercise within a running session. */
 export type SessionExercise = {
   id: string;
@@ -131,7 +142,9 @@ export function SessionRunningScreen({
   };
 
   const handleCrisePress = () => {
-    if (isTutorial) sim.complete("crise");
+    if (isTutorial && (sim.currentKey === "crise" || sim.currentKey === "crise2")) {
+      sim.complete(sim.currentKey);
+    }
     if (criseStartRef.current == null) {
       criseStartRef.current = Date.now();
       setIsCriseActive(true);
@@ -161,7 +174,9 @@ export function SessionRunningScreen({
   };
 
   const handleFugaPress = () => {
-    if (isTutorial) sim.complete("fuga");
+    if (isTutorial && (sim.currentKey === "fuga" || sim.currentKey === "fuga2")) {
+      sim.complete(sim.currentKey);
+    }
     if (fugaStartRef.current == null) {
       fugaStartRef.current = Date.now();
       fugaStartTotalRef.current = currentSessionData?.totalElapsed ?? 0;
@@ -609,7 +624,13 @@ export function SessionRunningScreen({
   };
 
   const handleStop = (elapsed: number) => {
-    if (isTutorial) sim.complete("stop");
+    if (isTutorial && STOP_SIM_KEYS.includes(sim.currentKey ?? "")) {
+      sim.complete(sim.currentKey!);
+    }
+    // A crisis/escape still being timed when the exercise is stopped is recorded
+    // (with its elapsed duration) as if its own button had been pressed first.
+    finalizeActiveCrise();
+    finalizeActiveFuga();
     lastElapsedSecondsRef.current = elapsed;
     if (resolvedSid) toggleTimer(resolvedSid, false);
 
@@ -716,20 +737,24 @@ export function SessionRunningScreen({
                 controlledSeconds={controlledSeconds}
                 controlledIsRunning={controlledIsRunning}
                 onToggleRunning={(isRunning) => {
-                  if (isTutorial) sim.complete("pauseResume");
+                  if (isTutorial && (sim.currentKey === "pauseResume" || sim.currentKey === "pauseResume2")) {
+                    sim.complete(sim.currentKey);
+                  }
                   if (resolvedSid) toggleTimer(resolvedSid, isRunning);
                 }}
                 isFormVisible={isFormVisible}
                 onPressCorner={() => {
-                  if (isTutorial) sim.complete("toggleForm");
+                  if (isTutorial && (sim.currentKey === "toggleForm" || sim.currentKey === "toggleForm2")) {
+                    sim.complete(sim.currentKey);
+                  }
                   if (resolvedSid) setFormVisible(resolvedSid, !isFormVisible);
                 }}
-                criseSpotlightKey={isTutorial ? "crise" : undefined}
-                fugaSpotlightKey={isTutorial ? "fuga" : undefined}
-                timerSpotlightKey={isTutorial ? "pauseResume" : undefined}
-                cornerSpotlightKey={isTutorial ? "toggleForm" : undefined}
+                criseSpotlightKey={isTutorial ? CRISE_SIM_KEYS : undefined}
+                fugaSpotlightKey={isTutorial ? FUGA_SIM_KEYS : undefined}
+                timerSpotlightKey={isTutorial ? PAUSE_SIM_KEYS : undefined}
+                cornerSpotlightKey={isTutorial ? TOGGLE_FORM_SIM_KEYS : undefined}
                 restartSpotlightKey={isTutorial ? "restart" : undefined}
-                stopSpotlightKey={isTutorial ? "stop" : undefined}
+                stopSpotlightKey={isTutorial ? STOP_SIM_KEYS : undefined}
               />
             )}
           </View>
@@ -767,6 +792,7 @@ export function SessionRunningScreen({
             handleReorderPending(reordered);
           }}
           reorderSpotlightKey={isTutorial ? "reorder" : undefined}
+          confirmSpotlightKey={isTutorial ? "confirmReorder" : undefined}
         />
 
         <FinishSessionModal

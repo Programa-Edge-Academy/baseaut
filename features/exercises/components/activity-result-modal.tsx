@@ -5,6 +5,9 @@ import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
 import { RipplePressable } from "@/components/ripple-pressable";
 import { SelectableChip } from "@/components/selectable-chip";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import React, { useEffect, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { SvgXml } from "react-native-svg";
@@ -94,6 +97,11 @@ export function ActivityResultModal({
 }: ActivityResultModalProps) {
   const colors = useThemeColors();
   const { t } = useI18n();
+  const sim = useTutorialSimulation();
+  /** Advances the guided simulation only when `key` is the awaited sub-step. */
+  const advanceSim = (key: string) => {
+    if (sim.active && sim.currentKey === key) sim.complete(key);
+  };
   const [viewMode, setViewMode] = useState<"result" | "reasons">("result");
   const [nivel, setNivel] = useState<NivelDesenvolvimento | null>(null);
   const [ajuda, setAjuda] = useState<RegistroAjuda | null>(null);
@@ -120,6 +128,7 @@ export function ActivityResultModal({
   const handleSelectAjuda = (value: RegistroAjuda) => {
     setAjuda(value);
     if (value !== "autonomo") setSubCategorias([]);
+    advanceSim("selectHelp");
   };
 
   const toggleSubCategoria = (id: string) => {
@@ -136,6 +145,7 @@ export function ActivityResultModal({
     const subOk = ajuda !== "autonomo" || subCategorias.length > 0;
 
     if (nivelOk && ajudaOk && subOk) {
+      advanceSim("conclude");
       onConfirm({
         nivelDesenvolvimento: nivel!,
         registroAjuda: ajuda!,
@@ -151,6 +161,7 @@ export function ActivityResultModal({
     const isOutroOk = selectedMotivo === "Outro" ? outroDescricao.trim() !== "" : true;
 
     if (isMotivoOk && isOutroOk && onNotCompleted) {
+      advanceSim("registerNotCompleted");
       onNotCompleted(
         selectedMotivo!,
         selectedMotivo === "Outro" ? outroDescricao.trim() : undefined
@@ -220,28 +231,33 @@ export function ActivityResultModal({
               {t("activityResult.title")}
             </Text>
 
-            <RipplePressable
-              onPress={onDefer}
-              style={{
-                backgroundColor: "#372620",
-                borderWidth: 1,
-                borderColor: colors.extra,
-                borderRadius: 15,
-                paddingHorizontal: 10,
-                paddingVertical: 5,
-                zIndex: 10,
-              }}
-            >
-              <Text
+            <SpotlightTarget targetKey="deferResult">
+              <RipplePressable
+                onPress={() => {
+                  advanceSim("deferResult");
+                  onDefer?.();
+                }}
                 style={{
-                  fontFamily: "Inter-Medium",
-                  fontSize: 14,
-                  color: colors.extra,
+                  backgroundColor: "#372620",
+                  borderWidth: 1,
+                  borderColor: colors.extra,
+                  borderRadius: 15,
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                  zIndex: 10,
                 }}
               >
-                {t("activityResult.deferAnswer")}
-              </Text>
-            </RipplePressable>
+                <Text
+                  style={{
+                    fontFamily: "Inter-Medium",
+                    fontSize: 14,
+                    color: colors.extra,
+                  }}
+                >
+                  {t("activityResult.deferAnswer")}
+                </Text>
+              </RipplePressable>
+            </SpotlightTarget>
           </View>
 
           {elapsedTime !== undefined && (
@@ -277,7 +293,7 @@ export function ActivityResultModal({
                   {t("activityResult.developmentLevel")}
                 </Text>
 
-                <View style={{ flexDirection: "row", gap: 8 }}>
+                <SpotlightTarget targetKey="selectLevel" style={{ flexDirection: "row", gap: 8 }}>
                   {NIVEIS.map((item) => {
                     const isSelected = nivel === item.id;
                     const hasErr = nivelError && !isSelected;
@@ -287,6 +303,7 @@ export function ActivityResultModal({
                         onPress={() => {
                           setNivel(item.id);
                           setSubmittedResult(false);
+                          advanceSim("selectLevel");
                         }}
                         style={{
                           flex: 1,
@@ -333,7 +350,7 @@ export function ActivityResultModal({
                       </RipplePressable>
                     );
                   })}
-                </View>
+                </SpotlightTarget>
 
                 {nivelError && (
                   <Text
@@ -359,7 +376,7 @@ export function ActivityResultModal({
                   {t("activityResult.helpRecord")}
                 </Text>
 
-                <View style={{ gap: 5 }}>
+                <SpotlightTarget targetKey="selectHelp" style={{ gap: 5 }}>
                   <SelectableChip
                     label={t("analysis.help.autonomous")}
                     type="nivelAjuda"
@@ -386,7 +403,7 @@ export function ActivityResultModal({
                     }}
                     hasError={ajudaError && ajuda !== "ajuda_intrusiva"}
                   />
-                </View>
+                </SpotlightTarget>
 
                 {ajudaError && (
                   <Text
@@ -413,51 +430,56 @@ export function ActivityResultModal({
               </View>
 
               <View style={{ flexDirection: "row", gap: 10, marginTop: 15 }}>
-                <RipplePressable
-                  onPress={() => setViewMode("reasons")}
-                  style={{
-                    flex: 1,
-                    height: 44,
-                    borderRadius: 15,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: colors.error,
-                  }}
-                >
-                  <Text
+                <SpotlightTarget targetKey="markNotCompleted" style={{ flex: 1 }}>
+                  <RipplePressable
+                    onPress={() => {
+                      advanceSim("markNotCompleted");
+                      setViewMode("reasons");
+                    }}
                     style={{
-                      fontFamily: "Inter-Medium",
-                      fontSize: 16,
-                      color: "#fff",
+                      height: 44,
+                      borderRadius: 15,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: colors.error,
                     }}
                   >
-                    {t("activityResult.notCompleted")}
-                  </Text>
-                </RipplePressable>
+                    <Text
+                      style={{
+                        fontFamily: "Inter-Medium",
+                        fontSize: 16,
+                        color: "#fff",
+                      }}
+                    >
+                      {t("activityResult.notCompleted")}
+                    </Text>
+                  </RipplePressable>
+                </SpotlightTarget>
 
-                <RipplePressable
-                  onPress={handleConfirm}
-                  style={{
-                    flex: 1,
-                    height: 44,
-                    borderRadius: 15,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: colors.primary,
-                    borderWidth: 1,
-                    borderColor: "#2F3A46",
-                  }}
-                >
-                  <Text
+                <SpotlightTarget targetKey="conclude" style={{ flex: 1 }}>
+                  <RipplePressable
+                    onPress={handleConfirm}
                     style={{
-                      fontFamily: "Inter-Bold",
-                      fontSize: 16,
-                      color: "#fff",
+                      height: 44,
+                      borderRadius: 15,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: colors.primary,
+                      borderWidth: 1,
+                      borderColor: "#2F3A46",
                     }}
                   >
-                    {t("common.done")}
-                  </Text>
-                </RipplePressable>
+                    <Text
+                      style={{
+                        fontFamily: "Inter-Bold",
+                        fontSize: 16,
+                        color: "#fff",
+                      }}
+                    >
+                      {t("common.done")}
+                    </Text>
+                  </RipplePressable>
+                </SpotlightTarget>
               </View>
             </>
           ) : (
@@ -473,13 +495,14 @@ export function ActivityResultModal({
                   {t("activityResult.reason")}
                 </Text>
 
-                <View 
-                  style={{ 
-                    gap: 5, 
-                    padding: motivoError ? 4 : 0, 
-                    borderWidth: motivoError ? 1 : 0, 
-                    borderColor: colors.error, 
-                    borderRadius: 15 
+                <SpotlightTarget
+                  targetKey="selectMotive"
+                  style={{
+                    gap: 5,
+                    padding: motivoError ? 4 : 0,
+                    borderWidth: motivoError ? 1 : 0,
+                    borderColor: colors.error,
+                    borderRadius: 15
                   }}
                 >
                   {MOTIVOS.map((motivo) => (
@@ -489,12 +512,13 @@ export function ActivityResultModal({
                       type="motivos"
                       isSelected={selectedMotivo === motivo.value}
                       onToggle={() => {
+                        advanceSim("selectMotive");
                         setSelectedMotivo(motivo.value);
                         setSubmittedReasons(false);
                       }}
                     />
                   ))}
-                </View>
+                </SpotlightTarget>
 
                 {motivoError && (
                   <Text style={{ fontFamily: "Inter-Medium", fontSize: 12, color: colors.error }}>
@@ -575,33 +599,35 @@ export function ActivityResultModal({
                   </Text>
                 </RipplePressable>
 
-                <RipplePressable
-                  onPress={handleConfirmNotCompleted}
-                  style={{
-                    flex: 1,
-                    height: 44,
-                    borderRadius: 15,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: isRegistrarApparentDisabled ? "#1F2933" : colors.primary,
-                    borderWidth: 1,
-                    borderColor: isRegistrarApparentDisabled ? "#2b303b" : colors.primary,
-                    opacity: isRegistrarApparentDisabled ? 0.7 : 1,
-                  }}
-                >
-                  <Text
+                <SpotlightTarget targetKey="registerNotCompleted" style={{ flex: 1 }}>
+                  <RipplePressable
+                    onPress={handleConfirmNotCompleted}
                     style={{
-                      fontFamily: "Inter-Bold",
-                      fontSize: 16,
-                      color: isRegistrarApparentDisabled ? colors.muted : "#fff",
+                      height: 44,
+                      borderRadius: 15,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: isRegistrarApparentDisabled ? "#1F2933" : colors.primary,
+                      borderWidth: 1,
+                      borderColor: isRegistrarApparentDisabled ? "#2b303b" : colors.primary,
+                      opacity: isRegistrarApparentDisabled ? 0.7 : 1,
                     }}
                   >
-                    {t("common.register")}
-                  </Text>
-                </RipplePressable>
+                    <Text
+                      style={{
+                        fontFamily: "Inter-Bold",
+                        fontSize: 16,
+                        color: isRegistrarApparentDisabled ? colors.muted : "#fff",
+                      }}
+                    >
+                      {t("common.register")}
+                    </Text>
+                  </RipplePressable>
+                </SpotlightTarget>
               </View>
             </>
           )}
+          {sim.active && <TutorialSpotlight />}
         </Pressable>
       </Pressable>
     </AppModal>

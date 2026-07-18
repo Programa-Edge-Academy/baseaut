@@ -1,5 +1,6 @@
 import { AppModal } from "@/components/app-modal";
 import { DraggableList, DraggableItem } from "@/components/draggable-list";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { X } from "lucide-react-native";
@@ -18,6 +19,8 @@ interface ReorderModalProps {
   onReorder: (items: SessionExercise[]) => void;
   /** Tutorial spotlight key for the drag-and-drop area. */
   reorderSpotlightKey?: string;
+  /** Tutorial spotlight key for the "Finish reordering" confirm button. */
+  confirmSpotlightKey?: string;
 }
 
 /**
@@ -38,17 +41,28 @@ export function ReorderModal({
   onClose,
   onReorder,
   reorderSpotlightKey,
+  confirmSpotlightKey,
 }: ReorderModalProps) {
+  const { t } = useI18n();
   const [isDragging, setIsDragging] = useState(false);
   const insets = useSafeAreaInsets();
   const sim = useTutorialSimulation();
   const reorderRef = useRef<View>(null);
+  const confirmRef = useRef<View>(null);
 
   useEffect(() => {
-    if (!reorderSpotlightKey) return;
-    sim.registerTarget(reorderSpotlightKey, reorderRef, { rounded: true });
-    return () => sim.unregisterTarget(reorderSpotlightKey);
-  }, [sim, reorderSpotlightKey]);
+    if (reorderSpotlightKey) sim.registerTarget(reorderSpotlightKey, reorderRef, { rounded: true });
+    if (confirmSpotlightKey) sim.registerTarget(confirmSpotlightKey, confirmRef, { rounded: true });
+    return () => {
+      if (reorderSpotlightKey) sim.unregisterTarget(reorderSpotlightKey);
+      if (confirmSpotlightKey) sim.unregisterTarget(confirmSpotlightKey);
+    };
+  }, [sim, reorderSpotlightKey, confirmSpotlightKey]);
+
+  const handleConfirm = () => {
+    if (confirmSpotlightKey) sim.complete(confirmSpotlightKey);
+    onClose();
+  };
 
   const draggableItems: DraggableItem[] = items.map((ex) => ({
     id: ex.id,
@@ -71,9 +85,9 @@ export function ReorderModal({
         >
           <View className="flex-row justify-between items-center mb-6">
             <View>
-              <Text className="text-content text-[24px] font-bold">Mudar ordem</Text>
+              <Text className="text-content text-[24px] font-bold">{t("session.reorderTitle")}</Text>
               <Text className="text-muted text-[14px]">
-                Segure e arraste pelo ícone de alça para reordenar
+                {t("session.reorderHint")}
               </Text>
             </View>
             <Pressable
@@ -97,12 +111,14 @@ export function ReorderModal({
             </View>
           </ScrollView>
 
-          <Pressable
-            onPress={onClose}
-            className="mt-6 w-full py-4 bg-level1 border border-outline rounded-2xl items-center"
-          >
-            <Text className="text-content font-bold">Concluir reordenagem</Text>
-          </Pressable>
+          <View ref={confirmRef} collapsable={false} className="mt-6">
+            <Pressable
+              onPress={handleConfirm}
+              className="w-full py-4 bg-level1 border border-outline rounded-2xl items-center"
+            >
+              <Text className="text-content font-bold">{t("session.reorderConfirm")}</Text>
+            </Pressable>
+          </View>
 
           <TutorialSpotlight />
         </View>

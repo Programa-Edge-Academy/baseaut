@@ -54,18 +54,18 @@ export type StopwatchProps = {
   onPressCorner?: () => void;
   className?: string;
   isFormVisible?: boolean;
-  /** Tutorial spotlight key for the "Crise" pill. */
-  criseSpotlightKey?: string;
-  /** Tutorial spotlight key for the "Fuga" pill. */
-  fugaSpotlightKey?: string;
-  /** Tutorial spotlight key for the timer (play/pause) pressable. */
-  timerSpotlightKey?: string;
-  /** Tutorial spotlight key for the corner action (minimize, or show/hide form). */
-  cornerSpotlightKey?: string;
+  /** Tutorial spotlight key(s) for the "Crise" pill (one per required press). */
+  criseSpotlightKey?: string | string[];
+  /** Tutorial spotlight key(s) for the "Fuga" pill (one per required press). */
+  fugaSpotlightKey?: string | string[];
+  /** Tutorial spotlight key(s) for the timer (play/pause) pressable. */
+  timerSpotlightKey?: string | string[];
+  /** Tutorial spotlight key(s) for the corner action (minimize, or show/hide form). */
+  cornerSpotlightKey?: string | string[];
   /** Tutorial spotlight key for the restart button. */
-  restartSpotlightKey?: string;
+  restartSpotlightKey?: string | string[];
   /** Tutorial spotlight key for the stop button. */
-  stopSpotlightKey?: string;
+  stopSpotlightKey?: string | string[];
 };
 
 function formatTime(seconds: number): string {
@@ -137,7 +137,7 @@ export function Stopwatch({
   const stopRef = useRef<View>(null);
 
   useEffect(() => {
-    const entries: [string | undefined, React.RefObject<View | null>][] = [
+    const entries: [string | string[] | undefined, React.RefObject<View | null>][] = [
       [criseSpotlightKey, criseRef],
       [fugaSpotlightKey, fugaRef],
       [timerSpotlightKey, timerRef],
@@ -146,12 +146,13 @@ export function Stopwatch({
       [stopSpotlightKey, stopRef],
     ];
     const present = entries.filter(([key]) => !!key) as [
-      string,
+      string | string[],
       React.RefObject<View | null>,
     ][];
     if (present.length === 0) return;
     present.forEach(([key, ref]) => sim.registerTarget(key, ref, { rounded: true }));
-    return () => sim.unregisterTarget(present.map(([key]) => key));
+    const allKeys = present.flatMap(([key]) => (Array.isArray(key) ? key : [key]));
+    return () => sim.unregisterTarget(allKeys);
   }, [
     sim,
     criseSpotlightKey,

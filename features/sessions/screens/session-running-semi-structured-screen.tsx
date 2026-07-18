@@ -340,6 +340,10 @@ export function SessionRunningSemiStructuredScreen({
 
   const handleStop = () => {
     const elapsed = controlledSeconds;
+    // A crisis/escape still being timed when the exercise is stopped is recorded
+    // (with its elapsed duration) as if its own button had been pressed first.
+    finalizeActiveCrise();
+    finalizeActiveFuga();
     lastElapsedSecondsRef.current = elapsed;
     if (resolvedSid) toggleTimer(resolvedSid, false);
     const minutes = Math.floor(elapsed / 60).toString().padStart(2, "0");
