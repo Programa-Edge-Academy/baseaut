@@ -157,7 +157,12 @@ export function TutorialModuleScreen() {
                   const returnModuleId = module.id;
                   sessionSim.start(routeSimKinds[module.id], routeSimSubSteps[module.id], () => {
                     requestStep(returnModuleId, index + 1);
-                    router.navigate({
+                    // Unwind every real screen the simulation pushed and return to
+                    // *this* module instance (which then jumps to its wrap-up step
+                    // via the pending step). `navigate` would leave those screens
+                    // in the stack and mount a duplicate module at step 0, breaking
+                    // both module completion and the back stack.
+                    router.dismissTo({
                       pathname: "/tutorial-module",
                       params: { moduleId: returnModuleId },
                     } as never);
