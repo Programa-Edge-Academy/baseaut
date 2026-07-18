@@ -316,7 +316,7 @@ export default function ReportsRoute() {
           const crossToggle = (
             <Pressable
               onPress={toggleCrossMode}
-              className={`mt-3 flex-row items-center gap-3 rounded-[15px] border p-3.5 active:opacity-70 ${
+              className={`flex-row items-center gap-3 rounded-[15px] border p-3.5 active:opacity-70 ${
                 isCrossMode ? "border-primary bg-primary/10" : "border-outline bg-level2"
               }`}
             >
@@ -329,10 +329,12 @@ export default function ReportsRoute() {
               </Text>
             </Pressable>
           );
+          // Keep the top margin on the wrapper (external), so the spotlight
+          // highlight hugs the button itself and does not include the gap above.
           return isTutorial ? (
-            <SpotlightTarget targetKey="consolidated">{crossToggle}</SpotlightTarget>
+            <SpotlightTarget targetKey="consolidated" className="mt-3">{crossToggle}</SpotlightTarget>
           ) : (
-            crossToggle
+            <View className="mt-3">{crossToggle}</View>
           );
         })()}
 
@@ -457,18 +459,16 @@ export default function ReportsRoute() {
               />
             </View>
             <View className="items-center">
-              <SpotlightTarget
-                targetKey="consolidatedPeriod"
-                className="w-full"
-              >
-                <DefaultButton
-                  label={t("common.save")}
-                  sizeClass="w-full h-11"
-                  disabled={!tempStart || !tempEnd}
-                  style={{ opacity: !tempStart || !tempEnd ? 0.5 : 1 }}
-                  onPress={handleSavePeriod}
-                />
-              </SpotlightTarget>
+              {/* The calendar's save button is intentionally not spotlighted:
+                  highlighting it before a date is picked was misleading. The
+                  "consolidatedPeriod" sub-step still advances on save. */}
+              <DefaultButton
+                label={t("common.save")}
+                sizeClass="w-full h-11"
+                disabled={!tempStart || !tempEnd}
+                style={{ opacity: !tempStart || !tempEnd ? 0.5 : 1 }}
+                onPress={handleSavePeriod}
+              />
             </View>
           </Pressable>
           <TutorialSpotlight />
