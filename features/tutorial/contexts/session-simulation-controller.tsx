@@ -9,6 +9,7 @@ import {
   SimulationSubStep,
   TutorialSimulationProvider,
 } from "@/features/tutorial/contexts/tutorial-simulation-context";
+import { useSessionGlobalContext } from "@/features/sessions/contexts/session-global-context";
 
 /**
  * Controls the session tutorial simulation. Unlike the single-screen replicas
@@ -53,6 +54,7 @@ export function SessionSimulationProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const { closeTutorialSessions } = useSessionGlobalContext();
   const [state, setState] = useState<{
     active: boolean;
     kind: RouteSimKind;
@@ -79,13 +81,17 @@ export function SessionSimulationProvider({
   );
 
   const stop = useCallback(() => {
+    // Discard any practice session left in memory so it never leaks into the
+    // real global session widget after the tutorial is dismissed.
+    closeTutorialSessions();
     setState((prev) => ({ ...prev, active: false, kind: null, subSteps: [] }));
-  }, []);
+  }, [closeTutorialSessions]);
 
   const handleComplete = useCallback(() => {
+    closeTutorialSessions();
     setState((prev) => ({ ...prev, active: false, kind: null, subSteps: [] }));
     state.onComplete();
-  }, [state]);
+  }, [state, closeTutorialSessions]);
 
   const controller = useMemo<SessionSimControllerValue>(
     () => ({ active: state.active, kind: state.kind, start, stop }),

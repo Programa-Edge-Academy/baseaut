@@ -4,11 +4,10 @@ import { LOCALE_OPTIONS } from "@/features/settings/constants/translations";
 import { FeedbackModal } from "@/features/settings/components/feedback-modal";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { ThemeMode, useTheme, useThemeColors } from "@/features/settings/contexts/theme-context";
-import { useTutorial } from "@/features/tutorial/contexts/tutorial-context";
 import { useRouter } from "expo-router";
 import { Check, GraduationCap, Languages, MessageSquareText, Monitor, Moon, Sun } from "lucide-react-native";
 import React, { useState } from "react";
-import { Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 /** A single selectable option row with a leading icon and a trailing check. */
 function OptionRow({
@@ -50,7 +49,6 @@ export default function SettingsRoute() {
   const colors = useThemeColors();
   const { mode, setMode } = useTheme();
   const { t, preference, setPreference } = useI18n();
-  const { hidden: tutorialHidden, setHidden: setTutorialHidden } = useTutorial();
   const [feedbackVisible, setFeedbackVisible] = useState(false);
 
   const themeOptions: { value: ThemeMode; label: string; icon: React.ReactNode }[] = [
@@ -131,19 +129,6 @@ export default function SettingsRoute() {
               <Text className="text-default-1 text-content">{t("settings.openTutorial")}</Text>
             </View>
           </Pressable>
-
-          <View className="flex-row items-center justify-between rounded-2xl border border-outline bg-level1 p-4">
-            <View className="flex-1 pr-3">
-              <Text className="text-default-1 text-content">{t("settings.showTutorialButton")}</Text>
-              <Text className="text-default-3 text-muted">{t("settings.showTutorialButtonHint")}</Text>
-            </View>
-            <Switch
-              value={!tutorialHidden}
-              onValueChange={(next) => setTutorialHidden(!next)}
-              trackColor={{ true: colors.primary, false: colors.outline }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
         </View>
       </ScrollView>
 

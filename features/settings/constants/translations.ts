@@ -213,11 +213,13 @@ export type TranslationKey =
   | "tutorial.hint.sessoes.restart"
   | "tutorial.hint.sessoes.stop"
   | "tutorial.hint.sessoes.deferResult"
+  | "tutorial.hint.sessoes.startSecond"
   | "tutorial.hint.sessoes.stopSecond"
   | "tutorial.hint.sessoes.selectLevel"
   | "tutorial.hint.sessoes.selectHelp"
   | "tutorial.hint.sessoes.conclude"
   | "tutorial.hint.sessoes.stopNotDone"
+  | "tutorial.hint.sessoes.deferAgain"
   | "tutorial.hint.sessoes.markNotCompleted"
   | "tutorial.hint.sessoes.selectMotive"
   | "tutorial.hint.sessoes.registerNotCompleted"
@@ -510,6 +512,7 @@ export type TranslationKey =
   | "analysis.protocolCard.ageGroup"
   | "analysis.protocolCard.evaluatedBy"
   | "analysis.progressChart.selectedExercise"
+  | "analysis.progressChart.execution"
   | "analysis.comparisonCard.loadError"
   | "analysis.comparisonCard.insufficientData"
   | "analysis.behaviors.comparisonTitle"
@@ -1313,11 +1316,13 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.sessoes.restart": "Toque em \"Redefinir\" para zerar o cronômetro e recomeçar a contagem.",
     "tutorial.hint.sessoes.stop": "Toque em \"Parar\" para encerrar a atividade e marcar o resultado.",
     "tutorial.hint.sessoes.deferResult": "Toque em \"Adiar resposta\" para adiar o resultado deste exercício e respondê-lo depois.",
+    "tutorial.hint.sessoes.startSecond": "Toque em \"Iniciar atividade\" para começar o segundo exercício.",
     "tutorial.hint.sessoes.stopSecond": "No segundo exercício, toque em \"Parar\" para encerrá-lo e marcar o resultado.",
     "tutorial.hint.sessoes.selectLevel": "Selecione um nível de desenvolvimento (inicial, intermediário ou maduro).",
     "tutorial.hint.sessoes.selectHelp": "Selecione um registro de ajuda (autônomo ou ajuda intrusiva).",
     "tutorial.hint.sessoes.conclude": "Toque em \"Concluir\" para confirmar a finalização do exercício.",
     "tutorial.hint.sessoes.stopNotDone": "Toque em \"Parar\" para encerrar este exercício e marcar o resultado.",
+    "tutorial.hint.sessoes.deferAgain": "Toque em \"Adiar resposta\" para adiar o resultado deste exercício.",
     "tutorial.hint.sessoes.markNotCompleted": "Toque em \"Não realizado\" para registrar que o exercício não foi realizado.",
     "tutorial.hint.sessoes.selectMotive": "Selecione um motivo para a não realização.",
     "tutorial.hint.sessoes.registerNotCompleted": "Toque em \"Registrar\" para confirmar o exercício como não realizado.",
@@ -1610,6 +1615,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "analysis.protocolCard.ageGroup": "Grupo de idade",
     "analysis.protocolCard.evaluatedBy": "Avaliado por",
     "analysis.progressChart.selectedExercise": "Exercício selecionado",
+    "analysis.progressChart.execution": "Execução",
     "analysis.comparisonCard.loadError": "Não foi possível carregar esta comparação. Tente novamente.",
     "analysis.comparisonCard.insufficientData": "Dados insuficientes para comparação.",
     "analysis.behaviors.comparisonTitle": "Comparação dos comportamentos observados",
@@ -2422,11 +2428,13 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.sessoes.restart": "Tap \"Redefinir\" to reset the stopwatch and start counting again.",
     "tutorial.hint.sessoes.stop": "Tap \"Parar\" to end the activity and mark its result.",
     "tutorial.hint.sessoes.deferResult": "Tap \"Defer answer\" to postpone this exercise's result and answer it later.",
+    "tutorial.hint.sessoes.startSecond": "Tap \"Start activity\" to begin the second exercise.",
     "tutorial.hint.sessoes.stopSecond": "On the second exercise, tap \"Parar\" to end it and mark the result.",
     "tutorial.hint.sessoes.selectLevel": "Select a development level (initial, intermediate, or mature).",
     "tutorial.hint.sessoes.selectHelp": "Select a help record (autonomous or intrusive help).",
     "tutorial.hint.sessoes.conclude": "Tap \"Done\" to confirm the exercise as completed.",
     "tutorial.hint.sessoes.stopNotDone": "Tap \"Parar\" to end this exercise and mark its result.",
+    "tutorial.hint.sessoes.deferAgain": "Tap \"Defer answer\" to postpone this exercise's result.",
     "tutorial.hint.sessoes.markNotCompleted": "Tap \"Not completed\" to record that the exercise was not performed.",
     "tutorial.hint.sessoes.selectMotive": "Select a reason for not performing it.",
     "tutorial.hint.sessoes.registerNotCompleted": "Tap \"Register\" to confirm the exercise as not performed.",
@@ -2719,6 +2727,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "analysis.protocolCard.ageGroup": "Age group",
     "analysis.protocolCard.evaluatedBy": "Evaluated by",
     "analysis.progressChart.selectedExercise": "Selected exercise",
+    "analysis.progressChart.execution": "Execution",
     "analysis.comparisonCard.loadError": "Could not load this comparison. Please try again.",
     "analysis.comparisonCard.insufficientData": "Insufficient data for comparison.",
     "analysis.behaviors.comparisonTitle": "Comparison of observed behaviors",

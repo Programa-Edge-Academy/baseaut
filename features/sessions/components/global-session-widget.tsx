@@ -45,7 +45,10 @@ export function GlobalSessionWidget() {
   const sessionIds = Object.keys(activeSessions).filter((id) => {
     const session = activeSessions[id];
     // Practice sessions started inside a tutorial never surface in the widget.
-    return !session.isTimerVisibleOnScreen && !session.isTutorial;
+    // They are flagged with `isTutorial` and always use an in-memory `mock-`
+    // id, so either signal keeps them out even if the flag is ever missed.
+    const isTutorialSession = session.isTutorial || id.startsWith("mock-");
+    return !session.isTimerVisibleOnScreen && !isTutorialSession;
   });
 
   if (sessionIds.length === 0) {

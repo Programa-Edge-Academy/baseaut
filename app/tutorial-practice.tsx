@@ -10,6 +10,7 @@ import {
   SimulationSubStep,
   TutorialSimulationProvider,
 } from "@/features/tutorial/contexts/tutorial-simulation-context";
+import { TutorialTapGuard } from "@/features/tutorial/components/tutorial-tap-guard";
 import { useTutorial } from "@/features/tutorial/contexts/tutorial-context";
 import { TutorialPracticeScreen } from "@/features/tutorial/screens/tutorial-practice-screen";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -57,7 +58,7 @@ export default function TutorialPracticeRoute() {
         subSteps={replica.subSteps}
         onComplete={handleComplete}
       >
-        {replica.screen}
+        <TutorialTapGuard>{replica.screen}</TutorialTapGuard>
       </TutorialSimulationProvider>
     );
   }

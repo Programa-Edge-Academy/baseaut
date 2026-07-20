@@ -91,19 +91,18 @@ export const SESSOES_SIMULATION: SimulationSubStep[] = [
   { key: "stop", hintKey: "tutorial.hint.sessoes.stop" },
   // First session, exercise 1: defer the result to answer later.
   { key: "deferResult", hintKey: "tutorial.hint.sessoes.deferResult" },
-  // First session, exercise 2: stop, fill the result and conclude it.
+  // First session, exercise 2: start it, stop it, fill the result and conclude.
+  { key: "startSecond", hintKey: "tutorial.hint.sessoes.startSecond" },
   { key: "stopSecond", hintKey: "tutorial.hint.sessoes.stopSecond" },
   { key: "selectLevel", hintKey: "tutorial.hint.sessoes.selectLevel" },
   { key: "selectHelp", hintKey: "tutorial.hint.sessoes.selectHelp" },
   { key: "conclude", hintKey: "tutorial.hint.sessoes.conclude" },
   { key: "backToSelection", hintKey: "tutorial.hint.sessoes.backToSelection" },
   { key: "selectAgain", hintKey: "tutorial.hint.sessoes.selectAgain" },
+  // Second session, exercise 1: start it, stop it and defer its result.
   { key: "startAgain", hintKey: "tutorial.hint.sessoes.startAgain" },
-  // Second session, exercise 1: stop and mark it as not performed.
   { key: "stopNotDone", hintKey: "tutorial.hint.sessoes.stopNotDone" },
-  { key: "markNotCompleted", hintKey: "tutorial.hint.sessoes.markNotCompleted" },
-  { key: "selectMotive", hintKey: "tutorial.hint.sessoes.selectMotive" },
-  { key: "registerNotCompleted", hintKey: "tutorial.hint.sessoes.registerNotCompleted" },
+  { key: "deferAgain", hintKey: "tutorial.hint.sessoes.deferAgain" },
   { key: "goBack", hintKey: "tutorial.hint.sessoes.goBack" },
   { key: "reopenCircuit", hintKey: "tutorial.hint.sessoes.reopenCircuit" },
   { key: "concurrentContinue", hintKey: "tutorial.hint.sessoes.concurrentContinue" },

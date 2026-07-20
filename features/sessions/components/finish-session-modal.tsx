@@ -3,6 +3,7 @@ import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { AlertCircle, Check, X } from "lucide-react-native";
@@ -56,6 +57,8 @@ export type FinishSessionModalProps = {
    * outside the highlight, since it also demands a free-text description.
    */
   reasonSpotlightKey?: string;
+  /** Tutorial spotlight key for the confirm (early-finish) button. */
+  confirmSpotlightKey?: string;
 };
 
 /**
@@ -78,6 +81,7 @@ export function FinishSessionModal({
   confirmLabel,
   pendingExercises = [],
   reasonSpotlightKey,
+  confirmSpotlightKey,
 }: FinishSessionModalProps) {
   const { t } = useI18n();
   const sim = useTutorialSimulation();
@@ -111,6 +115,7 @@ export function FinishSessionModal({
     setSubmitted(true);
     if (!selected) return;
     if (isOutro && outroDescricao.trim() === "") return;
+    if (confirmSpotlightKey) sim.complete(confirmSpotlightKey);
     onConfirm(selected, isOutro ? outroDescricao.trim() : undefined);
   };
 
@@ -122,6 +127,7 @@ export function FinishSessionModal({
         onPress={() => {
           setSelected(motivo);
           setSubmitted(false);
+          if (reasonSpotlightKey) sim.complete(reasonSpotlightKey);
         }}
         className="flex-row items-center justify-between rounded-2xl border bg-level1 p-3 active:opacity-70"
         style={{
@@ -231,14 +237,27 @@ export function FinishSessionModal({
               textClassName="text-muted"
               sizeClass="flex-1 h-11"
             />
-            <DefaultButton
-              label={resolvedConfirmLabel}
-              onPress={handleConfirm}
-              bgColorClass="bg-error"
-              shadowClass="shadow-errorShadow"
-              sizeClass="flex-1 h-11"
-              textClassName="text-content"
-            />
+            {confirmSpotlightKey ? (
+              <SpotlightTarget targetKey={confirmSpotlightKey} className="flex-1">
+                <DefaultButton
+                  label={resolvedConfirmLabel}
+                  onPress={handleConfirm}
+                  bgColorClass="bg-error"
+                  shadowClass="shadow-errorShadow"
+                  sizeClass="w-full h-11"
+                  textClassName="text-content"
+                />
+              </SpotlightTarget>
+            ) : (
+              <DefaultButton
+                label={resolvedConfirmLabel}
+                onPress={handleConfirm}
+                bgColorClass="bg-error"
+                shadowClass="shadow-errorShadow"
+                sizeClass="flex-1 h-11"
+                textClassName="text-content"
+              />
+            )}
           </View>
 
           <TutorialSpotlight />

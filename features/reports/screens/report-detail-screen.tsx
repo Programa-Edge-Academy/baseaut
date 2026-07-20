@@ -9,7 +9,9 @@ import { StudentInfoCard } from "@/features/analysis/components/student-info-car
 import { ExerciseProgressChart, ExerciseProgressRecord } from "@/features/analysis/components/exercise-progress-chart";
 import { HelpRecordsBarChart, HelpSessionRecord } from "@/features/analysis/components/help-records-bar-chart";
 import { HelpRecordsDetailModal } from "@/features/analysis/components/help-records-detail-modal";
-import { ObservedBehaviorsChart, BehaviorRecord } from "@/features/analysis/components/observed-behaviors-chart";
+import { ObservedBehaviorsChart, BehaviorRecord, BehaviorType } from "@/features/analysis/components/observed-behaviors-chart";
+import { BehaviorDetailCard } from "@/features/analysis/components/behavior-detail-card";
+import { useObservedBehaviors } from "@/features/analysis/hooks/use-observed-behaviors";
 import { AnalysisSummary } from "@/features/analysis/components/analysis-summary";
 import ExerciseComparisonCard from "@/features/analysis/components/exercice-comparison-card";
 import ComparisonHelp from "@/features/analysis/components/comparison-help";
@@ -27,7 +29,7 @@ import { useSessionSimController } from "@/features/tutorial/contexts/session-si
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { BarChart3 } from "lucide-react-native";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from "react-native";
 
 /** Formats an ISO date as a Brazilian short date. */
@@ -67,6 +69,69 @@ function fmtSupportLevel(
   if (raw === "nivel_2") return t("reports.supportLevel2");
   if (raw === "nivel_3") return t("reports.supportLevel3");
   return raw;
+}
+
+/** Display config (label key + color) for each observed behavior type. */
+const BEHAVIOR_CONFIG: Record<BehaviorType, { labelKey: TranslationKey; color: string }> = {
+  stereotypy: { labelKey: "analysis.behaviorChart.stereotypy.legend", color: "#09CDDB" },
+  eye_contact_people: { labelKey: "analysis.behaviorChart.eyePeople.legend", color: "#DBBF09" },
+  eye_contact_objects: { labelKey: "analysis.behaviorChart.eyeObjects.legend", color: "#A6900A" },
+  engagement: { labelKey: "analysis.behaviorChart.engagement.legend", color: "#34C759" },
+  escape: { labelKey: "analysis.behaviorChart.escape.legend", color: "#CB30E0" },
+  crisis: { labelKey: "analysis.behaviorChart.crisis.legend", color: "#FF383C" },
+  unfit: { labelKey: "analysis.behaviorChart.unfit.legend", color: "#FF8A00" },
+  preferred_activity: { labelKey: "analysis.behaviorChart.preferred.legend", color: "#1E88E5" },
+};
+
+/** Aggregated behavior for a detail card. */
+type BehaviorCardData = {
+  type: BehaviorType;
+  behaviorName: string;
+  color: string;
+  occurrences: number;
+  sessions: string[];
+  exercises: string[];
+  lastOccurrence: string;
+};
+
+/**
+ * Aggregates observed-behavior records into the per-behavior detail cards shown
+ * in the analysis screen, so the report can render the same breakdown.
+ */
+function aggregateBehaviorDetails(
+  records: BehaviorRecord[],
+  exercises: Record<string, string[]>,
+  t: (key: TranslationKey) => string,
+): BehaviorCardData[] {
+  const keys: BehaviorType[] = [
+    "stereotypy", "eye_contact_people", "eye_contact_objects", "engagement",
+    "escape", "crisis", "unfit", "preferred_activity",
+  ];
+  const result: BehaviorCardData[] = [];
+  keys.forEach((key) => {
+    const recs = records.filter((r) => r.behaviorType === key);
+    if (!recs.length) return;
+    const occurrences = recs.reduce((sum, r) => sum + r.frequency, 0);
+    const uniqueDates = Array.from(new Set(recs.map((r) => r.date))).sort(
+      (a, b) => new Date(b).getTime() - new Date(a).getTime(),
+    );
+    const sessions = uniqueDates.map((dateStr, index) => {
+      const [, month, day] = dateStr.split("-").map(Number);
+      return `${index + 1}. ${t("analysis.behaviorsScreen.sessionOf")} ${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}`;
+    });
+    const [ly, lm, ld] = uniqueDates[0].split("-").map(Number);
+    const lastOccurrence = `${String(ld).padStart(2, "0")}/${String(lm).padStart(2, "0")}/${ly}`;
+    result.push({
+      type: key,
+      behaviorName: t(BEHAVIOR_CONFIG[key].labelKey),
+      color: BEHAVIOR_CONFIG[key].color,
+      occurrences,
+      sessions,
+      exercises: exercises[key] ?? [],
+      lastOccurrence,
+    });
+  });
+  return result.sort((a, b) => b.occurrences - a.occurrences);
 }
 
 /** Bold section title with a bottom divider. */
@@ -125,6 +190,22 @@ export function ReportDetailScreen() {
   const { data, isLoading } = useReportData(studentId ?? "", dataInicio ?? "", dataFim ?? "", { mock: isTutorial });
   const { deleteReport } = useStudentReports(studentId ?? "", { mock: isTutorial });
 
+  const startDate = dataInicio ? getLocalStartOfDay(dataInicio) : null;
+  const endDate = dataFim ? getLocalEndOfDay(dataFim) : null;
+
+  // Per-behavior detail (occurrences, sessions, exercises) for the detail cards,
+  // matching the observed-behaviors analysis screen.
+  const { records: behaviorRecords, exercises: behaviorExercises } = useObservedBehaviors(
+    studentId ?? "",
+    startDate,
+    endDate,
+    { mock: isTutorial },
+  );
+  const behaviorDetailCards = useMemo(
+    () => aggregateBehaviorDetails(behaviorRecords, behaviorExercises, t),
+    [behaviorRecords, behaviorExercises, t],
+  );
+
   const [isFormatPickerOpen, setIsFormatPickerOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -177,9 +258,6 @@ export function ReportDetailScreen() {
       setToast({ visible: true, mode: "error", title: t("reports.deleteError") });
     }
   };
-
-  const startDate = dataInicio ? getLocalStartOfDay(dataInicio) : null;
-  const endDate = dataFim ? getLocalEndOfDay(dataFim) : null;
 
   const buildSummaryCards = () => {
     if (!data?.comparacao) return [];
@@ -308,12 +386,29 @@ export function ReportDetailScreen() {
 
               <SectionHeader title={t("reports.section.behaviors")} />
               {data.comportamentos && data.comportamentos.length > 0 ? (
-                <ObservedBehaviorsChart
-                  records={data.comportamentos as BehaviorRecord[]}
-                  startDate={startDate}
-                  endDate={endDate}
-                  hideShadow
-                />
+                <>
+                  <ObservedBehaviorsChart
+                    records={data.comportamentos as BehaviorRecord[]}
+                    startDate={startDate}
+                    endDate={endDate}
+                    hideShadow
+                  />
+                  {behaviorDetailCards.length > 0 && (
+                    <View className="mt-4 gap-4">
+                      {behaviorDetailCards.map((item) => (
+                        <BehaviorDetailCard
+                          key={item.type}
+                          behaviorName={item.behaviorName}
+                          color={item.color}
+                          occurrences={item.occurrences}
+                          sessions={item.sessions}
+                          exercises={item.exercises}
+                          lastOccurrence={item.lastOccurrence}
+                        />
+                      ))}
+                    </View>
+                  )}
+                </>
               ) : (
                 <EmptySection message={t("reports.empty.behaviors")} />
               )}
@@ -348,6 +443,7 @@ export function ReportDetailScreen() {
                       recordId={item.id}
                       dateLabel={fmtDate(item.data)}
                       responsavel={item.responsavel}
+                      fallbackScore={item.pontuacao}
                     />
                   ))}
                   {(data.consolidado!.historico_ata ?? []).map((item: any) => (
@@ -357,6 +453,7 @@ export function ReportDetailScreen() {
                       recordId={item.id}
                       dateLabel={fmtDate(item.data)}
                       responsavel={item.responsavel}
+                      fallbackScore={item.pontuacao}
                     />
                   ))}
                   {(data.consolidado!.historico_mabc2 ?? []).map((item: any) => (
@@ -366,6 +463,8 @@ export function ReportDetailScreen() {
                       recordId={item.id}
                       dateLabel={fmtDate(item.data)}
                       responsavel={item.responsavel}
+                      fallbackScore={item.pontuacao}
+                      fallbackPercentile={item.percentil}
                     />
                   ))}
                 </View>

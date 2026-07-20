@@ -73,6 +73,8 @@ interface SessionGlobalContextData {
     interval: { start: number; end: number },
   ) => void;
   closeSession: (sessionId: string) => void;
+  /** Removes every tutorial/mock session at once (called when a sim ends). */
+  closeTutorialSessions: () => void;
   updateTimeElapsed: (sessionId: string, seconds: number) => void;
 }
 
@@ -228,6 +230,18 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const closeTutorialSessions = () => {
+    setActiveSessions((prev) => {
+      const ids = Object.keys(prev).filter(
+        (id) => prev[id].isTutorial || id.startsWith("mock-"),
+      );
+      if (ids.length === 0) return prev;
+      const next = { ...prev };
+      ids.forEach((id) => delete next[id]);
+      return next;
+    });
+  };
+
   return (
     <SessionGlobalContext.Provider
       value={{
@@ -240,6 +254,7 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
         setFormVisible,
         addFugaInterval,
         closeSession,
+        closeTutorialSessions,
         updateTimeElapsed,
       }}
     >

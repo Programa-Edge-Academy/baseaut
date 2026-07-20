@@ -24,14 +24,16 @@ import { Pressable, ScrollView, Text, View } from "react-native";
  * mock highlights are illustrative, and its "Simular" action opens an
  * interactive practice sandbox (see the tutorial-practice route). Completing
  * the last step marks the module done; finishing the final remaining module
- * shows a congratulations modal and hides the tutorial from the header.
+ * shows a congratulations modal. Once every module is done the header shortcut
+ * disappears on its own ({@link useTutorial} `allCompleted`), leaving Settings
+ * as the only entry point.
  */
 export function TutorialModuleScreen() {
   const router = useRouter();
   const colors = useThemeColors();
   const { t } = useI18n();
   const { moduleId } = useLocalSearchParams<{ moduleId: string }>();
-  const { completed, markCompleted, setHidden, pendingStep, clearPendingStep, requestStep } =
+  const { completed, markCompleted, pendingStep, clearPendingStep, requestStep } =
     useTutorial();
   const sessionSim = useSessionSimController();
 
@@ -90,7 +92,6 @@ export function TutorialModuleScreen() {
   };
 
   const handleFinishCongrats = () => {
-    setHidden(true);
     setShowCongrats(false);
     router.replace("/students");
   };

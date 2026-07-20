@@ -53,14 +53,22 @@ export function ProtocolRecordView({
   recordId,
   dateLabel,
   responsavel,
+  fallbackScore,
+  fallbackPercentile,
 }: {
   tipo: "ata" | "cars" | "mabc2";
   recordId: string;
   dateLabel: string;
   responsavel?: string;
+  /** Score from the consolidated record, shown when the detail total is absent. */
+  fallbackScore?: number | string | null;
+  /** Percentile from the consolidated record (MABC-2), used as a fallback. */
+  fallbackPercentile?: number | string | null;
 }) {
   const { t } = useI18n();
   const { detail, isLoading } = useProtocolRecordDetail(tipo, recordId);
+  const hasFallbackScore = fallbackScore != null && fallbackScore !== "";
+  const hasFallbackPct = fallbackPercentile != null && fallbackPercentile !== "";
 
   if (isLoading) {
     return (
@@ -78,7 +86,11 @@ export function ProtocolRecordView({
       <View className="border border-outline rounded-lg bg-level2 p-4 mb-3">
         <View className="flex-row items-center justify-between mb-2">
           <Text className="text-sm font-bold text-content">ATA — {dateLabel}</Text>
-          {detail.ata.total != null && <ScoreBadge label={`${t("reports.protocol.total")}: ${detail.ata.total}`} />}
+          {detail.ata.total != null ? (
+            <ScoreBadge label={`${t("reports.protocol.total")}: ${detail.ata.total}`} />
+          ) : hasFallbackScore ? (
+            <ScoreBadge label={`${t("reports.protocol.total")}: ${fallbackScore}`} />
+          ) : null}
         </View>
         {responsavel && <Text className="text-xs text-muted mb-2">{t("reports.protocol.responsible")}: {responsavel}</Text>}
         {hasResponses ? (
@@ -98,7 +110,11 @@ export function ProtocolRecordView({
       <View className="border border-outline rounded-lg bg-level2 p-4 mb-3">
         <View className="flex-row items-center justify-between mb-2">
           <Text className="text-sm font-bold text-content">CARS — {dateLabel}</Text>
-          {detail.cars.total != null && <ScoreBadge label={`${t("reports.protocol.total")}: ${detail.cars.total}`} />}
+          {detail.cars.total != null ? (
+            <ScoreBadge label={`${t("reports.protocol.total")}: ${detail.cars.total}`} />
+          ) : hasFallbackScore ? (
+            <ScoreBadge label={`${t("reports.protocol.total")}: ${fallbackScore}`} />
+          ) : null}
         </View>
         {responsavel && <Text className="text-xs text-muted mb-2">{t("reports.protocol.responsible")}: {responsavel}</Text>}
         {hasResponses ? (
@@ -128,16 +144,16 @@ export function ProtocolRecordView({
         </View>
 
         <View className="flex-row gap-3 mb-4">
-          {m.totalScore != null && (
+          {(m.totalScore != null || hasFallbackScore) && (
             <View className="flex-1 bg-level1 border border-outline rounded-lg py-2 items-center">
               <Text className="text-[10px] text-muted">{t("reports.protocol.totalScore")}</Text>
-              <Text className="text-base text-content font-bold">{m.totalScore}</Text>
+              <Text className="text-base text-content font-bold">{m.totalScore ?? fallbackScore}</Text>
             </View>
           )}
-          {m.totalPercentile != null && (
+          {(m.totalPercentile != null || hasFallbackPct) && (
             <View className="flex-1 bg-level1 border border-outline rounded-lg py-2 items-center">
               <Text className="text-[10px] text-muted">{t("reports.protocol.percentile")}</Text>
-              <Text className="text-base text-content font-bold">{m.totalPercentile}</Text>
+              <Text className="text-base text-content font-bold">{m.totalPercentile ?? fallbackPercentile}</Text>
             </View>
           )}
         </View>

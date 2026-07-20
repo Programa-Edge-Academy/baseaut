@@ -1,11 +1,21 @@
 import { deliverFiles, type DeliveryMode, type ExportableFile } from "@/lib/export-delivery";
 import { pdfDocument, pdfRunningHeaderReport } from "@/lib/pdf-layout";
-import type { TranslationKey } from "@/features/settings/constants/translations";
+import type { Locale, TranslationKey } from "@/features/settings/constants/translations";
+import {
+  localizeFormText,
+  localizeMabcComponent,
+  localizeMabcUnit,
+} from "@/features/forms/utils/form-content-i18n";
 import { supabase } from "@/lib/supabase";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Print from "expo-print";
 import { Platform } from "react-native";
 import { Report } from "../hooks/use-student-reports";
+
+/** Narrows the threaded locale string to the {@link Locale} the localizers expect. */
+function asLoc(locale: string): Locale {
+  return locale === "en" ? "en" : "pt";
+}
 
 /** Localized string getter threaded through the export builders. */
 type T = (key: TranslationKey) => string;
@@ -105,9 +115,20 @@ function toIsoEnd(date: string) {
   return `${date}T23:59:59.999-03:00`;
 }
 
-/** Formats an ISO date as a short date in the given locale. */
+/**
+ * Formats a stored date as a short date in the given locale.
+ *
+ * @remarks
+ * Uses the literal calendar date part (`YYYY-MM-DD`) and builds a *local* Date,
+ * so a plain date string is never shifted a day by `new Date(iso)` parsing it as
+ * UTC midnight (which prints the previous day in negative-offset timezones like
+ * UTC-3). This matches how the in-app report renders the same dates.
+ */
 function fmtDate(iso: string, locale: string) {
-  return new Date(iso).toLocaleDateString(dateLocale(locale));
+  const datePart = String(iso ?? "").split("T")[0];
+  const [y, m, d] = datePart.split("-").map(Number);
+  const date = y && m && d ? new Date(y, m - 1, d) : new Date(iso);
+  return date.toLocaleDateString(dateLocale(locale));
 }
 
 /** Returns the midpoint date between two dates, used to split comparison periods. */
@@ -276,6 +297,419 @@ async function fetchMabc2CategoryScores(recordIds: string[]): Promise<Record<str
   return map;
 }
 
+/** Escapes user-supplied text before injecting it into the exported HTML. */
+function esc(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/** Parses a value into a finite number (accepting commas), or null. */
+function parseNum(value: any): number | null {
+  if (value == null || value === "") return null;
+  const parsed = parseFloat(String(value).replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** Keeps the human-readable first line of a question's text. */
+function firstLine(text: string): string {
+  return String(text ?? "").split("\n")[0].trim();
+}
+
+/** Localized label for a help-record type. */
+function helpTypeLabel(registro: string, t: T): string {
+  return registro === "ajuda_intrusiva"
+    ? t("analysis.help.intrusive")
+    : t("analysis.help.autonomous");
+}
+
+/** One session's per-exercise help records, mirroring the in-app detail modal. */
+type HelpSessionExport = {
+  label: string;
+  dateLabel: string;
+  exercises: { name: string; registro: string }[];
+};
+
+/**
+ * Loads every completed session in range with the help records of each of its
+ * executions (mirrors {@link useHelpSessionDetails}), so the export can show the
+ * same per-exercise help breakdown the app does under the help chart.
+ */
+async function fetchHelpSessionDetails(
+  studentId: string,
+  inicio: string,
+  fim: string,
+  t: T,
+  locale: string,
+): Promise<HelpSessionExport[]> {
+  const { data: sessionRows } = await supabase
+    .from("sessoes")
+    .select("id, data_inicio")
+    .eq("aluno_id", studentId)
+    .eq("status", "concluida")
+    .gte("data_inicio", `${inicio}T00:00:00.000Z`)
+    .lte("data_inicio", `${fim}T23:59:59.999Z`)
+    .order("data_inicio", { ascending: true });
+  const sessionList = sessionRows ?? [];
+  if (!sessionList.length) return [];
+
+  const sessionIds = sessionList.map((s: any) => s.id);
+  const { data: execRows } = await supabase
+    .from("execucoes_exercicio")
+    .select("id, sessao_id, exercicio_id, registro_ajuda, created_at")
+    .in("sessao_id", sessionIds)
+    .not("registro_ajuda", "is", null);
+  const execs = (execRows ?? []).sort((a: any, b: any) =>
+    a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0,
+  );
+
+  const exercicioIds = [...new Set(execs.map((e: any) => e.exercicio_id))];
+  const tituloById = new Map<string, string>();
+  if (exercicioIds.length) {
+    const { data: exRows } = await supabase
+      .from("exercicios")
+      .select("id, titulo")
+      .in("id", exercicioIds);
+    (exRows ?? []).forEach((ex: any) => tituloById.set(ex.id, ex.titulo));
+  }
+
+  const bySession = new Map<string, { name: string; registro: string }[]>();
+  for (const e of execs) {
+    const list = bySession.get(e.sessao_id) ?? [];
+    list.push({
+      name: tituloById.get(e.exercicio_id) ?? t("export.doc.exercise"),
+      registro: e.registro_ajuda,
+    });
+    bySession.set(e.sessao_id, list);
+  }
+
+  return sessionList.map((s: any, index: number) => ({
+    label: String(index + 1),
+    dateLabel: fmtDate(s.data_inicio, locale),
+    exercises: (bySession.get(s.id) ?? []).sort((a, b) => a.name.localeCompare(b.name)),
+  }));
+}
+
+/** One observed behavior aggregated with its sessions and exercises. */
+type BehaviorDetailExport = {
+  label: string;
+  occurrences: number;
+  sessions: string[];
+  exercises: string[];
+};
+
+/** Frontend behavior keys and their localized labels, in display order. */
+function behaviorDetailLabels(t: T): { key: string; label: string }[] {
+  return [
+    { key: "stereotypy", label: t("export.doc.behStereotypies") },
+    { key: "eye_contact_people", label: t("export.doc.behEyePeople") },
+    { key: "eye_contact_objects", label: t("export.doc.behEyeObjects") },
+    { key: "engagement", label: t("export.doc.behEngagement") },
+    { key: "escape", label: t("export.doc.behEscape") },
+    { key: "crisis", label: t("export.doc.behCrises") },
+    { key: "unfit", label: t("export.doc.behUnfit") },
+    { key: "preferred_activity", label: t("export.doc.behPreferred") },
+  ];
+}
+
+/**
+ * Loads observed behaviors in range grouped by type, with the dates they
+ * occurred and the exercises they happened in (mirrors {@link useObservedBehaviors}),
+ * so the export can render the same per-behavior detail cards as the app.
+ */
+async function fetchBehaviorDetails(
+  studentId: string,
+  inicio: string,
+  fim: string,
+  t: T,
+  locale: string,
+): Promise<BehaviorDetailExport[]> {
+  const { data: sessoes } = await supabase
+    .from("sessoes")
+    .select("id, data_inicio")
+    .eq("aluno_id", studentId)
+    .eq("status", "concluida")
+    .gte("data_inicio", toIsoStart(inicio))
+    .lte("data_inicio", toIsoEnd(fim));
+  const sessionList = sessoes ?? [];
+  if (!sessionList.length) return [];
+
+  const sessionIds = sessionList.map((s: any) => s.id);
+  const dateBySession = new Map<string, string>();
+  sessionList.forEach((s: any) => dateBySession.set(s.id, String(s.data_inicio).split("T")[0]));
+
+  const { data: behaviors } = await supabase
+    .from("comportamentos_sessao")
+    .select("tipo, execucao_id, sessao_id, observacao")
+    .in("sessao_id", sessionIds)
+    .neq("tipo", "outro");
+  const behaviorList = behaviors ?? [];
+  if (!behaviorList.length) return [];
+
+  const resolveType = (tipo: string, obs: string | null): string | undefined => {
+    if (tipo === "contato_visual") {
+      const o = (obs ?? "").toLowerCase();
+      if (o.includes("objeto")) return "eye_contact_objects";
+      if (o.includes("pessoa")) return "eye_contact_people";
+      return undefined;
+    }
+    const map: Record<string, string> = {
+      estereotipia: "stereotypy",
+      engajamento: "engagement",
+      fuga: "escape",
+      crise: "crisis",
+      inapto: "unfit",
+      atividade_preferencial: "preferred_activity",
+    };
+    return map[tipo];
+  };
+
+  const execIds = [...new Set(behaviorList.map((b: any) => b.execucao_id).filter(Boolean))];
+  const exerciseByExec = new Map<string, string>();
+  if (execIds.length) {
+    const { data: execData } = await supabase
+      .from("execucoes_exercicio")
+      .select("id, exercicio_id")
+      .in("id", execIds);
+    const exIds = [...new Set((execData ?? []).map((e: any) => e.exercicio_id))];
+    const tituloById = new Map<string, string>();
+    if (exIds.length) {
+      const { data: exRows } = await supabase
+        .from("exercicios")
+        .select("id, titulo")
+        .in("id", exIds);
+      (exRows ?? []).forEach((ex: any) => tituloById.set(ex.id, ex.titulo));
+    }
+    (execData ?? []).forEach((e: any) => {
+      const titulo = tituloById.get(e.exercicio_id);
+      if (titulo) exerciseByExec.set(e.id, titulo);
+    });
+  }
+
+  const byType = new Map<string, { occurrences: number; dates: Set<string>; exercises: Set<string> }>();
+  behaviorList.forEach((b: any) => {
+    const type = resolveType(b.tipo, b.observacao);
+    if (!type) return;
+    const entry = byType.get(type) ?? { occurrences: 0, dates: new Set<string>(), exercises: new Set<string>() };
+    entry.occurrences += 1;
+    const date = dateBySession.get(b.sessao_id);
+    if (date) entry.dates.add(date);
+    const exName = b.execucao_id ? exerciseByExec.get(b.execucao_id) : undefined;
+    if (exName) entry.exercises.add(exName);
+    byType.set(type, entry);
+  });
+
+  return behaviorDetailLabels(t)
+    .filter(({ key }) => byType.has(key))
+    .map(({ key, label }) => {
+      const entry = byType.get(key)!;
+      const dates = [...entry.dates].sort((a, b) => (a < b ? 1 : -1));
+      return {
+        label,
+        occurrences: entry.occurrences,
+        sessions: dates.map((d, i) => `${i + 1}. ${fmtDate(d, locale)}`),
+        exercises: [...entry.exercises],
+      };
+    });
+}
+
+/** Structured answer detail for one protocol record. */
+type ProtocolAnswerDetail = {
+  ata?: { sections: { title: string; valueLabel: string }[]; total: number | null; hasResponses: boolean };
+  cars?: {
+    domains: { title: string; scoreLabel: string; observation: string | null }[];
+    total: number | null;
+    hasResponses: boolean;
+  };
+  mabc2?: {
+    totalScore: number | null;
+    totalPercentile: string | null;
+    components: {
+      title: string;
+      categoryScore: number | null;
+      categoryPercentile: string | null;
+      items: { name: string; rawScore: string }[];
+    }[];
+  };
+};
+
+/** Loads a protocol record's questions and answers (mirrors the in-app detail). */
+async function fetchAtaCarsAnswers(formularioId: string) {
+  const { data: perguntas } = await supabase
+    .from("perguntas")
+    .select("id, texto_pergunta, tipo_resposta, ordem")
+    .eq("formulario_id", formularioId)
+    .order("ordem", { ascending: true });
+  const { data: respostas } = await supabase
+    .from("respostas_formulario")
+    .select("pergunta_id, valor_preenchido")
+    .eq("formulario_id", formularioId);
+  const answers = new Map<string, string | null>();
+  (respostas ?? []).forEach((r: any) => answers.set(r.pergunta_id, r.valor_preenchido));
+  return { perguntas: perguntas ?? [], answers };
+}
+
+/**
+ * Loads the per-item/section answers of one protocol record so the export can
+ * show them (mirrors {@link useProtocolRecordDetail}). Returns an empty detail
+ * on failure so a single bad record never aborts the whole export.
+ */
+async function fetchProtocolAnswerDetail(
+  tipo: "ata" | "cars" | "mabc2",
+  recordId: string,
+  locale: string,
+): Promise<ProtocolAnswerDetail> {
+  try {
+    if (tipo === "ata") {
+      const { perguntas, answers } = await fetchAtaCarsAnswers(recordId);
+      let total = 0;
+      let hasAny = false;
+      const sections = perguntas.map((q: any) => {
+        const value = parseNum(answers.get(q.id));
+        if (value != null) {
+          total += value;
+          hasAny = true;
+        }
+        return {
+          title: firstLine(localizeFormText(q.texto_pergunta, asLoc(locale))),
+          valueLabel: value != null ? String(value) : "—",
+        };
+      });
+      return { ata: { sections, total: hasAny ? total : null, hasResponses: hasAny } };
+    }
+    if (tipo === "cars") {
+      const { perguntas, answers } = await fetchAtaCarsAnswers(recordId);
+      const domains: { title: string; scoreLabel: string; observation: string | null }[] = [];
+      let total = 0;
+      let hasAny = false;
+      for (const q of perguntas) {
+        if (q.tipo_resposta === "texto_opcional") {
+          const observation = answers.get(q.id);
+          if (domains.length > 0) {
+            domains[domains.length - 1].observation =
+              observation && observation !== "" ? observation : null;
+          }
+          continue;
+        }
+        const score = parseNum(answers.get(q.id));
+        if (score != null) {
+          total += score;
+          hasAny = true;
+        }
+        domains.push({
+          title: firstLine(localizeFormText(q.texto_pergunta, asLoc(locale))),
+          scoreLabel: score != null ? String(score).replace(".", ",") : "—",
+          observation: null,
+        });
+      }
+      return { cars: { domains, total: hasAny ? total : null, hasResponses: hasAny } };
+    }
+    const { data } = await supabase.rpc("rpc_get_mabc2_formulario", { p_formulario_id: recordId });
+    const payload = (data ?? {}) as any;
+    const meta = payload.formulario?.metadados ?? {};
+    const itens = (payload.itens ?? []) as any[];
+    type Comp = {
+      title: string;
+      categoryScore: number | null;
+      categoryPercentile: string | null;
+      items: { name: string; rawScore: string }[];
+    };
+    const componentMap = new Map<string, Comp>();
+    for (const item of itens) {
+      const key = item.componente ?? "Outros";
+      if (!componentMap.has(key)) {
+        componentMap.set(key, {
+          title: localizeMabcComponent(key, asLoc(locale)),
+          categoryScore: meta?.componentes?.[key]?.escore_padrao ?? null,
+          categoryPercentile: meta?.componentes?.[key]?.percentil ?? null,
+          items: [],
+        });
+      }
+      const unit = item.unidade ?? "";
+      const rawScore =
+        item.escore_bruto != null
+          ? `${item.escore_bruto} ${localizeMabcUnit(unit, asLoc(locale))}`.trim()
+          : "—";
+      const localizedItemTitle = firstLine(localizeFormText(item.texto, asLoc(locale)));
+      componentMap.get(key)!.items.push({
+        name: item.codigo_item
+          ? `${item.codigo_item} — ${localizedItemTitle}`
+          : localizedItemTitle,
+        rawScore,
+      });
+    }
+    return {
+      mabc2: {
+        totalScore: meta.escore_total ?? null,
+        totalPercentile: meta.percentil ?? null,
+        components: Array.from(componentMap.values()),
+      },
+    };
+  } catch {
+    return {};
+  }
+}
+
+/** Renders one protocol record (header + score + answers) as an export card. */
+function protocolRecordCard(
+  tipoLabel: string,
+  dateLabel: string,
+  responsavel: string | null,
+  detail: ProtocolAnswerDetail,
+  t: T,
+): string {
+  const head = (score: string | null) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:12px;font-weight:bold;color:#1e293b">${esc(tipoLabel)} — ${esc(dateLabel)}</span>
+      ${score != null ? `<span style="font-size:11px;color:#0ea5e9;font-weight:bold">${t("reports.protocol.total")}: ${esc(score)}</span>` : ""}
+    </div>
+    ${responsavel ? `<div style="font-size:10px;color:#94a3b8;margin-bottom:6px">${t("reports.protocol.responsible")}: ${esc(responsavel)}</div>` : ""}`;
+
+  if (detail.ata) {
+    const body = detail.ata.hasResponses
+      ? `<table style="border-collapse:collapse;width:100%">
+          ${detail.ata.sections.map((s) => tableRow([esc(s.title), esc(s.valueLabel)])).join("")}
+        </table>`
+      : `<p style="color:#888;font-size:11px">${t("reports.protocol.noAnswers")}</p>`;
+    return `<div style="${CARD}">${head(detail.ata.total != null ? String(detail.ata.total) : null)}${body}</div>`;
+  }
+  if (detail.cars) {
+    const body = detail.cars.hasResponses
+      ? `<table style="border-collapse:collapse;width:100%">
+          ${detail.cars.domains
+            .map((d) => tableRow([esc(d.title) + (d.observation ? `<br/><span style="color:#94a3b8;font-style:italic">${esc(d.observation)}</span>` : ""), esc(d.scoreLabel)]))
+            .join("")}
+        </table>`
+      : `<p style="color:#888;font-size:11px">${t("reports.protocol.noAnswers")}</p>`;
+    return `<div style="${CARD}">${head(detail.cars.total != null ? String(detail.cars.total) : null)}${body}</div>`;
+  }
+  if (detail.mabc2) {
+    const m = detail.mabc2;
+    const scoreLine = `
+      <div style="font-size:11px;color:#475569;margin-bottom:8px">
+        ${m.totalScore != null ? `${t("reports.protocol.totalScore")}: <b>${esc(m.totalScore)}</b>` : ""}
+        ${m.totalPercentile != null ? ` &nbsp;|&nbsp; ${t("reports.protocol.percentile")}: <b>${esc(m.totalPercentile)}</b>` : ""}
+      </div>`;
+    const comps = m.components
+      .map(
+        (c) => `
+        <div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:bold;color:#1e293b;border-bottom:1px solid #e5e7eb;padding-bottom:3px;margin-bottom:3px">
+            <span>${esc(c.title)}</span>
+            <span>${c.categoryScore != null ? `${t("export.doc.scoreShort")} ${esc(c.categoryScore)}` : ""}${c.categoryPercentile ? ` · ${t("reports.protocol.percentile")} ${esc(c.categoryPercentile)}` : ""}</span>
+          </div>
+          <table style="border-collapse:collapse;width:100%">
+            ${c.items.map((it) => tableRow([esc(it.name), esc(it.rawScore)])).join("")}
+          </table>
+        </div>`,
+      )
+      .join("");
+    return `<div style="${CARD}">${head(null)}${scoreLine}${comps}</div>`;
+  }
+  return `<div style="${CARD}">${head(null)}<p style="color:#888;font-size:11px">${t("reports.protocol.noAnswers")}</p></div>`;
+}
+
 
 /** Renders an SVG line chart of an exercise's development level over sessions. */
 function svgProgressoExercicio(ex: any, t: T): string {
@@ -302,7 +736,7 @@ function svgProgressoExercicio(ex: any, t: T): string {
   }
   points.forEach((p: any, i: number) => {
     svg += `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#0ea5e9"/>`;
-    svg += `<text x="${p.x}" y="100" font-size="8" fill="#888" text-anchor="middle">S${i + 1}</text>`;
+    svg += `<text x="${p.x}" y="100" font-size="8" fill="#888" text-anchor="middle">${i + 1}</text>`;
   });
   svg += `</svg>`;
   return svg;
@@ -368,10 +802,19 @@ function sectionTitle(title: string): string {
 
 /**
  * Assembles the report's content as an array of major sections (progress, help,
- * behaviors, comparison, protocols). Each entry is a full section (title +
- * cards); the caller places each on its own page under a repeating header.
+ * behaviors, comparison, protocols, motor development). Each entry is a full
+ * section (title + cards); the caller places each on its own page under a
+ * repeating header. Mirrors the in-app report detail so nothing shown in the
+ * app is missing from the exported document.
  */
-async function buildSections(dataMap: Record<string, any>, inicio: string, fim: string, t: T, locale: string): Promise<string[]> {
+async function buildSections(
+  dataMap: Record<string, any>,
+  studentId: string,
+  inicio: string,
+  fim: string,
+  t: T,
+  locale: string,
+): Promise<string[]> {
   const sections: string[] = [];
   const meio = midDate(inicio, fim);
   const noDataPeriod = `<p style="color:#888;font-size:11px">${t("export.doc.noDataPeriod")}</p>`;
@@ -392,6 +835,26 @@ async function buildSections(dataMap: Record<string, any>, inicio: string, fim: 
   const ajuda: any[] = dataMap.ajuda_sessao ?? [];
   html += sectionCard(t("export.doc.cardHelpPerSession"),
     ajuda.length ? svgAjudaSessao(ajuda, t) : noDataPeriod);
+  // Per-exercise help breakdown per session (matches the in-app detail modal).
+  const helpDetails = await fetchHelpSessionDetails(studentId, inicio, fim, t, locale);
+  if (helpDetails.length) {
+    const detailRows = helpDetails
+      .flatMap((s) => {
+        const sessionLabel = `${t("analysis.helpChart.session")} ${s.label} (${s.dateLabel})`;
+        if (!s.exercises.length) {
+          return [tableRow([sessionLabel, t("analysis.helpModal.noRecords"), "–"])];
+        }
+        return s.exercises.map((ex) =>
+          tableRow([esc(sessionLabel), esc(ex.name), helpTypeLabel(ex.registro, t)]),
+        );
+      })
+      .join("");
+    html += sectionCard(t("analysis.helpModal.title"), `
+      <table style="border-collapse:collapse;width:100%">
+        ${tableRow([t("export.doc.session"), t("export.doc.exercise"), t("export.doc.type")], true)}
+        ${detailRows}
+      </table>`);
+  }
   sections.push(html);
 
   html = sectionTitle(t("reports.section.behaviors"));
@@ -399,6 +862,18 @@ async function buildSections(dataMap: Record<string, any>, inicio: string, fim: 
   const hasBehaviors = Object.values(counts).some((v: any) => v > 0);
   html += sectionCard(t("export.doc.cardBehaviorFreq"),
     hasBehaviors ? svgComportamentos(counts, t) : `<p style="color:#888;font-size:11px">${t("export.doc.noBehaviors")}</p>`);
+  // Per-behavior detail cards (occurrences, sessions, exercises) as in the app.
+  const behaviorDetails = await fetchBehaviorDetails(studentId, inicio, fim, t, locale);
+  behaviorDetails.forEach((b) => {
+    html += `<div style="${CARD}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:12px;font-weight:bold;color:#1e293b">${esc(b.label)}</span>
+        <span style="font-size:11px;color:#0ea5e9;font-weight:bold">${t("analysis.behavior.occurrences")}: ${b.occurrences}</span>
+      </div>
+      ${b.sessions.length ? `<div style="font-size:10px;color:#475569;margin-bottom:4px">${t("analysis.behavior.sessions")}: ${b.sessions.map((s) => esc(s)).join(" · ")}</div>` : ""}
+      ${b.exercises.length ? `<div style="font-size:10px;color:#475569">${t("analysis.behavior.associatedExercises")}: ${b.exercises.map((e) => esc(e)).join(", ")}</div>` : ""}
+    </div>`;
+  });
   sections.push(html);
 
   html = sectionTitle(t("reports.section.comparison"));
@@ -479,11 +954,19 @@ async function buildSections(dataMap: Record<string, any>, inicio: string, fim: 
         html += sectionCard("CARS", `
           <table style="border-collapse:collapse;width:100%">${tableRow(protocolHeader, true)}
           ${historico_cars.map((i: any) => tableRow([fmtDate(i.data, locale), i.responsavel ?? "–", String(i.pontuacao ?? "–")])).join("")}</table>`);
+        for (const i of historico_cars) {
+          const detail = await fetchProtocolAnswerDetail("cars", i.id, locale);
+          html += protocolRecordCard("CARS", fmtDate(i.data, locale), i.responsavel ?? null, detail, t);
+        }
       }
       if (historico_ata.length) {
         html += sectionCard("ATA", `
           <table style="border-collapse:collapse;width:100%">${tableRow(protocolHeader, true)}
           ${historico_ata.map((i: any) => tableRow([fmtDate(i.data, locale), i.responsavel ?? "–", String(i.pontuacao ?? "–")])).join("")}</table>`);
+        for (const i of historico_ata) {
+          const detail = await fetchProtocolAnswerDetail("ata", i.id, locale);
+          html += protocolRecordCard("ATA", fmtDate(i.data, locale), i.responsavel ?? null, detail, t);
+        }
       }
       if (historico_mabc2.length) {
         const catScores = await fetchMabc2CategoryScores(historico_mabc2.map((i: any) => i.id));
@@ -501,10 +984,41 @@ async function buildSections(dataMap: Record<string, any>, inicio: string, fim: 
               String(eq.escore_padrao ?? "–"), String(eq.percentil ?? "–"),
             ]);
           }).join("")}</table>`);
+        for (const i of historico_mabc2) {
+          const detail = await fetchProtocolAnswerDetail("mabc2", i.id, locale);
+          html += protocolRecordCard("MABC-2", fmtDate(i.data, locale), i.responsavel ?? null, detail, t);
+        }
       }
     } else {
       html += sectionCard(t("reports.section.protocols"), `<p style="color:#888;font-size:11px">${t("export.doc.noProtocolPeriod")}</p>`);
     }
+  }
+  sections.push(html);
+
+  // Motor development: the session Control Records and their answers.
+  html = sectionTitle(t("reports.section.motor"));
+  const rcs: any[] = cons?.registros_controle ?? [];
+  if (rcs.length) {
+    rcs.forEach((rc: any) => {
+      const respostas: any[] = rc.respostas ?? [];
+      const body = respostas.length
+        ? respostas
+            .map(
+              (r: any) => `
+              <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eef2f7;font-size:11px">
+                <span style="color:#475569;flex:1;margin-right:8px">${esc(localizeFormText(r.pergunta, asLoc(locale)))}</span>
+                <span style="color:#1e293b;font-weight:bold">${esc(r.valor ?? "–")}</span>
+              </div>`,
+            )
+            .join("")
+        : `<p style="color:#888;font-size:11px">${t("reports.noAnswers")}</p>`;
+      html += sectionCard(
+        `${fmtDate(rc.data_sessao, locale)} — ${esc(rc.monitor ?? t("reports.noMonitor"))}`,
+        body,
+      );
+    });
+  } else {
+    html += sectionCard(t("reports.section.motor"), `<p style="color:#888;font-size:11px">${t("reports.empty.motor")}</p>`);
   }
   sections.push(html);
 
@@ -561,7 +1075,7 @@ export async function exportReports(
     };
 
     if (formats.pdf) {
-      const sections = await buildSections(dataMap, data_inicio, data_fim, t, locale);
+      const sections = await buildSections(dataMap, studentId, data_inicio, data_fim, t, locale);
 
       const snapshot = (report.snapshot_aluno as StudentProfile | null) ?? fallbackProfile;
       const studentInfoHtml = snapshot
@@ -670,6 +1184,71 @@ export async function exportReports(
           ]);
         });
         rows.push([]);
+      }
+
+      // Per-exercise help records per session (matches the in-app detail modal).
+      const helpDetailsCsv = await fetchHelpSessionDetails(studentId, data_inicio, data_fim, t, locale);
+      if (helpDetailsCsv.length) {
+        rows.push([t("analysis.helpModal.title")]);
+        rows.push([t("export.doc.session"), t("export.doc.date"), t("export.doc.exercise"), t("export.doc.type")]);
+        helpDetailsCsv.forEach((s) => {
+          if (!s.exercises.length) {
+            rows.push([s.label, s.dateLabel, t("analysis.helpModal.noRecords"), "–"]);
+          } else {
+            s.exercises.forEach((ex) => rows.push([s.label, s.dateLabel, ex.name, helpTypeLabel(ex.registro, t)]));
+          }
+        });
+        rows.push([]);
+      }
+
+      // Per-behavior detail (occurrences, sessions, exercises).
+      const behaviorDetailsCsv = await fetchBehaviorDetails(studentId, data_inicio, data_fim, t, locale);
+      if (behaviorDetailsCsv.length) {
+        rows.push([t("analysis.behaviorsScreen.detailsTitle")]);
+        rows.push([t("export.doc.behavior"), t("analysis.behavior.occurrences"), t("analysis.behavior.sessions"), t("analysis.behavior.associatedExercises")]);
+        behaviorDetailsCsv.forEach((b) =>
+          rows.push([b.label, String(b.occurrences), b.sessions.join(" | "), b.exercises.join(" | ")]),
+        );
+        rows.push([]);
+      }
+
+      // Protocol answers per record.
+      const pushProtocolAnswers = async (tipo: "ata" | "cars" | "mabc2", records: any[]) => {
+        for (const rec of records) {
+          const detail = await fetchProtocolAnswerDetail(tipo, rec.id, locale);
+          if (detail.ata) {
+            rows.push([`ATA — ${fmtDate(rec.data, locale)}`, detail.ata.total != null ? `${t("reports.protocol.total")}: ${detail.ata.total}` : ""]);
+            detail.ata.sections.forEach((s) => rows.push([s.title, s.valueLabel]));
+            rows.push([]);
+          } else if (detail.cars) {
+            rows.push([`CARS — ${fmtDate(rec.data, locale)}`, detail.cars.total != null ? `${t("reports.protocol.total")}: ${detail.cars.total}` : ""]);
+            detail.cars.domains.forEach((d) => rows.push([d.title, d.scoreLabel, d.observation ?? ""]));
+            rows.push([]);
+          } else if (detail.mabc2) {
+            rows.push([`MABC-2 — ${fmtDate(rec.data, locale)}`, detail.mabc2.totalScore != null ? `${t("reports.protocol.totalScore")}: ${detail.mabc2.totalScore}` : ""]);
+            detail.mabc2.components.forEach((comp) => {
+              rows.push([comp.title, comp.categoryScore != null ? `${t("export.doc.scoreShort")}: ${comp.categoryScore}` : "", comp.categoryPercentile ? `${t("reports.protocol.percentile")}: ${comp.categoryPercentile}` : ""]);
+              comp.items.forEach((it) => rows.push([it.name, it.rawScore]));
+            });
+            rows.push([]);
+          }
+        }
+      };
+      if (c?.historico_ata?.length) await pushProtocolAnswers("ata", c.historico_ata);
+      if (c?.historico_cars?.length) await pushProtocolAnswers("cars", c.historico_cars);
+      if (c?.historico_mabc2?.length) await pushProtocolAnswers("mabc2", c.historico_mabc2);
+
+      // Motor development: session Control Records and their answers.
+      const rcsCsv: any[] = c?.registros_controle ?? [];
+      if (rcsCsv.length) {
+        rows.push([t("reports.section.motor")]);
+        rcsCsv.forEach((rc: any) => {
+          rows.push([fmtDate(rc.data_sessao, locale), rc.monitor ?? t("reports.noMonitor")]);
+          (rc.respostas ?? []).forEach((r: any) =>
+            rows.push([localizeFormText(r.pergunta, asLoc(locale)), String(r.valor ?? "–")]),
+          );
+          rows.push([]);
+        });
       }
 
       const csv = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -794,7 +1373,7 @@ export async function exportConsolidatedReport(
     });
 
     if (formats.pdf) {
-      const sections = await buildSections(dataMap, dataInicio, dataFim, t, locale);
+      const sections = await buildSections(dataMap, student.id, dataInicio, dataFim, t, locale);
       const infoHtml = profile ? buildStudentInfoHtml(profile, t) : "";
       // Each student is a new section (new page) whose identifying data repeats
       // as the running header across all of that student's pages.

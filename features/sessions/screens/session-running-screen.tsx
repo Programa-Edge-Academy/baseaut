@@ -49,6 +49,10 @@ const CRISE_SIM_KEYS = ["crise", "crise2"];
 const FUGA_SIM_KEYS = ["fuga", "fuga2"];
 const PAUSE_SIM_KEYS = ["pauseResume", "pauseResume2"];
 const TOGGLE_FORM_SIM_KEYS = ["toggleForm", "toggleForm2"];
+// The start button spotlights each exercise the tutorial actually runs: session
+// 1 ex1 ("startExercise"), session 1 ex2 ("startSecond") and session 2 ex1
+// ("startAgain").
+const START_SIM_KEYS = ["startExercise", "startSecond", "startAgain"];
 // The stop button spotlights three exercises: session 1 ex1 ("stop"), session 1
 // ex2 ("stopSecond") and session 2 ex1 ("stopNotDone").
 const STOP_SIM_KEYS = ["stop", "stopSecond", "stopNotDone"];
@@ -594,13 +598,15 @@ export function SessionRunningScreen({
   };
 
   /**
-   * Advances the start gate of whichever session the simulation is on: the first
-   * one ("startExercise") or the second, which must be started for real before
-   * it can be left in progress ("startAgain").
+   * Advances the start gate of whichever exercise the simulation is on — each
+   * exercise the tutorial runs must be started for real before it can be
+   * stopped, deferred or left in progress (see {@link START_SIM_KEYS}).
    */
   const completeStartSubStep = () => {
     if (!isTutorial) return;
-    sim.complete(sim.currentKey === "startAgain" ? "startAgain" : "startExercise");
+    if (START_SIM_KEYS.includes(sim.currentKey ?? "")) {
+      sim.complete(sim.currentKey!);
+    }
   };
 
   const handleStart = async () => {
@@ -648,8 +654,6 @@ export function SessionRunningScreen({
   const handleConfirmFinish = (motivo: string, descricao?: string) => {
     finalizeActiveCrise();
     finalizeActiveFuga();
-
-    if (isTutorial) sim.complete("finishReason");
 
     if (formRef.current) {
       formRef.current.handleSave(true, true);
@@ -716,9 +720,7 @@ export function SessionRunningScreen({
                   setIsReorderOpen(true);
                 }}
                 infoSpotlightKeys={isTutorial ? "openReorder" : undefined}
-                startSpotlightKeys={
-                  isTutorial ? ["startExercise", "startAgain"] : undefined
-                }
+                startSpotlightKeys={isTutorial ? START_SIM_KEYS : undefined}
               />
             ) : (
               <Stopwatch
@@ -801,6 +803,7 @@ export function SessionRunningScreen({
           visible={isFinishOpen}
           motivos={DEFAULT_FINISH_MOTIVOS}
           reasonSpotlightKey={isTutorial ? "finishReason" : undefined}
+          confirmSpotlightKey={isTutorial ? "finishSession" : undefined}
           pendingExercises={order
             .filter(
               (ex) =>

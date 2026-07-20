@@ -2,6 +2,7 @@ import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
 import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
+import { TUTORIAL_EXIT_SPOTLIGHT_KEY } from "@/features/tutorial/components/tutorial-tap-guard";
 import { useTutorial } from "@/features/tutorial/contexts/tutorial-context";
 import { useUserRole } from "@/lib/use-user-role";
 import { usePathname, useRouter } from "expo-router";
@@ -64,7 +65,7 @@ export function Header({
   const role = useUserRole();
   const colors = useThemeColors();
   const { t } = useI18n();
-  const { hidden: tutorialHidden } = useTutorial();
+  const { allCompleted: tutorialAllCompleted } = useTutorial();
 
   const showBack = ["back", "finish", "finishEngagement", "form", "tutorial"].includes(variant);
   const showDefaultActions = variant === "default";
@@ -90,13 +91,15 @@ export function Header({
             </Pressable>
 
             {(showTutorialBanner || onPressTutorial) && (
-              <Pressable
-                onPress={showTutorialBanner ? onPressFinish : onPressTutorial}
-                accessibilityLabel={t("tutorial.inTutorial")}
-                className="ml-3 h-10 w-10 flex-row items-center justify-center rounded-xl border-2 border-primary bg-primary/10 active:opacity-70"
-              >
-                <GraduationCap color={colors.primary} size={22} />
-              </Pressable>
+              <SpotlightTarget targetKey={TUTORIAL_EXIT_SPOTLIGHT_KEY}>
+                <Pressable
+                  onPress={showTutorialBanner ? onPressFinish : onPressTutorial}
+                  accessibilityLabel={t("tutorial.inTutorial")}
+                  className="ml-3 h-10 w-10 flex-row items-center justify-center rounded-xl border-2 border-primary bg-primary/10 active:opacity-70"
+                >
+                  <GraduationCap color={colors.primary} size={22} />
+                </Pressable>
+              </SpotlightTarget>
             )}
           </View>
 
@@ -147,7 +150,7 @@ export function Header({
                   </Pressable>
                 )}
 
-                {!tutorialHidden && (
+                {!tutorialAllCompleted && (
                   <Pressable onPress={() => router.push("/tutorial" as never)} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
                     <HelpCircle color={colors.muted} size={24} />
                   </Pressable>
