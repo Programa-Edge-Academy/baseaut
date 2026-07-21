@@ -61,6 +61,7 @@ export function TutorialPracticeNotice({
       transparent
       animationType="fade"
       onRequestClose={onClose}
+      tutorialGuardExempt
     >
       <Pressable
         className="flex-1 items-center justify-center bg-black/60 px-6"
@@ -95,11 +96,8 @@ export function TutorialPracticeNotice({
                   label={t("tutorial.exitPractice")}
                   onPress={handleExit}
                   sizeClass="flex-1 h-11"
-                  bgColorClass="bg-level1"
-                  hasShadow={false}
-                  isOutline
-                  outlineBorderClass="border-outline"
-                  textClassName="text-muted"
+                  bgColorClass="bg-error"
+                  shadowClass="shadow-errorShadow"
                 />
                 <DefaultButton
                   label={t("common.gotIt")}
