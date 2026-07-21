@@ -8,7 +8,7 @@ import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-sim
 import { supabase } from "@/lib/supabase";
 import { useKeyboardAwareScroll } from "@/lib/use-keyboard-aware-scroll";
 import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
-import { forwardRef, useImperativeHandle, useEffect, useState } from "react";
+import { forwardRef, useId, useImperativeHandle, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -122,6 +122,8 @@ export const FormComponent = forwardRef(function FormComponent(
 ) {
   const { t, locale } = useI18n();
   const sim = useTutorialSimulation();
+  const questionsRef = useRef<View>(null);
+  const passthroughId = useId();
   const [questions, setQuestions] = useState<any[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
@@ -409,6 +411,15 @@ export const FormComponent = forwardRef(function FormComponent(
     handleSave,
   }));
 
+  // Answering is data entry, not navigation: the hints ask the user to fill a
+  // form in steps whose highlight sits on the save button, so the tutorial tap
+  // guard must never block these fields.
+  useEffect(() => {
+    if (!sim.active) return;
+    sim.registerPassthrough(passthroughId, questionsRef);
+    return () => sim.unregisterPassthrough(passthroughId);
+  }, [sim, passthroughId]);
+
   if (loading) {
     return (
       <View className="flex-1 bg-level1 justify-center items-center">
@@ -419,6 +430,8 @@ export const FormComponent = forwardRef(function FormComponent(
 
   const content = (
     <View
+      ref={questionsRef}
+      collapsable={false}
       className="items-center"
       style={{ paddingBottom: scrollable ? 40 + keyboardPadding : 40 }}
     >
