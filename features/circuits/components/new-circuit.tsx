@@ -9,6 +9,7 @@ import { DraggableList } from "@/components/draggable-list";
 import { SelectableChip } from "@/components/selectable-chip";
 import { useExercises, Exercise } from "@/features/exercises/hooks/use-exercises";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { SpotlightBinding } from "@/features/tutorial/components/spotlight-binding";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { CircuitType } from "../hooks/use-circuits";
@@ -121,27 +122,6 @@ export function NewCircuit({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
-  // Register the simulation spotlight targets living inside this modal.
-  useEffect(() => {
-    sim.registerTarget("name", nameFieldRef, { rounded: true });
-    sim.registerTarget(["mode", "changeStructured"], modeFieldRef, { rounded: true });
-    sim.registerTarget("selectExercises", exercisesFieldRef, { rounded: true });
-    sim.registerTarget("reorder", reorderFieldRef, { rounded: true });
-    // The save button is the target for both the creation save ("save") and the
-    // edit save that follows reordering ("editSave").
-    sim.registerTarget(["save", "editSave"], saveFieldRef, { rounded: true });
-    return () =>
-      sim.unregisterTarget([
-        "name",
-        "mode",
-        "changeStructured",
-        "selectExercises",
-        "reorder",
-        "save",
-        "editSave",
-      ]);
-  }, [sim]);
-
   // Advance the guided simulation as each field is filled in.
   useEffect(() => {
     if (sim.currentKey === "name" && name.trim().length > 0) {
@@ -237,6 +217,17 @@ export function NewCircuit({
       animationType="fade"
       onRequestClose={onClose}
     >
+      {/* Bound from inside the modal so the tap guard treats these as its own. */}
+      <SpotlightBinding targetKey="name" viewRef={nameFieldRef} />
+      <SpotlightBinding
+        targetKey={["mode", "changeStructured"]}
+        viewRef={modeFieldRef}
+      />
+      <SpotlightBinding targetKey="selectExercises" viewRef={exercisesFieldRef} />
+      <SpotlightBinding targetKey="reorder" viewRef={reorderFieldRef} />
+      {/* The save button serves both the creation save and the edit save. */}
+      <SpotlightBinding targetKey={["save", "editSave"]} viewRef={saveFieldRef} />
+
       <View className="flex-1 justify-center items-center">
         <Pressable
           className="absolute inset-0 bg-black/60"

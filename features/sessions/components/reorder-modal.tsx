@@ -1,6 +1,7 @@
 import { AppModal } from "@/components/app-modal";
 import { DraggableList, DraggableItem } from "@/components/draggable-list";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { SpotlightBinding } from "@/features/tutorial/components/spotlight-binding";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { X } from "lucide-react-native";
@@ -50,15 +51,6 @@ export function ReorderModal({
   const reorderRef = useRef<View>(null);
   const confirmRef = useRef<View>(null);
 
-  useEffect(() => {
-    if (reorderSpotlightKey) sim.registerTarget(reorderSpotlightKey, reorderRef, { rounded: true });
-    if (confirmSpotlightKey) sim.registerTarget(confirmSpotlightKey, confirmRef, { rounded: true });
-    return () => {
-      if (reorderSpotlightKey) sim.unregisterTarget(reorderSpotlightKey);
-      if (confirmSpotlightKey) sim.unregisterTarget(confirmSpotlightKey);
-    };
-  }, [sim, reorderSpotlightKey, confirmSpotlightKey]);
-
   const handleConfirm = () => {
     if (confirmSpotlightKey) sim.complete(confirmSpotlightKey);
     onClose();
@@ -78,6 +70,9 @@ export function ReorderModal({
 
   return (
     <AppModal visible={visible} transparent animationType="slide">
+      {/* Bound from inside the modal so the tap guard treats these as its own. */}
+      <SpotlightBinding targetKey={reorderSpotlightKey} viewRef={reorderRef} />
+      <SpotlightBinding targetKey={confirmSpotlightKey} viewRef={confirmRef} />
       <View className="flex-1 bg-black/60 justify-end">
         <View
           className="bg-level2 rounded-t-[32px] p-6 h-[80%] border-t border-outline"

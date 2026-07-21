@@ -1,9 +1,9 @@
 import { AppModal } from "@/components/app-modal";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { SpotlightBinding } from "@/features/tutorial/components/spotlight-binding";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
-import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { AlertCircle, LogOut, Trash2, X } from "lucide-react-native";
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { Pressable, Text, View } from "react-native";
 import { colors } from "@/assets/colors";
 import { ActionButtons } from "./action-buttons";
@@ -53,14 +53,7 @@ export function ConfirmationModal({
   confirmSpotlightKey,
 }: ConfirmationModalProps) {
   const { t } = useI18n();
-  const sim = useTutorialSimulation();
   const confirmButtonRef = useRef<View>(null);
-
-  useEffect(() => {
-    if (!confirmSpotlightKey) return;
-    sim.registerTarget(confirmSpotlightKey, confirmButtonRef, { rounded: true });
-    return () => sim.unregisterTarget(confirmSpotlightKey);
-  }, [confirmSpotlightKey, sim]);
 
   const isFinishMode = mode === "finishSession";
   const isLogoutMode = mode === "logout";
@@ -84,6 +77,11 @@ export function ConfirmationModal({
 
   return (
     <AppModal visible={visible} transparent animationType="fade">
+      {/* Bound from inside the modal so the tap guard treats it as its own. */}
+      <SpotlightBinding
+        targetKey={confirmSpotlightKey}
+        viewRef={confirmButtonRef}
+      />
       <View className="flex-1 bg-black/60 justify-center items-center px-4">
         <View className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[400px] p-6 gap-6">
           <View className="flex-row items-center space-x-4">

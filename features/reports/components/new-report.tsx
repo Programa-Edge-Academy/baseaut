@@ -7,6 +7,7 @@ import RangeCalendar from "@/components/range-calendar";
 import { Report, ReportFormData } from "@/features/reports/hooks/use-student-reports";
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { SpotlightBinding } from "@/features/tutorial/components/spotlight-binding";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { X } from "lucide-react-native";
@@ -58,12 +59,6 @@ export function NewReport({
   const isEdit = !!initialData;
   const sim = useTutorialSimulation();
   const saveRef = useRef<View>(null);
-
-  useEffect(() => {
-    if (!saveSpotlightKey) return;
-    sim.registerTarget(saveSpotlightKey, saveRef, { rounded: true });
-    return () => sim.unregisterTarget(saveSpotlightKey);
-  }, [sim, saveSpotlightKey]);
 
   const [titulo, setTitulo] = useState("");
   const [dataInicio, setDataInicio] = useState<string>("");
@@ -138,6 +133,8 @@ export function NewReport({
   return (
     <>
       <AppModal visible={visible} onRequestClose={onClose} transparent animationType="fade">
+        {/* Bound from inside the modal so the tap guard treats it as its own. */}
+        <SpotlightBinding targetKey={saveSpotlightKey} viewRef={saveRef} />
         <View className="flex-1 justify-center">
           <Pressable
             className="absolute inset-0 bg-black/50"

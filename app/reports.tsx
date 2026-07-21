@@ -15,6 +15,7 @@ import { exportConsolidatedReport } from "@/features/reports/utils/export-report
 import { useStudents } from "@/features/students/hooks/use-students";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { SpotlightBinding } from "@/features/tutorial/components/spotlight-binding";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
@@ -39,19 +40,14 @@ function FormatPicker({
   exportSpotlightKey?: string;
 }) {
   const { t } = useI18n();
-  const sim = useTutorialSimulation();
   const [pdf, setPdf] = useState(true);
   const [csv, setCsv] = useState(false);
   const exportRef = useRef<View>(null);
 
-  useEffect(() => {
-    if (!exportSpotlightKey) return;
-    sim.registerTarget(exportSpotlightKey, exportRef, { rounded: true });
-    return () => sim.unregisterTarget(exportSpotlightKey);
-  }, [sim, exportSpotlightKey]);
-
   return (
     <AppModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      {/* Bound from inside the modal so the tap guard treats it as its own. */}
+      <SpotlightBinding targetKey={exportSpotlightKey} viewRef={exportRef} />
       <Pressable
         className="flex-1 bg-black/60 justify-center items-center px-6"
         onPress={onClose}

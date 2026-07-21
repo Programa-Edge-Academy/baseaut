@@ -5,6 +5,7 @@ import type { TranslationKey } from "@/features/settings/constants/translations"
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { SpotlightBinding } from "@/features/tutorial/components/spotlight-binding";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { AlertCircle, Check, X } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
@@ -86,12 +87,6 @@ export function FinishSessionModal({
   const { t } = useI18n();
   const sim = useTutorialSimulation();
   const reasonsRef = useRef<View>(null);
-
-  useEffect(() => {
-    if (!reasonSpotlightKey) return;
-    sim.registerTarget(reasonSpotlightKey, reasonsRef, { rounded: true });
-    return () => sim.unregisterTarget(reasonSpotlightKey);
-  }, [sim, reasonSpotlightKey]);
   const resolvedTitle = title ?? t("session.finishTitle");
   const resolvedMessage = message ?? t("session.finishMessage");
   const resolvedCancelLabel = cancelLabel ?? t("common.cancel");
@@ -149,6 +144,8 @@ export function FinishSessionModal({
       animationType="fade"
       onRequestClose={onClose}
     >
+      {/* Bound from inside the modal so the tap guard treats it as its own. */}
+      <SpotlightBinding targetKey={reasonSpotlightKey} viewRef={reasonsRef} />
       <Pressable
         className="flex-1 items-center justify-center bg-black/50"
         onPress={onClose}

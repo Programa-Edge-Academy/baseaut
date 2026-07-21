@@ -1,10 +1,10 @@
 import { AppModal } from "@/components/app-modal";
 import { colors } from "@/assets/colors";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { SpotlightBinding } from "@/features/tutorial/components/spotlight-binding";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
-import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { Copy, Edit2, Trash2 } from "lucide-react-native";
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { Pressable, Text, View } from "react-native";
 
 /** Props for {@link CardMenu}. */
@@ -48,29 +48,11 @@ export function CardMenu({
   deleteSpotlightKey,
 }: CardMenuProps) {
   const { t } = useI18n();
-  const sim = useTutorialSimulation();
   const editItemRef = useRef<View>(null);
   const duplicateItemRef = useRef<View>(null);
   const deleteItemRef = useRef<View>(null);
   const menuWidth = 140;
   const left = layout.left + layout.width - menuWidth;
-
-  useEffect(() => {
-    if (editSpotlightKey) {
-      sim.registerTarget(editSpotlightKey, editItemRef, { rounded: true });
-    }
-    if (duplicateSpotlightKey) {
-      sim.registerTarget(duplicateSpotlightKey, duplicateItemRef, { rounded: true });
-    }
-    if (deleteSpotlightKey) {
-      sim.registerTarget(deleteSpotlightKey, deleteItemRef, { rounded: true });
-    }
-    return () => {
-      if (editSpotlightKey) sim.unregisterTarget(editSpotlightKey);
-      if (duplicateSpotlightKey) sim.unregisterTarget(duplicateSpotlightKey);
-      if (deleteSpotlightKey) sim.unregisterTarget(deleteSpotlightKey);
-    };
-  }, [editSpotlightKey, duplicateSpotlightKey, deleteSpotlightKey, sim]);
 
   return (
     <AppModal
@@ -80,6 +62,14 @@ export function CardMenu({
       onRequestClose={onClose}
     >
       <Pressable className="flex-1" onPress={onClose}>
+        {/* Bound from inside the modal so the tap guard treats these as its own. */}
+        <SpotlightBinding targetKey={editSpotlightKey} viewRef={editItemRef} />
+        <SpotlightBinding
+          targetKey={duplicateSpotlightKey}
+          viewRef={duplicateItemRef}
+        />
+        <SpotlightBinding targetKey={deleteSpotlightKey} viewRef={deleteItemRef} />
+
         <Pressable
           style={{
             position: "absolute",
