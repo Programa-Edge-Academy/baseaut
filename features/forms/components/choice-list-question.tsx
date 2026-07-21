@@ -1,6 +1,8 @@
 import { Check } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { localizeFormText } from "@/features/forms/utils/form-content-i18n";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { ChoiceListQuestion } from "../types";
 
@@ -21,6 +23,7 @@ const NONE_OPTION = "Nenhuma das opções";
  */
 export function ChoiceListQuestionUI({ question, value, onChange }: Props) {
   const colors = useThemeColors();
+  const { t, locale } = useI18n();
   const selectedOptions = value?.selected || [];
   const otherText = value?.other || "";
 
@@ -69,7 +72,9 @@ export function ChoiceListQuestionUI({ question, value, onChange }: Props) {
                 {isSelected && <Check color="#fff" size={18} />}
               </View>
               <View className="flex-1 min-h-[44px] px-3.5 py-2.5 bg-level1 rounded-xl border border-outline justify-center">
-                <Text className="text-content text-default-2">{opt}</Text>
+                <Text className="text-content text-default-2">
+                  {opt === "Outro" ? t("forms.otherOption") : localizeFormText(opt, locale)}
+                </Text>
               </View>
             </Pressable>
 
@@ -79,7 +84,7 @@ export function ChoiceListQuestionUI({ question, value, onChange }: Props) {
                 onChangeText={(text) => {
                   if (onChange) onChange({ selected: selectedOptions, other: text });
                 }}
-                placeholder="Especifique..."
+                placeholder={t("forms.specify")}
                 className="ml-11 min-h-[44px]"
               />
             )}

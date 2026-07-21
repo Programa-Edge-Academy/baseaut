@@ -2,6 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 
 import { supabase } from "@/lib/supabase";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import {
+  localizeFormText,
+  localizeMabcComponent,
+  localizeMabcUnit,
+} from "@/features/forms/utils/form-content-i18n";
 import type { ProtocolTipo } from "./use-protocol-records";
 
 /** A scored section of an ATA record. */
@@ -120,6 +125,17 @@ export function useProtocolRecordDetail(tipo?: ProtocolTipo, recordId?: string) 
 
     setIsLoading(true);
     setError(null);
+
+    // Tutorial mock: seeded record ids never hit the database. Provide sample
+    // totals so the ATA/CARS visualization renders (its form uses mock mode).
+    if (recordId.startsWith("mock")) {
+      if (tipo === "ata") setDetail({ ata: { sections: [], total: 18 } });
+      else if (tipo === "cars") setDetail({ cars: { domains: [], total: 22 } });
+      else setDetail(null);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       if (tipo === "ata") {
         const { perguntas, answers } = await fetchAtaCars(recordId);
@@ -133,7 +149,7 @@ export function useProtocolRecordDetail(tipo?: ProtocolTipo, recordId?: string) 
           }
           return {
             id: q.id,
-            title: questionTitle(q.texto_pergunta),
+            title: questionTitle(localizeFormText(q.texto_pergunta, locale)),
             value,
             valueLabel: value != null ? String(value) : "—",
           };
@@ -161,7 +177,7 @@ export function useProtocolRecordDetail(tipo?: ProtocolTipo, recordId?: string) 
           }
           domains.push({
             id: q.id,
-            title: questionTitle(q.texto_pergunta),
+            title: questionTitle(localizeFormText(q.texto_pergunta, locale)),
             score,
             scoreLabel: score != null ? String(score).replace(".", ",") : "—",
             observation: null,
@@ -184,20 +200,26 @@ export function useProtocolRecordDetail(tipo?: ProtocolTipo, recordId?: string) 
           const key = item.componente ?? "Outros";
           if (!componentMap.has(key)) {
             componentMap.set(key, {
-              title: key,
+              title: localizeMabcComponent(key, locale),
               categoryScore: meta?.componentes?.[key]?.escore_padrao ?? null,
               categoryPercentile: meta?.componentes?.[key]?.percentil ?? null,
               items: [],
             });
           }
+          // Keep the raw unit code so the exercise row's `formatMeasuredUnit`
+          // (localized in the component) still matches; localize only the unit
+          // suffix shown alongside the raw score.
           const unit = item.unidade ?? "";
           const rawScore =
-            item.escore_bruto != null ? `${item.escore_bruto} ${unit}`.trim() : "—";
+            item.escore_bruto != null
+              ? `${item.escore_bruto} ${localizeMabcUnit(unit, locale)}`.trim()
+              : "—";
+          const localizedItemTitle = questionTitle(localizeFormText(item.texto, locale));
           componentMap.get(key)!.items.push({
             id: item.pergunta_id,
             name: item.codigo_item
-              ? `${item.codigo_item} — ${questionTitle(item.texto)}`
-              : questionTitle(item.texto),
+              ? `${item.codigo_item} — ${localizedItemTitle}`
+              : localizedItemTitle,
             unit,
             rawScore,
           });
@@ -205,7 +227,7 @@ export function useProtocolRecordDetail(tipo?: ProtocolTipo, recordId?: string) 
 
         setDetail({
           mabc2: {
-            titulo: payload.formulario?.titulo ?? "MABC-2",
+            titulo: localizeFormText(payload.formulario?.titulo ?? "MABC-2", locale),
             ageGroupLabel: meta.faixa_mabc ?? meta.grupo_idade ?? null,
             evaluatorName: payload.avaliador?.nome_completo ?? null,
             dateLabel: payload.formulario?.created_at

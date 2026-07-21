@@ -7,8 +7,8 @@ import { useKeyboardAwareScroll } from "@/lib/use-keyboard-aware-scroll";
 import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
-import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { Check } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
@@ -41,6 +41,26 @@ const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
   "Dificuldade física": "dificuldade_fisica",
   Outro: "outro",
 };
+
+// Each stopwatch control the sessions tutorial spotlights twice (press, then
+// press again) uses a stable key pair so the highlight persists across both
+// presses. Module-level so the array identity is stable across renders.
+const CRISE_SIM_KEYS = ["crise", "crise2"];
+const FUGA_SIM_KEYS = ["fuga", "fuga2"];
+const PAUSE_SIM_KEYS = ["pauseResume", "pauseResume2"];
+const TOGGLE_FORM_SIM_KEYS = ["toggleForm", "toggleForm2"];
+// The start button spotlights each exercise the tutorial actually runs: session
+// 1 ex1 ("startExercise"), session 1 ex2 ("startSecond"), session 2 ex1
+// ("startAgain") and session 2 once resumed from the concurrent-session warning
+// ("startResumed").
+const START_SIM_KEYS = [
+  "startExercise",
+  "startSecond",
+  "startAgain",
+  "startResumed",
+];
+// The stop button spotlights the same four exercises.
+const STOP_SIM_KEYS = ["stop", "stopSecond", "stopNotDone", "stopResumed"];
 
 /** An exercise within a running session. */
 export type SessionExercise = {
@@ -85,13 +105,14 @@ export function SessionRunningScreen({
   studentId,
   studentName,
   circuitId,
-  circuitName = "Circuito",
+  circuitName = "",
   circuitType = "padrao",
   exercises = [],
   onPressBack,
   onFinishSession,
   onCompleteSession,
 }: SessionRunningScreenProps) {
+  const { t } = useI18n();
   const formRef = useRef<any>(null);
   const sessionSim = useSessionSimController();
   const isTutorial = sessionSim.active && sessionSim.kind === "session";
@@ -130,6 +151,9 @@ export function SessionRunningScreen({
   };
 
   const handleCrisePress = () => {
+    if (isTutorial && (sim.currentKey === "crise" || sim.currentKey === "crise2")) {
+      sim.complete(sim.currentKey);
+    }
     if (criseStartRef.current == null) {
       criseStartRef.current = Date.now();
       setIsCriseActive(true);
@@ -159,6 +183,9 @@ export function SessionRunningScreen({
   };
 
   const handleFugaPress = () => {
+    if (isTutorial && (sim.currentKey === "fuga" || sim.currentKey === "fuga2")) {
+      sim.complete(sim.currentKey);
+    }
     if (fugaStartRef.current == null) {
       fugaStartRef.current = Date.now();
       fugaStartTotalRef.current = currentSessionData?.totalElapsed ?? 0;
@@ -168,7 +195,7 @@ export function SessionRunningScreen({
     }
   };
 
-  const safeStudentName = studentName || "Aluno";
+  const safeStudentName = studentName || t("common.student");
 
   useEffect(() => {
     if (!sessionId || exercises.length === 0) return;
@@ -185,6 +212,7 @@ export function SessionRunningScreen({
         exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description, iconUrl: e.iconUrl ?? null }))),
         circuitId: circuitId || undefined,
         circuitName: circuitName || undefined,
+        isTutorial,
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,10 +235,11 @@ export function SessionRunningScreen({
           type: "structured",
           timeElapsed: 0,
           isRunning: false,
-          exerciseProgress: `Exercício 1/${exercises.length}`,
+          exerciseProgress: t("session.exerciseProgress").replace("{n}", "1").replace("{total}", String(exercises.length)),
           exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description, iconUrl: e.iconUrl ?? null }))),
           circuitId: effectiveCircuitId || undefined,
           circuitName: effectiveCircuitName || undefined,
+          isTutorial,
         });
         return id;
       })();
@@ -292,14 +321,14 @@ export function SessionRunningScreen({
   const controlledIsRunning = currentSessionData?.isRunning ?? false;
 
   const effectiveCircuitId = circuitId || currentSessionData?.circuitId || "";
-  const effectiveCircuitName = circuitName || currentSessionData?.circuitName || "Circuito";
+  const effectiveCircuitName = circuitName || currentSessionData?.circuitName || t("session.defaultCircuit");
 
   useEffect(() => {
     if (!resolvedSid) return;
     setTimerVisible(resolvedSid, true);
     return () => setTimerVisible(resolvedSid, false);
   }, [resolvedSid, setTimerVisible]);
-  const [hasAdvanced, setHasAdvanced] = useState(isTutorial);
+  const [hasAdvanced, setHasAdvanced] = useState(false);
   const [isReorderOpen, setIsReorderOpen] = useState(false);
   const [isFinishOpen, setIsFinishOpen] = useState(false);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
@@ -520,13 +549,9 @@ export function SessionRunningScreen({
       setCurrentIndex(currentIndex + 1);
       if (effectiveSessionIdRef.current) {
         updateSessionState(effectiveSessionIdRef.current, { activeExerciseId: null });
-        updateSessionProgress(effectiveSessionIdRef.current, `Exercício ${currentIndex + 2}/${total}`);
+        updateSessionProgress(effectiveSessionIdRef.current, t("session.exerciseProgress").replace("{n}", String(currentIndex + 2)).replace("{total}", String(total)));
       }
     } else {
-      if (isTutorial) {
-        sim.complete("finish");
-        return;
-      }
       const pendentes = order.filter(
         (ex) =>
           historicoAtualizado[ex.id] !== "concluido" &&
@@ -577,8 +602,20 @@ export function SessionRunningScreen({
     onPressBack?.();
   };
 
+  /**
+   * Advances the start gate of whichever exercise the simulation is on — each
+   * exercise the tutorial runs must be started for real before it can be
+   * stopped, deferred or left in progress (see {@link START_SIM_KEYS}).
+   */
+  const completeStartSubStep = () => {
+    if (!isTutorial) return;
+    if (START_SIM_KEYS.includes(sim.currentKey ?? "")) {
+      sim.complete(sim.currentKey!);
+    }
+  };
+
   const handleStart = async () => {
-    if (isTutorial) sim.complete("startExercise");
+    completeStartSubStep();
     setStage("running");
     const sid = await ensureSessionId();
     if (sid) {
@@ -589,7 +626,7 @@ export function SessionRunningScreen({
   };
 
   const handleStartAndRecord = async () => {
-    if (isTutorial) sim.complete("startExercise");
+    completeStartSubStep();
     setStage("running");
     const sid = await ensureSessionId();
     if (sid) {
@@ -600,6 +637,13 @@ export function SessionRunningScreen({
   };
 
   const handleStop = (elapsed: number) => {
+    if (isTutorial && STOP_SIM_KEYS.includes(sim.currentKey ?? "")) {
+      sim.complete(sim.currentKey!);
+    }
+    // A crisis/escape still being timed when the exercise is stopped is recorded
+    // (with its elapsed duration) as if its own button had been pressed first.
+    finalizeActiveCrise();
+    finalizeActiveFuga();
     lastElapsedSecondsRef.current = elapsed;
     if (resolvedSid) toggleTimer(resolvedSid, false);
 
@@ -615,12 +659,6 @@ export function SessionRunningScreen({
   const handleConfirmFinish = (motivo: string, descricao?: string) => {
     finalizeActiveCrise();
     finalizeActiveFuga();
-
-    if (isTutorial) {
-      setIsFinishOpen(false);
-      sim.complete("finish");
-      return;
-    }
 
     if (formRef.current) {
       formRef.current.handleSave(true, true);
@@ -653,15 +691,20 @@ export function SessionRunningScreen({
         <Header
           variant={hasAdvanced ? "finish" : "back"}
           onPressBack={handleBack}
-          onPressFinish={() => setIsFinishOpen(true)}
+          onPressFinish={() => {
+            if (isTutorial) sim.complete("finish");
+            setIsFinishOpen(true);
+          }}
           onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+          backSpotlightKey={isTutorial ? "goBack" : undefined}
+          finishSpotlightKey={isTutorial ? "finish" : undefined}
         />
 
         <View className="flex-1">
           <View className="mx-8 mt-5">
             <PageHeader
               mode="execucao"
-              title={`Sessão de ${studentName}`}
+              title={t("sessions.circuitSelection.title").replace("{name}", studentName ?? "")}
               subtitle={subtitle}
               totalExercises={total}
               completedExercises={currentIndex}
@@ -671,27 +714,19 @@ export function SessionRunningScreen({
 
           <View className="mt-5 px-8">
             {stage === "ready" ? (
-              isTutorial ? (
-                <SpotlightTarget targetKey="startExercise">
-                  <StartActivity
-                    title={currentExercise.name}
-                    subtitle={currentExercise.description}
-                    iconUrl={currentExercise.iconUrl}
-                    onStart={handleStart}
-                    onStartAndRecord={handleStartAndRecord}
-                    onPressInfo={() => setIsReorderOpen(true)}
-                  />
-                </SpotlightTarget>
-              ) : (
-                <StartActivity
-                  title={currentExercise.name}
-                  subtitle={currentExercise.description}
-                  iconUrl={currentExercise.iconUrl}
-                  onStart={handleStart}
-                  onStartAndRecord={handleStartAndRecord}
-                  onPressInfo={() => setIsReorderOpen(true)}
-                />
-              )
+              <StartActivity
+                title={currentExercise.name}
+                subtitle={currentExercise.description}
+                iconUrl={currentExercise.iconUrl}
+                onStart={handleStart}
+                onStartAndRecord={handleStartAndRecord}
+                onPressInfo={() => {
+                  if (isTutorial) sim.complete("openReorder");
+                  setIsReorderOpen(true);
+                }}
+                infoSpotlightKeys={isTutorial ? "openReorder" : undefined}
+                startSpotlightKeys={isTutorial ? START_SIM_KEYS : undefined}
+              />
             ) : (
               <Stopwatch
                 title={currentExercise.name}
@@ -705,17 +740,30 @@ export function SessionRunningScreen({
                 isFugaActive={isFugaActive}
                 onStop={handleStop}
                 onRestart={() => {
+                  if (isTutorial) sim.complete("restart");
                   if (resolvedSid) updateTimeElapsed(resolvedSid, 0);
                 }}
                 controlledSeconds={controlledSeconds}
                 controlledIsRunning={controlledIsRunning}
                 onToggleRunning={(isRunning) => {
+                  if (isTutorial && (sim.currentKey === "pauseResume" || sim.currentKey === "pauseResume2")) {
+                    sim.complete(sim.currentKey);
+                  }
                   if (resolvedSid) toggleTimer(resolvedSid, isRunning);
                 }}
                 isFormVisible={isFormVisible}
                 onPressCorner={() => {
+                  if (isTutorial && (sim.currentKey === "toggleForm" || sim.currentKey === "toggleForm2")) {
+                    sim.complete(sim.currentKey);
+                  }
                   if (resolvedSid) setFormVisible(resolvedSid, !isFormVisible);
                 }}
+                criseSpotlightKey={isTutorial ? CRISE_SIM_KEYS : undefined}
+                fugaSpotlightKey={isTutorial ? FUGA_SIM_KEYS : undefined}
+                timerSpotlightKey={isTutorial ? PAUSE_SIM_KEYS : undefined}
+                cornerSpotlightKey={isTutorial ? TOGGLE_FORM_SIM_KEYS : undefined}
+                restartSpotlightKey={isTutorial ? "restart" : undefined}
+                stopSpotlightKey={isTutorial ? STOP_SIM_KEYS : undefined}
               />
             )}
           </View>
@@ -748,12 +796,19 @@ export function SessionRunningScreen({
           items={reorderableExercises}
           currentIndex={0}
           onClose={() => setIsReorderOpen(false)}
-          onReorder={handleReorderPending}
+          onReorder={(reordered) => {
+            if (isTutorial) sim.complete("reorder");
+            handleReorderPending(reordered);
+          }}
+          reorderSpotlightKey={isTutorial ? "reorder" : undefined}
+          confirmSpotlightKey={isTutorial ? "confirmReorder" : undefined}
         />
 
         <FinishSessionModal
           visible={isFinishOpen}
           motivos={DEFAULT_FINISH_MOTIVOS}
+          reasonSpotlightKey={isTutorial ? "finishReason" : undefined}
+          confirmSpotlightKey={isTutorial ? "finishSession" : undefined}
           pendingExercises={order
             .filter(
               (ex) =>
@@ -840,10 +895,7 @@ export function SessionRunningScreen({
           <TutorialPracticeNotice
             visible={noticeOpen}
             onClose={() => setNoticeOpen(false)}
-            onExit={() => {
-              setNoticeOpen(false);
-              handleBack();
-            }}
+            onExit={() => setNoticeOpen(false)}
           />
         )}
 

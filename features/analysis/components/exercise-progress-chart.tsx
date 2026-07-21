@@ -315,7 +315,7 @@ export function ExerciseProgressChart({
 
       {filteredRecords.length > 0 && (
         <Text className="text-center text-xs font-bold text-muted mt-2">
-          {t("analysis.helpChart.session")}
+          {t("analysis.progressChart.execution")}
         </Text>
       )}
     </View>

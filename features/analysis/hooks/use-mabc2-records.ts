@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { useCallback, useEffect, useState } from "react";
-import type { Locale } from "@/features/settings/constants/translations";
+import type { Locale, TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import type { Mabc2Record } from "../components/mabc2-record-card";
 
@@ -48,6 +48,51 @@ const SECTION_ALIASES: Record<SectionId, string[]> = {
   pontaria: ["pontaria", "mirar_pegar", "pegar_lancar", "agarrar"],
   equilibrio: ["equilibrio", "equilíbrio"],
 };
+
+/**
+ * A seeded MABC-2 draft used to *view* a record during the analysis tutorial,
+ * so opening a mock record shows sample data instead of hitting the database.
+ * Exercise names/units are the canonical values, localized for display by the
+ * form screen.
+ */
+export function buildMockMabc2Draft(): Mabc2Draft {
+  return {
+    formularioId: "mock-mabc2-1",
+    totalScore: 62,
+    totalPercentile: "50",
+    metadados: {},
+    sections: [
+      {
+        id: "destreza_manual",
+        title: SECTION_LABELS.destreza_manual,
+        categoryScore: 22,
+        categoryPercentile: "50",
+        exercises: [
+          { id: "mm-dm1", perguntaId: "mm-dm1", name: "DM 1 Colocar os Pinos no Tabuleiro (Mão Preferida)", unit: "seg", attemptCount: 24, score: 10, valorAjuda: null },
+          { id: "mm-dm2", perguntaId: "mm-dm2", name: "DM 2 Entrelaçar o Cordão", unit: "seg", attemptCount: 30, score: 9, valorAjuda: null },
+        ],
+      },
+      {
+        id: "pontaria",
+        title: SECTION_LABELS.pontaria,
+        categoryScore: 20,
+        categoryPercentile: "50",
+        exercises: [
+          { id: "mm-mp1", perguntaId: "mm-mp1", name: "MP 1 Pegar com as Duas Mãos", unit: "tentativas", attemptCount: 8, score: 11, valorAjuda: null },
+        ],
+      },
+      {
+        id: "equilibrio",
+        title: SECTION_LABELS.equilibrio,
+        categoryScore: 20,
+        categoryPercentile: "50",
+        exercises: [
+          { id: "mm-e1", perguntaId: "mm-e1", name: "E 1 Equilíbrio sobre uma Prancha (Melhor Perna)", unit: "seg", attemptCount: 30, score: 12, valorAjuda: null },
+        ],
+      },
+    ],
+  };
+}
 
 function parseNumber(value: any): number | null {
   if (value == null || value === "") return null;
@@ -416,14 +461,17 @@ export function useMabc2Records(studentId: string, options?: { mock?: boolean })
 }
 
 /** Creates a new MABC-2 record for a student and returns it as an empty draft. */
-export async function startMabc2Record(studentId: string) {
+export async function startMabc2Record(
+  studentId: string,
+  t: (key: TranslationKey) => string,
+) {
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
 
   if (userError) throw userError;
-  if (!user) throw new Error("Usuário não autenticado.");
+  if (!user) throw new Error(t("common.err.notAuthenticated"));
 
   const { data, error } = await supabase.rpc("rpc_iniciar_mabc2", {
     p_aluno_id: studentId,

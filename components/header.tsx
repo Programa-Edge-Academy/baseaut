@@ -1,14 +1,12 @@
 import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
-// LAUNCH-GATE: tutorial access disabled for the public release (buggy tutorial).
-// Restore this import together with the header tutorial button below once the
-// tutorial is finished.
-// import { useTutorial } from "@/features/tutorial/contexts/tutorial-context";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
+import { TUTORIAL_EXIT_SPOTLIGHT_KEY } from "@/features/tutorial/components/tutorial-tap-guard";
+import { useTutorial } from "@/features/tutorial/contexts/tutorial-context";
 import { useUserRole } from "@/lib/use-user-role";
 import { usePathname, useRouter } from "expo-router";
-// LAUNCH-GATE: `HelpCircle` re-add when the header tutorial button is restored.
-import { ArrowLeft, GraduationCap, /* HelpCircle, */ Save, Settings, User, Users, X } from "lucide-react-native";
+import { ArrowLeft, GraduationCap, HelpCircle, Save, Settings, User, Users, X } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,7 +28,21 @@ type HeaderProps = {
    * keep their real back/finish variants). Opens the practice notice.
    */
   onPressTutorial?: () => void;
+  /** Tutorial spotlight key for the back button. */
+  backSpotlightKey?: string;
+  /** Tutorial spotlight key for the finish button ("finish"/"finishEngagement"). */
+  finishSpotlightKey?: string;
+  /** Tutorial spotlight key for the form save button. */
+  saveSpotlightKey?: string;
 };
+
+function withSpotlight(node: React.ReactNode, targetKey?: string) {
+  return targetKey ? (
+    <SpotlightTarget targetKey={targetKey}>{node}</SpotlightTarget>
+  ) : (
+    node
+  );
+}
 
 /**
  * App top bar with the logo and variant-driven actions: default (team, account,
@@ -44,15 +56,16 @@ export function Header({
   onPressFinish,
   onPressSave,
   onPressTutorial,
+  backSpotlightKey,
+  finishSpotlightKey,
+  saveSpotlightKey,
 }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const role = useUserRole();
   const colors = useThemeColors();
   const { t } = useI18n();
-  // LAUNCH-GATE: tutorial visibility flag unused while the header tutorial
-  // button is disabled. Restore with the button below.
-  // const { hidden: tutorialHidden } = useTutorial();
+  const { allCompleted: tutorialAllCompleted } = useTutorial();
 
   const showBack = ["back", "finish", "finishEngagement", "form", "tutorial"].includes(variant);
   const showDefaultActions = variant === "default";
@@ -78,46 +91,54 @@ export function Header({
             </Pressable>
 
             {(showTutorialBanner || onPressTutorial) && (
-              <Pressable
-                onPress={showTutorialBanner ? onPressFinish : onPressTutorial}
-                accessibilityLabel={t("tutorial.inTutorial")}
-                className="ml-3 h-10 w-10 flex-row items-center justify-center rounded-xl border-2 border-primary bg-primary/10 active:opacity-70"
-              >
-                <GraduationCap color={colors.primary} size={22} />
-              </Pressable>
+              <SpotlightTarget targetKey={TUTORIAL_EXIT_SPOTLIGHT_KEY}>
+                <Pressable
+                  onPress={showTutorialBanner ? onPressFinish : onPressTutorial}
+                  accessibilityLabel={t("tutorial.inTutorial")}
+                  className="ml-3 h-10 w-10 flex-row items-center justify-center rounded-xl border-2 border-primary bg-primary/10 active:opacity-70"
+                >
+                  <GraduationCap color={colors.primary} size={22} />
+                </Pressable>
+              </SpotlightTarget>
             )}
           </View>
 
           <View className="flex-1 flex-row justify-center items-center">
-            {showFinishError && (
-              <Pressable
-                onPress={onPressFinish}
-                className="flex-row items-center px-4 py-2 rounded-xl border-2 border-error bg-error/10 active:opacity-70"
-              >
-                <X color={colors.error} size={24} />
-                <Text className="text-error text-default-1 ml-2">Finalizar</Text>
-              </Pressable>
-            )}
+            {showFinishError &&
+              withSpotlight(
+                <Pressable
+                  onPress={onPressFinish}
+                  className="flex-row items-center px-4 py-2 rounded-xl border-2 border-error bg-error/10 active:opacity-70"
+                >
+                  <X color={colors.error} size={24} />
+                  <Text className="text-error text-default-1 ml-2">{t("common.finish")}</Text>
+                </Pressable>,
+                finishSpotlightKey,
+              )}
 
-            {showFinishExtra && (
-              <Pressable
-                onPress={onPressFinish}
-                className="flex-row items-center px-4 py-2 rounded-xl border-2 border-extra bg-extra/10 active:opacity-70"
-              >
-                <X color={colors.extra} size={24} />
-                <Text className="text-extra text-default-1 ml-2">Finalizar</Text>
-              </Pressable>
-            )}
+            {showFinishExtra &&
+              withSpotlight(
+                <Pressable
+                  onPress={onPressFinish}
+                  className="flex-row items-center px-4 py-2 rounded-xl border-2 border-extra bg-extra/10 active:opacity-70"
+                >
+                  <X color={colors.extra} size={24} />
+                  <Text className="text-extra text-default-1 ml-2">{t("common.finish")}</Text>
+                </Pressable>,
+                finishSpotlightKey,
+              )}
 
-            {showFormSave && (
-              <Pressable
-                onPress={onPressSave}
-                className="flex-row items-center px-4 py-2.5 rounded-2xl bg-primary shadow-primaryShadow active:opacity-70"
-              >
-                <Save color="#FFFFFF" size={20} />
-                <Text className="text-content text-default-1 ml-2">{t("common.save")}</Text>
-              </Pressable>
-            )}
+            {showFormSave &&
+              withSpotlight(
+                <Pressable
+                  onPress={onPressSave}
+                  className="flex-row items-center px-4 py-2.5 rounded-2xl bg-primary shadow-primaryShadow active:opacity-70"
+                >
+                  <Save color="#FFFFFF" size={20} />
+                  <Text className="text-content text-default-1 ml-2">{t("common.save")}</Text>
+                </Pressable>,
+                saveSpotlightKey,
+              )}
           </View>
 
           <View className="flex-1 flex-row justify-end items-center">
@@ -129,16 +150,11 @@ export function Header({
                   </Pressable>
                 )}
 
-                {/*
-                  LAUNCH-GATE: header tutorial entry disabled for the public
-                  release. The tutorial is still buggy; re-enable this button
-                  (and the imports/flag above) once it is complete.
-                  {!tutorialHidden && (
-                    <Pressable onPress={() => router.push("/tutorial" as never)} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
-                      <HelpCircle color={colors.muted} size={24} />
-                    </Pressable>
-                  )}
-                */}
+                {!tutorialAllCompleted && (
+                  <Pressable onPress={() => router.push("/tutorial" as never)} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
+                    <HelpCircle color={colors.muted} size={24} />
+                  </Pressable>
+                )}
 
                 <Pressable onPress={() => router.push("/account")} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
                   <User color={colors.muted} size={24} />
@@ -150,15 +166,17 @@ export function Header({
               </View>
             )}
 
-            {showBack && (
-              <Pressable
-                onPress={onPressBack}
-                className="flex-row items-center px-4 py-2 rounded-xl border-2 border-outline bg-level2 active:opacity-70"
-              >
-                <ArrowLeft color={colors.muted} size={24} />
-                <Text className="text-muted text-default-1 ml-2">{t("common.back")}</Text>
-              </Pressable>
-            )}
+            {showBack &&
+              withSpotlight(
+                <Pressable
+                  onPress={onPressBack}
+                  className="flex-row items-center px-4 py-2 rounded-xl border-2 border-outline bg-level2 active:opacity-70"
+                >
+                  <ArrowLeft color={colors.muted} size={24} />
+                  <Text className="text-muted text-default-1 ml-2">{t("common.back")}</Text>
+                </Pressable>,
+                backSpotlightKey,
+              )}
           </View>
         </View>
       </View>

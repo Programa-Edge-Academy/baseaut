@@ -1,4 +1,6 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import type { TranslationKey } from "@/features/settings/constants/translations";
 import React from "react";
 import { Text, TextInput, View } from "react-native";
 
@@ -18,10 +20,10 @@ export type Mabc2ExerciseItemProps = {
   accessibilityLabel?: string;
 };
 
-/** Maps a measurement unit code to its display label. */
-function formatMeasuredUnit(unit: string) {
-  if (unit === "tentativas") return "Medido em sucessos";
-  if (unit === "seg") return "Medido em segundos";
+/** Maps a measurement unit code to its localized display label. */
+function formatMeasuredUnit(unit: string, t: (key: TranslationKey) => string) {
+  if (unit === "tentativas") return t("mabc.measuredSuccesses");
+  if (unit === "seg") return t("mabc.measuredSeconds");
 
   return unit;
 }
@@ -43,6 +45,7 @@ export function Mabc2ExerciseItem({
   testID,
   accessibilityLabel,
 }: Mabc2ExerciseItemProps) {
+  const { t } = useI18n();
   const displayAttemptCount =
     attemptCount !== null && attemptCount !== "" ? String(attemptCount) : "-";
 
@@ -62,7 +65,7 @@ export function Mabc2ExerciseItem({
       </Text>
 
       <Text className="mb-2 text-xs font-medium text-muted">
-        {formatMeasuredUnit(unit)}
+        {formatMeasuredUnit(unit, t)}
       </Text>
 
       <View className="flex-row items-center gap-2.5">
@@ -80,7 +83,7 @@ export function Mabc2ExerciseItem({
           ) : (
             <TextInput
               testID={testID ? `${testID}-attempt-count-input` : undefined}
-              accessibilityLabel={`Tentativas de ${name}`}
+              accessibilityLabel={t("mabc.attemptsOf").replace("{name}", name)}
               className="m-0 w-full p-0 text-center text-sm font-medium text-content"
               value={attemptCount !== null ? String(attemptCount) : ""}
               onChangeText={onChangeAttemptCount}

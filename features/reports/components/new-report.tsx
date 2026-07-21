@@ -6,8 +6,12 @@ import { DefaultTextInput } from "@/components/default-text-input";
 import RangeCalendar from "@/components/range-calendar";
 import { Report, ReportFormData } from "@/features/reports/hooks/use-student-reports";
 import { PeriodSelector } from "@/features/analysis/components/period-selector";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { SpotlightBinding } from "@/features/tutorial/components/spotlight-binding";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { X } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Keyboard,
   Pressable,
@@ -26,15 +30,35 @@ export type NewReportProps = {
   initialData?: Report | null;
   /** Default title used when creating a new report. */
   defaultTitle?: string;
+  /** Tutorial spotlight key for the period selector. */
+  periodSpotlightKey?: string;
+  /** Tutorial spotlight key for the save action. */
+  saveSpotlightKey?: string;
 };
 
 /**
  * Modal for creating or editing a report: sets its title and date range (via a
  * range calendar) before saving.
+ *
+ * @remarks
+ * Both the modal and its nested calendar render a {@link TutorialSpotlight}, so
+ * a sub-step targeting the period selector or the save action is highlighted
+ * over the modal rather than behind it.
  */
-export function NewReport({ visible, onClose, onSave, initialData, defaultTitle }: NewReportProps) {
+export function NewReport({
+  visible,
+  onClose,
+  onSave,
+  initialData,
+  defaultTitle,
+  periodSpotlightKey,
+  saveSpotlightKey,
+}: NewReportProps) {
+  const { t } = useI18n();
   const { width, height } = useWindowDimensions();
   const isEdit = !!initialData;
+  const sim = useTutorialSimulation();
+  const saveRef = useRef<View>(null);
 
   const [titulo, setTitulo] = useState("");
   const [dataInicio, setDataInicio] = useState<string>("");
@@ -70,6 +94,7 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
 
   const savePeriod = () => {
     if (!tempInicio || !tempFim) return;
+    if (periodSpotlightKey) sim.complete(periodSpotlightKey);
     setDataInicio(tempInicio);
     setDataFim(tempFim);
     setIsCalendarOpen(false);
@@ -84,8 +109,8 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!titulo.trim()) newErrors.titulo = "Nome do relatório é obrigatório.";
-    if (!dataInicio) newErrors.periodo = "Selecione o período do relatório.";
+    if (!titulo.trim()) newErrors.titulo = t("reports.nameError");
+    if (!dataInicio) newErrors.periodo = t("reports.periodError");
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -108,6 +133,8 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
   return (
     <>
       <AppModal visible={visible} onRequestClose={onClose} transparent animationType="fade">
+        {/* Bound from inside the modal so the tap guard treats it as its own. */}
+        <SpotlightBinding targetKey={saveSpotlightKey} viewRef={saveRef} />
         <View className="flex-1 justify-center">
           <Pressable
             className="absolute inset-0 bg-black/50"
@@ -129,7 +156,7 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
             >
               <View className="flex-row items-center justify-between">
                 <Text className="text-header-2 text-content">
-                  {isEdit ? "Editar relatório" : "Novo relatório"}
+                  {isEdit ? t("reports.editReport") : t("reports.newReport")}
                 </Text>
                 <Pressable onPress={onClose} hitSlop={10}>
                   <X color={colors.muted} size={24} />
@@ -137,9 +164,9 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
               </View>
 
               <View className="gap-1">
-                <Text className="text-default-2 text-muted">Nome do relatório*</Text>
+                <Text className="text-default-2 text-muted">{t("reports.nameLabel")}</Text>
                 <DefaultTextInput
-                  placeholder="Nome do relatório"
+                  placeholder={t("reports.namePlaceholder")}
                   value={titulo}
                   outLineBorderClass={errors.titulo ? "border-error" : "border-outline"}
                   onChangeText={(text: string) => {
@@ -153,11 +180,12 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
               </View>
 
               <View className="gap-1">
-                <Text className="text-default-2 text-muted">Período*</Text>
+                <Text className="text-default-2 text-muted">{t("reports.periodLabel")}</Text>
                 <PeriodSelector
-                  label={periodLabel ?? "Selecionar período"}
+                  label={periodLabel ?? t("reports.selectPeriod")}
                   onPress={openCalendar}
                   containerStyle={{ marginHorizontal: 0 }}
+                  spotlightKey={periodSpotlightKey}
                 />
                 {errors.periodo ? (
                   <Text className="mt-1 text-default-3 text-error">{errors.periodo}</Text>
@@ -167,10 +195,13 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
               <ActionButtons
                 onCancel={onClose}
                 onSave={handleSave}
-                saveLabel={saving ? "Salvando..." : "Salvar"}
+                saveLabel={saving ? t("common.saving") : t("common.save")}
                 disabled={saving}
+                saveButtonRef={saveRef}
               />
             </ScrollView>
+
+            <TutorialSpotlight />
           </View>
         </View>
       </AppModal>
@@ -201,7 +232,7 @@ export function NewReport({ visible, onClose, onSave, initialData, defaultTitle 
             </View>
             <View className="items-center">
               <DefaultButton
-                label="Salvar"
+                label={t("common.save")}
                 sizeClass="w-full h-11"
                 disabled={!tempInicio || !tempFim}
                 style={{ opacity: !tempInicio || !tempFim ? 0.5 : 1 }}

@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { Plus, Users } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
@@ -34,6 +35,7 @@ export function StudentCardTeam({
   onRemoveStudent,
   onEditStudent,
 }: StudentCardProps) {
+  const { t } = useI18n();
   return (
     <View
       className={`w-full max-w-[380px] rounded-[20px] bg-level2 p-5 border border-outline ${className ?? ""}`}
@@ -42,7 +44,7 @@ export function StudentCardTeam({
         <View className="flex-row items-center gap-3">
           <Users size={24} color={colors.extra} />
           <Text className="text-lg font-bold text-content">
-            Alunos ({students.length})
+            {t("teams.students").replace("{n}", String(students.length))}
           </Text>
         </View>
 
@@ -51,13 +53,13 @@ export function StudentCardTeam({
           className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1 active:opacity-70"
         >
           <Plus size={16} color={colors.primary} />
-          <Text className="text-sm font-medium text-primary">Adicionar</Text>
+          <Text className="text-sm font-medium text-primary">{t("teams.add")}</Text>
         </Pressable>
       </View>
 
       {students.length === 0 ? (
         <Text className="text-sm font-medium text-muted leading-5">
-          Nenhum aluno na equipe. Cadastre novos alunos.
+          {t("teams.noStudents")}
         </Text>
       ) : (
         <View className="gap-2">

@@ -4,6 +4,7 @@ import { ActionButtons } from "@/components/action-buttons";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { DefaultButton } from "@/components/default-button";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { SpotlightBinding } from "@/features/tutorial/components/spotlight-binding";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { ImageUp, Pencil, X } from "lucide-react-native";
@@ -55,7 +56,7 @@ export function NewExercise({
   onClose,
   availableTags = ["Coordenação", "Força", "Equilíbrio"],
   onSave,
-  title = "Novo exercício",
+  title,
   initialData,
 }: NewExerciseProps) {
   const { width } = useWindowDimensions();
@@ -91,15 +92,12 @@ export function NewExercise({
     setSelectedTags(initialData?.tag ? [initialData.tag] : []);
     setSelectedSubtags(initialData?.tag ? { [initialData.tag]: initialData.subtags ?? [] } : {});
     setPhotoUri(initialData?.iconUrl ?? null);
-  }, [visible, initialData]);
-
-  // Register the simulation spotlight targets living inside this modal.
-  useEffect(() => {
-    sim.registerTarget("title", nameFieldRef, { rounded: true });
-    sim.registerTarget("tag", tagFieldRef, { rounded: true });
-    sim.registerTarget("save", saveFieldRef, { rounded: true });
-    return () => sim.unregisterTarget(["title", "tag", "save"]);
-  }, [sim]);
+    // Sync only when the modal opens. `initialData` is rebuilt on every parent
+    // render, so depending on it would re-seed the form mid-edit whenever the
+    // parent re-renders — which happens each time the guided simulation
+    // advances, silently reverting the user's own edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   // Advance the guided simulation as the required fields are filled in.
   useEffect(() => {
@@ -203,6 +201,11 @@ export function NewExercise({
         transparent
         animationType="fade"
       >
+        {/* Bound from inside the modal so the tap guard treats these as its own. */}
+        <SpotlightBinding targetKey="title" viewRef={nameFieldRef} />
+        <SpotlightBinding targetKey="tag" viewRef={tagFieldRef} />
+        <SpotlightBinding targetKey="save" viewRef={saveFieldRef} />
+
         <View className="flex-1 justify-center">
           <Pressable
             className="absolute inset-0 bg-black/50"
@@ -219,7 +222,7 @@ export function NewExercise({
               contentContainerStyle={{ padding: 25, gap: 25 }}
             >
               <View className="flex-row items-center justify-between">
-                <Text className="text-header-2 text-content">{title}</Text>
+                <Text className="text-header-2 text-content">{title ?? t("exercises.form.createTitle")}</Text>
                 <Pressable onPress={onClose} className="p-1 active:opacity-70">
                   <X color={colors.muted} size={28} />
                 </Pressable>

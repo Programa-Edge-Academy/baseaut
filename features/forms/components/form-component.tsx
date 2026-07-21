@@ -1,9 +1,14 @@
 import { colors } from "@/assets/colors";
 import { FormQuestion } from "@/features/forms/components/form-question";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import type { TranslationKey } from "@/features/settings/constants/translations";
+import { localizeFormText } from "@/features/forms/utils/form-content-i18n";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardAwareScroll } from "@/lib/use-keyboard-aware-scroll";
 import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
-import { forwardRef, useImperativeHandle, useEffect, useState } from "react";
+import { forwardRef, useId, useImperativeHandle, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -29,34 +34,36 @@ const RC_AUTO_FILLED_TITLES = [
 ];
 
 /** Mock Control Record questions used by the tutorial session simulation. */
-const MOCK_RC_QUESTIONS = [
-  {
-    id: "mock-rc-1",
-    type: "linear_scale",
-    title: "Nível de engajamento do aluno na sessão",
-    min: 1,
-    max: 5,
-    step: 1,
-    options: undefined,
-    multiple: undefined,
-    obrigatoria: true,
-    helpText: undefined,
-    numeric: false,
-  },
-  {
-    id: "mock-rc-2",
-    type: "open",
-    title: "Observações gerais da sessão",
-    min: undefined,
-    max: undefined,
-    step: undefined,
-    options: undefined,
-    multiple: undefined,
-    obrigatoria: false,
-    helpText: undefined,
-    numeric: false,
-  },
-];
+function buildMockRcQuestions(t: (key: TranslationKey) => string) {
+  return [
+    {
+      id: "mock-rc-1",
+      type: "linear_scale",
+      title: t("forms.mockRcEngagement"),
+      min: 1,
+      max: 5,
+      step: 1,
+      options: undefined,
+      multiple: undefined,
+      obrigatoria: true,
+      helpText: undefined,
+      numeric: false,
+    },
+    {
+      id: "mock-rc-2",
+      type: "open",
+      title: t("forms.mockRcObservations"),
+      min: undefined,
+      max: undefined,
+      step: undefined,
+      options: undefined,
+      multiple: undefined,
+      obrigatoria: false,
+      helpText: undefined,
+      numeric: false,
+    },
+  ];
+}
 
 /** Normalizes a title for comparison by removing accents and casing. */
 function normalizeTitle(s: string) {
@@ -87,6 +94,12 @@ export interface FormComponentProps {
    * (tutorial session simulation), so answers can be filled or left pending.
    */
   mock?: boolean;
+  /**
+   * Tutorial spotlight key for the mock question's answer control. When set (in
+   * the forms simulation), the linear-scale question is highlighted and the
+   * sub-step advances once the user changes its answer.
+   */
+  answerSpotlightKey?: string;
 }
 
 /**
@@ -104,9 +117,13 @@ export interface FormComponentProps {
  * moves.
  */
 export const FormComponent = forwardRef(function FormComponent(
-  { formularioId, sessaoId, alunoId, onSuccess, hideAutoFilledSessionFields, scrollable = true, mock = false }: FormComponentProps,
+  { formularioId, sessaoId, alunoId, onSuccess, hideAutoFilledSessionFields, scrollable = true, mock = false, answerSpotlightKey }: FormComponentProps,
   ref
 ) {
+  const { t, locale } = useI18n();
+  const sim = useTutorialSimulation();
+  const questionsRef = useRef<View>(null);
+  const passthroughId = useId();
   const [questions, setQuestions] = useState<any[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
@@ -116,12 +133,13 @@ export const FormComponent = forwardRef(function FormComponent(
 
   useEffect(() => {
     if (mock) {
+      const mockQuestions = buildMockRcQuestions(t);
       const defaults: Record<string, any> = {};
-      for (const q of MOCK_RC_QUESTIONS) {
+      for (const q of mockQuestions) {
         const def = getDefaultAnswer(q);
         if (def !== undefined) defaults[q.id] = def;
       }
-      setQuestions(MOCK_RC_QUESTIONS);
+      setQuestions(mockQuestions);
       setAnswers(defaults);
       setLoading(false);
       return;
@@ -149,7 +167,7 @@ export const FormComponent = forwardRef(function FormComponent(
         .order("ordem", { ascending: true });
 
       if (error) {
-        Alert.alert("Erro", "Não foi possível carregar as perguntas.");
+        Alert.alert(t("common.error"), t("form.loadQuestionsError"));
         setLoading(false);
         return;
       }
@@ -180,15 +198,26 @@ export const FormComponent = forwardRef(function FormComponent(
           multiple = true;
         }
 
-        const [title, ...rest] = q.texto_pergunta.split(/\n(?=\(0=)/);
+        // Titles, scoring criteria and descriptions are canonical seeded
+        // content, so they are localized for display only; the stored answer
+        // value is unaffected. Localizing the whole `texto_pergunta` before the
+        // split keeps the `(0=` marker (preserved in the translation) working.
+        const localizedPergunta = localizeFormText(q.texto_pergunta, locale);
+        const [title, ...rest] = localizedPergunta.split(/\n(?=\(0=)/);
         const scoringCriteria = rest.join("\n").trim();
-        const descricao = q.descricao?.replace(/\\n/g, "\n") ?? "";
+        // Expand the seed's literal `\n` escapes first, then localize, so the
+        // dictionary keys can use real newlines.
+        const descricao = localizeFormText((q.descricao ?? "").replace(/\\n/g, "\n"), locale);
         const helpText = [scoringCriteria && `**${scoringCriteria}**`, descricao].filter(Boolean).join("\n\n") || undefined;
+        // Original Portuguese title, kept for internal matching (the auto-filled
+        // RC filter below) so it stays reliable regardless of display locale.
+        const [ptTitle] = q.texto_pergunta.split(/\n(?=\(0=)/);
 
         return {
           id: q.id,
           type,
           title: title.trim(),
+          ptTitle: ptTitle.trim(),
           min,
           max,
           step,
@@ -204,7 +233,7 @@ export const FormComponent = forwardRef(function FormComponent(
         ? mappedQuestions.filter(
             (q) =>
               !RC_AUTO_FILLED_TITLES.some(
-                (t) => normalizeTitle(q.title) === normalizeTitle(t),
+                (t) => normalizeTitle(q.ptTitle) === normalizeTitle(t),
               ),
           )
         : mappedQuestions;
@@ -259,7 +288,10 @@ export const FormComponent = forwardRef(function FormComponent(
     }
 
     loadQuestions();
-  }, [formularioId, sessaoId, alunoId, hideAutoFilledSessionFields, mock]);
+    // `locale` is included so canonical question/description text re-localizes
+    // when the user switches languages.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formularioId, sessaoId, alunoId, hideAutoFilledSessionFields, mock, locale]);
 
   /**
    * Persists the current answers. When `allowPartial` is true, empty required
@@ -292,15 +324,15 @@ export const FormComponent = forwardRef(function FormComponent(
         setSaving(false);
         return {
           success: false,
-          title: "Erro ao salvar formulário",
-          description: "Não é possível salvar formulários com campos vazios"
+          title: t("form.saveErrorTitle"),
+          description: t("form.emptyFieldsError")
         };
       }
 
       // Tutorial mock: never touches Supabase; answers can be filled or left pending.
       if (mock) {
         setSaving(false);
-        if (!silent) Alert.alert("Sucesso", "Avaliação salva com sucesso!");
+        if (!silent) Alert.alert(t("form.successTitle"), t("form.savedEvaluation"));
         if (onSuccess) onSuccess();
         return { success: true, hadPending: missingRequired };
       }
@@ -359,16 +391,16 @@ export const FormComponent = forwardRef(function FormComponent(
         if (insertError) throw insertError;
       }
 
-      if (!silent) Alert.alert("Sucesso", "Avaliação salva com sucesso!");
+      if (!silent) Alert.alert(t("form.successTitle"), t("form.savedEvaluation"));
       if (onSuccess) onSuccess();
 
       return { success: true, hadPending: missingRequired };
     } catch {
-      if (!silent) Alert.alert("Erro", "Ocorreu um erro ao salvar as respostas.");
-      return { 
-        success: false, 
-        title: "Erro de conexão", 
-        description: "Falha ao se conectar com os servidores. Verifique sua internet." 
+      if (!silent) Alert.alert(t("common.error"), t("form.saveResponsesError"));
+      return {
+        success: false,
+        title: t("form.connectionError"),
+        description: t("form.connectionErrorDesc")
       };
     } finally {
       setSaving(false);
@@ -378,6 +410,15 @@ export const FormComponent = forwardRef(function FormComponent(
   useImperativeHandle(ref, () => ({
     handleSave,
   }));
+
+  // Answering is data entry, not navigation: the hints ask the user to fill a
+  // form in steps whose highlight sits on the save button, so the tutorial tap
+  // guard must never block these fields.
+  useEffect(() => {
+    if (!sim.active) return;
+    sim.registerPassthrough(passthroughId, questionsRef);
+    return () => sim.unregisterPassthrough(passthroughId);
+  }, [sim, passthroughId]);
 
   if (loading) {
     return (
@@ -389,25 +430,43 @@ export const FormComponent = forwardRef(function FormComponent(
 
   const content = (
     <View
+      ref={questionsRef}
+      collapsable={false}
       className="items-center"
       style={{ paddingBottom: scrollable ? 40 + keyboardPadding : 40 }}
     >
       {questions.length === 0 ? (
         <View className="mt-10 items-center">
-          <Text className="text-muted">Nenhuma pergunta encontrada para este formulário.</Text>
+          <Text className="text-muted">{t("form.noQuestions")}</Text>
         </View>
       ) : (
-        questions.map((question) => (
-          <View key={question.id} className="w-full mt-4">
+        questions.map((question) => {
+          // In the forms simulation, highlight the mock scale question and
+          // advance the sub-step once the user changes its answer.
+          const isAnswerTarget =
+            mock && !!answerSpotlightKey && question.type === "linear_scale";
+          const questionNode = (
             <FormQuestion
               question={question}
               value={answers[question.id]}
-              onChange={(val: any) =>
-                setAnswers((prev) => ({ ...prev, [question.id]: val }))
-              }
+              onChange={(val: any) => {
+                setAnswers((prev) => ({ ...prev, [question.id]: val }));
+                if (isAnswerTarget && sim.active && sim.currentKey === answerSpotlightKey) {
+                  sim.complete(answerSpotlightKey!);
+                }
+              }}
             />
-          </View>
-        ))
+          );
+          return (
+            <View key={question.id} className="w-full mt-4">
+              {isAnswerTarget ? (
+                <SpotlightTarget targetKey={answerSpotlightKey!}>{questionNode}</SpotlightTarget>
+              ) : (
+                questionNode
+              )}
+            </View>
+          );
+        })
       )}
     </View>
   );

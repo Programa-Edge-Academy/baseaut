@@ -10,9 +10,7 @@ import { SvgXml } from "react-native-svg";
 
 import { baseautLogoXml } from "@/assets/baseaut-logo";
 import { PasswordInput } from "@/features/auth/components/password-input";
-
-const invalidPasswordMessage =
-  "A senha deve ter entre 8 e 20 caracteres, maiúscula, minúscula, número ou especial";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 
 /**
  * Screen to set a new password. Reached with a live recovery session — either
@@ -21,8 +19,10 @@ const invalidPasswordMessage =
  */
 export function ResetPasswordScreen() {
   const router = useRouter();
+  const { t } = useI18n();
   const sessionStatus = useRecoverySession();
   const { updatePassword, loading, error, setError } = usePasswordRecovery();
+  const invalidPasswordMessage = t("auth.passwordRule");
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -41,7 +41,7 @@ export function ResetPasswordScreen() {
     }
 
     if (confirmPassword && text !== confirmPassword) {
-      newErrors.confirmPassword = "As senhas não coincidem";
+      newErrors.confirmPassword = t("auth.passwordsMismatch");
     } else if (confirmPassword && text === confirmPassword) {
       delete newErrors.confirmPassword;
     }
@@ -58,7 +58,7 @@ export function ResetPasswordScreen() {
     const newErrors: Record<string, string> = { ...errors };
 
     if (password !== text) {
-      newErrors.confirmPassword = "As senhas não coincidem";
+      newErrors.confirmPassword = t("auth.passwordsMismatch");
     } else {
       delete newErrors.confirmPassword;
     }
@@ -75,15 +75,15 @@ export function ResetPasswordScreen() {
     const newErrors: Record<string, string> = {};
 
     if (!password.trim()) {
-      newErrors.password = "Senha é obrigatória";
+      newErrors.password = t("auth.passwordRequired");
     } else if (!passwordChecker(password)) {
       newErrors.password = invalidPasswordMessage;
     }
 
     if (!confirmPassword.trim()) {
-      newErrors.confirmPassword = "Confirmação de senha é obrigatória";
+      newErrors.confirmPassword = t("auth.confirmRequired");
     } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = "As senhas não coincidem";
+      newErrors.confirmPassword = t("auth.passwordsMismatch");
     }
 
     setErrors(newErrors);
@@ -123,33 +123,32 @@ export function ResetPasswordScreen() {
 
       <View className="mt-10 w-full items-center">
         <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-6 shadow-panelShadow border border-outline">
-          <Text className="mb-5 text-header-3 text-content">Redefinir senha</Text>
+          <Text className="mb-5 text-header-3 text-content">{t("auth.resetTitle")}</Text>
 
           {sessionStatus === "invalid" ? (
             <>
               <Text className="text-default-2 text-muted text-center leading-5">
-                Este link de redefinição é inválido ou expirou. Solicite um novo
-                link ou código para redefinir sua senha.
+                {t("auth.resetInvalid")}
               </Text>
               <View className="mt-7 w-full max-w-[342px] items-center">
                 <DefaultButton
-                  label="Solicitar novamente"
+                  label={t("auth.requestAgain")}
                   onPress={() => router.replace("/reset-password-code")}
                   sizeClass="w-full h-11"
                   className="rounded-[15px]"
                 />
               </View>
               <Pressable onPress={() => router.replace("/")} className="mt-6">
-                <Text className="text-header-3 text-primary">Voltar ao login</Text>
+                <Text className="text-header-3 text-primary">{t("auth.backToLogin")}</Text>
               </Pressable>
             </>
           ) : (
             <>
               <View className="w-full max-w-[342px] gap-4">
                 <View className="gap-1">
-                  <Text className="text-default-2 text-muted">Nova senha</Text>
+                  <Text className="text-default-2 text-muted">{t("account.newPassword")}</Text>
                   <PasswordInput
-                    placeholder="Digite sua nova senha"
+                    placeholder={t("auth.newPasswordPlaceholder")}
                     value={password}
                     maxLength={20}
                     onChangeText={handlePasswordChange}
@@ -167,10 +166,10 @@ export function ResetPasswordScreen() {
 
                 <View className="gap-1">
                   <Text className="text-default-2 text-muted">
-                    Confirmar nova senha
+                    {t("account.confirmNewPassword")}
                   </Text>
                   <PasswordInput
-                    placeholder="Confirme sua nova senha"
+                    placeholder={t("auth.confirmNewPasswordPlaceholder")}
                     value={confirmPassword}
                     maxLength={20}
                     onChangeText={handleConfirmPasswordChange}
@@ -195,7 +194,7 @@ export function ResetPasswordScreen() {
 
               <View className="mt-7 w-full max-w-[342px] items-center">
                 <DefaultButton
-                  label={loading ? "Salvando..." : "Confirmar senha"}
+                  label={loading ? t("common.saving") : t("auth.confirmPasswordBtn")}
                   onPress={handleResetPassword}
                   sizeClass="w-full h-11"
                   disabled={isButtonDisabled}

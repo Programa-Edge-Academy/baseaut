@@ -3,9 +3,11 @@ import { DataList } from "@/components/data-list";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import React, { useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 
@@ -44,6 +46,7 @@ export function ProtocolRecordsListScreen({
   const { t } = useI18n();
   const sessionSim = useSessionSimController();
   const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const sim = useTutorialSimulation();
   const [noticeOpen, setNoticeOpen] = useState(false);
   const { records, isLoading, error, refetch } = useProtocolRecords(studentId, tipo, { mock: isTutorial });
   const protocolLabel = PROTOCOL_LABELS[tipo];
@@ -52,8 +55,12 @@ export function ProtocolRecordsListScreen({
     <View className="flex-1 bg-level1">
       <Header
         variant="back"
-        onPressBack={onPressBack}
+        onPressBack={() => {
+          if (isTutorial) sim.complete("backProtocols");
+          onPressBack?.();
+        }}
         onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+        backSpotlightKey={isTutorial ? "backProtocols" : undefined}
       />
 
       <View className="flex-1">
@@ -87,13 +94,25 @@ export function ProtocolRecordsListScreen({
             keyExtractor={(item) => item.id}
             emptyMessage={t("analysis.protocolList.noRecordsFound")}
             onRefresh={refetch}
-            renderItem={({ item }) => (
-              <ProtocolRecordCard
-                record={item}
-                showAgeGroup={tipo === "mabc2"}
-                onPress={() => onPressRecord?.(item)}
-              />
-            )}
+            renderItem={({ item, index }) => {
+              const cardNode = (
+                <ProtocolRecordCard
+                  record={item}
+                  showAgeGroup={tipo === "mabc2"}
+                  onPress={() => {
+                    if (isTutorial && sim.currentKey === "openProtocolRecord") {
+                      sim.complete("openProtocolRecord");
+                    }
+                    onPressRecord?.(item);
+                  }}
+                />
+              );
+              return isTutorial && index === 0 ? (
+                <SpotlightTarget targetKey="openProtocolRecord">{cardNode}</SpotlightTarget>
+              ) : (
+                cardNode
+              );
+            }}
           />
         )}
       </View>
@@ -102,7 +121,7 @@ export function ProtocolRecordsListScreen({
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => { setNoticeOpen(false); onPressBack?.(); }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

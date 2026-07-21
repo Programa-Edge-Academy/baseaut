@@ -13,7 +13,6 @@ import { SearchInput } from "@/components/search-input";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
-import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 
@@ -55,7 +54,7 @@ export default function HistoryScreen() {
       return (
         <View className="mt-16 items-center justify-center px-8">
           <Text className="text-center text-base font-medium text-extra">
-            {error.message || "Erro ao carregar o histórico."}
+            {error.message || t("history.loadError")}
           </Text>
         </View>
       );
@@ -67,7 +66,7 @@ export default function HistoryScreen() {
         data={filteredHistory}
         emptyMessage={t("history.empty")}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const card = (
             <ListCard
               title={item.name}
@@ -90,14 +89,15 @@ export default function HistoryScreen() {
                 router.push(`../history/${item.id}`);
               }}
               enableRipple={true}
+              spotlightKeys={
+                // A key maps to a single target, so only the first card is
+                // highlighted — any student works for the practice.
+                isTutorial && index === 0 ? "selectStudent" : undefined
+              }
             />
           );
 
-          return isTutorial ? (
-            <SpotlightTarget targetKey="selectStudent">{card}</SpotlightTarget>
-          ) : (
-            card
-          );
+          return card;
         }}
       />
     );
@@ -135,11 +135,7 @@ export default function HistoryScreen() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => {
-            setNoticeOpen(false);
-            sessionSim.stop();
-            router.back();
-          }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

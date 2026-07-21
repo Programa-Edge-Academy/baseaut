@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import React from "react";
 import { FlatList, FlatListProps, RefreshControl, Text, View } from "react-native";
 
@@ -20,16 +21,17 @@ export interface DataListProps<T> extends Omit<FlatListProps<T>, "data"> {
  */
 export function DataList<T>({
   data,
-  emptyMessage = "Nenhum item encontrado.",
+  emptyMessage,
   contentContainerStyle,
   onRefresh,
   refreshing = false,
   ...rest
 }: DataListProps<T>) {
+  const { t } = useI18n();
   const renderEmptyComponent = () => (
     <View className="mt-16 flex-1 items-center justify-center">
       <Text className="text-center text-default-1 text-muted">
-        {emptyMessage}
+        {emptyMessage ?? t("common.noItems")}
       </Text>
     </View>
   );

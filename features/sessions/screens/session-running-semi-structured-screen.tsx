@@ -13,6 +13,7 @@ import {
 import { StartActivity } from "@/features/exercises/components/start-activity";
 import { Stopwatch } from "@/features/exercises/components/stopwatch";
 import { SessionExercise } from "@/features/sessions/screens/session-running-screen";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useRouter } from "expo-router";
 import { CheckCircle2, ChevronRight, Split, XCircle } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
@@ -24,6 +25,7 @@ import {
   type MotivoNaoRealizacao,
 } from "../hooks/use-session-flow";
 import { formatSessionClock, useSessionGlobalContext } from "../contexts/session-global-context";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 
 /** Whether the active exercise is awaiting start or actively running. */
 type ExerciseStage = "ready" | "running";
@@ -60,12 +62,16 @@ export function SessionRunningSemiStructuredScreen({
   studentId = "",
   sessionId = "",
   circuitId = "",
-  circuitName = "Circuito",
+  circuitName = "",
 }: SessionRunningSemiStructuredProps) {
   const router = useRouter();
+  const { t } = useI18n();
 
   const { createSession, persistExecutions, saveSession, finalizeSessionAutoFill } = useSessionFlow();
   const { registerSession, updateSessionProgress, updateSessionState, toggleTimer, closeSession, activeSessions, updateTimeElapsed, setTimerVisible, setFormVisible, addFugaInterval } = useSessionGlobalContext();
+  // Any session started while a tutorial simulation is active is mock/practice.
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active;
 
   const [effectiveSessionId, setEffectiveSessionId] = useState<string>(sessionId || "");
   const effectiveSessionIdRef = useRef<string>(sessionId || "");
@@ -83,7 +89,7 @@ export function SessionRunningSemiStructuredScreen({
   const fugaStartTotalRef = useRef<number | null>(null);
   const fugaIntervalsRef = useRef<{ start: number; end: number }[]>([]);
 
-  const safeStudentName = studentName || "Aluno";
+  const safeStudentName = studentName || t("common.student");
 
   const finalizeActiveCrise = () => {
     if (criseStartRef.current == null || !activeExercise) {
@@ -164,6 +170,7 @@ export function SessionRunningSemiStructuredScreen({
         exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description, iconUrl: e.iconUrl ?? null }))),
         circuitId: circuitId || undefined,
         circuitName: circuitName || undefined,
+        isTutorial,
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -186,10 +193,11 @@ export function SessionRunningSemiStructuredScreen({
           type: "semi-structured",
           timeElapsed: 0,
           isRunning: false,
-          exerciseProgress: `Exercício 1/${exercises.length}`,
+          exerciseProgress: t("session.exerciseProgress").replace("{n}", "1").replace("{total}", String(exercises.length)),
           exercisesJson: JSON.stringify(exercises.map((e) => ({ id: e.id, name: e.name, description: e.description, iconUrl: e.iconUrl ?? null }))),
           circuitId: circuitId || undefined,
           circuitName: circuitName || undefined,
+          isTutorial,
         });
         return id;
       })();
@@ -286,7 +294,7 @@ export function SessionRunningSemiStructuredScreen({
     if (!resolvedSid) return;
     const completed = Object.keys(historicoExercicios).length;
     const current = Math.min(completed + 1, exercises.length);
-    updateSessionProgress(resolvedSid, `Exercício ${current}/${exercises.length}`);
+    updateSessionProgress(resolvedSid, t("session.exerciseProgress").replace("{n}", String(current)).replace("{total}", String(exercises.length)));
   }, [historicoExercicios, exercises.length, resolvedSid, updateSessionProgress]);
 
   const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -338,6 +346,10 @@ export function SessionRunningSemiStructuredScreen({
 
   const handleStop = () => {
     const elapsed = controlledSeconds;
+    // A crisis/escape still being timed when the exercise is stopped is recorded
+    // (with its elapsed duration) as if its own button had been pressed first.
+    finalizeActiveCrise();
+    finalizeActiveFuga();
     lastElapsedSecondsRef.current = elapsed;
     if (resolvedSid) toggleTimer(resolvedSid, false);
     const minutes = Math.floor(elapsed / 60).toString().padStart(2, "0");
@@ -505,8 +517,8 @@ export function SessionRunningSemiStructuredScreen({
       <View className="mt-5 px-8">
         <PageHeader
           mode="execucao"
-          title={`Sessão de ${safeStudentName}`}
-          subtitle={`Exercício Semi-estruturado - ${formatSessionClock(currentSessionData?.totalElapsed ?? 0)}`}
+          title={t("sessions.circuitSelection.title").replace("{name}", safeStudentName)}
+          subtitle={t("session.subtitleSemiExercise").replace("{clock}", formatSessionClock(currentSessionData?.totalElapsed ?? 0))}
           totalExercises={1}
           completedExercises={0}
           isExecuting={false}
@@ -539,8 +551,8 @@ export function SessionRunningSemiStructuredScreen({
       <View className="mt-5 px-8">
         <PageHeader
           mode="execucao"
-          title={`Sessão de ${safeStudentName}`}
-          subtitle={`Exercício Semi-estruturado - ${formatSessionClock(currentSessionData?.totalElapsed ?? 0)}`}
+          title={t("sessions.circuitSelection.title").replace("{name}", safeStudentName)}
+          subtitle={t("session.subtitleSemiExercise").replace("{clock}", formatSessionClock(currentSessionData?.totalElapsed ?? 0))}
           totalExercises={1}
           completedExercises={0}
           isExecuting={true}
@@ -580,8 +592,8 @@ export function SessionRunningSemiStructuredScreen({
       <View className="flex-1">
         <View className="mx-8 mt-5 mb-8">
           <PageHeader
-            title={`Sessão de ${safeStudentName}`}
-            subtitle={`Circuito Semi-estruturado - ${formatSessionClock(currentSessionData?.totalElapsed ?? 0)}`}
+            title={t("sessions.circuitSelection.title").replace("{name}", safeStudentName)}
+            subtitle={t("session.subtitleSemiCircuit").replace("{clock}", formatSessionClock(currentSessionData?.totalElapsed ?? 0))}
           />
         </View>
 

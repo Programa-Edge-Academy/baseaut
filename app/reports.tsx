@@ -15,6 +15,7 @@ import { exportConsolidatedReport } from "@/features/reports/utils/export-report
 import { useStudents } from "@/features/students/hooks/use-students";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { SpotlightBinding } from "@/features/tutorial/components/spotlight-binding";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
@@ -22,7 +23,7 @@ import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-sim
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import { User, Users } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Image, Platform, Pressable, Text, View } from "react-native";
 
 /** Modal for choosing consolidated export formats (PDF/CSV) and delivery mode. */
@@ -30,16 +31,23 @@ function FormatPicker({
   visible,
   onClose,
   onExport,
+  exportSpotlightKey,
 }: {
   visible: boolean;
   onClose: () => void;
   onExport: (formats: { pdf: boolean; csv: boolean }, mode: "share" | "download") => void;
+  /** Tutorial spotlight key for the share/export action. */
+  exportSpotlightKey?: string;
 }) {
+  const { t } = useI18n();
   const [pdf, setPdf] = useState(true);
   const [csv, setCsv] = useState(false);
+  const exportRef = useRef<View>(null);
 
   return (
     <AppModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      {/* Bound from inside the modal so the tap guard treats it as its own. */}
+      <SpotlightBinding targetKey={exportSpotlightKey} viewRef={exportRef} />
       <Pressable
         className="flex-1 bg-black/60 justify-center items-center px-6"
         onPress={onClose}
@@ -48,7 +56,7 @@ function FormatPicker({
           className="bg-level2 border border-outline rounded-2xl p-6 w-full gap-5"
           onPress={(e) => e.stopPropagation()}
         >
-          <Text className="text-header-2 text-content">Selecionar formato</Text>
+          <Text className="text-header-2 text-content">{t("export.selectFormat")}</Text>
 
           <View className="gap-3">
             <Pressable onPress={() => setPdf((v) => !v)} className="flex-row items-center gap-3">
@@ -59,7 +67,7 @@ function FormatPicker({
               >
                 {pdf && <Text className="text-content text-xs font-bold">✓</Text>}
               </View>
-              <Text className="text-content text-default-1">PDF (com gráficos)</Text>
+              <Text className="text-content text-default-1">{t("export.pdfWithCharts")}</Text>
             </Pressable>
             <Pressable onPress={() => setCsv((v) => !v)} className="flex-row items-center gap-3">
               <View
@@ -69,14 +77,14 @@ function FormatPicker({
               >
                 {csv && <Text className="text-content text-xs font-bold">✓</Text>}
               </View>
-              <Text className="text-content text-default-1">CSV (dados tabulares)</Text>
+              <Text className="text-content text-default-1">{t("export.csvTabular")}</Text>
             </Pressable>
           </View>
 
           <View className="gap-3">
             <View className="flex-row gap-3">
               <DefaultButton
-                label="Cancelar"
+                label={t("common.cancel")}
                 onPress={onClose}
                 bgColorClass="bg-level1"
                 shadowClass=""
@@ -84,18 +92,20 @@ function FormatPicker({
                 className="border border-outline"
                 textClassName="text-muted"
               />
-              <DefaultButton
-                label="Exportar"
-                onPress={() => onExport({ pdf, csv }, "share")}
-                sizeClass="flex-1 h-11"
-                bgColorClass="bg-primary"
-                hasShadow
-              />
+              <View ref={exportRef} collapsable={false} className="flex-1">
+                <DefaultButton
+                  label={t("export.exportAction")}
+                  onPress={() => onExport({ pdf, csv }, "share")}
+                  sizeClass="w-full h-11"
+                  bgColorClass="bg-primary"
+                  hasShadow
+                />
+              </View>
             </View>
 
             {Platform.OS === "android" && (
               <DefaultButton
-                label="Baixar"
+                label={t("export.downloadAction")}
                 onPress={() => onExport({ pdf, csv }, "download")}
                 sizeClass="w-full h-11"
                 bgColorClass="bg-secondary"
@@ -105,6 +115,8 @@ function FormatPicker({
               />
             )}
           </View>
+
+          <TutorialSpotlight />
         </Pressable>
       </Pressable>
     </AppModal>
@@ -119,7 +131,7 @@ function FormatPicker({
  */
 export default function ReportsRoute() {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const sessionSim = useSessionSimController();
   const isTutorial = sessionSim.active && sessionSim.kind === "reports";
   const sim = useTutorialSimulation();
@@ -178,14 +190,17 @@ export default function ReportsRoute() {
   const isLoading = isStudentsLoading || isCountsLoading;
 
   const toggleCrossMode = () => {
+    if (isTutorial && !isCrossMode) sim.complete("consolidated");
     setIsCrossMode((v) => !v);
     setSelectedIds([]);
   };
 
   const toggleSelect = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+    const next = selectedIds.includes(id)
+      ? selectedIds.filter((i) => i !== id)
+      : [...selectedIds, id];
+    if (isTutorial && next.length > 0) sim.complete("consolidatedSelect");
+    setSelectedIds(next);
   };
 
   const handleConfirmSelection = () => {
@@ -193,11 +208,12 @@ export default function ReportsRoute() {
       setToast({
         visible: true,
         mode: "error",
-        title: "Nenhum aluno selecionado",
-        description: "Selecione ao menos um aluno para cruzar os dados.",
+        title: t("reports.noStudentSelected"),
+        description: t("reports.noStudentSelectedDesc"),
       });
       return;
     }
+    if (isTutorial) sim.complete("consolidatedConfirm");
     setTempStart(null);
     setTempEnd(null);
     setIsPeriodOpen(true);
@@ -205,6 +221,7 @@ export default function ReportsRoute() {
 
   const handleSavePeriod = () => {
     if (!tempStart || !tempEnd) return;
+    if (isTutorial) sim.complete("consolidatedPeriod");
     setPeriod({ start: tempStart, end: tempEnd });
     setIsPeriodOpen(false);
     setIsFormatOpen(true);
@@ -219,12 +236,12 @@ export default function ReportsRoute() {
       setToast({
         visible: true,
         mode: "success",
-        title: deliveryMode === "download" ? "Relatório baixado!" : "Relatório exportado!",
-        description: "Simulação: nada foi enviado ao servidor.",
+        title: deliveryMode === "download" ? t("reports.downloaded") : t("reports.exported"),
+        description: t("reports.simulationNoServer"),
       });
       setIsCrossMode(false);
       setSelectedIds([]);
-      sim.complete("consolidated");
+      sim.complete("consolidatedExport");
       return;
     }
     if (!period) return;
@@ -233,12 +250,15 @@ export default function ReportsRoute() {
       .map((s) => ({ id: s.id, name: s.name }));
     try {
       setExporting(true);
-      await exportConsolidatedReport(selected, period.start, period.end, formats, deliveryMode);
+      await exportConsolidatedReport(selected, period.start, period.end, formats, t, locale, deliveryMode);
       setToast({
         visible: true,
         mode: "success",
-        title: deliveryMode === "download" ? "Relatório baixado!" : "Relatório exportado!",
-        description: `Dados de ${selected.length} aluno${selected.length !== 1 ? "s" : ""} consolidados.`,
+        title: deliveryMode === "download" ? t("reports.downloaded") : t("reports.exported"),
+        description: (selected.length === 1
+          ? t("reports.consolidatedDescOne")
+          : t("reports.consolidatedDescMany")
+        ).replace("{n}", String(selected.length)),
       });
       setIsCrossMode(false);
       setSelectedIds([]);
@@ -246,8 +266,8 @@ export default function ReportsRoute() {
       setToast({
         visible: true,
         mode: "error",
-        title: "Erro ao exportar",
-        description: err?.message ?? "Tente novamente.",
+        title: t("reports.exportError"),
+        description: err?.message ?? t("reports.tryAgain"),
       });
     } finally {
       setExporting(false);
@@ -292,7 +312,7 @@ export default function ReportsRoute() {
           const crossToggle = (
             <Pressable
               onPress={toggleCrossMode}
-              className={`mt-3 flex-row items-center gap-3 rounded-[15px] border p-3.5 active:opacity-70 ${
+              className={`flex-row items-center gap-3 rounded-[15px] border p-3.5 active:opacity-70 ${
                 isCrossMode ? "border-primary bg-primary/10" : "border-outline bg-level2"
               }`}
             >
@@ -305,10 +325,12 @@ export default function ReportsRoute() {
               </Text>
             </Pressable>
           );
+          // Keep the top margin on the wrapper (external), so the spotlight
+          // highlight hugs the button itself and does not include the gap above.
           return isTutorial ? (
-            <SpotlightTarget targetKey="consolidated">{crossToggle}</SpotlightTarget>
+            <SpotlightTarget targetKey="consolidated" className="mt-3">{crossToggle}</SpotlightTarget>
           ) : (
-            crossToggle
+            <View className="mt-3">{crossToggle}</View>
           );
         })()}
 
@@ -317,7 +339,7 @@ export default function ReportsRoute() {
             <ActivityIndicator size="large" color={colors.primary} />
             {exporting && (
               <Text className="mt-3 text-default-2 text-muted">
-                Gerando relatório consolidado...
+                {t("reports.generatingConsolidated")}
               </Text>
             )}
           </View>
@@ -329,7 +351,7 @@ export default function ReportsRoute() {
               emptyMessage={t("reports.empty")}
               onRefresh={refreshStudents}
               contentContainerStyle={{ flexGrow: 1, paddingBottom: isCrossMode ? 80 : 0 }}
-              renderItem={({ item }) => {
+              renderItem={({ item, index }) => {
                 const count = reportCounts[item.id] || 0;
                 const isSelected = selectedIds.includes(item.id);
                 const card = (
@@ -362,13 +384,18 @@ export default function ReportsRoute() {
                         params: { studentId: item.id, studentName: item.name },
                       } as any);
                     }}
+                    spotlightKeys={
+                      // A key maps to a single target, so only the first card is
+                      // highlighted — any student works for the practice.
+                      !isTutorial || index !== 0
+                        ? undefined
+                        : isCrossMode
+                          ? "consolidatedSelect"
+                          : "selectStudent"
+                    }
                   />
                 );
-                return isTutorial && !isCrossMode ? (
-                  <SpotlightTarget targetKey="selectStudent">{card}</SpotlightTarget>
-                ) : (
-                  card
-                );
+                return card;
               }}
             />
           </View>
@@ -377,18 +404,29 @@ export default function ReportsRoute() {
         {isCrossMode && !exporting && (
           <View className="absolute bottom-8 left-0 right-0 flex-row gap-4">
             <DefaultButton
-              label="Cancelar"
+              label={t("common.cancel")}
               onPress={toggleCrossMode}
               bgColorClass="bg-error"
               sizeClass="flex-1 h-11"
               shadowClass="shadow-errorShadow"
             />
-            <DefaultButton
-              label={`Confirmar (${selectedIds.length})`}
-              onPress={handleConfirmSelection}
-              bgColorClass="bg-primary"
-              sizeClass="flex-1 h-11"
-            />
+            {isTutorial ? (
+              <SpotlightTarget targetKey="consolidatedConfirm" className="flex-1">
+                <DefaultButton
+                  label={t("reports.confirmCount").replace("{n}", String(selectedIds.length))}
+                  onPress={handleConfirmSelection}
+                  bgColorClass="bg-primary"
+                  sizeClass="w-full h-11"
+                />
+              </SpotlightTarget>
+            ) : (
+              <DefaultButton
+                label={t("reports.confirmCount").replace("{n}", String(selectedIds.length))}
+                onPress={handleConfirmSelection}
+                bgColorClass="bg-primary"
+                sizeClass="flex-1 h-11"
+              />
+            )}
           </View>
         )}
       </View>
@@ -417,8 +455,11 @@ export default function ReportsRoute() {
               />
             </View>
             <View className="items-center">
+              {/* The calendar's save button is intentionally not spotlighted:
+                  highlighting it before a date is picked was misleading. The
+                  "consolidatedPeriod" sub-step still advances on save. */}
               <DefaultButton
-                label="Salvar"
+                label={t("common.save")}
                 sizeClass="w-full h-11"
                 disabled={!tempStart || !tempEnd}
                 style={{ opacity: !tempStart || !tempEnd ? 0.5 : 1 }}
@@ -426,6 +467,7 @@ export default function ReportsRoute() {
               />
             </View>
           </Pressable>
+          <TutorialSpotlight />
         </Pressable>
       </AppModal>
 
@@ -433,6 +475,7 @@ export default function ReportsRoute() {
         visible={isFormatOpen}
         onClose={() => setIsFormatOpen(false)}
         onExport={handleExport}
+        exportSpotlightKey={isTutorial ? "consolidatedExport" : undefined}
       />
 
       <Toast
@@ -449,11 +492,7 @@ export default function ReportsRoute() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => {
-            setNoticeOpen(false);
-            sessionSim.stop();
-            router.back();
-          }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

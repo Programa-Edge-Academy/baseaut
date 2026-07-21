@@ -7,6 +7,7 @@ import { colors } from "@/assets/colors";
 import { type ToastMode } from "@/components/toast";
 import { useMabc2Records } from "@/features/analysis/hooks/use-mabc2-records";
 import { Mabc2RecordsListScreen } from "@/features/analysis/screens/mabc2-records-list-screen";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 
 /**
@@ -21,8 +22,9 @@ export default function Mabc2RecordsRoute() {
     toastSuccess?: string;
   }>();
 
+  const { t } = useI18n();
   const currentStudentId = studentId ?? "";
-  const currentStudentName = studentName ?? "Aluno";
+  const currentStudentName = studentName ?? t("common.student");
   const sessionSim = useSessionSimController();
   const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
   const { records, isLoading, refetch, error } = useMabc2Records(currentStudentId, { mock: isTutorial });
@@ -59,8 +61,8 @@ export default function Mabc2RecordsRoute() {
       setToastConfig({
         visible: true,
         mode: "error",
-        title: "Não foi possível carregar os dados de desenvolvimento motor.",
-        description: "Tente novamente",
+        title: t("analysis.motorLoadError"),
+        description: t("common.retry"),
       });
     }
   }, [error]);

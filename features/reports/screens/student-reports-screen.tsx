@@ -12,9 +12,9 @@ import { PeriodSelector } from "@/features/analysis/components/period-selector";
 import { NewReport } from "@/features/reports/components/new-report";
 import { Report, ReportFormData, useStudentReports } from "@/features/reports/hooks/use-student-reports";
 import { exportReports } from "@/features/reports/utils/export-report";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
-import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import RangeCalendar from "@/components/range-calendar";
@@ -40,6 +40,7 @@ function FormatPicker({
   onClose: () => void;
   onExport: (formats: { pdf: boolean; csv: boolean }, mode: "share" | "download") => void;
 }) {
+  const { t } = useI18n();
   const [pdf, setPdf] = useState(true);
   const [csv, setCsv] = useState(false);
 
@@ -53,7 +54,7 @@ function FormatPicker({
           className="bg-level2 border border-outline rounded-2xl p-6 w-full gap-5"
           onPress={(e) => e.stopPropagation()}
         >
-          <Text className="text-header-2 text-content">Selecionar formato</Text>
+          <Text className="text-header-2 text-content">{t("export.selectFormat")}</Text>
 
           <View className="gap-3">
             <Pressable onPress={() => setPdf((v) => !v)} className="flex-row items-center gap-3">
@@ -64,7 +65,7 @@ function FormatPicker({
               >
                 {pdf && <Text className="text-content text-xs font-bold">✓</Text>}
               </View>
-              <Text className="text-content text-default-1">PDF (com gráficos)</Text>
+              <Text className="text-content text-default-1">{t("export.pdfWithCharts")}</Text>
             </Pressable>
             <Pressable onPress={() => setCsv((v) => !v)} className="flex-row items-center gap-3">
               <View
@@ -74,14 +75,14 @@ function FormatPicker({
               >
                 {csv && <Text className="text-content text-xs font-bold">✓</Text>}
               </View>
-              <Text className="text-content text-default-1">CSV (dados tabulares)</Text>
+              <Text className="text-content text-default-1">{t("export.csvTabular")}</Text>
             </Pressable>
           </View>
 
           <View className="gap-3">
             <View className="flex-row gap-3">
               <DefaultButton
-                label="Cancelar"
+                label={t("common.cancel")}
                 onPress={onClose}
                 bgColorClass="bg-level1"
                 shadowClass=""
@@ -90,7 +91,7 @@ function FormatPicker({
                 textClassName="text-muted"
               />
               <DefaultButton
-                label="Exportar"
+                label={t("export.exportAction")}
                 onPress={() => onExport({ pdf, csv }, "share")}
                 sizeClass="flex-1 h-11"
                 bgColorClass="bg-primary"
@@ -100,7 +101,7 @@ function FormatPicker({
 
             {Platform.OS === "android" && (
               <DefaultButton
-                label="Baixar"
+                label={t("export.downloadAction")}
                 onPress={() => onExport({ pdf, csv }, "download")}
                 sizeClass="w-full h-11"
                 bgColorClass="bg-secondary"
@@ -128,6 +129,7 @@ function RenameModal({
   onClose: () => void;
   onSave: (name: string) => void;
 }) {
+  const { t } = useI18n();
   const [name, setName] = useState(currentName);
   React.useEffect(() => {
     if (visible) setName(currentName);
@@ -144,13 +146,13 @@ function RenameModal({
           onPress={(e) => e.stopPropagation()}
         >
           <View className="flex-row items-center justify-between">
-            <Text className="text-header-2 text-content">Renomear relatório</Text>
+            <Text className="text-header-2 text-content">{t("reports.renameTitle")}</Text>
             <Pressable onPress={onClose} hitSlop={10}>
               <X color={colors.muted} size={22} />
             </Pressable>
           </View>
           <DefaultTextInput
-            placeholder="Nome do relatório"
+            placeholder={t("reports.namePlaceholder")}
             value={name}
             onChangeText={setName}
           />
@@ -163,7 +165,7 @@ function RenameModal({
               className="text-content text-base font-bold" 
               style={{ fontFamily: "Inter-Bold", opacity: name.trim() ? 1 : 0.5 }}
             >
-              Salvar
+              {t("common.save")}
             </Text>
           </Pressable>
         </Pressable>
@@ -172,9 +174,9 @@ function RenameModal({
   );
 }
 
-/** Formats an ISO date as a Brazilian `DD/MM/YYYY` string. */
-function formatDateBR(iso: string) {
-  return new Date(iso).toLocaleDateString("pt-BR", {
+/** Formats an ISO date as a short date in the active locale. */
+function formatDateBR(iso: string, locale: string) {
+  return new Date(iso).toLocaleDateString(locale === "en" ? "en-US" : "pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -182,8 +184,10 @@ function formatDateBR(iso: string) {
 }
 
 /** Formats a date range, collapsing equal start/end into a single date. */
-function formatDateRange(start: string, end: string): string {
-  return start === end ? formatDateBR(start) : `${formatDateBR(start)} – ${formatDateBR(end)}`;
+function formatDateRange(start: string, end: string, locale: string): string {
+  return start === end
+    ? formatDateBR(start, locale)
+    : `${formatDateBR(start, locale)} – ${formatDateBR(end, locale)}`;
 }
 
 /**
@@ -192,6 +196,7 @@ function formatDateRange(start: string, end: string): string {
  */
 export function StudentReportsScreen() {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const { studentId, studentName } = useLocalSearchParams<{
     studentId: string;
     studentName: string;
@@ -285,7 +290,7 @@ export function StudentReportsScreen() {
 
   const handleConfirmExport = () => {
     if (!selectedIds.length) {
-      showToast("error", "Nenhum relatório selecionado", "Selecione ao menos um relatório para exportar.");
+      showToast("error", t("reports.noneSelected"), t("reports.noneSelectedDesc"));
       return;
     }
     setIsFormatPickerOpen(true);
@@ -299,29 +304,29 @@ export function StudentReportsScreen() {
     if (isTutorial) {
       showToast(
         "success",
-        deliveryMode === "download" ? "Relatório baixado!" : "Relatório exportado!",
-        "Simulação: nada foi enviado ao servidor.",
+        deliveryMode === "download" ? t("reports.downloaded") : t("reports.exported"),
+        t("reports.simulationNoServer"),
       );
       setIsExportMode(false);
       setSelectedIds([]);
-      sim.complete("exportReport");
       return;
     }
     const selected = reports.filter((r) => selectedIds.includes(r.id));
     try {
       setExporting(true);
-      await exportReports(selected, formats, studentName ?? "", studentId ?? "", deliveryMode);
+      await exportReports(selected, formats, studentName ?? "", studentId ?? "", t, locale, deliveryMode);
       showToast(
         "success",
-        deliveryMode === "download" ? "Relatório baixado!" : "Relatório salvo!",
-        deliveryMode === "download"
-          ? `O relatório de ${studentName} foi baixado no dispositivo.`
-          : `O relatório de ${studentName} foi exportado e encaminhado ao compartilhamento.`
+        deliveryMode === "download" ? t("reports.downloaded") : t("reports.savedToast"),
+        (deliveryMode === "download"
+          ? t("reports.downloadedDeviceDesc")
+          : t("reports.sharedDesc")
+        ).replace("{name}", studentName ?? "")
       );
       setIsExportMode(false);
       setSelectedIds([]);
     } catch (err: any) {
-      showToast("error", "Erro ao exportar", err?.message ?? "Tente novamente.");
+      showToast("error", t("reports.exportError"), err?.message ?? t("reports.tryAgain"));
     } finally {
       setExporting(false);
     }
@@ -329,7 +334,7 @@ export function StudentReportsScreen() {
 
   const handleCreate = async (data: ReportFormData) => {
     await createReport(data);
-    showToast("success", "Relatório criado!");
+    showToast("success", t("reports.created"));
     if (isTutorial) sim.complete("saveReport");
   };
 
@@ -337,9 +342,9 @@ export function StudentReportsScreen() {
     if (!renamingReport) return;
     try {
       await renameReport(renamingReport.id, newName);
-      showToast("success", "Relatório renomeado.");
+      showToast("success", t("reports.renamed"));
     } catch {
-      showToast("error", "Erro ao renomear.");
+      showToast("error", t("reports.renameError"));
     }
     setRenamingReport(null);
   };
@@ -347,9 +352,9 @@ export function StudentReportsScreen() {
   const handleDelete = async (id: string) => {
     try {
       await deleteReport(id);
-      showToast("success", "Relatório removido.");
+      showToast("success", t("reports.removed"));
     } catch {
-      showToast("error", "Erro ao remover relatório.");
+      showToast("error", t("reports.removeError"));
     }
   };
 
@@ -371,15 +376,19 @@ export function StudentReportsScreen() {
 
   const n = filteredReports.length;
   const filterLabel = filterStart && filterEnd
-    ? `${formatDateBR(filterStart)} – ${formatDateBR(filterEnd)}`
+    ? `${formatDateBR(filterStart, locale)} – ${formatDateBR(filterEnd, locale)}`
     : undefined;
 
   return (
     <View className="flex-1 bg-level1">
       <Header
         variant="back"
-        onPressBack={() => router.back()}
+        onPressBack={() => {
+          if (isTutorial) sim.complete("backToReportsHome");
+          router.back();
+        }}
         onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+        backSpotlightKey={isTutorial ? "backToReportsHome" : undefined}
       />
 
       <View className="flex-1 mx-8">
@@ -387,7 +396,7 @@ export function StudentReportsScreen() {
           <PageHeader
             mode="relatorios-aluno"
             title={studentName ?? ""}
-            subtitle={`${n} ${n === 1 ? "relatório" : "relatórios"}`}
+            subtitle={`${n} ${n === 1 ? t("reports.recordSingular") : t("reports.recordsSuffix")}`}
             newButtonRef={isTutorial ? newButtonRef : undefined}
             onExportPress={toggleExportMode}
             isExportActive={isExportMode}
@@ -401,13 +410,13 @@ export function StudentReportsScreen() {
 
         <View className="mt-2 w-full">
           <PeriodSelector
-            label={filterLabel ?? "Filtrar por período"}
+            label={filterLabel ?? t("reports.filterByPeriod")}
             onPress={openFilterCalendar}
             containerStyle={{ marginHorizontal: 0 }}
           />
           {filterLabel && (
             <Pressable onPress={clearFilter} className="items-end mt-1" hitSlop={8}>
-              <Text className="text-xs text-muted">Limpar filtro</Text>
+              <Text className="text-xs text-muted">{t("reports.clearFilter")}</Text>
             </Pressable>
           )}
         </View>
@@ -421,7 +430,7 @@ export function StudentReportsScreen() {
             <DataList
               data={filteredReports}
               keyExtractor={(item) => item.id}
-              emptyMessage="Nenhum relatório cadastrado."
+              emptyMessage={t("reports.emptyList")}
               contentContainerStyle={{ paddingBottom: 140, flexGrow: 1 }}
               onRefresh={refresh}
               renderItem={({ item }) => {
@@ -429,22 +438,23 @@ export function StudentReportsScreen() {
                 const card = (
                   <ListCard
                     title={item.titulo}
-                    subtitle={formatDateRange(item.data_inicio, item.data_fim)}
+                    subtitle={formatDateRange(item.data_inicio, item.data_fim, locale)}
                     icon={<FileText size={18} color={colors.muted} />}
                     rightAction={isExportMode ? "none" : "more"}
-                    editLabel="Renomear"
+                    editLabel={t("reports.rename")}
                     onEdit={!isExportMode ? () => setRenamingReport(item) : undefined}
                     onDelete={!isExportMode ? () => setReportToDelete(item) : undefined}
                     enableRipple
                     onPress={isExportMode ? () => toggleSelect(item.id) : () => openReport(item)}
                     className={isSelected ? "border border-primary" : undefined}
+                    spotlightKeys={
+                      isTutorial && !isExportMode && item.id === createdReport?.id
+                        ? "openReport"
+                        : undefined
+                    }
                   />
                 );
-                return isTutorial && !isExportMode && item.id === createdReport?.id ? (
-                  <SpotlightTarget targetKey="openReport">{card}</SpotlightTarget>
-                ) : (
-                  card
-                );
+                return card;
               }}
             />
           </View>
@@ -453,14 +463,14 @@ export function StudentReportsScreen() {
         {isExportMode && (
           <View className="absolute bottom-8 left-0 right-0 flex-row gap-4">
             <DefaultButton
-              label={`Cancelar`}
+              label={t("common.cancel")}
               onPress={toggleExportMode}
               bgColorClass="bg-error"
               sizeClass="flex-1 h-11"
               shadowClass="shadow-errorShadow"
             />
             <DefaultButton
-              label={`Confirmar (${selectedIds.length})`}
+              label={t("reports.confirmCount").replace("{n}", String(selectedIds.length))}
               onPress={handleConfirmExport}
               bgColorClass="bg-primary"
               sizeClass="flex-1 h-11"
@@ -473,7 +483,9 @@ export function StudentReportsScreen() {
         visible={isNewOpen}
         onClose={() => setIsNewOpen(false)}
         onSave={handleCreate}
-        defaultTitle={`Relatório ${reports.length + 1}`}
+        defaultTitle={t("reports.defaultTitle").replace("{n}", String(reports.length + 1))}
+        periodSpotlightKey={isTutorial ? "periodReport" : undefined}
+        saveSpotlightKey={isTutorial ? "saveReport" : undefined}
       />
 
       <RenameModal
@@ -514,7 +526,7 @@ export function StudentReportsScreen() {
             </View>
             <View className="items-center">
               <DefaultButton
-                label="Salvar"
+                label={t("common.save")}
                 sizeClass="w-full h-11"
                 disabled={!tempFilterStart || !tempFilterEnd}
                 style={{ opacity: !tempFilterStart || !tempFilterEnd ? 0.5 : 1 }}
@@ -534,8 +546,8 @@ export function StudentReportsScreen() {
           }
           setReportToDelete(null);
         }}
-        title="Excluir relatório?"
-        message="O relatório será excluído permanentemente. Esta ação não poderá ser desfeita."
+        title={t("reports.deleteTitle")}
+        message={t("reports.deleteMessage")}
       />
 
       <Toast
@@ -550,7 +562,7 @@ export function StudentReportsScreen() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => { setNoticeOpen(false); router.back(); }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

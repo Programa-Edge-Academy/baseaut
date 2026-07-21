@@ -198,32 +198,99 @@ export type TranslationKey =
   | "tutorial.hint.circuitos.deleteSelect"
   | "tutorial.hint.circuitos.deleteConfirm"
   | "tutorial.hint.sessoes.selectStructured"
+  | "tutorial.hint.sessoes.openReorder"
+  | "tutorial.hint.sessoes.reorder"
+  | "tutorial.hint.sessoes.confirmReorder"
   | "tutorial.hint.sessoes.startExercise"
+  | "tutorial.hint.sessoes.crise"
+  | "tutorial.hint.sessoes.crise2"
+  | "tutorial.hint.sessoes.fuga"
+  | "tutorial.hint.sessoes.fuga2"
+  | "tutorial.hint.sessoes.pauseResume"
+  | "tutorial.hint.sessoes.pauseResume2"
+  | "tutorial.hint.sessoes.toggleForm"
+  | "tutorial.hint.sessoes.toggleForm2"
+  | "tutorial.hint.sessoes.restart"
+  | "tutorial.hint.sessoes.stop"
+  | "tutorial.hint.sessoes.deferResult"
+  | "tutorial.hint.sessoes.startSecond"
+  | "tutorial.hint.sessoes.stopSecond"
+  | "tutorial.hint.sessoes.selectLevel"
+  | "tutorial.hint.sessoes.selectHelp"
+  | "tutorial.hint.sessoes.conclude"
+  | "tutorial.hint.sessoes.stopNotDone"
+  | "tutorial.hint.sessoes.deferAgain"
+  | "tutorial.hint.sessoes.markNotCompleted"
+  | "tutorial.hint.sessoes.selectMotive"
+  | "tutorial.hint.sessoes.registerNotCompleted"
+  | "tutorial.hint.sessoes.backToSelection"
+  | "tutorial.hint.sessoes.selectAgain"
+  | "tutorial.hint.sessoes.startAgain"
   | "tutorial.hint.sessoes.goBack"
   | "tutorial.hint.sessoes.reopenCircuit"
   | "tutorial.hint.sessoes.concurrentContinue"
+  | "tutorial.hint.sessoes.startResumed"
+  | "tutorial.hint.sessoes.stopResumed"
+  | "tutorial.hint.sessoes.deferResumed"
   | "tutorial.hint.sessoes.finish"
+  | "tutorial.hint.sessoes.finishReason"
+  | "tutorial.hint.sessoes.finishSession"
   | "tutorial.hint.formularios.selectAta"
   | "tutorial.hint.formularios.goBackAta"
   | "tutorial.hint.formularios.reopenAta"
   | "tutorial.hint.formularios.continueAta"
-  | "tutorial.hint.formularios.fillAndSave"
+  | "tutorial.hint.formularios.answer"
+  | "tutorial.hint.formularios.saveAta"
+  | "tutorial.hint.formularios.selectCars"
+  | "tutorial.hint.formularios.saveCars"
+  | "tutorial.hint.formularios.selectMabc"
+  | "tutorial.hint.formularios.saveMabc"
   | "tutorial.hint.historico.selectStudent"
   | "tutorial.hint.historico.openRecord"
+  | "tutorial.hint.historico.editExercise"
+  | "tutorial.hint.historico.saveExercise"
+  | "tutorial.hint.historico.openSessionRc"
+  | "tutorial.hint.historico.saveSessionRc"
+  | "tutorial.hint.historico.backToRecords"
+  | "tutorial.hint.historico.openFormRecord"
   | "tutorial.hint.historico.editSave"
   | "tutorial.hint.analises.selectStudent"
   | "tutorial.hint.analises.openProgress"
+  | "tutorial.hint.analises.selectExerciseProgress"
+  | "tutorial.hint.analises.periodProgress"
+  | "tutorial.hint.analises.backProgress"
   | "tutorial.hint.analises.openHelp"
+  | "tutorial.hint.analises.periodHelp"
+  | "tutorial.hint.analises.backHelp"
   | "tutorial.hint.analises.openBehaviors"
+  | "tutorial.hint.analises.periodBehaviors"
+  | "tutorial.hint.analises.backBehaviors"
   | "tutorial.hint.analises.openCompare"
+  | "tutorial.hint.analises.periodCompare"
+  | "tutorial.hint.analises.compareRun"
+  | "tutorial.hint.analises.backCompare"
   | "tutorial.hint.analises.openProtocols"
+  | "tutorial.hint.analises.openProtocolRecord"
+  | "tutorial.hint.analises.backProtocolRecord"
+  | "tutorial.hint.analises.backProtocols"
   | "tutorial.hint.analises.openMabc"
+  | "tutorial.hint.analises.openMabcRecord"
+  | "tutorial.hint.analises.backMabcRecord"
+  | "tutorial.hint.analises.backMabc"
   | "tutorial.hint.relatorios.selectStudent"
   | "tutorial.hint.relatorios.newReport"
+  | "tutorial.hint.relatorios.periodReport"
   | "tutorial.hint.relatorios.saveReport"
   | "tutorial.hint.relatorios.openReport"
   | "tutorial.hint.relatorios.exportReport"
+  | "tutorial.hint.relatorios.exportConfirm"
+  | "tutorial.hint.relatorios.backFromReport"
+  | "tutorial.hint.relatorios.backToReportsHome"
   | "tutorial.hint.relatorios.consolidated"
+  | "tutorial.hint.relatorios.consolidatedSelect"
+  | "tutorial.hint.relatorios.consolidatedConfirm"
+  | "tutorial.hint.relatorios.consolidatedPeriod"
+  | "tutorial.hint.relatorios.consolidatedExport"
   | "common.allM"
   | "common.register"
   | "analysis.level.maduro"
@@ -271,6 +338,7 @@ export type TranslationKey =
   | "analysis.help.type"
   | "analysis.help.footnote"
   | "common.student"
+  | "common.circuit"
   | "common.dateNotSet"
   | "common.retry"
   | "common.exit"
@@ -447,6 +515,7 @@ export type TranslationKey =
   | "analysis.protocolCard.ageGroup"
   | "analysis.protocolCard.evaluatedBy"
   | "analysis.progressChart.selectedExercise"
+  | "analysis.progressChart.execution"
   | "analysis.comparisonCard.loadError"
   | "analysis.comparisonCard.insufficientData"
   | "analysis.behaviors.comparisonTitle"
@@ -669,7 +738,386 @@ export type TranslationKey =
   | "tutorial.mod.relatorios.s0.body"
   | "tutorial.mod.relatorios.s1.title"
   | "tutorial.mod.relatorios.s1.body"
-  | "tutorial.mod.relatorios.s2.body";
+  | "tutorial.mod.relatorios.s2.body"
+  | "reports.recordSingular"
+  | "reports.filterByPeriod"
+  | "reports.clearFilter"
+  | "reports.emptyList"
+  | "reports.rename"
+  | "reports.renameTitle"
+  | "reports.namePlaceholder"
+  | "reports.confirmCount"
+  | "reports.defaultTitle"
+  | "reports.deleteTitle"
+  | "reports.deleteMessage"
+  | "reports.exported"
+  | "reports.downloaded"
+  | "reports.savedToast"
+  | "reports.exportError"
+  | "reports.tryAgain"
+  | "reports.deleteError"
+  | "reports.simulationNoServer"
+  | "reports.noneSelected"
+  | "reports.noneSelectedDesc"
+  | "reports.downloadedDeviceDesc"
+  | "reports.sharedDesc"
+  | "reports.created"
+  | "reports.renamed"
+  | "reports.renameError"
+  | "reports.removed"
+  | "reports.removeError"
+  | "reports.section.progress"
+  | "reports.section.help"
+  | "reports.section.behaviors"
+  | "reports.section.comparison"
+  | "reports.section.protocols"
+  | "reports.section.motor"
+  | "reports.empty.progress"
+  | "reports.empty.help"
+  | "reports.empty.behaviors"
+  | "reports.empty.comparison"
+  | "reports.empty.protocols"
+  | "reports.empty.motor"
+  | "reports.empty.noData"
+  | "reports.noMonitor"
+  | "reports.noAnswers"
+  | "reports.editReport"
+  | "reports.newReport"
+  | "reports.nameLabel"
+  | "reports.periodLabel"
+  | "reports.selectPeriod"
+  | "reports.nameError"
+  | "reports.periodError"
+  | "reports.noStudentSelected"
+  | "reports.noStudentSelectedDesc"
+  | "reports.consolidatedDescOne"
+  | "reports.consolidatedDescMany"
+  | "reports.generatingConsolidated"
+  | "reports.protocol.noAnswers"
+  | "reports.protocol.total"
+  | "reports.protocol.responsible"
+  | "reports.protocol.evaluator"
+  | "reports.protocol.ageGroup"
+  | "reports.protocol.totalScore"
+  | "reports.protocol.percentile"
+  | "reports.protocol.standardScore"
+  | "reports.mabc.manualDexterity"
+  | "reports.mabc.aimingCatching"
+  | "reports.mabc.balance"
+  | "reports.supportLevel1"
+  | "reports.supportLevel2"
+  | "reports.supportLevel3"
+  | "export.selectFormat"
+  | "export.pdfWithCharts"
+  | "export.csvTabular"
+  | "export.exportAction"
+  | "export.downloadAction"
+  | "export.doc.childInfo"
+  | "export.doc.name"
+  | "export.doc.age"
+  | "export.doc.supportLevel"
+  | "export.doc.height"
+  | "export.doc.weight"
+  | "export.doc.waist"
+  | "export.doc.clinicalObs"
+  | "export.doc.years"
+  | "export.doc.period"
+  | "export.doc.noData"
+  | "export.doc.noDataPeriod"
+  | "export.doc.noBehaviors"
+  | "export.doc.intrusive"
+  | "export.doc.behStereotypy"
+  | "export.doc.behEyePeopleShort"
+  | "export.doc.behEyeObjectsShort"
+  | "export.doc.behEngagement"
+  | "export.doc.behEscape"
+  | "export.doc.behCrisis"
+  | "export.doc.behUnfitShort"
+  | "export.doc.behPreferredShort"
+  | "export.doc.behStereotypies"
+  | "export.doc.behEyePeople"
+  | "export.doc.behEyeObjects"
+  | "export.doc.behCrises"
+  | "export.doc.behUnfit"
+  | "export.doc.behPreferred"
+  | "export.doc.cardHelpPerSession"
+  | "export.doc.cardBehaviorFreq"
+  | "export.doc.cardComparisonSummary"
+  | "export.doc.cardByExercise"
+  | "export.doc.cardHelpComparison"
+  | "export.doc.cardBehaviorComparison"
+  | "export.doc.metric"
+  | "export.doc.exercise"
+  | "export.doc.type"
+  | "export.doc.behavior"
+  | "export.doc.date"
+  | "export.doc.score"
+  | "export.doc.scoreShort"
+  | "export.doc.levelUnit"
+  | "export.doc.periodNote"
+  | "export.doc.ssMd"
+  | "export.doc.pMd"
+  | "export.doc.ssAc"
+  | "export.doc.pAc"
+  | "export.doc.ssB"
+  | "export.doc.pB"
+  | "export.doc.noProtocolPeriod"
+  | "export.doc.insufficient"
+  | "export.doc.report"
+  | "export.doc.evolution"
+  | "export.doc.sessions"
+  | "export.doc.session"
+  | "export.doc.frequency"
+  | "export.doc.behaviors"
+  | "export.doc.consolidatedTitle"
+  | "export.doc.students"
+  | "export.doc.studentsSummary"
+  | "export.doc.improved"
+  | "export.doc.stable"
+  | "export.doc.needsReinforcement"
+  | "export.doc.exercises"
+  | "export.doc.shareTitle"
+  | "export.doc.shareConsolidatedTitle"
+  | "export.doc.selectAtLeastOneStudent"
+  | "export.doc.student"
+  | "sessionDetail.recordUpdated"
+  | "sessionDetail.recordUpdateError"
+  | "sessionDetail.deleteError"
+  | "sessionDetail.exported"
+  | "sessionDetail.exporting"
+  | "sessionDetail.session"
+  | "sessionDetail.pendingTitle"
+  | "sessionDetail.pendingDesc"
+  | "sessionDetail.controlRecord"
+  | "sessionDetail.loadError"
+  | "sessionDetail.empty"
+  | "sessionDetail.removeTitle"
+  | "sessionDetail.removeMessage"
+  | "sessionDetail.removing"
+  | "auth.err.invalidCredentials"
+  | "auth.err.alreadyRegistered"
+  | "auth.err.rateLimit"
+  | "auth.err.wait60"
+  | "auth.err.emailNotConfirmed"
+  | "auth.err.phoneNotConfirmed"
+  | "auth.err.invalidPhone"
+  | "auth.err.smsUnavailable"
+  | "auth.err.otpExpired"
+  | "auth.err.otpInvalid"
+  | "auth.err.googleUnavailable"
+  | "auth.err.loginCancelled"
+  | "auth.err.network"
+  | "auth.err.generic"
+  | "auth.err.genericRetry"
+  | "auth.registerTitle"
+  | "auth.fullName"
+  | "auth.fullNamePlaceholder"
+  | "auth.passwordPlaceholder"
+  | "auth.confirmPassword"
+  | "auth.confirmPasswordPlaceholder"
+  | "auth.register"
+  | "auth.registering"
+  | "auth.registerGoogle"
+  | "auth.connecting"
+  | "auth.googlePendingRegister"
+  | "auth.haveAccount"
+  | "auth.enterLink"
+  | "auth.nameRequired"
+  | "auth.nameMin"
+  | "auth.nameFull"
+  | "auth.emailRequired"
+  | "auth.passwordRule"
+  | "auth.passwordRequired"
+  | "auth.confirmRequired"
+  | "auth.passwordsMismatch"
+  | "auth.resetTitle"
+  | "auth.resetInvalid"
+  | "auth.requestAgain"
+  | "auth.backToLogin"
+  | "auth.newPasswordPlaceholder"
+  | "auth.confirmNewPasswordPlaceholder"
+  | "auth.confirmPasswordBtn"
+  | "auth.sendCode"
+  | "auth.sending"
+  | "auth.code"
+  | "auth.codeDigitsPlaceholder"
+  | "auth.codeLengthError"
+  | "auth.confirmCode"
+  | "auth.verifying"
+  | "auth.codeSentHint"
+  | "auth.otpInvalidRetry"
+  | "auth.feedback.accountCreated"
+  | "auth.feedback.accountCreatedMsg"
+  | "auth.feedback.codeValidated"
+  | "auth.feedback.codeValidatedMsg"
+  | "auth.feedback.passwordUpdated"
+  | "auth.feedback.passwordUpdatedMsg"
+  | "auth.feedback.pendingApprovalTitle"
+  | "auth.feedback.continue"
+  | "account.currentPasswordRequired"
+  | "account.currentPasswordIncorrect"
+  | "account.saveError"
+  | "account.photoUpdated"
+  | "account.photoRemoved"
+  | "account.nameUpdated"
+  | "account.confirmationSent"
+  | "account.confirmationSentDesc"
+  | "account.passwordChanged"
+  | "account.googleUnlinked"
+  | "account.googleLinkedToast"
+  | "account.confirmNewPasswordPlaceholder"
+  | "teams.subtitle"
+  | "teams.companions"
+  | "teams.noCompanions"
+  | "teams.students"
+  | "teams.add"
+  | "teams.noStudents"
+  | "teams.deleteStudentTitle"
+  | "teams.removeCompanionTitle"
+  | "teams.removeCompanionMsg"
+  | "teams.rejectCompanionTitle"
+  | "teams.rejectCompanionMsg"
+  | "teams.approveError"
+  | "teams.rejectError"
+  | "teams.removeCompanionError"
+  | "teams.saveErrorTitle"
+  | "teams.saveError"
+  | "session.exerciseProgress"
+  | "session.defaultCircuit"
+  | "session.subtitleSemiCircuit"
+  | "session.subtitleSemiExercise"
+  | "session.subtitleEngagement"
+  | "session.finishTitle"
+  | "session.finishMessage"
+  | "session.pendingWillBeUnrealized"
+  | "session.reasonLabel"
+  | "session.reasonPlaceholder"
+  | "session.reasonDescRequired"
+  | "engagement.title"
+  | "engagement.subtitle"
+  | "export.doc.question"
+  | "export.doc.answer"
+  | "export.doc.duration"
+  | "export.doc.devLevel"
+  | "export.doc.helpLevel"
+  | "export.doc.shareSessionTitle"
+  | "export.doc.shareFormTitle"
+  | "form.helpAta"
+  | "form.helpCars"
+  | "form.helpRc"
+  | "form.helpMabc2"
+  | "form.savedToast"
+  | "form.answersSaved"
+  | "form.saveError"
+  | "form.removing"
+  | "form.removeError"
+  | "form.fallbackTitle"
+  | "form.editForm"
+  | "form.fillForm"
+  | "form.removeTitle"
+  | "form.removeMessage"
+  | "form.loadQuestionsError"
+  | "form.saveErrorTitle"
+  | "form.emptyFieldsError"
+  | "form.successTitle"
+  | "form.savedEvaluation"
+  | "form.connectionError"
+  | "form.connectionErrorDesc"
+  | "form.saveResponsesError"
+  | "form.noQuestions"
+  | "forms.onlyNumbers"
+  | "forms.answerHere"
+  | "forms.specify"
+  | "forms.otherOption"
+  | "forms.selectHere"
+  | "forms.mockRcEngagement"
+  | "forms.mockRcObservations"
+  | "common.dateUndefined"
+  | "common.statusUndefined"
+  | "common.noItems"
+  | "feedback.sendError"
+  | "feedback.sessionExpired"
+  | "circuits.ataNewDesc"
+  | "circuits.carsNewDesc"
+  | "mabc.required"
+  | "mabc.invalid"
+  | "mabc.max"
+  | "mabc.resultTitle"
+  | "mabc.notCompleted"
+  | "mabc.deferAnswer"
+  | "mabc.rawScores"
+  | "mabc.measuredSuccesses"
+  | "mabc.measuredSeconds"
+  | "mabc.attemptsOf"
+  | "mabc.trial1"
+  | "mabc.trial2"
+  | "mabc.complete"
+  | "mabc.register"
+  | "mabc.section.aimingThrowing"
+  | "mabc.side.prefHand"
+  | "mabc.side.nonPrefHand"
+  | "mabc.side.bestLeg"
+  | "mabc.side.otherLeg"
+  | "mabc.side.bestHand"
+  | "mabc.side.otherHand"
+  | "mabc.field.time"
+  | "mabc.field.failures"
+  | "mabc.field.hits"
+  | "mabc.field.steps"
+  | "session.otherExerciseName"
+  | "session.repeatExercises"
+  | "session.repeatPrompt"
+  | "session.doOtherExercise"
+  | "session.otherExercisePrompt"
+  | "session.noTeamExercises"
+  | "session.start"
+  | "session.clinicalSession"
+  | "session.reorderTitle"
+  | "session.reorderHint"
+  | "session.reorderConfirm"
+  | "circuits.doesAllExercises"
+  | "circuits.exerciseOrder"
+  | "circuits.includedExercises"
+  | "circuits.descMabc"
+  | "circuits.descMabcEmpty"
+  | "circuits.desc"
+  | "circuits.descEmpty"
+  | "circuits.ageRange36"
+  | "circuits.ageRange710"
+  | "circuits.ageRange1116"
+  | "circuits.mabcNewDesc"
+  | "circuits.rcPendingTitle"
+  | "circuits.rcPendingMsg"
+  | "circuits.fillRc"
+  | "circuits.startNewSession"
+  | "circuits.circuitDetails"
+  | "analysis.motorLoadError"
+  | "history.loadError"
+  | "history.realized"
+  | "history.noRecordsDate"
+  | "history.noRecordsStudent"
+  | "exercises.startActivity"
+  | "common.err.notAuthenticated"
+  | "common.err.noActiveTeam"
+  | "common.err.teamNotIdentified"
+  | "common.err.activeTeamNotFound"
+  | "mock.exWalkLine"
+  | "mock.exWalkLineDesc"
+  | "mock.exHoop"
+  | "mock.exHoopDesc"
+  | "mock.circuit1"
+  | "mock.controlRecord"
+  | "mock.studentSession"
+  | "mock.statusPending"
+  | "mock.statusFilled"
+  | "mock.statusFinished"
+  | "mock.exampleCircuit"
+  | "mock.scoreLight"
+  | "mock.scoreModerate"
+  | "mock.protocol"
+  | "mock.helpAutonomyText"
+  | "session.mabcAssessment"
+  | "analysis.compareLoadError";
 
 /** Translation tables keyed by locale then message key. */
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
@@ -856,32 +1304,99 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.circuitos.deleteSelect": "No menu, toque em \"Excluir\".",
     "tutorial.hint.circuitos.deleteConfirm": "Confirme a exclusão tocando em \"Excluir\".",
     "tutorial.hint.sessoes.selectStructured": "Toque no circuito estruturado para iniciar a sessão.",
-    "tutorial.hint.sessoes.startExercise": "Toque em \"Iniciar atividade\". Depois pratique livremente: cronômetro, registrar crise/fuga, parar e marcar o resultado (realizada — com ajuda intrusiva ou verbal —, não realizada ou adiado), e mostrar/ocultar o Registro de Controle (que pode ficar vazio para preencher depois no Histórico).",
+    "tutorial.hint.sessoes.openReorder": "Antes de começar, toque no ícone de trocar ordem para reorganizar os exercícios.",
+    "tutorial.hint.sessoes.reorder": "Segure pela alça e arraste um exercício para mudar a ordem.",
+    "tutorial.hint.sessoes.confirmReorder": "Toque em \"Concluir reordenação\" para confirmar a nova ordem e fechar a janela.",
+    "tutorial.hint.sessoes.startExercise": "Toque em \"Iniciar atividade\" para começar o primeiro exercício.",
+    "tutorial.hint.sessoes.crise": "Toque em \"Crise\" para começar a cronometrar um episódio de crise.",
+    "tutorial.hint.sessoes.crise2": "Toque em \"Crise\" novamente para encerrar o episódio — ele será registrado com a duração cronometrada.",
+    "tutorial.hint.sessoes.fuga": "Toque em \"Fuga\" para começar a cronometrar um episódio de fuga.",
+    "tutorial.hint.sessoes.fuga2": "Toque em \"Fuga\" novamente para encerrar o episódio — ele será registrado com a duração cronometrada.",
+    "tutorial.hint.sessoes.pauseResume": "Toque no cronômetro para pausar a contagem.",
+    "tutorial.hint.sessoes.pauseResume2": "Toque no cronômetro novamente para retomar a contagem.",
+    "tutorial.hint.sessoes.toggleForm": "Toque em \"Ocultar\"/\"Exibir\" para esconder o Registro de Controle, que pode ficar vazio para preencher depois no Histórico.",
+    "tutorial.hint.sessoes.toggleForm2": "Toque novamente para exibir o Registro de Controle de volta.",
+    "tutorial.hint.sessoes.restart": "Toque em \"Redefinir\" para zerar o cronômetro e recomeçar a contagem.",
+    "tutorial.hint.sessoes.stop": "Toque em \"Parar\" para encerrar a atividade e marcar o resultado.",
+    "tutorial.hint.sessoes.deferResult": "Toque em \"Adiar resposta\" para adiar o resultado deste exercício e respondê-lo depois.",
+    "tutorial.hint.sessoes.startSecond": "Toque em \"Iniciar atividade\" para começar o segundo exercício.",
+    "tutorial.hint.sessoes.stopSecond": "No segundo exercício, toque em \"Parar\" para encerrá-lo e marcar o resultado.",
+    "tutorial.hint.sessoes.selectLevel": "Selecione um nível de desenvolvimento (inicial, intermediário ou maduro).",
+    "tutorial.hint.sessoes.selectHelp": "Selecione um registro de ajuda (autônomo ou ajuda intrusiva).",
+    "tutorial.hint.sessoes.conclude": "Toque em \"Concluir\" para confirmar a finalização do exercício.",
+    "tutorial.hint.sessoes.stopNotDone": "Toque em \"Parar\" para encerrar este exercício e marcar o resultado.",
+    "tutorial.hint.sessoes.deferAgain": "Toque em \"Adiar resposta\" para adiar o resultado deste exercício.",
+    "tutorial.hint.sessoes.markNotCompleted": "Toque em \"Não realizado\" para registrar que o exercício não foi realizado.",
+    "tutorial.hint.sessoes.selectMotive": "Selecione um motivo para a não realização.",
+    "tutorial.hint.sessoes.registerNotCompleted": "Toque em \"Registrar\" para confirmar o exercício como não realizado.",
+    "tutorial.hint.sessoes.backToSelection": "Na tela de sessão concluída, toque em \"Voltar ao início\" — a simulação continua.",
+    "tutorial.hint.sessoes.selectAgain": "Toque no circuito estruturado outra vez para iniciar uma segunda sessão.",
+    "tutorial.hint.sessoes.startAgain": "Toque em \"Iniciar atividade\": só depois de iniciar é que a sessão fica em andamento.",
     "tutorial.hint.sessoes.goBack": "Toque em \"Voltar\" para sair sem finalizar — a sessão continua em andamento.",
     "tutorial.hint.sessoes.reopenCircuit": "Toque num circuito novamente para ver o aviso de sessão em andamento.",
     "tutorial.hint.sessoes.concurrentContinue": "Toque em \"Continuar sessão em andamento\" para retomar. Esse aviso também aparece quando há um Registro de Controle pendente ou um formulário do mesmo tipo pendente para o aluno.",
-    "tutorial.hint.sessoes.finish": "Toque em \"Finalizar\" e confirme para encerrar a sessão.",
+    "tutorial.hint.sessoes.startResumed": "A sessão foi retomada do início do circuito. Toque em \"Iniciar atividade\" para executar um exercício.",
+    "tutorial.hint.sessoes.stopResumed": "Toque em \"Parar\" para encerrar o exercício e abrir o resultado.",
+    "tutorial.hint.sessoes.deferResumed": "Toque em \"Adiar resposta\". Com um exercício já registrado, o botão \"Finalizar\" aparece no cabeçalho.",
+    "tutorial.hint.sessoes.finish": "Pare a atividade e marque o resultado. Com pelo menos um exercício concluído, o botão \"Finalizar\" aparece no cabeçalho: toque nele para encerrar a sessão antes do fim.",
+    "tutorial.hint.sessoes.finishReason": "Escolha um motivo para o encerramento e confirme. Os exercícios que sobraram são registrados como não realizados.",
+    "tutorial.hint.sessoes.finishSession": "Esta é a tela de sessão concluída. Toque em \"Voltar ao início\" para encerrar a simulação.",
     "tutorial.hint.formularios.selectAta": "Toque no formulário ATA para iniciá-lo.",
     "tutorial.hint.formularios.goBackAta": "Toque em \"Voltar\" para sair sem preencher — o ATA fica pendente.",
     "tutorial.hint.formularios.reopenAta": "Toque no ATA novamente para ver o aviso de formulário do mesmo tipo pendente.",
     "tutorial.hint.formularios.continueAta": "Toque em \"Continuar formulário anterior\" para retomar o ATA pendente.",
-    "tutorial.hint.formularios.fillAndSave": "Responda a pergunta obrigatória e toque em salvar (no cabeçalho). Campos opcionais podem ficar em branco. CARS e MABC-2 funcionam igual — o MABC-2 é dividido por faixa etária (3-6, 7-10 e 11-16 anos).",
+    "tutorial.hint.formularios.answer": "Arraste o controle da pergunta para mudar a resposta antes de salvar.",
+    "tutorial.hint.formularios.saveAta": "Toque em salvar (no cabeçalho). Campos opcionais podem ficar em branco. Você volta para a lista e a simulação continua.",
+    "tutorial.hint.formularios.selectCars": "Agora toque no formulário CARS: o fluxo é o mesmo do ATA.",
+    "tutorial.hint.formularios.saveCars": "Preencha e salve o CARS para voltar à lista.",
+    "tutorial.hint.formularios.selectMabc": "Por fim, toque no MABC-2. Ele é dividido por faixa etária (3-6, 7-10 e 11-16 anos) e só aparece para alunos elegíveis.",
+    "tutorial.hint.formularios.saveMabc": "Preencha e salve o MABC-2 para encerrar a simulação.",
     "tutorial.hint.historico.selectStudent": "Toque no aluno para ver seus registros passados.",
-    "tutorial.hint.historico.openRecord": "Toque no Registro de Controle pendente para editá-lo.",
-    "tutorial.hint.historico.editSave": "Complete o que faltava e salve. Da mesma forma você edita os resultados das atividades de uma sessão e os formulários ATA, CARS e MABC-2.",
+    "tutorial.hint.historico.openRecord": "Toque no registro de sessão para ver os exercícios executados.",
+    "tutorial.hint.historico.editExercise": "Toque no lápis para editar o resultado do exercício.",
+    "tutorial.hint.historico.saveExercise": "Ajuste o que quiser (status, duração, nível ou ajuda) e toque no visto para salvar.",
+    "tutorial.hint.historico.openSessionRc": "Toque no lápis do cabeçalho para abrir o Registro de Controle da sessão, que está pendente.",
+    "tutorial.hint.historico.saveSessionRc": "Complete o que faltava e salve. Você volta para a sessão e a simulação continua.",
+    "tutorial.hint.historico.backToRecords": "Toque em \"Voltar\" para retornar aos registros do aluno.",
+    "tutorial.hint.historico.openFormRecord": "Agora toque no registro de formulário (ATA): formulários também podem ser editados depois.",
+    "tutorial.hint.historico.editSave": "Edite o que quiser e salve. Da mesma forma você edita os formulários CARS e MABC-2.",
     "tutorial.hint.analises.selectStudent": "Toque no aluno para ver as análises dele.",
-    "tutorial.hint.analises.openProgress": "Abra \"Progresso por exercício\". Veja o gráfico com dados; se filtrar por um período sem registros, ele aparece vazio — volte a um período com dados. Depois volte.",
-    "tutorial.hint.analises.openHelp": "Abra \"Registros de ajuda por sessão\" para ver a evolução da autonomia. Depois volte.",
-    "tutorial.hint.analises.openBehaviors": "Abra \"Comportamentos observados\" para ver as frequências. Depois volte.",
-    "tutorial.hint.analises.openCompare": "Abra \"Comparar desempenho\" para ver dois períodos lado a lado. Depois volte.",
-    "tutorial.hint.analises.openProtocols": "Abra os protocolos aplicados (ATA/CARS) para ver os registros. Depois volte.",
+    "tutorial.hint.analises.openProgress": "Abra \"Progresso por exercício\" para ver a evolução do nível de desenvolvimento.",
+    "tutorial.hint.analises.selectExerciseProgress": "Toque num exercício para expandi-lo e ver seu progresso.",
+    "tutorial.hint.analises.periodProgress": "Agora escolha um período e salve. Se filtrar um período sem registros, o gráfico aparece vazio — volte a um período com dados.",
+    "tutorial.hint.analises.backProgress": "Explore o gráfico e toque em \"Voltar\" para seguir para a próxima análise.",
+    "tutorial.hint.analises.openHelp": "Abra \"Registros de ajuda por sessão\" para ver a evolução da autonomia.",
+    "tutorial.hint.analises.periodHelp": "Escolha um período e salve para carregar os registros de ajuda.",
+    "tutorial.hint.analises.backHelp": "Use o botão abaixo do gráfico para ver os registros por sessão e exercício. Depois toque em \"Voltar\".",
+    "tutorial.hint.analises.openBehaviors": "Abra \"Comportamentos observados\" para ver as frequências.",
+    "tutorial.hint.analises.periodBehaviors": "Escolha um período e salve para carregar os comportamentos.",
+    "tutorial.hint.analises.backBehaviors": "Explore o gráfico e os detalhes por comportamento, depois toque em \"Voltar\".",
+    "tutorial.hint.analises.openCompare": "Abra \"Comparar desempenho\" para ver dois períodos lado a lado.",
+    "tutorial.hint.analises.periodCompare": "Escolha os dois períodos a comparar. Eles não podem se sobrepor nem estar no futuro.",
+    "tutorial.hint.analises.compareRun": "Toque em \"Comparar\" para ver o cruzamento dos dois períodos.",
+    "tutorial.hint.analises.backCompare": "Toque em \"Voltar\".",
+    "tutorial.hint.analises.openProtocols": "Abra os protocolos aplicados (ATA/CARS) para ver os registros.",
+    "tutorial.hint.analises.openProtocolRecord": "Toque num registro para abri-lo (carregado com respostas de exemplo).",
+    "tutorial.hint.analises.backProtocolRecord": "Veja o protocolo aplicado e toque em \"Voltar\" para retornar à lista.",
+    "tutorial.hint.analises.backProtocols": "Toque em \"Voltar\" para retornar às opções de análise do aluno.",
     "tutorial.hint.analises.openMabc": "Abra \"Registros de desenvolvimento motor\" (MABC-2) para ver as avaliações.",
+    "tutorial.hint.analises.openMabcRecord": "Toque num registro para abri-lo (carregado com dados de exemplo).",
+    "tutorial.hint.analises.backMabcRecord": "Veja a avaliação e toque em \"Voltar\" para retornar à lista.",
+    "tutorial.hint.analises.backMabc": "Toque em \"Voltar\" para encerrar a simulação.",
     "tutorial.hint.relatorios.selectStudent": "Toque no aluno para ver os relatórios dele.",
     "tutorial.hint.relatorios.newReport": "Toque em \"+ Novo\" para criar um relatório.",
-    "tutorial.hint.relatorios.saveReport": "Escolha o período e salve para gerar o relatório.",
+    "tutorial.hint.relatorios.periodReport": "Toque no período e escolha as datas que o relatório vai cobrir.",
+    "tutorial.hint.relatorios.saveReport": "Dê um nome ao relatório e toque em \"Salvar\" para gerá-lo.",
     "tutorial.hint.relatorios.openReport": "Toque no relatório criado para abri-lo.",
-    "tutorial.hint.relatorios.exportReport": "Toque no ícone de exportar, selecione um ou mais relatórios, confirme e exporte (ou baixe no dispositivo).",
-    "tutorial.hint.relatorios.consolidated": "Volte e toque em \"Cruzar dados de alunos\" para gerar um relatório consolidado de vários alunos.",
+    "tutorial.hint.relatorios.exportReport": "Toque no ícone de exportar para baixar apenas este relatório.",
+    "tutorial.hint.relatorios.exportConfirm": "Escolha os formatos (PDF e/ou CSV) e toque em \"Exportar\" para compartilhar — no Android também dá para baixar no dispositivo.",
+    "tutorial.hint.relatorios.backFromReport": "Toque em \"Voltar\" para retornar aos relatórios do aluno.",
+    "tutorial.hint.relatorios.backToReportsHome": "Toque em \"Voltar\" outra vez para chegar à tela inicial de relatórios.",
+    "tutorial.hint.relatorios.consolidated": "Toque em \"Cruzar dados de alunos\" para gerar um relatório consolidado de vários alunos.",
+    "tutorial.hint.relatorios.consolidatedSelect": "Toque nos alunos que entram no relatório consolidado. Dá para escolher mais de um.",
+    "tutorial.hint.relatorios.consolidatedConfirm": "Toque em \"Confirmar\" para seguir com os alunos selecionados.",
+    "tutorial.hint.relatorios.consolidatedPeriod": "Escolha o período do cruzamento e salve.",
+    "tutorial.hint.relatorios.consolidatedExport": "Escolha os formatos e toque em \"Exportar\" para encerrar a simulação.",
     "common.allM": "Todos",
     "common.register": "Registrar",
     "analysis.level.maduro": "Maduro",
@@ -929,6 +1444,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "analysis.help.type": "Tipo",
     "analysis.help.footnote": "Os valores exibem a diferença absoluta e percentual dos registros de ajuda entre os dois períodos selecionados.",
     "common.student": "Aluno",
+    "common.circuit": "Circuito",
     "common.dateNotSet": "Data não definida",
     "common.retry": "Tente novamente",
     "common.exit": "Sair",
@@ -1105,6 +1621,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "analysis.protocolCard.ageGroup": "Grupo de idade",
     "analysis.protocolCard.evaluatedBy": "Avaliado por",
     "analysis.progressChart.selectedExercise": "Exercício selecionado",
+    "analysis.progressChart.execution": "Execução",
     "analysis.comparisonCard.loadError": "Não foi possível carregar esta comparação. Tente novamente.",
     "analysis.comparisonCard.insufficientData": "Dados insuficientes para comparação.",
     "analysis.behaviors.comparisonTitle": "Comparação dos comportamentos observados",
@@ -1340,6 +1857,385 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.mod.relatorios.s1.title": "Pratique os relatórios",
     "tutorial.mod.relatorios.s1.body": "Vamos praticar numa réplica real. Siga o destaque piscante: abra o aluno, crie um relatório escolhendo o período, abra-o, exporte-o (um ou vários, com opção de baixar) e, por fim, gere um relatório consolidado cruzando dados de alunos. Ao concluir, você avança automaticamente.",
     "tutorial.mod.relatorios.s2.body": "Muito bem! Você criou, abriu e exportou relatórios e gerou um consolidado cruzando alunos. A foto do aluno é salva junto ao relatório e reaproveitada por períodos que se sobrepõem. Você já sabe gerar e exportar relatórios de evolução.",
+    "reports.recordSingular": "relatório",
+    "reports.filterByPeriod": "Filtrar por período",
+    "reports.clearFilter": "Limpar filtro",
+    "reports.emptyList": "Nenhum relatório cadastrado.",
+    "reports.rename": "Renomear",
+    "reports.renameTitle": "Renomear relatório",
+    "reports.namePlaceholder": "Nome do relatório",
+    "reports.confirmCount": "Confirmar ({n})",
+    "reports.defaultTitle": "Relatório {n}",
+    "reports.deleteTitle": "Excluir relatório?",
+    "reports.deleteMessage": "O relatório será excluído permanentemente. Esta ação não poderá ser desfeita.",
+    "reports.exported": "Relatório exportado!",
+    "reports.downloaded": "Relatório baixado!",
+    "reports.savedToast": "Relatório salvo!",
+    "reports.exportError": "Erro ao exportar",
+    "reports.tryAgain": "Tente novamente.",
+    "reports.deleteError": "Erro ao excluir relatório.",
+    "reports.simulationNoServer": "Simulação: nada foi enviado ao servidor.",
+    "reports.noneSelected": "Nenhum relatório selecionado",
+    "reports.noneSelectedDesc": "Selecione ao menos um relatório para exportar.",
+    "reports.downloadedDeviceDesc": "O relatório de {name} foi baixado no dispositivo.",
+    "reports.sharedDesc": "O relatório de {name} foi exportado e encaminhado ao compartilhamento.",
+    "reports.created": "Relatório criado!",
+    "reports.renamed": "Relatório renomeado.",
+    "reports.renameError": "Erro ao renomear.",
+    "reports.removed": "Relatório removido.",
+    "reports.removeError": "Erro ao remover relatório.",
+    "reports.section.progress": "Progresso por exercício",
+    "reports.section.help": "Registros de ajuda por sessão",
+    "reports.section.behaviors": "Comportamentos observados",
+    "reports.section.comparison": "Comparação de desempenho",
+    "reports.section.protocols": "Protocolos/Testes aplicados",
+    "reports.section.motor": "Desenvolvimento motor",
+    "reports.empty.progress": "Nenhum exercício registrado no período.",
+    "reports.empty.help": "Nenhum registro de ajuda no período.",
+    "reports.empty.behaviors": "Nenhum comportamento registrado no período.",
+    "reports.empty.comparison": "Dados insuficientes para comparação no período.",
+    "reports.empty.protocols": "Nenhum protocolo ou teste aplicado no período.",
+    "reports.empty.motor": "Nenhum registro de desenvolvimento motor no período.",
+    "reports.empty.noData": "Nenhum dado encontrado para este período.",
+    "reports.noMonitor": "Sem monitor",
+    "reports.noAnswers": "Sem respostas registradas.",
+    "reports.editReport": "Editar relatório",
+    "reports.newReport": "Novo relatório",
+    "reports.nameLabel": "Nome do relatório*",
+    "reports.periodLabel": "Período*",
+    "reports.selectPeriod": "Selecionar período",
+    "reports.nameError": "Nome do relatório é obrigatório.",
+    "reports.periodError": "Selecione o período do relatório.",
+    "reports.noStudentSelected": "Nenhum aluno selecionado",
+    "reports.noStudentSelectedDesc": "Selecione ao menos um aluno para cruzar os dados.",
+    "reports.consolidatedDescOne": "Dados de {n} aluno consolidados.",
+    "reports.consolidatedDescMany": "Dados de {n} alunos consolidados.",
+    "reports.generatingConsolidated": "Gerando relatório consolidado...",
+    "reports.protocol.noAnswers": "Nenhuma resposta preenchida neste formulário.",
+    "reports.protocol.total": "Total",
+    "reports.protocol.responsible": "Responsável",
+    "reports.protocol.evaluator": "Avaliador",
+    "reports.protocol.ageGroup": "Faixa etária",
+    "reports.protocol.totalScore": "Escore total",
+    "reports.protocol.percentile": "Percentil",
+    "reports.protocol.standardScore": "Escore padrão",
+    "reports.mabc.manualDexterity": "Destreza Manual",
+    "reports.mabc.aimingCatching": "Mirar e Pegar",
+    "reports.mabc.balance": "Equilíbrio",
+    "reports.supportLevel1": "Nível 1",
+    "reports.supportLevel2": "Nível 2",
+    "reports.supportLevel3": "Nível 3",
+    "export.selectFormat": "Selecionar formato",
+    "export.pdfWithCharts": "PDF (com gráficos)",
+    "export.csvTabular": "CSV (dados tabulares)",
+    "export.exportAction": "Exportar",
+    "export.downloadAction": "Baixar",
+    "export.doc.childInfo": "Informações da criança",
+    "export.doc.name": "Nome",
+    "export.doc.age": "Idade",
+    "export.doc.supportLevel": "Nível de suporte",
+    "export.doc.height": "Altura",
+    "export.doc.weight": "Peso",
+    "export.doc.waist": "Cintura",
+    "export.doc.clinicalObs": "Observações clínicas",
+    "export.doc.years": "anos",
+    "export.doc.period": "Período",
+    "export.doc.noData": "Sem dados.",
+    "export.doc.noDataPeriod": "Sem dados no período.",
+    "export.doc.noBehaviors": "Sem comportamentos registrados.",
+    "export.doc.intrusive": "Intrusivo",
+    "export.doc.behStereotypy": "Estereotipia",
+    "export.doc.behEyePeopleShort": "C. visual (Pessoas)",
+    "export.doc.behEyeObjectsShort": "C. visual (Objetos)",
+    "export.doc.behEngagement": "Engajamento",
+    "export.doc.behEscape": "Fuga",
+    "export.doc.behCrisis": "Crise",
+    "export.doc.behUnfitShort": "Inaptos",
+    "export.doc.behPreferredShort": "Ativ. pref.",
+    "export.doc.behStereotypies": "Estereotipias",
+    "export.doc.behEyePeople": "Contato visual (Pessoas)",
+    "export.doc.behEyeObjects": "Contato visual (Objetos)",
+    "export.doc.behCrises": "Crises",
+    "export.doc.behUnfit": "Comportamentos inaptos",
+    "export.doc.behPreferred": "Atividades preferenciais",
+    "export.doc.cardHelpPerSession": "Ajuda por sessão",
+    "export.doc.cardBehaviorFreq": "Frequência de comportamentos",
+    "export.doc.cardComparisonSummary": "Resumo da comparação",
+    "export.doc.cardByExercise": "Comparação por exercício",
+    "export.doc.cardHelpComparison": "Comparação dos registros de ajuda",
+    "export.doc.cardBehaviorComparison": "Comparação dos comportamentos observados",
+    "export.doc.metric": "Métrica",
+    "export.doc.exercise": "Exercício",
+    "export.doc.type": "Tipo",
+    "export.doc.behavior": "Comportamento",
+    "export.doc.date": "Data",
+    "export.doc.score": "Pontuação",
+    "export.doc.scoreShort": "Escore",
+    "export.doc.levelUnit": "nível",
+    "export.doc.periodNote": "Os períodos correspondem às metades do intervalo selecionado.",
+    "export.doc.ssMd": "EP DM",
+    "export.doc.pMd": "P DM",
+    "export.doc.ssAc": "EP MP",
+    "export.doc.pAc": "P MP",
+    "export.doc.ssB": "EP E",
+    "export.doc.pB": "P E",
+    "export.doc.noProtocolPeriod": "Nenhum protocolo aplicado no período.",
+    "export.doc.insufficient": "Dados insuficientes.",
+    "export.doc.report": "Relatório",
+    "export.doc.evolution": "Evolução",
+    "export.doc.sessions": "Sessões",
+    "export.doc.session": "Sessão",
+    "export.doc.frequency": "Frequência",
+    "export.doc.behaviors": "Comportamentos",
+    "export.doc.consolidatedTitle": "Relatório consolidado",
+    "export.doc.students": "Alunos",
+    "export.doc.studentsSummary": "Resumo comparativo dos alunos",
+    "export.doc.improved": "Melhorou",
+    "export.doc.stable": "Estável",
+    "export.doc.needsReinforcement": "Precisa reforço",
+    "export.doc.exercises": "Exercícios",
+    "export.doc.shareTitle": "Exportar relatório",
+    "export.doc.shareConsolidatedTitle": "Exportar relatório consolidado",
+    "export.doc.selectAtLeastOneStudent": "Selecione ao menos um aluno.",
+    "export.doc.student": "Aluno",
+    "sessionDetail.recordUpdated": "Registro atualizado com sucesso",
+    "sessionDetail.recordUpdateError": "Não foi possível atualizar o registro.",
+    "sessionDetail.deleteError": "Não foi possível remover a sessão.",
+    "sessionDetail.exported": "Exportado com sucesso",
+    "sessionDetail.exporting": "Exportando...",
+    "sessionDetail.session": "Sessão",
+    "sessionDetail.pendingTitle": "Há execuções pendentes",
+    "sessionDetail.pendingDesc": "Resolva todos os registros pendentes antes de exportar.",
+    "sessionDetail.controlRecord": "Registro de Controle",
+    "sessionDetail.loadError": "Erro ao carregar a sessão.",
+    "sessionDetail.empty": "Nenhum exercício registrado nesta sessão.",
+    "sessionDetail.removeTitle": "Remover sessão?",
+    "sessionDetail.removeMessage": "Esta sessão será removida do histórico permanentemente.",
+    "sessionDetail.removing": "Removendo...",
+    "auth.err.invalidCredentials": "Credenciais incorretas. Verifique e tente novamente.",
+    "auth.err.alreadyRegistered": "Esta conta já está cadastrada.",
+    "auth.err.rateLimit": "Muitas tentativas. Tente novamente mais tarde.",
+    "auth.err.wait60": "Aguarde 60 segundos para tentar novamente.",
+    "auth.err.emailNotConfirmed": "E-mail não confirmado.",
+    "auth.err.phoneNotConfirmed": "Telefone não confirmado. Refaça o cadastro para receber um novo código.",
+    "auth.err.invalidPhone": "Telefone inválido. Use o formato (DDD) 99999-9999.",
+    "auth.err.smsUnavailable": "Cadastro por telefone indisponível no momento. Use e-mail ou Google.",
+    "auth.err.otpExpired": "Código expirado. Solicite um novo código.",
+    "auth.err.otpInvalid": "Código inválido ou expirado. Confira o SMS e tente novamente.",
+    "auth.err.googleUnavailable": "Login com Google indisponível no momento.",
+    "auth.err.loginCancelled": "Login cancelado.",
+    "auth.err.network": "Falha de conexão. Verifique sua internet.",
+    "auth.err.generic": "Ocorreu um erro. Verifique seus dados e tente novamente.",
+    "auth.err.genericRetry": "Ocorreu um erro. Tente novamente.",
+    "auth.registerTitle": "Crie sua conta",
+    "auth.fullName": "Nome completo",
+    "auth.fullNamePlaceholder": "Digite seu nome completo",
+    "auth.passwordPlaceholder": "Sua senha",
+    "auth.confirmPassword": "Confirmar senha",
+    "auth.confirmPasswordPlaceholder": "Confirme sua senha",
+    "auth.register": "Cadastrar-se",
+    "auth.registering": "Cadastrando...",
+    "auth.registerGoogle": "Cadastrar com Google",
+    "auth.connecting": "Conectando...",
+    "auth.googlePendingRegister": "Sua conta Google foi cadastrada e aguarda aprovação.",
+    "auth.haveAccount": "Já tem conta? ",
+    "auth.enterLink": "Entre",
+    "auth.nameRequired": "Nome é obrigatório",
+    "auth.nameMin": "O nome deve ter no mínimo 3 caracteres",
+    "auth.nameFull": "Informe pelo menos nome e sobrenome",
+    "auth.emailRequired": "Email é obrigatório",
+    "auth.passwordRule": "A senha deve ter entre 8 e 20 caracteres, maiúscula, minúscula, número ou especial",
+    "auth.passwordRequired": "Senha é obrigatória",
+    "auth.confirmRequired": "Confirmação de senha é obrigatória",
+    "auth.passwordsMismatch": "As senhas não coincidem",
+    "auth.resetTitle": "Redefinir senha",
+    "auth.resetInvalid": "Este link de redefinição é inválido ou expirou. Solicite um novo link ou código para redefinir sua senha.",
+    "auth.requestAgain": "Solicitar novamente",
+    "auth.backToLogin": "Voltar ao login",
+    "auth.newPasswordPlaceholder": "Digite sua nova senha",
+    "auth.confirmNewPasswordPlaceholder": "Confirme sua nova senha",
+    "auth.confirmPasswordBtn": "Confirmar senha",
+    "auth.sendCode": "Enviar código por e-mail",
+    "auth.sending": "Enviando...",
+    "auth.code": "Código",
+    "auth.codeDigitsPlaceholder": "8 dígitos",
+    "auth.codeLengthError": "O código deve conter 8 dígitos",
+    "auth.confirmCode": "Confirmar código",
+    "auth.verifying": "Verificando...",
+    "auth.codeSentHint": "Se esse e-mail estiver cadastrado, você receberá um código em instantes.",
+    "auth.otpInvalidRetry": "Código inválido ou expirado. Solicite um novo e-mail.",
+    "auth.feedback.accountCreated": "Conta criada com sucesso!",
+    "auth.feedback.accountCreatedMsg": "Por favor, aguarde a aprovação da Coordenadora para liberar seu acesso.",
+    "auth.feedback.codeValidated": "Código validado com sucesso!",
+    "auth.feedback.codeValidatedMsg": "Agora você pode redefinir sua senha e acessar sua conta.",
+    "auth.feedback.passwordUpdated": "Senha redefinida com sucesso!",
+    "auth.feedback.passwordUpdatedMsg": "Agora você pode acessar sua conta com a sua nova senha.",
+    "auth.feedback.pendingApprovalTitle": "Aprovação pendente",
+    "auth.feedback.continue": "Continuar",
+    "account.currentPasswordRequired": "Senha atual é obrigatória",
+    "account.currentPasswordIncorrect": "Senha atual incorreta",
+    "account.saveError": "Não foi possível salvar",
+    "account.photoUpdated": "Foto atualizada!",
+    "account.photoRemoved": "Foto removida.",
+    "account.nameUpdated": "Nome atualizado!",
+    "account.confirmationSent": "Confirmação enviada!",
+    "account.confirmationSentDesc": "Enviamos um link de confirmação para o novo e-mail. A alteração vale após a confirmação.",
+    "account.passwordChanged": "Senha alterada!",
+    "account.googleUnlinked": "Conta Google desvinculada.",
+    "account.googleLinkedToast": "Conta Google vinculada!",
+    "account.confirmNewPasswordPlaceholder": "Confirme a nova senha",
+    "teams.subtitle": "Gerenciar equipe",
+    "teams.companions": "Monitores ({n})",
+    "teams.noCompanions": "Nenhum monitor na equipe. Convide usando email/telefone ou compartilhe o código da equipe.",
+    "teams.students": "Alunos ({n})",
+    "teams.add": "Adicionar",
+    "teams.noStudents": "Nenhum aluno na equipe. Cadastre novos alunos.",
+    "teams.deleteStudentTitle": "Excluir aluno?",
+    "teams.removeCompanionTitle": "Remover monitor?",
+    "teams.removeCompanionMsg": "Tem certeza que deseja remover este monitor da equipe? Esta ação não poderá ser desfeita.",
+    "teams.rejectCompanionTitle": "Rejeitar monitor?",
+    "teams.rejectCompanionMsg": "Tem certeza que deseja rejeitar este monitor? Esta ação não poderá ser desfeita.",
+    "teams.approveError": "Não foi possível aprovar o monitor.",
+    "teams.rejectError": "Não foi possível rejeitar o monitor.",
+    "teams.removeCompanionError": "Não foi possível remover o monitor.",
+    "teams.saveErrorTitle": "Erro ao Salvar",
+    "teams.saveError": "Não foi possível salvar o aluno. Detalhes: {msg}",
+    "session.exerciseProgress": "Exercício {n}/{total}",
+    "session.defaultCircuit": "Circuito",
+    "session.subtitleSemiCircuit": "Circuito Semi-estruturado - {clock}",
+    "session.subtitleSemiExercise": "Exercício Semi-estruturado - {clock}",
+    "session.subtitleEngagement": "Circuito Semi-estruturado · Engajamento - {clock}",
+    "session.finishTitle": "Finalizar sessão?",
+    "session.finishMessage": "O progresso atual desta sessão será salvo de acordo com o tipo de circuito escolhido.",
+    "session.pendingWillBeUnrealized": "Estes exercícios serão registrados como não realizados:",
+    "session.reasonLabel": "Motivo:",
+    "session.reasonPlaceholder": "Descreva o motivo...",
+    "session.reasonDescRequired": "Descreva o motivo da finalização.",
+    "engagement.title": "Atividade de engajamento",
+    "engagement.subtitle": "Momento focado na interação com o aluno",
+    "export.doc.question": "Pergunta",
+    "export.doc.answer": "Resposta",
+    "export.doc.duration": "Duração",
+    "export.doc.devLevel": "Nível de desenvolvimento",
+    "export.doc.helpLevel": "Nível de ajuda",
+    "export.doc.shareSessionTitle": "Exportar sessão",
+    "export.doc.shareFormTitle": "Exportar {title}",
+    "form.helpAta": "Pontue conforme os indicadores observados",
+    "form.helpCars": "Arraste o marcador para definir a pontuação",
+    "form.helpRc": "Preencha o registro de controle da sessão",
+    "form.helpMabc2": "Preencha os itens da avaliação MABC-2",
+    "form.savedToast": "Formulário salvo",
+    "form.answersSaved": "As respostas foram salvas com sucesso!",
+    "form.saveError": "Erro ao salvar",
+    "form.removing": "Removendo...",
+    "form.removeError": "Não foi possível remover o formulário.",
+    "form.fallbackTitle": "Formulário",
+    "form.editForm": "Editar formulário ",
+    "form.fillForm": "Preencher formulário ",
+    "form.removeTitle": "Remover formulário?",
+    "form.removeMessage": "Este formulário será removido do histórico permanentemente.",
+    "form.loadQuestionsError": "Não foi possível carregar as perguntas.",
+    "form.saveErrorTitle": "Erro ao salvar formulário",
+    "form.emptyFieldsError": "Não é possível salvar formulários com campos vazios",
+    "form.successTitle": "Sucesso",
+    "form.savedEvaluation": "Avaliação salva com sucesso!",
+    "form.connectionError": "Erro de conexão",
+    "form.connectionErrorDesc": "Falha ao se conectar com os servidores. Verifique sua internet.",
+    "form.saveResponsesError": "Ocorreu um erro ao salvar as respostas.",
+    "form.noQuestions": "Nenhuma pergunta encontrada para este formulário.",
+    "forms.onlyNumbers": "Apenas números",
+    "forms.answerHere": "Responda aqui",
+    "forms.specify": "Especifique...",
+    "forms.otherOption": "Outro",
+    "forms.selectHere": "Selecione aqui",
+    "forms.mockRcEngagement": "Nível de engajamento do aluno na sessão",
+    "forms.mockRcObservations": "Observações gerais da sessão",
+    "common.dateUndefined": "Data não definida",
+    "common.statusUndefined": "Status não definido",
+    "common.noItems": "Nenhum item encontrado.",
+    "feedback.sendError": "Não foi possível enviar seu feedback. Tente novamente.",
+    "feedback.sessionExpired": "Sessão expirada. Entre novamente para enviar seu feedback.",
+    "circuits.ataNewDesc": "Iniciar um novo registro ATA",
+    "circuits.carsNewDesc": "Iniciar um novo registro CARS",
+    "mabc.required": "Requerido",
+    "mabc.invalid": "Inválido",
+    "mabc.max": "Máx {n}",
+    "mabc.resultTitle": "Resultado da atividade",
+    "mabc.notCompleted": "Não realizada",
+    "mabc.deferAnswer": "Adiar resposta",
+    "mabc.rawScores": "Dados de execução (Escores brutos)",
+    "mabc.measuredSuccesses": "Medido em sucessos",
+    "mabc.measuredSeconds": "Medido em segundos",
+    "mabc.attemptsOf": "Tentativas de {name}",
+    "mabc.trial1": "Tentativa 1",
+    "mabc.trial2": "Tentativa 2",
+    "mabc.complete": "Concluir",
+    "mabc.register": "Registrar",
+    "mabc.section.aimingThrowing": "Pegar e Lançar",
+    "mabc.side.prefHand": "Mão Preferida",
+    "mabc.side.nonPrefHand": "Mão Não Preferida",
+    "mabc.side.bestLeg": "Melhor Perna",
+    "mabc.side.otherLeg": "Outra Perna",
+    "mabc.side.bestHand": "Melhor Mão",
+    "mabc.side.otherHand": "Outra Mão",
+    "mabc.field.time": "Tempo (s)",
+    "mabc.field.failures": "Falhas",
+    "mabc.field.hits": "Acertos",
+    "mabc.field.steps": "Passos",
+    "session.otherExerciseName": "Outro exercício",
+    "session.repeatExercises": "Repetir exercícios",
+    "session.repeatPrompt": "Selecione quais exercícios deste circuito você deseja repetir:",
+    "session.doOtherExercise": "Realizar outro exercício",
+    "session.otherExercisePrompt": "Selecione qualquer exercício da equipe para realizar nesta sessão:",
+    "session.noTeamExercises": "Nenhum exercício cadastrado na equipe.",
+    "session.start": "Iniciar",
+    "session.clinicalSession": "Sessão Clínica",
+    "session.reorderTitle": "Mudar ordem",
+    "session.reorderHint": "Segure e arraste pelo ícone de alça para reordenar",
+    "session.reorderConfirm": "Concluir reordenação",
+    "circuits.doesAllExercises": "Realiza todos os exercícios definidos",
+    "circuits.exerciseOrder": "Ordem dos exercícios",
+    "circuits.includedExercises": "Exercícios inclusos",
+    "circuits.descMabc": "{n} exercícios - Faixa etária {range} - {summary}",
+    "circuits.descMabcEmpty": "Faixa etária {range} - Sem exercícios vinculados",
+    "circuits.desc": "{n} exercícios - {summary}",
+    "circuits.descEmpty": "Sem exercícios vinculados",
+    "circuits.ageRange36": "3 a 6 anos",
+    "circuits.ageRange710": "7 a 10 anos",
+    "circuits.ageRange1116": "11 a 16 anos",
+    "circuits.mabcNewDesc": "Iniciar uma nova avaliação MABC-2 — Faixa {range}",
+    "circuits.rcPendingTitle": "Registro de Controle pendente",
+    "circuits.rcPendingMsg": "Existe um Registro de Controle de uma sessão anterior que ainda não foi preenchido.",
+    "circuits.fillRc": "Preencher registro de controle",
+    "circuits.startNewSession": "Iniciar nova sessão",
+    "circuits.circuitDetails": "Detalhes do Circuito",
+    "analysis.motorLoadError": "Não foi possível carregar os dados de desenvolvimento motor.",
+    "history.loadError": "Erro ao carregar o histórico.",
+    "history.realized": "realizado",
+    "history.noRecordsDate": "Nenhum registro encontrado nesta data.",
+    "history.noRecordsStudent": "Nenhum registro encontrado para este aluno.",
+    "exercises.startActivity": "Iniciar atividade",
+    "common.err.notAuthenticated": "Usuário não autenticado.",
+    "common.err.noActiveTeam": "Usuário não está associado a nenhuma equipe ativa.",
+    "common.err.teamNotIdentified": "ID da equipe não identificado.",
+    "common.err.activeTeamNotFound": "Equipe ativa não encontrada.",
+    "mock.exWalkLine": "Andar na linha",
+    "mock.exWalkLineDesc": "Equilíbrio sobre uma linha reta",
+    "mock.exHoop": "Girar bambolê",
+    "mock.exHoopDesc": "Coordenação com bambolê",
+    "mock.circuit1": "Circuito 1",
+    "mock.controlRecord": "Registro de Controle",
+    "mock.studentSession": "Sessão de exemplo",
+    "mock.statusPending": "Pendente",
+    "mock.statusFilled": "Preenchido",
+    "mock.statusFinished": "Finalizado",
+    "mock.exampleCircuit": "Circuito exemplo",
+    "mock.scoreLight": "Leve",
+    "mock.scoreModerate": "Moderado",
+    "mock.protocol": "Protocolo",
+    "mock.helpAutonomyText": "A autonomia do aluno aumentou ao longo das sessões.",
+    "session.mabcAssessment": "Avaliação MABC-2",
+    "analysis.compareLoadError": "Erro ao carregar comparação de desempenho.",
   },
   en: {
     "common.save": "Save",
@@ -1523,32 +2419,99 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.circuitos.deleteSelect": "In the menu, tap \"Delete\".",
     "tutorial.hint.circuitos.deleteConfirm": "Confirm deletion by tapping \"Delete\".",
     "tutorial.hint.sessoes.selectStructured": "Tap the structured circuit to start the session.",
-    "tutorial.hint.sessoes.startExercise": "Tap \"Start activity\". Then practice freely: the stopwatch, recording crisis/flight, stopping and marking the result (completed — with intrusive or verbal help —, not completed, or deferred), and showing/hiding the Control Record (which can be left empty to fill later in History).",
+    "tutorial.hint.sessoes.openReorder": "Before starting, tap the change-order icon to rearrange the exercises.",
+    "tutorial.hint.sessoes.reorder": "Hold an exercise by its handle and drag it to change the order.",
+    "tutorial.hint.sessoes.confirmReorder": "Tap \"Finish reordering\" to confirm the new order and close the sheet.",
+    "tutorial.hint.sessoes.startExercise": "Tap \"Start activity\" to begin the first exercise.",
+    "tutorial.hint.sessoes.crise": "Tap \"Crise\" to start timing a crisis episode.",
+    "tutorial.hint.sessoes.crise2": "Tap \"Crise\" again to end the episode — it is recorded with the timed duration.",
+    "tutorial.hint.sessoes.fuga": "Tap \"Fuga\" to start timing a flight episode.",
+    "tutorial.hint.sessoes.fuga2": "Tap \"Fuga\" again to end the episode — it is recorded with the timed duration.",
+    "tutorial.hint.sessoes.pauseResume": "Tap the stopwatch to pause the count.",
+    "tutorial.hint.sessoes.pauseResume2": "Tap the stopwatch again to resume the count.",
+    "tutorial.hint.sessoes.toggleForm": "Tap \"Ocultar\"/\"Exibir\" to hide the Control Record, which can be left empty to fill later in History.",
+    "tutorial.hint.sessoes.toggleForm2": "Tap it again to show the Control Record back.",
+    "tutorial.hint.sessoes.restart": "Tap \"Redefinir\" to reset the stopwatch and start counting again.",
+    "tutorial.hint.sessoes.stop": "Tap \"Parar\" to end the activity and mark its result.",
+    "tutorial.hint.sessoes.deferResult": "Tap \"Defer answer\" to postpone this exercise's result and answer it later.",
+    "tutorial.hint.sessoes.startSecond": "Tap \"Start activity\" to begin the second exercise.",
+    "tutorial.hint.sessoes.stopSecond": "On the second exercise, tap \"Parar\" to end it and mark the result.",
+    "tutorial.hint.sessoes.selectLevel": "Select a development level (initial, intermediate, or mature).",
+    "tutorial.hint.sessoes.selectHelp": "Select a help record (autonomous or intrusive help).",
+    "tutorial.hint.sessoes.conclude": "Tap \"Done\" to confirm the exercise as completed.",
+    "tutorial.hint.sessoes.stopNotDone": "Tap \"Parar\" to end this exercise and mark its result.",
+    "tutorial.hint.sessoes.deferAgain": "Tap \"Defer answer\" to postpone this exercise's result.",
+    "tutorial.hint.sessoes.markNotCompleted": "Tap \"Not completed\" to record that the exercise was not performed.",
+    "tutorial.hint.sessoes.selectMotive": "Select a reason for not performing it.",
+    "tutorial.hint.sessoes.registerNotCompleted": "Tap \"Register\" to confirm the exercise as not performed.",
+    "tutorial.hint.sessoes.backToSelection": "On the completed session screen, tap \"Back to start\" — the simulation continues.",
+    "tutorial.hint.sessoes.selectAgain": "Tap the structured circuit again to start a second session.",
+    "tutorial.hint.sessoes.startAgain": "Tap \"Start activity\": a session is only in progress once it has been started.",
     "tutorial.hint.sessoes.goBack": "Tap \"Back\" to leave without finishing — the session stays in progress.",
     "tutorial.hint.sessoes.reopenCircuit": "Tap a circuit again to see the in-progress session warning.",
     "tutorial.hint.sessoes.concurrentContinue": "Tap \"Continue session in progress\" to resume. This warning also appears when there is a pending Control Record or a pending form of the same type for the student.",
-    "tutorial.hint.sessoes.finish": "Tap \"Finish\" and confirm to end the session.",
+    "tutorial.hint.sessoes.startResumed": "The session resumed at the start of the circuit. Tap \"Start activity\" to run an exercise.",
+    "tutorial.hint.sessoes.stopResumed": "Tap \"Parar\" to end the exercise and open its result.",
+    "tutorial.hint.sessoes.deferResumed": "Tap \"Defer answer\". With one exercise already recorded, the \"Finish\" button appears in the header.",
+    "tutorial.hint.sessoes.finish": "Stop the activity and mark its result. With at least one exercise done, the \"Finish\" button appears in the header: tap it to end the session early.",
+    "tutorial.hint.sessoes.finishReason": "Pick a reason for ending the session and confirm. The remaining exercises are recorded as not performed.",
+    "tutorial.hint.sessoes.finishSession": "This is the session completed screen. Tap \"Back to start\" to end the simulation.",
     "tutorial.hint.formularios.selectAta": "Tap the ATA form to start it.",
     "tutorial.hint.formularios.goBackAta": "Tap \"Back\" to leave without filling it — the ATA stays pending.",
     "tutorial.hint.formularios.reopenAta": "Tap the ATA again to see the pending same-type form warning.",
     "tutorial.hint.formularios.continueAta": "Tap \"Continue previous form\" to resume the pending ATA.",
-    "tutorial.hint.formularios.fillAndSave": "Answer the required question and tap save (in the header). Optional fields can be left blank. CARS and MABC-2 work the same — MABC-2 is split by age band (3-6, 7-10 and 11-16 years).",
+    "tutorial.hint.formularios.answer": "Drag the question's control to change the answer before saving.",
+    "tutorial.hint.formularios.saveAta": "Tap save (in the header). Optional fields can be left blank. You return to the list and the simulation continues.",
+    "tutorial.hint.formularios.selectCars": "Now tap the CARS form: the flow is the same as the ATA.",
+    "tutorial.hint.formularios.saveCars": "Fill the CARS in and save it to return to the list.",
+    "tutorial.hint.formularios.selectMabc": "Finally, tap MABC-2. It is split by age band (3-6, 7-10 and 11-16 years) and only shows for eligible students.",
+    "tutorial.hint.formularios.saveMabc": "Fill the MABC-2 in and save it to end the simulation.",
     "tutorial.hint.historico.selectStudent": "Tap the student to see their past records.",
-    "tutorial.hint.historico.openRecord": "Tap the pending Control Record to edit it.",
-    "tutorial.hint.historico.editSave": "Complete what was missing and save. You edit a session's activity results and the ATA, CARS and MABC-2 forms the same way.",
+    "tutorial.hint.historico.openRecord": "Tap the session record to see the exercises that were run.",
+    "tutorial.hint.historico.editExercise": "Tap the pencil to edit the activity's result.",
+    "tutorial.hint.historico.saveExercise": "Adjust whatever you want (status, duration, level or help) and tap the check to save.",
+    "tutorial.hint.historico.openSessionRc": "Tap the pencil in the header to open the session's Control Record, which is still pending.",
+    "tutorial.hint.historico.saveSessionRc": "Complete what was missing and save. You return to the session and the simulation continues.",
+    "tutorial.hint.historico.backToRecords": "Tap \"Back\" to return to the student's records.",
+    "tutorial.hint.historico.openFormRecord": "Now tap the form record (ATA): forms can also be edited later.",
+    "tutorial.hint.historico.editSave": "Edit whatever you want and save. You edit the CARS and MABC-2 forms the same way.",
     "tutorial.hint.analises.selectStudent": "Tap the student to see their analyses.",
-    "tutorial.hint.analises.openProgress": "Open \"Exercise progress\". View the chart with data; if you filter by a period with no records it shows empty — return to a period with data. Then go back.",
-    "tutorial.hint.analises.openHelp": "Open \"Help records per session\" to see the autonomy trend. Then go back.",
-    "tutorial.hint.analises.openBehaviors": "Open \"Observed behaviors\" to see the frequencies. Then go back.",
-    "tutorial.hint.analises.openCompare": "Open \"Compare performance\" to see two periods side by side. Then go back.",
-    "tutorial.hint.analises.openProtocols": "Open the applied protocols (ATA/CARS) to see the records. Then go back.",
+    "tutorial.hint.analises.openProgress": "Open \"Exercise progress\" to see how the development level evolves.",
+    "tutorial.hint.analises.selectExerciseProgress": "Tap an exercise to expand it and see its progress.",
+    "tutorial.hint.analises.periodProgress": "Now pick a period and save. If you filter by a period with no records the chart shows empty — return to a period with data.",
+    "tutorial.hint.analises.backProgress": "Explore the chart and tap \"Back\" to move on to the next analysis.",
+    "tutorial.hint.analises.openHelp": "Open \"Help records per session\" to see the autonomy trend.",
+    "tutorial.hint.analises.periodHelp": "Pick a period and save to load the help records.",
+    "tutorial.hint.analises.backHelp": "Use the button below the chart to see the records per session and exercise. Then tap \"Back\".",
+    "tutorial.hint.analises.openBehaviors": "Open \"Observed behaviors\" to see the frequencies.",
+    "tutorial.hint.analises.periodBehaviors": "Pick a period and save to load the behaviors.",
+    "tutorial.hint.analises.backBehaviors": "Explore the chart and the per-behavior details, then tap \"Back\".",
+    "tutorial.hint.analises.openCompare": "Open \"Compare performance\" to see two periods side by side.",
+    "tutorial.hint.analises.periodCompare": "Pick the two periods to compare. They cannot overlap or be in the future.",
+    "tutorial.hint.analises.compareRun": "Tap \"Compare\" to cross-reference both periods.",
+    "tutorial.hint.analises.backCompare": "Tap \"Back\".",
+    "tutorial.hint.analises.openProtocols": "Open the applied protocols (ATA/CARS) to see the records.",
+    "tutorial.hint.analises.openProtocolRecord": "Tap a record to open it (loaded with sample answers).",
+    "tutorial.hint.analises.backProtocolRecord": "Look through the applied protocol and tap \"Back\" to return to the list.",
+    "tutorial.hint.analises.backProtocols": "Tap \"Back\" to return to the student's analysis options.",
     "tutorial.hint.analises.openMabc": "Open \"Motor development records\" (MABC-2) to see the assessments.",
+    "tutorial.hint.analises.openMabcRecord": "Tap a record to open it (loaded with sample data).",
+    "tutorial.hint.analises.backMabcRecord": "Look through the assessment and tap \"Back\" to return to the list.",
+    "tutorial.hint.analises.backMabc": "Tap \"Back\" to end the simulation.",
     "tutorial.hint.relatorios.selectStudent": "Tap the student to see their reports.",
     "tutorial.hint.relatorios.newReport": "Tap \"+ New\" to create a report.",
-    "tutorial.hint.relatorios.saveReport": "Choose the period and save to generate the report.",
+    "tutorial.hint.relatorios.periodReport": "Tap the period and choose the dates the report will cover.",
+    "tutorial.hint.relatorios.saveReport": "Name the report and tap \"Save\" to generate it.",
     "tutorial.hint.relatorios.openReport": "Tap the created report to open it.",
-    "tutorial.hint.relatorios.exportReport": "Tap the export icon, select one or more reports, confirm and export (or download to the device).",
-    "tutorial.hint.relatorios.consolidated": "Go back and tap \"Cross-student data\" to build a consolidated report of several students.",
+    "tutorial.hint.relatorios.exportReport": "Tap the export icon to download just this report.",
+    "tutorial.hint.relatorios.exportConfirm": "Choose the formats (PDF and/or CSV) and tap \"Export\" to share — on Android you can also download it to the device.",
+    "tutorial.hint.relatorios.backFromReport": "Tap \"Back\" to return to the student's reports.",
+    "tutorial.hint.relatorios.backToReportsHome": "Tap \"Back\" again to reach the reports home screen.",
+    "tutorial.hint.relatorios.consolidated": "Tap \"Cross-student data\" to build a consolidated report of several students.",
+    "tutorial.hint.relatorios.consolidatedSelect": "Tap the students to include in the consolidated report. You can pick more than one.",
+    "tutorial.hint.relatorios.consolidatedConfirm": "Tap \"Confirm\" to continue with the selected students.",
+    "tutorial.hint.relatorios.consolidatedPeriod": "Choose the period to cross-reference and save.",
+    "tutorial.hint.relatorios.consolidatedExport": "Choose the formats and tap \"Export\" to end the simulation.",
     "common.allM": "All",
     "common.register": "Register",
     "analysis.level.maduro": "Mature",
@@ -1596,6 +2559,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "analysis.help.type": "Type",
     "analysis.help.footnote": "The values show the absolute and percentage difference of help records between the two selected periods.",
     "common.student": "Student",
+    "common.circuit": "Circuit",
     "common.dateNotSet": "Date not set",
     "common.retry": "Try again",
     "common.exit": "Exit",
@@ -1772,6 +2736,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "analysis.protocolCard.ageGroup": "Age group",
     "analysis.protocolCard.evaluatedBy": "Evaluated by",
     "analysis.progressChart.selectedExercise": "Selected exercise",
+    "analysis.progressChart.execution": "Execution",
     "analysis.comparisonCard.loadError": "Could not load this comparison. Please try again.",
     "analysis.comparisonCard.insufficientData": "Insufficient data for comparison.",
     "analysis.behaviors.comparisonTitle": "Comparison of observed behaviors",
@@ -2006,5 +2971,384 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.mod.relatorios.s1.title": "Practice reports",
     "tutorial.mod.relatorios.s1.body": "Let's practice on a real replica. Follow the blinking highlight: open the student, create a report choosing the period, open it, export it (one or several, with a download option), and finally generate a consolidated report crossing students' data. Once you finish, you advance automatically.",
     "tutorial.mod.relatorios.s2.body": "Well done! You created, opened, and exported reports and generated a consolidated one crossing students. The student's photo is saved with the report and reused for overlapping periods. You now know how to generate and export progress reports.",
+    "reports.recordSingular": "report",
+    "reports.filterByPeriod": "Filter by period",
+    "reports.clearFilter": "Clear filter",
+    "reports.emptyList": "No reports yet.",
+    "reports.rename": "Rename",
+    "reports.renameTitle": "Rename report",
+    "reports.namePlaceholder": "Report name",
+    "reports.confirmCount": "Confirm ({n})",
+    "reports.defaultTitle": "Report {n}",
+    "reports.deleteTitle": "Delete report?",
+    "reports.deleteMessage": "The report will be permanently deleted. This action cannot be undone.",
+    "reports.exported": "Report exported!",
+    "reports.downloaded": "Report downloaded!",
+    "reports.savedToast": "Report saved!",
+    "reports.exportError": "Export failed",
+    "reports.tryAgain": "Please try again.",
+    "reports.deleteError": "Failed to delete the report.",
+    "reports.simulationNoServer": "Simulation: nothing was sent to the server.",
+    "reports.noneSelected": "No report selected",
+    "reports.noneSelectedDesc": "Select at least one report to export.",
+    "reports.downloadedDeviceDesc": "{name}'s report was downloaded to the device.",
+    "reports.sharedDesc": "{name}'s report was exported and sent to sharing.",
+    "reports.created": "Report created!",
+    "reports.renamed": "Report renamed.",
+    "reports.renameError": "Failed to rename.",
+    "reports.removed": "Report removed.",
+    "reports.removeError": "Failed to remove the report.",
+    "reports.section.progress": "Exercise progress",
+    "reports.section.help": "Help records per session",
+    "reports.section.behaviors": "Observed behaviors",
+    "reports.section.comparison": "Performance comparison",
+    "reports.section.protocols": "Applied protocols/tests",
+    "reports.section.motor": "Motor development",
+    "reports.empty.progress": "No exercises recorded in the period.",
+    "reports.empty.help": "No help records in the period.",
+    "reports.empty.behaviors": "No behaviors recorded in the period.",
+    "reports.empty.comparison": "Not enough data for comparison in the period.",
+    "reports.empty.protocols": "No protocol or test applied in the period.",
+    "reports.empty.motor": "No motor development record in the period.",
+    "reports.empty.noData": "No data found for this period.",
+    "reports.noMonitor": "No monitor",
+    "reports.noAnswers": "No answers recorded.",
+    "reports.editReport": "Edit report",
+    "reports.newReport": "New report",
+    "reports.nameLabel": "Report name*",
+    "reports.periodLabel": "Period*",
+    "reports.selectPeriod": "Select period",
+    "reports.nameError": "Report name is required.",
+    "reports.periodError": "Select the report period.",
+    "reports.noStudentSelected": "No student selected",
+    "reports.noStudentSelectedDesc": "Select at least one student to cross-reference the data.",
+    "reports.consolidatedDescOne": "Data from {n} student consolidated.",
+    "reports.consolidatedDescMany": "Data from {n} students consolidated.",
+    "reports.generatingConsolidated": "Generating consolidated report...",
+    "reports.protocol.noAnswers": "No answers filled in this form.",
+    "reports.protocol.total": "Total",
+    "reports.protocol.responsible": "Responsible",
+    "reports.protocol.evaluator": "Evaluator",
+    "reports.protocol.ageGroup": "Age group",
+    "reports.protocol.totalScore": "Total score",
+    "reports.protocol.percentile": "Percentile",
+    "reports.protocol.standardScore": "Standard score",
+    "reports.mabc.manualDexterity": "Manual Dexterity",
+    "reports.mabc.aimingCatching": "Aiming and Catching",
+    "reports.mabc.balance": "Balance",
+    "reports.supportLevel1": "Level 1",
+    "reports.supportLevel2": "Level 2",
+    "reports.supportLevel3": "Level 3",
+    "export.selectFormat": "Select format",
+    "export.pdfWithCharts": "PDF (with charts)",
+    "export.csvTabular": "CSV (tabular data)",
+    "export.exportAction": "Export",
+    "export.downloadAction": "Download",
+    "export.doc.childInfo": "Child information",
+    "export.doc.name": "Name",
+    "export.doc.age": "Age",
+    "export.doc.supportLevel": "Support level",
+    "export.doc.height": "Height",
+    "export.doc.weight": "Weight",
+    "export.doc.waist": "Waist",
+    "export.doc.clinicalObs": "Clinical observations",
+    "export.doc.years": "years",
+    "export.doc.period": "Period",
+    "export.doc.noData": "No data.",
+    "export.doc.noDataPeriod": "No data in the period.",
+    "export.doc.noBehaviors": "No behaviors recorded.",
+    "export.doc.intrusive": "Intrusive",
+    "export.doc.behStereotypy": "Stereotypy",
+    "export.doc.behEyePeopleShort": "Eye c. (People)",
+    "export.doc.behEyeObjectsShort": "Eye c. (Objects)",
+    "export.doc.behEngagement": "Engagement",
+    "export.doc.behEscape": "Escape",
+    "export.doc.behCrisis": "Crisis",
+    "export.doc.behUnfitShort": "Unfit",
+    "export.doc.behPreferredShort": "Pref. act.",
+    "export.doc.behStereotypies": "Stereotypies",
+    "export.doc.behEyePeople": "Eye contact (People)",
+    "export.doc.behEyeObjects": "Eye contact (Objects)",
+    "export.doc.behCrises": "Crises",
+    "export.doc.behUnfit": "Unfit behaviors",
+    "export.doc.behPreferred": "Preferred activities",
+    "export.doc.cardHelpPerSession": "Help per session",
+    "export.doc.cardBehaviorFreq": "Behavior frequency",
+    "export.doc.cardComparisonSummary": "Comparison summary",
+    "export.doc.cardByExercise": "Comparison by exercise",
+    "export.doc.cardHelpComparison": "Help records comparison",
+    "export.doc.cardBehaviorComparison": "Observed behaviors comparison",
+    "export.doc.metric": "Metric",
+    "export.doc.exercise": "Exercise",
+    "export.doc.type": "Type",
+    "export.doc.behavior": "Behavior",
+    "export.doc.date": "Date",
+    "export.doc.score": "Score",
+    "export.doc.scoreShort": "Score",
+    "export.doc.levelUnit": "level",
+    "export.doc.periodNote": "The periods correspond to the halves of the selected interval.",
+    "export.doc.ssMd": "SS MD",
+    "export.doc.pMd": "P MD",
+    "export.doc.ssAc": "SS AC",
+    "export.doc.pAc": "P AC",
+    "export.doc.ssB": "SS B",
+    "export.doc.pB": "P B",
+    "export.doc.noProtocolPeriod": "No protocol applied in the period.",
+    "export.doc.insufficient": "Not enough data.",
+    "export.doc.report": "Report",
+    "export.doc.evolution": "Evolution",
+    "export.doc.sessions": "Sessions",
+    "export.doc.session": "Session",
+    "export.doc.frequency": "Frequency",
+    "export.doc.behaviors": "Behaviors",
+    "export.doc.consolidatedTitle": "Consolidated report",
+    "export.doc.students": "Students",
+    "export.doc.studentsSummary": "Comparative summary of students",
+    "export.doc.improved": "Improved",
+    "export.doc.stable": "Stable",
+    "export.doc.needsReinforcement": "Needs reinforcement",
+    "export.doc.exercises": "Exercises",
+    "export.doc.shareTitle": "Export report",
+    "export.doc.shareConsolidatedTitle": "Export consolidated report",
+    "export.doc.selectAtLeastOneStudent": "Select at least one student.",
+    "export.doc.student": "Student",
+    "sessionDetail.recordUpdated": "Record updated successfully",
+    "sessionDetail.recordUpdateError": "Could not update the record.",
+    "sessionDetail.deleteError": "Could not remove the session.",
+    "sessionDetail.exported": "Exported successfully",
+    "sessionDetail.exporting": "Exporting...",
+    "sessionDetail.session": "Session",
+    "sessionDetail.pendingTitle": "There are pending executions",
+    "sessionDetail.pendingDesc": "Resolve all pending records before exporting.",
+    "sessionDetail.controlRecord": "Control Record",
+    "sessionDetail.loadError": "Error loading the session.",
+    "sessionDetail.empty": "No exercise recorded in this session.",
+    "sessionDetail.removeTitle": "Remove session?",
+    "sessionDetail.removeMessage": "This session will be permanently removed from the history.",
+    "sessionDetail.removing": "Removing...",
+    "auth.err.invalidCredentials": "Incorrect credentials. Check and try again.",
+    "auth.err.alreadyRegistered": "This account is already registered.",
+    "auth.err.rateLimit": "Too many attempts. Try again later.",
+    "auth.err.wait60": "Wait 60 seconds to try again.",
+    "auth.err.emailNotConfirmed": "Email not confirmed.",
+    "auth.err.phoneNotConfirmed": "Phone not confirmed. Register again to receive a new code.",
+    "auth.err.invalidPhone": "Invalid phone. Use the format (DDD) 99999-9999.",
+    "auth.err.smsUnavailable": "Phone registration is currently unavailable. Use email or Google.",
+    "auth.err.otpExpired": "Code expired. Request a new code.",
+    "auth.err.otpInvalid": "Invalid or expired code. Check the SMS and try again.",
+    "auth.err.googleUnavailable": "Google login is currently unavailable.",
+    "auth.err.loginCancelled": "Login cancelled.",
+    "auth.err.network": "Connection failed. Check your internet.",
+    "auth.err.generic": "An error occurred. Check your data and try again.",
+    "auth.err.genericRetry": "An error occurred. Please try again.",
+    "auth.registerTitle": "Create your account",
+    "auth.fullName": "Full name",
+    "auth.fullNamePlaceholder": "Enter your full name",
+    "auth.passwordPlaceholder": "Your password",
+    "auth.confirmPassword": "Confirm password",
+    "auth.confirmPasswordPlaceholder": "Confirm your password",
+    "auth.register": "Sign up",
+    "auth.registering": "Signing up...",
+    "auth.registerGoogle": "Sign up with Google",
+    "auth.connecting": "Connecting...",
+    "auth.googlePendingRegister": "Your Google account has been registered and is awaiting approval.",
+    "auth.haveAccount": "Already have an account? ",
+    "auth.enterLink": "Sign in",
+    "auth.nameRequired": "Name is required",
+    "auth.nameMin": "Name must be at least 3 characters",
+    "auth.nameFull": "Enter at least first and last name",
+    "auth.emailRequired": "Email is required",
+    "auth.passwordRule": "Password must be 8–20 characters, with uppercase, lowercase, number or special",
+    "auth.passwordRequired": "Password is required",
+    "auth.confirmRequired": "Password confirmation is required",
+    "auth.passwordsMismatch": "Passwords do not match",
+    "auth.resetTitle": "Reset password",
+    "auth.resetInvalid": "This reset link is invalid or has expired. Request a new link or code to reset your password.",
+    "auth.requestAgain": "Request again",
+    "auth.backToLogin": "Back to login",
+    "auth.newPasswordPlaceholder": "Enter your new password",
+    "auth.confirmNewPasswordPlaceholder": "Confirm your new password",
+    "auth.confirmPasswordBtn": "Confirm password",
+    "auth.sendCode": "Send code by email",
+    "auth.sending": "Sending...",
+    "auth.code": "Code",
+    "auth.codeDigitsPlaceholder": "8 digits",
+    "auth.codeLengthError": "The code must have 8 digits",
+    "auth.confirmCode": "Confirm code",
+    "auth.verifying": "Verifying...",
+    "auth.codeSentHint": "If this email is registered, you will receive a code shortly.",
+    "auth.otpInvalidRetry": "Invalid or expired code. Request a new email.",
+    "auth.feedback.accountCreated": "Account created successfully!",
+    "auth.feedback.accountCreatedMsg": "Please wait for the Coordinator's approval to release your access.",
+    "auth.feedback.codeValidated": "Code validated successfully!",
+    "auth.feedback.codeValidatedMsg": "Now you can reset your password and access your account.",
+    "auth.feedback.passwordUpdated": "Password reset successfully!",
+    "auth.feedback.passwordUpdatedMsg": "Now you can access your account with your new password.",
+    "auth.feedback.pendingApprovalTitle": "Pending approval",
+    "auth.feedback.continue": "Continue",
+    "account.currentPasswordRequired": "Current password is required",
+    "account.currentPasswordIncorrect": "Current password is incorrect",
+    "account.saveError": "Could not save",
+    "account.photoUpdated": "Photo updated!",
+    "account.photoRemoved": "Photo removed.",
+    "account.nameUpdated": "Name updated!",
+    "account.confirmationSent": "Confirmation sent!",
+    "account.confirmationSentDesc": "We sent a confirmation link to the new email. The change takes effect after confirmation.",
+    "account.passwordChanged": "Password changed!",
+    "account.googleUnlinked": "Google account unlinked.",
+    "account.googleLinkedToast": "Google account linked!",
+    "account.confirmNewPasswordPlaceholder": "Confirm the new password",
+    "teams.subtitle": "Manage team",
+    "teams.companions": "Monitors ({n})",
+    "teams.noCompanions": "No monitors on the team. Invite using email/phone or share the team code.",
+    "teams.students": "Students ({n})",
+    "teams.add": "Add",
+    "teams.noStudents": "No students on the team. Register new students.",
+    "teams.deleteStudentTitle": "Delete student?",
+    "teams.removeCompanionTitle": "Remove monitor?",
+    "teams.removeCompanionMsg": "Are you sure you want to remove this monitor from the team? This action cannot be undone.",
+    "teams.rejectCompanionTitle": "Reject monitor?",
+    "teams.rejectCompanionMsg": "Are you sure you want to reject this monitor? This action cannot be undone.",
+    "teams.approveError": "Could not approve the monitor.",
+    "teams.rejectError": "Could not reject the monitor.",
+    "teams.removeCompanionError": "Could not remove the monitor.",
+    "teams.saveErrorTitle": "Save error",
+    "teams.saveError": "Could not save the student. Details: {msg}",
+    "session.exerciseProgress": "Exercise {n}/{total}",
+    "session.defaultCircuit": "Circuit",
+    "session.subtitleSemiCircuit": "Semi-structured circuit - {clock}",
+    "session.subtitleSemiExercise": "Semi-structured exercise - {clock}",
+    "session.subtitleEngagement": "Semi-structured circuit · Engagement - {clock}",
+    "session.finishTitle": "Finish session?",
+    "session.finishMessage": "The current progress of this session will be saved according to the chosen circuit type.",
+    "session.pendingWillBeUnrealized": "These exercises will be recorded as not performed:",
+    "session.reasonLabel": "Reason:",
+    "session.reasonPlaceholder": "Describe the reason...",
+    "session.reasonDescRequired": "Describe the reason for finishing.",
+    "engagement.title": "Engagement activity",
+    "engagement.subtitle": "Time focused on interaction with the student",
+    "export.doc.question": "Question",
+    "export.doc.answer": "Answer",
+    "export.doc.duration": "Duration",
+    "export.doc.devLevel": "Development level",
+    "export.doc.helpLevel": "Help level",
+    "export.doc.shareSessionTitle": "Export session",
+    "export.doc.shareFormTitle": "Export {title}",
+    "form.helpAta": "Score according to the observed indicators",
+    "form.helpCars": "Drag the marker to set the score",
+    "form.helpRc": "Fill in the session's control record",
+    "form.helpMabc2": "Fill in the MABC-2 assessment items",
+    "form.savedToast": "Form saved",
+    "form.answersSaved": "The answers were saved successfully!",
+    "form.saveError": "Error saving",
+    "form.removing": "Removing...",
+    "form.removeError": "Could not remove the form.",
+    "form.fallbackTitle": "Form",
+    "form.editForm": "Edit form ",
+    "form.fillForm": "Fill in form ",
+    "form.removeTitle": "Remove form?",
+    "form.removeMessage": "This form will be permanently removed from the history.",
+    "form.loadQuestionsError": "Could not load the questions.",
+    "form.saveErrorTitle": "Error saving form",
+    "form.emptyFieldsError": "Cannot save forms with empty fields",
+    "form.successTitle": "Success",
+    "form.savedEvaluation": "Assessment saved successfully!",
+    "form.connectionError": "Connection error",
+    "form.connectionErrorDesc": "Failed to connect to the servers. Check your internet.",
+    "form.saveResponsesError": "An error occurred while saving the answers.",
+    "form.noQuestions": "No questions found for this form.",
+    "forms.onlyNumbers": "Numbers only",
+    "forms.answerHere": "Answer here",
+    "forms.specify": "Specify...",
+    "forms.otherOption": "Other",
+    "forms.selectHere": "Select here",
+    "forms.mockRcEngagement": "Student's engagement level in the session",
+    "forms.mockRcObservations": "General observations about the session",
+    "common.dateUndefined": "Date not set",
+    "common.statusUndefined": "Status not set",
+    "common.noItems": "No items found.",
+    "feedback.sendError": "Could not send your feedback. Please try again.",
+    "feedback.sessionExpired": "Session expired. Sign in again to send your feedback.",
+    "circuits.ataNewDesc": "Start a new ATA record",
+    "circuits.carsNewDesc": "Start a new CARS record",
+    "mabc.required": "Required",
+    "mabc.invalid": "Invalid",
+    "mabc.max": "Max {n}",
+    "mabc.resultTitle": "Activity result",
+    "mabc.notCompleted": "Not performed",
+    "mabc.deferAnswer": "Defer answer",
+    "mabc.rawScores": "Execution data (Raw scores)",
+    "mabc.measuredSuccesses": "Measured in successes",
+    "mabc.measuredSeconds": "Measured in seconds",
+    "mabc.attemptsOf": "Attempts for {name}",
+    "mabc.trial1": "Trial 1",
+    "mabc.trial2": "Trial 2",
+    "mabc.complete": "Finish",
+    "mabc.register": "Record",
+    "mabc.section.aimingThrowing": "Catching and Throwing",
+    "mabc.side.prefHand": "Preferred Hand",
+    "mabc.side.nonPrefHand": "Non-Preferred Hand",
+    "mabc.side.bestLeg": "Best Leg",
+    "mabc.side.otherLeg": "Other Leg",
+    "mabc.side.bestHand": "Best Hand",
+    "mabc.side.otherHand": "Other Hand",
+    "mabc.field.time": "Time (s)",
+    "mabc.field.failures": "Failures",
+    "mabc.field.hits": "Hits",
+    "mabc.field.steps": "Steps",
+    "session.otherExerciseName": "Other exercise",
+    "session.repeatExercises": "Repeat exercises",
+    "session.repeatPrompt": "Select which exercises of this circuit you want to repeat:",
+    "session.doOtherExercise": "Perform another exercise",
+    "session.otherExercisePrompt": "Select any team exercise to perform in this session:",
+    "session.noTeamExercises": "No exercise registered for the team.",
+    "session.start": "Start",
+    "session.clinicalSession": "Clinical Session",
+    "session.reorderTitle": "Change order",
+    "session.reorderHint": "Press and drag by the handle icon to reorder",
+    "session.reorderConfirm": "Finish reordering",
+    "circuits.doesAllExercises": "Performs all defined exercises",
+    "circuits.exerciseOrder": "Exercise order",
+    "circuits.includedExercises": "Included exercises",
+    "circuits.descMabc": "{n} exercises - Age range {range} - {summary}",
+    "circuits.descMabcEmpty": "Age range {range} - No linked exercises",
+    "circuits.desc": "{n} exercises - {summary}",
+    "circuits.descEmpty": "No linked exercises",
+    "circuits.ageRange36": "3 to 6 years",
+    "circuits.ageRange710": "7 to 10 years",
+    "circuits.ageRange1116": "11 to 16 years",
+    "circuits.mabcNewDesc": "Start a new MABC-2 assessment — Range {range}",
+    "circuits.rcPendingTitle": "Pending Control Record",
+    "circuits.rcPendingMsg": "There is a Control Record from a previous session that has not been filled in yet.",
+    "circuits.fillRc": "Fill in control record",
+    "circuits.startNewSession": "Start new session",
+    "circuits.circuitDetails": "Circuit details",
+    "analysis.motorLoadError": "Could not load motor development data.",
+    "history.loadError": "Error loading the history.",
+    "history.realized": "done",
+    "history.noRecordsDate": "No record found for this date.",
+    "history.noRecordsStudent": "No record found for this student.",
+    "exercises.startActivity": "Start activity",
+    "common.err.notAuthenticated": "User not authenticated.",
+    "common.err.noActiveTeam": "User is not associated with any active team.",
+    "common.err.teamNotIdentified": "Team ID not identified.",
+    "common.err.activeTeamNotFound": "Active team not found.",
+    "mock.exWalkLine": "Walk the line",
+    "mock.exWalkLineDesc": "Balance on a straight line",
+    "mock.exHoop": "Spin the hula hoop",
+    "mock.exHoopDesc": "Coordination with a hula hoop",
+    "mock.circuit1": "Circuit 1",
+    "mock.controlRecord": "Control Record",
+    "mock.studentSession": "Sample session",
+    "mock.statusPending": "Pending",
+    "mock.statusFilled": "Filled in",
+    "mock.statusFinished": "Finished",
+    "mock.exampleCircuit": "Example circuit",
+    "mock.scoreLight": "Mild",
+    "mock.scoreModerate": "Moderate",
+    "mock.protocol": "Protocol",
+    "mock.helpAutonomyText": "The student's autonomy increased across the sessions.",
+    "session.mabcAssessment": "MABC-2 Assessment",
+    "analysis.compareLoadError": "Failed to load performance comparison.",
   },
 };

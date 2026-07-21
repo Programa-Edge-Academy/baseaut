@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabase";
+import type { TranslationKey } from "@/features/settings/constants/translations";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useEffect, useState, useCallback } from "react";
 import type { ActivityRecordItem, ActivityRecordUpdate } from "@/features/sessions/components/activity-record-card";
 
@@ -10,17 +12,78 @@ export interface SessionDetailData {
 }
 
 /**
+ * Seed detail for the tutorial's mock session record (`mock-hist-session`),
+ * matching the two exercises of the mock circuit. Both executions are complete,
+ * so the practice is editing an already-filled record rather than resolving a
+ * pendency — the pending Control Record covers that case.
+ */
+const buildMockSessionDetail = (
+  t: (key: TranslationKey) => string,
+): SessionDetailData => ({
+  sessionTitle: t("mock.circuit1"),
+  sessionDate: "26/06/2026",
+  executions: [
+    {
+      id: "mock-exec-linha",
+      title: t("mock.exWalkLine"),
+      durationSeconds: 95,
+      statusRealizacao: "realizada",
+      nivelDesenvolvimento: "intermediario",
+      registroAjuda: "autonomo",
+      complementosAjuda: ["verbal"],
+      motivoNaoRealizacao: null,
+      descricaoAdicional: null,
+    },
+    {
+      id: "mock-exec-bambole",
+      title: t("mock.exHoop"),
+      durationSeconds: 140,
+      statusRealizacao: "realizada",
+      nivelDesenvolvimento: "inicial",
+      registroAjuda: "ajuda_intrusiva",
+      complementosAjuda: null,
+      motivoNaoRealizacao: null,
+      descricaoAdicional: null,
+    },
+  ],
+});
+
+/** Options for {@link useSessionDetail}. */
+export type UseSessionDetailOptions = {
+  /**
+   * When true, the hook runs entirely on in-memory mock data with no Supabase
+   * access, used by the tutorial's history simulation.
+   */
+  mock?: boolean;
+};
+
+/**
  * Loads a session's details and executions, tracks whether its Control Record
  * still has pending required questions, and exposes execution update and session
  * cancellation actions.
+ *
+ * @param options - Pass `{ mock: true }` (tutorial only) to operate on seeded
+ * in-memory data instead of Supabase.
  */
-export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
-  const [data, setData] = useState<SessionDetailData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export function useSessionDetail(
+  sessionId: string,
+  fallbackTitle?: string,
+  options?: UseSessionDetailOptions,
+) {
+  const isMock = options?.mock ?? false;
+  const { t } = useI18n();
+  const [data, setData] = useState<SessionDetailData | null>(
+    isMock ? buildMockSessionDetail(t) : null,
+  );
+  const [isLoading, setIsLoading] = useState(!isMock);
   const [error, setError] = useState<Error | null>(null);
-  const [rcPending, setRcPending] = useState(false);
+  const [rcPending, setRcPending] = useState(isMock);
 
   const fetchDetail = useCallback(async () => {
+    if (isMock) {
+      setIsLoading(false);
+      return;
+    }
     if (!sessionId) return;
     setIsLoading(true);
     setError(null);
@@ -41,11 +104,11 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
 
       const circuitTitle = (sessionData as any)?.circuito_id?.titulo;
       const sessionTitle =
-        circuitTitle || fallbackTitle || "Sessão Clínica";
+        circuitTitle || fallbackTitle || t("session.clinicalSession");
 
       const sessionDate = sessionData?.data_inicio
         ? new Date(sessionData.data_inicio).toLocaleDateString("pt-BR")
-        : "Data não definida";
+        : t("common.dateUndefined");
 
       const { data: execData, error: execError } = await supabase
         .from("execucoes_exercicio")
@@ -67,7 +130,7 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
 
       const executions: ActivityRecordItem[] = (execData || []).map((e: any) => ({
         id: e.id,
-        title: e.exercicio_id?.titulo || "Exercício",
+        title: e.exercicio_id?.titulo || t("export.doc.exercise"),
         durationSeconds: e.duracao_real_segundos ?? null,
         statusRealizacao: e.status_realizacao ?? "realizada",
         nivelDesenvolvimento: e.nivel_desenvolvimento ?? null,
@@ -85,11 +148,11 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
       const parsedPend = typeof pend === "string" ? JSON.parse(pend) : pend;
       setRcPending((parsedPend?.perguntas_pendentes?.length ?? 0) > 0);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Erro ao carregar sessão"));
+      setError(err instanceof Error ? err : new Error(t("sessionDetail.loadError")));
     } finally {
       setIsLoading(false);
     }
-  }, [sessionId, fallbackTitle]);
+  }, [sessionId, fallbackTitle, isMock]);
 
   useEffect(() => {
     fetchDetail();
@@ -97,20 +160,22 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
 
   /** Persists an execution's edited values and updates local state. */
   async function updateExecution(execId: string, values: ActivityRecordUpdate) {
-    const { error } = await supabase
-      .from("execucoes_exercicio")
-      .update({
-        status_realizacao: values.statusRealizacao,
-        duracao_real_segundos: values.durationSeconds,
-        nivel_desenvolvimento: values.nivelDesenvolvimento,
-        registro_ajuda: values.registroAjuda,
-        complementos_ajuda: values.complementosAjuda,
-        motivo_nao_realizacao: values.motivoNaoRealizacao,
-        descricao_adicional: values.descricaoAdicional,
-      })
-      .eq("id", execId);
+    if (!isMock) {
+      const { error } = await supabase
+        .from("execucoes_exercicio")
+        .update({
+          status_realizacao: values.statusRealizacao,
+          duracao_real_segundos: values.durationSeconds,
+          nivel_desenvolvimento: values.nivelDesenvolvimento,
+          registro_ajuda: values.registroAjuda,
+          complementos_ajuda: values.complementosAjuda,
+          motivo_nao_realizacao: values.motivoNaoRealizacao,
+          descricao_adicional: values.descricaoAdicional,
+        })
+        .eq("id", execId);
 
-    if (error) throw error;
+      if (error) throw error;
+    }
 
     setData((prev) =>
       prev
@@ -141,6 +206,8 @@ export function useSessionDetail(sessionId: string, fallbackTitle?: string) {
    * would block under the table's row-level security policy.
    */
   async function deleteSession() {
+    if (isMock) return;
+
     const { error } = await supabase.rpc("rpc_cancelar_sessao", {
       p_sessao_id: sessionId,
     });

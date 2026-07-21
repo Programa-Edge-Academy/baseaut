@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /** Snapshot of the student's profile captured when a report is created. */
@@ -162,6 +163,7 @@ async function reevaluateReportImage(imageId: string): Promise<void> {
  * {@link reevaluateReportImage}).
  */
 export function useStudentReports(studentId: string, options?: { mock?: boolean }) {
+  const { t } = useI18n();
   const isMock = options?.mock ?? false;
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(!isMock);
@@ -220,7 +222,7 @@ export function useStudentReports(studentId: string, options?: { mock?: boolean 
     }
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData?.user?.id;
-    if (!userId) throw new Error("Usuário não autenticado.");
+    if (!userId) throw new Error(t("common.err.notAuthenticated"));
 
     const { data: studentData } = await supabase
       .from("alunos")

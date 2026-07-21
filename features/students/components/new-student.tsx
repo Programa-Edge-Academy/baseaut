@@ -1,6 +1,7 @@
 import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { SpotlightBinding } from "@/features/tutorial/components/spotlight-binding";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { Calendar, ChevronDown, ImageUp, Pencil, X } from "lucide-react-native";
@@ -108,23 +109,13 @@ export function NewStudent({
       initialSupportRef.current =
         mode === "edit" && initialData ? initialData.supportLevel : null;
     }
-  }, [visible, mode, initialData]);
+    // Sync only when the modal opens. `initialData` is rebuilt on every parent
+    // render, so depending on it would re-seed the form mid-edit whenever the
+    // parent re-renders — which happens each time the guided simulation
+    // advances, silently reverting the user's own edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
-  // Register the simulation spotlight targets living inside this modal.
-  useEffect(() => {
-    sim.registerTarget("name", nameFieldRef, { rounded: true });
-    sim.registerTarget("birthdate", birthFieldRef, { rounded: true });
-    sim.registerTarget(["support", "editSupport"], supportFieldRef, { rounded: true });
-    sim.registerTarget(["save", "editSave"], saveFieldRef, { rounded: true });
-    return () => sim.unregisterTarget([
-      "name",
-      "birthdate",
-      "support",
-      "editSupport",
-      "save",
-      "editSave",
-    ]);
-  }, [sim]);
 
   // Advance the guided simulation as each field is filled in.
   useEffect(() => {
@@ -385,6 +376,18 @@ export function NewStudent({
         transparent
         animationType="fade"
       >
+        {/* Bound from inside the modal so the tap guard treats these as its own. */}
+        <SpotlightBinding targetKey="name" viewRef={nameFieldRef} />
+        <SpotlightBinding targetKey="birthdate" viewRef={birthFieldRef} />
+        <SpotlightBinding
+          targetKey={["support", "editSupport"]}
+          viewRef={supportFieldRef}
+        />
+        <SpotlightBinding
+          targetKey={["save", "editSave"]}
+          viewRef={saveFieldRef}
+        />
+
         <View className="flex-1 justify-center">
           <Pressable
             className="absolute inset-0 bg-black/50"

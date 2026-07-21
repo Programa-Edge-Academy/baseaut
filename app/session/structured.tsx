@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { useLocalSearchParams, router } from "expo-router";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { SessionRunningScreen } from "../../features/sessions/screens/session-running-screen";
 import type { SessionExercise } from "../../features/sessions/screens/session-running-screen";
 
@@ -9,6 +10,7 @@ import type { SessionExercise } from "../../features/sessions/screens/session-ru
  * the session-completed hub.
  */
 export default function SessionEstruturadoRoute() {
+  const { t } = useI18n();
   const {
     studentName,
     circuitName,
@@ -45,8 +47,8 @@ export default function SessionEstruturadoRoute() {
       sessionId={sessionId || ""}
       studentId={studentId || ""}
       circuitId={circuitId || ""}
-      studentName={studentName || "Aluno"}
-      circuitName={circuitName || "Circuito"}
+      studentName={studentName || t("common.student")}
+      circuitName={circuitName || t("common.circuit")}
       circuitType={(circuitType as any) || "padrao"}
       exercises={sessionExercises ?? []}
       onPressBack={() => router.back()}

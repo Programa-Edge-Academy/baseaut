@@ -5,6 +5,12 @@ import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 import { Toast, type ToastMode } from "@/components/toast";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import {
+  localizeFormText,
+  localizeMabcComponent,
+  localizeMabcUnit,
+} from "@/features/forms/utils/form-content-i18n";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useKeyboardAwareScroll } from "@/lib/use-keyboard-aware-scroll";
 import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
 import { Edit2, Share2, Trash2 } from "lucide-react-native";
@@ -23,6 +29,8 @@ export type Mabc2RecordFormScreenProps = {
   readOnly?: boolean;
   showErrors?: boolean;
   submitLabel?: string;
+  /** Tutorial spotlight key for the header back button (analysis simulation). */
+  backSpotlightKey?: string;
   toastConfig?: { visible: boolean; mode: ToastMode; title: string; description?: string };
   onHideToast?: () => void;
   onChangeTotalScore?: (value: string) => void;
@@ -50,6 +58,7 @@ export function Mabc2RecordFormScreen({
   readOnly = false,
   showErrors = false,
   submitLabel,
+  backSpotlightKey,
   toastConfig,
   onHideToast,
   onChangeTotalScore,
@@ -60,15 +69,26 @@ export function Mabc2RecordFormScreen({
   onDelete,
   onShare,
 }: Mabc2RecordFormScreenProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  // Canonical MABC-2 section titles and item names are localized for display
+  // only; scores and their bindings are untouched (raw unit codes are kept so
+  // the exercise row's own unit formatter still matches).
+  const localizedSections = sections.map((section) => ({
+    ...section,
+    title: localizeMabcComponent(section.title, locale),
+    exercises: section.exercises.map((exercise) => ({
+      ...exercise,
+      name: localizeFormText(exercise.name, locale),
+    })),
+  }));
   const keyboardPadding = useKeyboardPadding();
   const keyboardAwareScroll = useKeyboardAwareScroll();
   const resolvedSubmitLabel = submitLabel ?? t("common.register");
 
   return (
     <View className="flex-1 bg-level1">
-      <Header variant="back" onPressBack={onPressBack} />
+      <Header variant="back" onPressBack={onPressBack} backSpotlightKey={backSpotlightKey} />
 
       <View className="mx-5 mt-5 flex-row items-center justify-between">
         <View className="flex-1 mr-3">
@@ -128,7 +148,7 @@ export function Mabc2RecordFormScreen({
           recordCount={recordCount}
           totalScore={totalScore}
           totalPercentile={totalPercentile}
-          sections={sections}
+          sections={localizedSections}
           onChangeTotalScore={onChangeTotalScore}
           onChangeTotalPercentile={onChangeTotalPercentile}
           onRegister={onRegister}
@@ -159,6 +179,8 @@ export function Mabc2RecordFormScreen({
           onHide={onHideToast}
         />
       )}
+
+      {backSpotlightKey && <TutorialSpotlight />}
     </View>
   );
 }

@@ -1,17 +1,20 @@
 import { colors } from "@/assets/colors";
 import { useProtocolRecordDetail } from "@/features/analysis/hooks/use-protocol-record-detail";
+import type { TranslationKey } from "@/features/settings/constants/translations";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import React from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 
-const COMPONENT_TITLES: Record<string, string> = {
-  destreza_manual: "Destreza Manual",
-  mirar_pegar: "Mirar e Pegar",
-  equilibrio: "Equilíbrio",
+const MABC_COMPONENT_KEYS: Record<string, TranslationKey> = {
+  destreza_manual: "reports.mabc.manualDexterity",
+  mirar_pegar: "reports.mabc.aimingCatching",
+  equilibrio: "reports.mabc.balance",
 };
 
 /** Returns a human-readable title for a MABC component key. */
-function fmtComponentTitle(raw: string): string {
-  return COMPONENT_TITLES[raw] ?? raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+function fmtComponentTitle(raw: string, t: (key: TranslationKey) => string): string {
+  const key = MABC_COMPONENT_KEYS[raw];
+  return key ? t(key) : raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /** Small pill displaying a score value. */
@@ -35,8 +38,9 @@ function SectionRow({ label, value }: { label: string; value: string }) {
 
 /** Placeholder shown when a protocol has no answers. */
 function EmptyProtocol() {
+  const { t } = useI18n();
   return (
-    <Text className="text-xs text-muted py-2">Nenhuma resposta preenchida neste formulário.</Text>
+    <Text className="text-xs text-muted py-2">{t("reports.protocol.noAnswers")}</Text>
   );
 }
 
@@ -49,13 +53,22 @@ export function ProtocolRecordView({
   recordId,
   dateLabel,
   responsavel,
+  fallbackScore,
+  fallbackPercentile,
 }: {
   tipo: "ata" | "cars" | "mabc2";
   recordId: string;
   dateLabel: string;
   responsavel?: string;
+  /** Score from the consolidated record, shown when the detail total is absent. */
+  fallbackScore?: number | string | null;
+  /** Percentile from the consolidated record (MABC-2), used as a fallback. */
+  fallbackPercentile?: number | string | null;
 }) {
+  const { t } = useI18n();
   const { detail, isLoading } = useProtocolRecordDetail(tipo, recordId);
+  const hasFallbackScore = fallbackScore != null && fallbackScore !== "";
+  const hasFallbackPct = fallbackPercentile != null && fallbackPercentile !== "";
 
   if (isLoading) {
     return (
@@ -73,9 +86,13 @@ export function ProtocolRecordView({
       <View className="border border-outline rounded-lg bg-level2 p-4 mb-3">
         <View className="flex-row items-center justify-between mb-2">
           <Text className="text-sm font-bold text-content">ATA — {dateLabel}</Text>
-          {detail.ata.total != null && <ScoreBadge label={`Total: ${detail.ata.total}`} />}
+          {detail.ata.total != null ? (
+            <ScoreBadge label={`${t("reports.protocol.total")}: ${detail.ata.total}`} />
+          ) : hasFallbackScore ? (
+            <ScoreBadge label={`${t("reports.protocol.total")}: ${fallbackScore}`} />
+          ) : null}
         </View>
-        {responsavel && <Text className="text-xs text-muted mb-2">Responsável: {responsavel}</Text>}
+        {responsavel && <Text className="text-xs text-muted mb-2">{t("reports.protocol.responsible")}: {responsavel}</Text>}
         {hasResponses ? (
           detail.ata.sections.map((section) => (
             <SectionRow key={section.id} label={section.title} value={section.valueLabel} />
@@ -93,9 +110,13 @@ export function ProtocolRecordView({
       <View className="border border-outline rounded-lg bg-level2 p-4 mb-3">
         <View className="flex-row items-center justify-between mb-2">
           <Text className="text-sm font-bold text-content">CARS — {dateLabel}</Text>
-          {detail.cars.total != null && <ScoreBadge label={`Total: ${detail.cars.total}`} />}
+          {detail.cars.total != null ? (
+            <ScoreBadge label={`${t("reports.protocol.total")}: ${detail.cars.total}`} />
+          ) : hasFallbackScore ? (
+            <ScoreBadge label={`${t("reports.protocol.total")}: ${fallbackScore}`} />
+          ) : null}
         </View>
-        {responsavel && <Text className="text-xs text-muted mb-2">Responsável: {responsavel}</Text>}
+        {responsavel && <Text className="text-xs text-muted mb-2">{t("reports.protocol.responsible")}: {responsavel}</Text>}
         {hasResponses ? (
           detail.cars.domains.map((domain) => (
             <View key={domain.id}>
@@ -118,21 +139,21 @@ export function ProtocolRecordView({
       <View className="border border-outline rounded-lg bg-level2 p-4 mb-3">
         <View className="mb-3">
           <Text className="text-sm font-bold text-content">MABC-2 — {dateLabel}</Text>
-          {m.evaluatorName && <Text className="text-xs text-muted mt-0.5">Avaliador: {m.evaluatorName}</Text>}
-          {m.ageGroupLabel && <Text className="text-xs text-muted">Faixa etária: {m.ageGroupLabel}</Text>}
+          {m.evaluatorName && <Text className="text-xs text-muted mt-0.5">{t("reports.protocol.evaluator")}: {m.evaluatorName}</Text>}
+          {m.ageGroupLabel && <Text className="text-xs text-muted">{t("reports.protocol.ageGroup")}: {m.ageGroupLabel}</Text>}
         </View>
 
         <View className="flex-row gap-3 mb-4">
-          {m.totalScore != null && (
+          {(m.totalScore != null || hasFallbackScore) && (
             <View className="flex-1 bg-level1 border border-outline rounded-lg py-2 items-center">
-              <Text className="text-[10px] text-muted">Escore total</Text>
-              <Text className="text-base text-content font-bold">{m.totalScore}</Text>
+              <Text className="text-[10px] text-muted">{t("reports.protocol.totalScore")}</Text>
+              <Text className="text-base text-content font-bold">{m.totalScore ?? fallbackScore}</Text>
             </View>
           )}
-          {m.totalPercentile != null && (
+          {(m.totalPercentile != null || hasFallbackPct) && (
             <View className="flex-1 bg-level1 border border-outline rounded-lg py-2 items-center">
-              <Text className="text-[10px] text-muted">Percentil</Text>
-              <Text className="text-base text-content font-bold">{m.totalPercentile}</Text>
+              <Text className="text-[10px] text-muted">{t("reports.protocol.percentile")}</Text>
+              <Text className="text-base text-content font-bold">{m.totalPercentile ?? fallbackPercentile}</Text>
             </View>
           )}
         </View>
@@ -140,17 +161,17 @@ export function ProtocolRecordView({
         {m.components.map((comp, ci) => (
           <View key={ci} className="mb-4">
             <View className="flex-row items-center justify-between mb-2 pb-1.5 border-b border-outline">
-              <Text className="text-sm font-bold text-content">{fmtComponentTitle(comp.title)}</Text>
+              <Text className="text-sm font-bold text-content">{fmtComponentTitle(comp.title, t)}</Text>
               <View className="flex-row gap-2">
                 {comp.categoryScore != null && (
                   <View className="bg-level1 border border-outline rounded-lg px-2.5 py-1 items-center">
-                    <Text className="text-[9px] text-muted">Escore padrão</Text>
+                    <Text className="text-[9px] text-muted">{t("reports.protocol.standardScore")}</Text>
                     <Text className="text-xs text-content font-bold">{comp.categoryScore}</Text>
                   </View>
                 )}
                 {comp.categoryPercentile && (
                   <View className="bg-level1 border border-outline rounded-lg px-2.5 py-1 items-center">
-                    <Text className="text-[9px] text-muted">Percentil</Text>
+                    <Text className="text-[9px] text-muted">{t("reports.protocol.percentile")}</Text>
                     <Text className="text-xs text-content font-bold">{comp.categoryPercentile}</Text>
                   </View>
                 )}

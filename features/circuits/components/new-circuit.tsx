@@ -9,6 +9,7 @@ import { DraggableList } from "@/components/draggable-list";
 import { SelectableChip } from "@/components/selectable-chip";
 import { useExercises, Exercise } from "@/features/exercises/hooks/use-exercises";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { SpotlightBinding } from "@/features/tutorial/components/spotlight-binding";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { CircuitType } from "../hooks/use-circuits";
@@ -50,7 +51,7 @@ export function NewCircuit({
   visible,
   onClose,
   onSave,
-  title = "Novo circuito",
+  title,
   mock = false,
   initialData
 }: NewCircuitProps) {
@@ -83,7 +84,7 @@ export function NewCircuit({
   const [isSaving, setIsSaving] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  const frozenTitle = useRef(title);
+  const frozenTitle = useRef(title ?? t("circuits.form.createTitle"));
 
   const isEditing = !!initialData;
   const successMessage = isEditing
@@ -92,7 +93,7 @@ export function NewCircuit({
 
   useEffect(() => {
     if (visible) {
-      frozenTitle.current = title;
+      frozenTitle.current = title ?? t("circuits.form.createTitle");
       if (initialData) {
         setName(initialData.name);
         setExecutionMode(initialData.executionMode);
@@ -113,25 +114,13 @@ export function NewCircuit({
       setSelectedTags([]);
       setSelectedSubtags({});
     }
-  }, [visible, initialData]);
-
-  // Register the simulation spotlight targets living inside this modal.
-  useEffect(() => {
-    sim.registerTarget("name", nameFieldRef, { rounded: true });
-    sim.registerTarget(["mode", "changeStructured"], modeFieldRef, { rounded: true });
-    sim.registerTarget("selectExercises", exercisesFieldRef, { rounded: true });
-    sim.registerTarget("reorder", reorderFieldRef, { rounded: true });
-    sim.registerTarget("save", saveFieldRef, { rounded: true });
-    return () =>
-      sim.unregisterTarget([
-        "name",
-        "mode",
-        "changeStructured",
-        "selectExercises",
-        "reorder",
-        "save",
-      ]);
-  }, [sim]);
+    // Sync only when the modal opens. `initialData` is rebuilt on every parent
+    // render, so depending on it would re-seed the form mid-edit whenever the
+    // parent re-renders — which happens each time the guided simulation
+    // advances, silently reverting the user's own edits (e.g. the execution
+    // mode back to the saved one).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   // Advance the guided simulation as each field is filled in.
   useEffect(() => {
@@ -228,6 +217,17 @@ export function NewCircuit({
       animationType="fade"
       onRequestClose={onClose}
     >
+      {/* Bound from inside the modal so the tap guard treats these as its own. */}
+      <SpotlightBinding targetKey="name" viewRef={nameFieldRef} />
+      <SpotlightBinding
+        targetKey={["mode", "changeStructured"]}
+        viewRef={modeFieldRef}
+      />
+      <SpotlightBinding targetKey="selectExercises" viewRef={exercisesFieldRef} />
+      <SpotlightBinding targetKey="reorder" viewRef={reorderFieldRef} />
+      {/* The save button serves both the creation save and the edit save. */}
+      <SpotlightBinding targetKey={["save", "editSave"]} viewRef={saveFieldRef} />
+
       <View className="flex-1 justify-center items-center">
         <Pressable
           className="absolute inset-0 bg-black/60"

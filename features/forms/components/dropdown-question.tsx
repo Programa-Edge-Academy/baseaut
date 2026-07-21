@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
 import { DropdownModal } from "../../../components/dropdown-modal";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { localizeFormText } from "@/features/forms/utils/form-content-i18n";
 import { DropdownQuestion } from "../types";
 
 /**
@@ -19,6 +21,7 @@ interface Props {
  * Renders a dropdown question with optional "other" input.
  */
 export function DropdownQuestionUI({ question, value, onChange }: Props) {
+  const { t, locale } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const selected = value?.selected || null;
   const otherText = value?.other || "";
@@ -65,7 +68,11 @@ export function DropdownQuestionUI({ question, value, onChange }: Props) {
                 : "text-muted text-default-2"
             }
           >
-            {selected || "Selecione aqui"}
+            {selected
+              ? selected === "Outro"
+                ? t("forms.otherOption")
+                : localizeFormText(selected, locale)
+              : t("forms.selectHere")}
           </Text>
           <ChevronDown color={colors.muted} size={20} />
         </Pressable>
@@ -86,7 +93,7 @@ export function DropdownQuestionUI({ question, value, onChange }: Props) {
           onChangeText={(text) => {
             if (onChange) onChange({ selected, other: text });
           }}
-          placeholder="Especifique..."
+          placeholder={t("forms.specify")}
           className="mt-2 min-h-[44px]"
         />
       )}

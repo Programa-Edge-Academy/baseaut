@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { supabase } from "@/lib/supabase";
 
 /** Execution status. "adiado" requires the matching value in the backend `status_realizacao_enum`. */
@@ -84,6 +85,7 @@ export type UseSessionFlowOptions = {
  * no-op against an in-memory session id instead of Supabase.
  */
 export function useSessionFlow(options?: UseSessionFlowOptions) {
+  const { t } = useI18n();
   const isMock = options?.mock ?? false;
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -104,10 +106,10 @@ export function useSessionFlow(options?: UseSessionFlowOptions) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado.");
+      if (!user) throw new Error(t("common.err.notAuthenticated"));
 
       const equipeId = await resolveEquipeId();
-      if (!equipeId) throw new Error("Equipe ativa não encontrada.");
+      if (!equipeId) throw new Error(t("common.err.activeTeamNotFound"));
 
       const { data, error: insertError } = await supabase
         .from("sessoes")

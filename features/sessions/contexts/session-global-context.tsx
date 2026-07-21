@@ -29,6 +29,13 @@ export interface ActiveSessionInfo {
   totalElapsed?: number;
   /** Flight intervals (start/end on the total stopwatch) used by the Control Record. */
   fugaIntervals?: { start: number; end: number }[];
+  /**
+   * True when the session was started inside a tutorial simulation (mock data).
+   * The global session widget never surfaces these, and concurrent-session
+   * detection ignores them outside a tutorial, so a practice session left
+   * running never leaks into the real app.
+   */
+  isTutorial?: boolean;
 }
 
 /** Cap for the total session stopwatch: 3 hours. */
@@ -66,6 +73,8 @@ interface SessionGlobalContextData {
     interval: { start: number; end: number },
   ) => void;
   closeSession: (sessionId: string) => void;
+  /** Removes every tutorial/mock session at once (called when a sim ends). */
+  closeTutorialSessions: () => void;
   updateTimeElapsed: (sessionId: string, seconds: number) => void;
 }
 
@@ -221,6 +230,18 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const closeTutorialSessions = () => {
+    setActiveSessions((prev) => {
+      const ids = Object.keys(prev).filter(
+        (id) => prev[id].isTutorial || id.startsWith("mock-"),
+      );
+      if (ids.length === 0) return prev;
+      const next = { ...prev };
+      ids.forEach((id) => delete next[id]);
+      return next;
+    });
+  };
+
   return (
     <SessionGlobalContext.Provider
       value={{
@@ -233,6 +254,7 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
         setFormVisible,
         addFugaInterval,
         closeSession,
+        closeTutorialSessions,
         updateTimeElapsed,
       }}
     >

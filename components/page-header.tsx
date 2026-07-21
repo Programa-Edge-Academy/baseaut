@@ -1,8 +1,9 @@
 import { withOpacity } from "@/components/color-opacity";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { Calendar, Check, ClipboardEdit, Download, Edit2, History, Trash2, Share2 } from "lucide-react-native";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Pressable, Text, View } from "react-native";
 
 /** Identifies which screen a {@link PageHeader} belongs to, driving its right-side actions. */
@@ -49,6 +50,10 @@ export type PageHeaderProps = {
   isExecuting?: boolean;
   /** Optional ref on the "new" button wrapper, used by the tutorial spotlight. */
   newButtonRef?: React.Ref<View>;
+  /** Tutorial spotlight key for the edit (pencil) button. */
+  editSpotlightKey?: string;
+  /** Tutorial spotlight key for the export (download) button. */
+  exportSpotlightKey?: string;
 };
 
 /**
@@ -76,9 +81,28 @@ export function PageHeader({
   completedExercises = 0,
   isExecuting = false,
   newButtonRef,
+  editSpotlightKey,
+  exportSpotlightKey,
 }: PageHeaderProps) {
   const colors = useThemeColors();
   const { t } = useI18n();
+  const sim = useTutorialSimulation();
+  const editRef = useRef<View>(null);
+  const exportRef = useRef<View>(null);
+
+  useEffect(() => {
+    const keys: string[] = [];
+    if (editSpotlightKey) {
+      sim.registerTarget(editSpotlightKey, editRef, { rounded: true });
+      keys.push(editSpotlightKey);
+    }
+    if (exportSpotlightKey) {
+      sim.registerTarget(exportSpotlightKey, exportRef, { rounded: true });
+      keys.push(exportSpotlightKey);
+    }
+    if (keys.length === 0) return;
+    return () => sim.unregisterTarget(keys);
+  }, [sim, editSpotlightKey, exportSpotlightKey]);
 
   const renderNovoBtn = () => (
     <View ref={newButtonRef} collapsable={false}>
@@ -127,7 +151,12 @@ export function PageHeader({
       case "relatorios-aluno":
         return (
           <View className="flex-row items-center gap-5">
-            <Pressable onPress={onExportPress} className="active:opacity-70">
+            <Pressable
+              ref={exportRef}
+              collapsable={false}
+              onPress={onExportPress}
+              className="active:opacity-70"
+            >
               <Download size={20} color={isExportActive ? colors.primary : colors.muted} />
             </Pressable>
             {!isExportActive && renderNovoBtn()}
@@ -258,6 +287,8 @@ export function PageHeader({
           <View className="flex-row items-center gap-3">
             {onEditPress && (
               <Pressable
+                ref={editRef}
+                collapsable={false}
                 onPress={onEditPress}
                 className="items-center justify-center rounded-[10px] border p-2.5 active:opacity-70"
                 style={{
@@ -304,6 +335,8 @@ export function PageHeader({
         return (
           <View className="flex-row items-center gap-3">
             <Pressable
+              ref={exportRef}
+              collapsable={false}
               onPress={onExportPress}
               className="items-center justify-center rounded-[10px] border p-2.5 active:opacity-70"
               style={{

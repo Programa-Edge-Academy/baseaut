@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { calculateAge } from "@/lib/date-utils";
+import type { TranslationKey } from "@/features/settings/constants/translations";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useCallback, useEffect, useState } from "react";
 
 /** Minimal exercise data used to resume an in-progress session. */
@@ -42,23 +44,32 @@ export interface StudentProfile {
   observations: string | null;
 }
 
-/** Seed records for the tutorial's mock student history. */
-const MOCK_SESSIONS: SessionItem[] = [
-  { id: "mock-rc-form", title: "Registro de Controle", date: "28/06/2026", status: "Pendente", hasPendency: true, type: "form", rawDate: "2026-06-28", isResumable: false, circuitId: null, circuitType: null, resumeExercises: null, formType: "registro_controle" },
-  { id: "mock-ata-form", title: "ATA", date: "27/06/2026", status: "Preenchido", hasPendency: false, type: "form", rawDate: "2026-06-27", isResumable: false, circuitId: null, circuitType: null, resumeExercises: null, formType: "ata" },
-  { id: "mock-hist-session", title: "Circuito 1", date: "26/06/2026", status: "concluida", hasPendency: false, type: "session", rawDate: "2026-06-26", isResumable: false, circuitId: null, circuitType: null, resumeExercises: null, totalPrevisto: 4, totalRealizado: 4 },
+/**
+ * Seed records for the tutorial's mock student history. Titles/status are
+ * localized display text; `formType`/`type`/dates stay as stored values. The
+ * `status` display strings are also localized (the "concluida" one is an enum
+ * used only for logic, so it is kept as-is).
+ *
+ * @remarks
+ * The session record's counts must match the executions seeded in
+ * {@link file://./use-session-detail.ts}, which the history simulation opens.
+ */
+const buildMockSessions = (t: (key: TranslationKey) => string): SessionItem[] => [
+  { id: "mock-rc-form", title: t("mock.controlRecord"), date: "28/06/2026", status: t("mock.statusPending"), hasPendency: true, type: "form", rawDate: "2026-06-28", isResumable: false, circuitId: null, circuitType: null, resumeExercises: null, formType: "registro_controle" },
+  { id: "mock-ata-form", title: "ATA", date: "27/06/2026", status: t("mock.statusFilled"), hasPendency: false, type: "form", rawDate: "2026-06-27", isResumable: false, circuitId: null, circuitType: null, resumeExercises: null, formType: "ata" },
+  { id: "mock-hist-session", title: t("mock.circuit1"), date: "26/06/2026", status: "concluida", hasPendency: false, type: "session", rawDate: "2026-06-26", isResumable: false, circuitId: null, circuitType: null, resumeExercises: null, totalPrevisto: 2, totalRealizado: 2 },
 ];
 
-const MOCK_PROFILE: StudentProfile = {
+const buildMockProfile = (t: (key: TranslationKey) => string): StudentProfile => ({
   name: "Ana Beatriz",
   avatarUrl: null,
   height: 122,
   weight: 28,
   waist: 54,
   birthDate: "2017-03-12",
-  supportLevel: "Nível 2",
+  supportLevel: t("reports.supportLevel2"),
   observations: null,
-};
+});
 
 /** Options for {@link useStudentSessions}. */
 export type UseStudentSessionsOptions = {
@@ -75,8 +86,9 @@ export type UseStudentSessionsOptions = {
  */
 export function useStudentSessions(studentId?: string, options?: UseStudentSessionsOptions) {
   const isMock = options?.mock ?? false;
-  const [sessions, setSessions] = useState<SessionItem[]>(isMock ? MOCK_SESSIONS : []);
-  const [profile, setProfile] = useState<StudentProfile | null>(isMock ? MOCK_PROFILE : null);
+  const { t } = useI18n();
+  const [sessions, setSessions] = useState<SessionItem[]>(isMock ? buildMockSessions(t) : []);
+  const [profile, setProfile] = useState<StudentProfile | null>(isMock ? buildMockProfile(t) : null);
   const [isLoading, setIsLoading] = useState(!isMock);
 
   const fetchDetails = useCallback(async () => {
@@ -182,13 +194,13 @@ export function useStudentSessions(studentId?: string, options?: UseStudentSessi
 
           return {
             id: item.id,
-            title: circuit?.titulo || item.formulario_id?.titulo || "Sessão Clínica",
+            title: circuit?.titulo || item.formulario_id?.titulo || t("session.clinicalSession"),
             date: item.data_inicio
               ? new Date(item.data_inicio).toLocaleDateString("pt-BR")
-              : "Data não definida",
+              : t("common.dateUndefined"),
             status: item.status
               ? String(item.status).replace(/_/g, " ")
-              : "Status não definido",
+              : t("common.statusUndefined"),
             hasPendency: temPendencia,
             type: "session",
             rawDate: item.data_inicio,
@@ -207,11 +219,11 @@ export function useStudentSessions(studentId?: string, options?: UseStudentSessi
         .filter((item: any) => item.tipo === "ata" || item.tipo === "cars")
         .map((item: any) => ({
           id: item.id,
-          title: item.titulo || "Formulário",
+          title: item.titulo || t("form.fallbackTitle"),
           date: item.created_at
             ? new Date(item.created_at).toLocaleDateString("pt-BR")
-            : "Data não definida",
-          status: item.pendente ? "Pendente" : "Preenchido",
+            : t("common.dateUndefined"),
+          status: item.pendente ? t("mock.statusPending") : t("mock.statusFilled"),
           hasPendency: item.pendente === true,
           type: "form",
           rawDate: item.created_at,
@@ -234,9 +246,9 @@ export function useStudentSessions(studentId?: string, options?: UseStudentSessi
 
         return {
           id: item.id || item.formulario_id,
-          title: item.titulo || "Avaliação MABC-2",
+          title: item.titulo || t("session.mabcAssessment"),
           date: new Date(eventDate).toLocaleDateString("pt-BR"),
-          status: item.tem_pendencia ? "Pendente" : "Finalizado",
+          status: item.tem_pendencia ? t("mock.statusPending") : t("mock.statusFinished"),
           hasPendency: item.tem_pendencia === true,
           type: "mabc",
           rawDate: eventDate,

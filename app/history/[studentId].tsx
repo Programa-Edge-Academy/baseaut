@@ -14,7 +14,6 @@ import { useStudentSessions } from "@/features/sessions/hooks/use-student-sessio
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
-import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import RangeCalendar from "@/components/range-calendar";
@@ -69,7 +68,7 @@ export default function HistoryDetailsScreen() {
           iconColor: colors.secondary,
           bgColor: withOpacity(colors.secondary, 0.15),
           IconComponent: Route,
-          subtitle: `${item.date} · ${feita}/${total} realizado`,
+          subtitle: `${item.date} · ${feita}/${total} ${t("history.realized")}`,
         };
       }
       case "mabc": {
@@ -156,8 +155,8 @@ export default function HistoryDetailsScreen() {
             refreshing={isLoading}
             emptyMessage={
               selectedDate
-                ? "Nenhum registro encontrado nesta data."
-                : "Nenhum registro encontrado para este aluno."
+                ? t("history.noRecordsDate")
+                : t("history.noRecordsStudent")
             }
             renderItem={({ item }) => {
               const { iconColor, bgColor, IconComponent, subtitle } = getCardVisuals(item);
@@ -177,8 +176,11 @@ export default function HistoryDetailsScreen() {
                   icon={<IconComponent size={22} color={iconColor} />}
                   iconBgColor={bgColor}
                   onPress={() => {
-                    if (isTutorial && item.type === "form") {
-                      sim.complete("openRecord");
+                    if (isTutorial) {
+                      // The simulation opens the session record first, then the
+                      // standalone form record.
+                      if (item.id === "mock-hist-session") sim.complete("openRecord");
+                      if (item.id === "mock-ata-form") sim.complete("openFormRecord");
                     }
                     if (item.isResumable) {
                       router.push({
@@ -186,7 +188,7 @@ export default function HistoryDetailsScreen() {
                         params: {
                           sessionId: item.id,
                           studentId: studentId as string,
-                          studentName: profile?.name ?? "Aluno",
+                          studentName: profile?.name ?? t("common.student"),
                           circuitId: item.circuitId ?? "",
                           circuitType: item.circuitType ?? "padrao",
                           circuitName: item.title,
@@ -205,7 +207,7 @@ export default function HistoryDetailsScreen() {
                         params: {
                           mode: "view",
                           studentId: studentId as string,
-                          studentName: profile?.name ?? "Aluno",
+                          studentName: profile?.name ?? t("common.student"),
                           recordId: item.id,
                         },
                       } as any);
@@ -215,7 +217,7 @@ export default function HistoryDetailsScreen() {
                         params: {
                           sessionId: item.id,
                           studentId: studentId as string,
-                          studentName: profile?.name ?? "Aluno",
+                          studentName: profile?.name ?? t("common.student"),
                           sessionTitle: item.title,
                         },
                       } as any);
@@ -234,14 +236,17 @@ export default function HistoryDetailsScreen() {
                   }}
                   enableRipple={true}
                   rightAction="chevron"
+                  spotlightKeys={
+                    isTutorial && item.id === "mock-hist-session"
+                      ? "openRecord"
+                      : isTutorial && item.id === "mock-ata-form"
+                        ? "openFormRecord"
+                        : undefined
+                  }
                 />
               );
 
-              return isTutorial && item.id === "mock-rc-form" ? (
-                <SpotlightTarget targetKey="openRecord">{card}</SpotlightTarget>
-              ) : (
-                card
-              );
+              return card;
             }}
           />
         </View>
@@ -269,10 +274,7 @@ export default function HistoryDetailsScreen() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => {
-            setNoticeOpen(false);
-            router.back();
-          }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

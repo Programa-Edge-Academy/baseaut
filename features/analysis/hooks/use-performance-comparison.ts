@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 
 /** Aggregated performance comparison between two periods returned by the RPC. */
 export interface ComparisonData {
@@ -90,6 +91,7 @@ export function usePerformanceComparison(
   options?: { mock?: boolean }
 ) {
   const isMock = options?.mock ?? false;
+  const { t } = useI18n();
   const [data, setData] = useState<ComparisonData | null>(isMock ? MOCK_COMPARISON : null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -144,7 +146,7 @@ export function usePerformanceComparison(
         setData(parsedData);
       } catch (err: any) {
         if (isMounted) {
-          setError(err.message || "Erro ao carregar comparação de desempenho.");
+          setError(err.message || t("analysis.compareLoadError"));
           setData(null);
         }
       } finally {

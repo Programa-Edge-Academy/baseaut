@@ -21,6 +21,7 @@ import { ThemeProvider } from "@/features/settings/contexts/theme-context";
 import { I18nProvider } from "@/features/settings/contexts/i18n-context";
 import { TutorialProvider } from "@/features/tutorial/contexts/tutorial-context";
 import { SessionSimulationProvider } from "@/features/tutorial/contexts/session-simulation-controller";
+import { TutorialTapGuard } from "@/features/tutorial/components/tutorial-tap-guard";
 import "./global.css";
 
 SplashScreen.preventAutoHideAsync();
@@ -83,7 +84,7 @@ export default function RootLayout() {
         {Platform.OS !== "web" ? (
           <GestureHandlerRootView style={{ flex: 1 }}>
             <View key={`metrics-${fontScale}-${scale}`} style={{ flex: 1 }}>
-              {stack}
+              <TutorialTapGuard>{stack}</TutorialTapGuard>
               <GlobalSessionWidget />
             </View>
           </GestureHandlerRootView>

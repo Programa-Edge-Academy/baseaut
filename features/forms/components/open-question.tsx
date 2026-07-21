@@ -1,5 +1,6 @@
 import { View } from "react-native";
 import { DefaultTextInput } from "../../../components/default-text-input";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { OpenQuestion } from "../types";
 
 /** Props for {@link OpenQuestionUI}. */
@@ -14,6 +15,7 @@ interface Props {
  * integer digits on a single line with a numeric keyboard.
  */
 export function OpenQuestionUI({ question, value, onChange }: Props) {
+  const { t } = useI18n();
   const isNumeric = (question as any).numeric === true;
 
   const handleNumericChange = (text: string) => {
@@ -26,7 +28,7 @@ export function OpenQuestionUI({ question, value, onChange }: Props) {
         multiline={!isNumeric}
         keyboardType={isNumeric ? "number-pad" : "default"}
         className="flex-1 min-h-[44px]"
-        placeholder={isNumeric ? "Apenas números" : "Responda aqui"}
+        placeholder={isNumeric ? t("forms.onlyNumbers") : t("forms.answerHere")}
         value={value || ""}
         onChangeText={isNumeric ? handleNumericChange : onChange}
       />

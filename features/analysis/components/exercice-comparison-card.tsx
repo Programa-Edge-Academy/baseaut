@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { AlertCircle } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
@@ -34,11 +35,13 @@ interface CombinedExerciseItem {
     variacaoNivel: number;
 }
 
-/** Formats a development-level value into a capitalized badge label. */
-function formatBadgeLabel(str: string | null): string {
-    if (!str) return "Sem registro";
+/** Formats a development-level value into a localized badge label. */
+function formatBadgeLabel(str: string | null, t: (key: TranslationKey) => string): string {
+    if (!str) return t("analysis.noRecord");
     const lower = str.toLowerCase();
-    if (lower === "intermediario") return "Intermediário";
+    if (lower === "inicial") return t("analysis.level.inicial");
+    if (lower === "intermediario") return t("analysis.level.intermediario");
+    if (lower === "maduro") return t("analysis.level.maduro");
     return lower.charAt(0).toUpperCase() + lower.slice(1);
 }
 
@@ -71,8 +74,8 @@ function ExerciseComparisonCard({ exercicios, hideDropdown = false }: ExerciseCo
 
             return {
                 exercise: item.titulo || t("analysis.unknownExercise"),
-                previous: levelP1 ? { status: levelP1 as DevelopmentLevel, label: formatBadgeLabel(item.nivel_p1) } : null,
-                current: levelP2 ? { status: levelP2 as DevelopmentLevel, label: formatBadgeLabel(item.nivel_p2) } : null,
+                previous: levelP1 ? { status: levelP1 as DevelopmentLevel, label: formatBadgeLabel(item.nivel_p1, t) } : null,
+                current: levelP2 ? { status: levelP2 as DevelopmentLevel, label: formatBadgeLabel(item.nivel_p2, t) } : null,
                 variacaoNivel: variacao,
             };
         });

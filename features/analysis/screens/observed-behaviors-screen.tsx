@@ -14,6 +14,7 @@ import { useObservedBehaviors } from "@/features/analysis/hooks/use-observed-beh
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
@@ -62,6 +63,7 @@ export function ObservedBehaviorsScreen() {
 
   const sessionSim = useSessionSimController();
   const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const sim = useTutorialSimulation();
   const [noticeOpen, setNoticeOpen] = useState(false);
 
   const { profile: dbProfile, isLoading: isDbLoading } = useStudentProfile(studentId as string, { mock: isTutorial });
@@ -111,6 +113,7 @@ export function ObservedBehaviorsScreen() {
       return;
     }
 
+    if (isTutorial) sim.complete("periodBehaviors");
     setStartDate(tempStart);
     setEndDate(tempEnd);
     setIsModalVisible(false);
@@ -191,6 +194,19 @@ export function ObservedBehaviorsScreen() {
   }, [filteredRecords, exercises, t]);
 
   const showResults = startDate && endDate;
+
+  // In the tutorial the mock behaviors have fixed dates; the chart filters by
+  // the selected period, so override its range to span the mock records (any
+  // period keeps the chart populated, matching the always-shown detail cards).
+  const tutorialChartRange = useMemo(() => {
+    if (!isTutorial || records.length === 0) return null;
+    const parse = (s: string) => {
+      const [y, m, d] = s.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    };
+    const sorted = [...records].map((r) => r.date).sort();
+    return { start: parse(sorted[0]), end: parse(sorted[sorted.length - 1]) };
+  }, [isTutorial, records]);
 
   if (showResults && hasError) {
     return (
@@ -295,8 +311,12 @@ export function ObservedBehaviorsScreen() {
     <View className="flex-1 bg-level1">
       <Header
         variant="back"
-        onPressBack={() => router.back()}
+        onPressBack={() => {
+          if (isTutorial) sim.complete("backBehaviors");
+          router.back();
+        }}
         onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+        backSpotlightKey={isTutorial ? "backBehaviors" : undefined}
       />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }} className="flex-1">
@@ -316,6 +336,7 @@ export function ObservedBehaviorsScreen() {
             <PeriodSelector
               label={periodLabel}
               onPress={handlePeriodPress}
+              spotlightKey={isTutorial ? "periodBehaviors" : undefined}
             />
 
             {showResults ? (
@@ -323,8 +344,8 @@ export function ObservedBehaviorsScreen() {
                 <View style={{ marginHorizontal: 22 }}>
                   <ObservedBehaviorsChart
                     records={records}
-                    startDate={startDate}
-                    endDate={endDate}
+                    startDate={tutorialChartRange ? tutorialChartRange.start : startDate}
+                    endDate={tutorialChartRange ? tutorialChartRange.end : endDate}
                   />
                 </View>
 
@@ -386,7 +407,7 @@ export function ObservedBehaviorsScreen() {
 
             <View className="items-center">
               <DefaultButton
-                label="Salvar"
+                label={t("common.save")}
                 sizeClass="w-[168px] h-[44px]"
                 disabled={isSaveDisabled}
                 style={{ opacity: isSaveDisabled ? 0.5 : 1 }}
@@ -401,7 +422,7 @@ export function ObservedBehaviorsScreen() {
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => { setNoticeOpen(false); router.back(); }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

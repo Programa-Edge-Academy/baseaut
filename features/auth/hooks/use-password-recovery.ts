@@ -1,18 +1,17 @@
 import { supabase } from "@/lib/supabase";
 import { translateAuthError } from "@/features/auth/utils/translate-auth-error";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import * as Linking from "expo-linking";
 import { useState } from "react";
-
-/** Shown when the server response carries no readable error detail. */
-const genericErrorMessage = "Ocorreu um erro. Tente novamente.";
 
 /**
  * Reads the localized error message returned by the recovery Edge Functions.
  * Edge Functions answer non-2xx responses as a {@link FunctionsHttpError} whose
  * body still holds a `{ error }` field, so it must be parsed from the context.
+ * Falls back to `fallback` when no readable detail is present.
  */
-async function extractFunctionError(error: unknown): Promise<string> {
+async function extractFunctionError(error: unknown, fallback: string): Promise<string> {
   if (error instanceof FunctionsHttpError) {
     try {
       const body = await error.context.json();
@@ -20,7 +19,7 @@ async function extractFunctionError(error: unknown): Promise<string> {
     } catch {
     }
   }
-  return genericErrorMessage;
+  return fallback;
 }
 
 /** Session tokens returned by `verify-recovery-code` once the code matches. */
@@ -43,6 +42,7 @@ type RecoverySession = {
  *   unapproved account is not left signed in.
  */
 export function usePasswordRecovery() {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,7 +62,7 @@ export function usePasswordRecovery() {
     setLoading(false);
 
     if (recoverError) {
-      setError(translateAuthError(recoverError.message) ?? genericErrorMessage);
+      setError(translateAuthError(recoverError.message, t) ?? t("auth.err.genericRetry"));
       return false;
     }
 
@@ -84,7 +84,7 @@ export function usePasswordRecovery() {
     setLoading(false);
 
     if (invokeError) {
-      setError(await extractFunctionError(invokeError));
+      setError(await extractFunctionError(invokeError, t("auth.err.genericRetry")));
       return false;
     }
 
@@ -115,13 +115,13 @@ export function usePasswordRecovery() {
 
     if (invokeError) {
       setLoading(false);
-      setError(await extractFunctionError(invokeError));
+      setError(await extractFunctionError(invokeError, t("auth.err.genericRetry")));
       return false;
     }
 
     if (!data?.access_token || !data?.refresh_token) {
       setLoading(false);
-      setError(genericErrorMessage);
+      setError(t("auth.err.genericRetry"));
       return false;
     }
 
@@ -133,7 +133,7 @@ export function usePasswordRecovery() {
     setLoading(false);
 
     if (sessionError) {
-      setError(genericErrorMessage);
+      setError(t("auth.err.genericRetry"));
       return false;
     }
 
@@ -165,15 +165,15 @@ export function usePasswordRecovery() {
     if (verifyError) {
       const lower = verifyError.message.toLowerCase();
       if (lower.includes("expired") || lower.includes("invalid") || lower.includes("otp")) {
-        setError("Código inválido ou expirado. Solicite um novo e-mail.");
+        setError(t("auth.otpInvalidRetry"));
       } else {
-        setError(translateAuthError(verifyError.message) ?? genericErrorMessage);
+        setError(translateAuthError(verifyError.message, t) ?? t("auth.err.genericRetry"));
       }
       return false;
     }
 
     if (!data.session) {
-      setError(genericErrorMessage);
+      setError(t("auth.err.genericRetry"));
       return false;
     }
 
@@ -194,7 +194,7 @@ export function usePasswordRecovery() {
 
     if (updateError) {
       setLoading(false);
-      setError(translateAuthError(updateError.message) ?? genericErrorMessage);
+      setError(translateAuthError(updateError.message, t) ?? t("auth.err.genericRetry"));
       return false;
     }
 

@@ -25,10 +25,6 @@ import {
   View,
 } from "react-native";
 
-/** Password rule message reused for inline validation. */
-const INVALID_PASSWORD_MSG =
-  "A senha deve ter entre 8 e 20 caracteres, maiúscula, minúscula, número ou especial";
-
 /** Section container with a title, following the app's card style. */
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -51,6 +47,7 @@ export function AccountScreen() {
   const router = useRouter();
   const colors = useThemeColors();
   const { t } = useI18n();
+  const INVALID_PASSWORD_MSG = t("auth.passwordRule");
   const {
     profile,
     isLoading,
@@ -108,7 +105,7 @@ export function AccountScreen() {
         result.needsConfirmation ? confirmationDescription : undefined,
       );
     } else {
-      showToast("error", "Não foi possível salvar", translateAuthError(result.error) ?? undefined);
+      showToast("error", t("account.saveError"), translateAuthError(result.error, t) ?? undefined);
     }
     return result.success;
   };
@@ -127,7 +124,7 @@ export function AccountScreen() {
       setSaving("avatar");
       const res = await updateAvatar(result.assets[0].uri);
       setSaving(null);
-      showResult(res, "Foto atualizada!");
+      showResult(res, t("account.photoUpdated"));
     }
   };
 
@@ -135,36 +132,36 @@ export function AccountScreen() {
     setSaving("avatar");
     const res = await updateAvatar(null);
     setSaving(null);
-    showResult(res, "Foto removida.");
+    showResult(res, t("account.photoRemoved"));
   };
 
   const handleSaveName = async () => {
     const cleanName = name.trim().replace(/\s+/g, " ");
     if (!cleanName) {
-      setErrors((p) => ({ ...p, name: "Nome é obrigatório" }));
+      setErrors((p) => ({ ...p, name: t("auth.nameRequired") }));
       return;
     }
     if (cleanName.length < 3) {
-      setErrors((p) => ({ ...p, name: "O nome deve ter no mínimo 3 caracteres" }));
+      setErrors((p) => ({ ...p, name: t("auth.nameMin") }));
       return;
     }
     if (!cleanName.includes(" ")) {
-      setErrors((p) => ({ ...p, name: "Informe pelo menos nome e sobrenome" }));
+      setErrors((p) => ({ ...p, name: t("auth.nameFull") }));
       return;
     }
     setSaving("name");
     const res = await updateName(cleanName);
     setSaving(null);
-    showResult(res, "Nome atualizado!");
+    showResult(res, t("account.nameUpdated"));
   };
 
   const handleSaveEmail = async () => {
     if (!email.trim()) {
-      setErrors((p) => ({ ...p, email: "Email é obrigatório" }));
+      setErrors((p) => ({ ...p, email: t("auth.emailRequired") }));
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setErrors((p) => ({ ...p, email: "Email inválido" }));
+      setErrors((p) => ({ ...p, email: t("auth.invalidEmail") }));
       return;
     }
     setSaving("email");
@@ -172,25 +169,25 @@ export function AccountScreen() {
     setSaving(null);
     showResult(
       res,
-      "Confirmação enviada!",
-      "Enviamos um link de confirmação para o novo e-mail. A alteração vale após a confirmação.",
+      t("account.confirmationSent"),
+      t("account.confirmationSentDesc"),
     );
   };
 
   const handleSavePassword = async () => {
     const newErrors: Record<string, string> = {};
     if (!currentPassword.trim()) {
-      newErrors.currentPassword = "Senha atual é obrigatória";
+      newErrors.currentPassword = t("account.currentPasswordRequired");
     }
     if (!password.trim()) {
-      newErrors.password = "Senha é obrigatória";
+      newErrors.password = t("auth.passwordRequired");
     } else if (!passwordChecker(password)) {
       newErrors.password = INVALID_PASSWORD_MSG;
     }
     if (!confirmPassword.trim()) {
-      newErrors.confirmPassword = "Confirmação de senha é obrigatória";
+      newErrors.confirmPassword = t("auth.confirmRequired");
     } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = "As senhas não coincidem";
+      newErrors.confirmPassword = t("auth.passwordsMismatch");
     }
     if (Object.keys(newErrors).length > 0) {
       setErrors((p) => ({ ...p, ...newErrors }));
@@ -200,10 +197,10 @@ export function AccountScreen() {
     const res = await updatePassword(currentPassword, password);
     setSaving(null);
     if (res.error === "current_password_incorrect") {
-      setErrors((p) => ({ ...p, currentPassword: "Senha atual incorreta" }));
+      setErrors((p) => ({ ...p, currentPassword: t("account.currentPasswordIncorrect") }));
       return;
     }
-    if (showResult(res, "Senha alterada!")) {
+    if (showResult(res, t("account.passwordChanged"))) {
       setCurrentPassword("");
       setPassword("");
       setConfirmPassword("");
@@ -214,7 +211,7 @@ export function AccountScreen() {
     setSaving("google");
     const res = profile?.hasGoogle ? await unlinkGoogle() : await linkGoogle();
     setSaving(null);
-    showResult(res, profile?.hasGoogle ? "Conta Google desvinculada." : "Conta Google vinculada!");
+    showResult(res, profile?.hasGoogle ? t("account.googleUnlinked") : t("account.googleLinkedToast"));
   };
 
   const handleLogout = async () => {
@@ -378,7 +375,7 @@ export function AccountScreen() {
                     setCurrentPassword(text);
                     clearError("currentPassword");
                   }}
-                  placeholder="Senha atual"
+                  placeholder={t("account.currentPassword")}
                   className="h-11 w-full rounded-[15px]"
                   outLineBorderClass={errors.currentPassword ? "border-error" : "border-outline"}
                 />
@@ -395,7 +392,7 @@ export function AccountScreen() {
                     setPassword(text);
                     clearError("password");
                   }}
-                  placeholder="Nova senha"
+                  placeholder={t("account.newPassword")}
                   className="h-11 w-full rounded-[15px]"
                   outLineBorderClass={errors.password ? "border-error" : "border-outline"}
                 />
@@ -412,7 +409,7 @@ export function AccountScreen() {
                     setConfirmPassword(text);
                     clearError("confirmPassword");
                   }}
-                  placeholder="Confirme a nova senha"
+                  placeholder={t("account.confirmNewPasswordPlaceholder")}
                   className="h-11 w-full rounded-[15px]"
                   outLineBorderClass={errors.confirmPassword ? "border-error" : "border-outline"}
                 />

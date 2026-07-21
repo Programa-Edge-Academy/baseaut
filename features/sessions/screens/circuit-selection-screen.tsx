@@ -7,7 +7,6 @@ import { SearchInput } from "@/components/search-input";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
-import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { ClipboardEdit, Layers } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
@@ -144,15 +143,11 @@ export function CircuitSelectionScreen({
                 badge={badge}
                 rightAction="chevron"
                 onPress={() => onPressCircuit?.(item)}
+                spotlightKeys={getSpotlightKeys?.(item)}
               />
             );
 
-            const keys = getSpotlightKeys?.(item);
-            return keys && keys.length > 0 ? (
-              <SpotlightTarget targetKey={keys}>{card}</SpotlightTarget>
-            ) : (
-              card
-            );
+            return card;
           }}
         />
         )}
@@ -162,10 +157,7 @@ export function CircuitSelectionScreen({
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => {
-            setNoticeOpen(false);
-            onPressBack?.();
-          }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

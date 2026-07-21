@@ -1,5 +1,6 @@
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { SessionCompletedScreen } from "@/features/sessions/screens/session-completed-screen";
 
 /**
@@ -7,6 +8,7 @@ import { SessionCompletedScreen } from "@/features/sessions/screens/session-comp
  * route params and forwarding it to the completion screen.
  */
 export default function SessionCompletedHubRoute() {
+  const { t } = useI18n();
   const {
     type,
     studentName,
@@ -30,7 +32,7 @@ export default function SessionCompletedHubRoute() {
   return (
     <SessionCompletedScreen
       type={type || "structured"}
-      studentName={studentName || "Aluno"}
+      studentName={studentName || t("common.student")}
       queue={queue}
       fullCircuit={fullCircuit}
       studentId={studentId}

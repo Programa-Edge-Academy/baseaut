@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import Constants from "expo-constants";
 import { useState } from "react";
 import { Platform } from "react-native";
@@ -12,10 +13,6 @@ type SendFeedbackData = {
   mensagem: string;
 };
 
-/** Shown when the insert fails without a readable reason. */
-const genericErrorMessage =
-  "Não foi possível enviar seu feedback. Tente novamente.";
-
 /**
  * Sends user feedback to the development team by inserting it into the private
  * `feedbacks` table. RLS allows only the user's own insert and no reads, so the
@@ -23,6 +20,7 @@ const genericErrorMessage =
  * the Supabase dashboard.
  */
 export function useFeedback() {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,7 +41,7 @@ export function useFeedback() {
 
     if (!user) {
       setLoading(false);
-      setError("Sessão expirada. Entre novamente para enviar seu feedback.");
+      setError(t("feedback.sessionExpired"));
       return false;
     }
 
@@ -58,7 +56,7 @@ export function useFeedback() {
     setLoading(false);
 
     if (insertError) {
-      setError(genericErrorMessage);
+      setError(t("feedback.sendError"));
       return false;
     }
 

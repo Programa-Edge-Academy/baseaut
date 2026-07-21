@@ -61,7 +61,7 @@ export function LoginForm() {
     }
   };
 
-  const displayApiError = translateAuthError(apiError ?? googleError);
+  const displayApiError = translateAuthError(apiError ?? googleError, t);
   const showPending = isPendingApproval || isGooglePending;
   const isButtonDisabled = !identifier.trim() || !password.trim() || loading;
 
@@ -96,7 +96,7 @@ export function LoginForm() {
         <View className="w-full gap-1">
           <Text className="text-default-2 text-muted">{t("auth.password")}</Text>
           <PasswordInput
-            placeholder="Sua senha"
+            placeholder={t("auth.passwordPlaceholder")}
             maxLength={20}
             className="h-11 w-full rounded-[15px]"
             outLineBorderClass={

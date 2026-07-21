@@ -2,7 +2,9 @@ import { AppModal } from "@/components/app-modal";
 import { DefaultButton } from "@/components/default-button";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
+import { useRouter } from "expo-router";
 import { HelpCircle, Info } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -13,8 +15,12 @@ export type TutorialPracticeNoticeProps = {
   visible: boolean;
   /** Dismisses the modal, keeping the practice open ("Got it"). */
   onClose: () => void;
-  /** Leaves the practice, returning to the tutorial module step. */
-  onExit: () => void;
+  /**
+   * Optional screen-specific cleanup run before leaving. Stopping the simulation
+   * and navigating back to the tutorial list are handled here, so screens must
+   * not do either themselves.
+   */
+  onExit?: () => void;
 };
 
 /**
@@ -32,7 +38,15 @@ export function TutorialPracticeNotice({
   const colors = useThemeColors();
   const { t } = useI18n();
   const { currentHintKey } = useTutorialSimulation();
+  const sessionSim = useSessionSimController();
+  const router = useRouter();
   const [view, setView] = useState<"notice" | "help">("notice");
+
+  const handleExit = () => {
+    onExit?.();
+    sessionSim.stop();
+    router.replace("/tutorial");
+  };
 
   // Always reopen on the notice view.
   useEffect(() => {
@@ -47,6 +61,7 @@ export function TutorialPracticeNotice({
       transparent
       animationType="fade"
       onRequestClose={onClose}
+      tutorialGuardExempt
     >
       <Pressable
         className="flex-1 items-center justify-center bg-black/60 px-6"
@@ -79,13 +94,10 @@ export function TutorialPracticeNotice({
               <View className="flex-row gap-3">
                 <DefaultButton
                   label={t("tutorial.exitPractice")}
-                  onPress={onExit}
+                  onPress={handleExit}
                   sizeClass="flex-1 h-11"
-                  bgColorClass="bg-level1"
-                  hasShadow={false}
-                  isOutline
-                  outlineBorderClass="border-outline"
-                  textClassName="text-muted"
+                  bgColorClass="bg-error"
+                  shadowClass="shadow-errorShadow"
                 />
                 <DefaultButton
                   label={t("common.gotIt")}

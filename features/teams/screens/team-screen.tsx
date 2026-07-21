@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { NewStudent } from "@/features/students/components/new-student";
 import { CompanionCard } from "@/features/teams/components/companion-card";
 import { StudentCardTeam } from "@/features/teams/components/student-card-team";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ActivityIndicator, ScrollView, View } from "react-native";
@@ -15,6 +16,7 @@ import { StudentData, useTeamData } from "../hooks/use-team-data";
  */
 export function TeamScreen() {
   const router = useRouter();
+  const { t } = useI18n();
   const {
     students,
     companions,
@@ -77,7 +79,7 @@ export function TeamScreen() {
           contentContainerStyle={{ paddingBottom: 40 }}
         >
           <View className="mt-5 w-full">
-            <PageHeader title="PEFaut" subtitle="Gerenciar equipe" />
+            <PageHeader title="PEFaut" subtitle={t("teams.subtitle")} />
           </View>
 
           <View className="mt-5 w-full">
@@ -118,7 +120,7 @@ export function TeamScreen() {
 
       <ConfirmationModal
         visible={!!studentToDelete}
-        title="Excluir aluno?"
+        title={t("teams.deleteStudentTitle")}
         onClose={() => setStudentToDelete(null)}
         onConfirm={() => {
           if (studentToDelete) deleteStudent(studentToDelete);
@@ -128,8 +130,8 @@ export function TeamScreen() {
 
       <ConfirmationModal
         visible={!!companionToDelete}
-        title="Remover monitor?"
-        message="Tem certeza que deseja remover este monitor da equipe? Esta ação não poderá ser desfeita."
+        title={t("teams.removeCompanionTitle")}
+        message={t("teams.removeCompanionMsg")}
         onClose={() => setCompanionToDelete(null)}
         onConfirm={() => {
           if (companionToDelete) removeCompanion(companionToDelete);
@@ -139,8 +141,8 @@ export function TeamScreen() {
 
       <ConfirmationModal
         visible={!!companionToReject}
-        title="Rejeitar monitor?"
-        message="Tem certeza que deseja rejeitar este monitor? Esta ação não poderá ser desfeita."
+        title={t("teams.rejectCompanionTitle")}
+        message={t("teams.rejectCompanionMsg")}
         onClose={() => setCompanionToReject(null)}
         onConfirm={() => {
           if (companionToReject) rejectCompanion(companionToReject);

@@ -6,7 +6,9 @@ import { Toast, type ToastMode } from "@/components/toast";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import React, { useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Mabc2Record, Mabc2RecordCard } from "../components/mabc2-record-card";
@@ -39,13 +41,18 @@ export function Mabc2RecordsListScreen({
   const { t } = useI18n();
   const sessionSim = useSessionSimController();
   const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const sim = useTutorialSimulation();
   const [noticeOpen, setNoticeOpen] = useState(false);
   return (
     <View className="flex-1 bg-level1">
       <Header
         variant="back"
-        onPressBack={onPressBack}
+        onPressBack={() => {
+          if (isTutorial) sim.complete("backMabc");
+          onPressBack?.();
+        }}
         onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
+        backSpotlightKey={isTutorial ? "backMabc" : undefined}
       />
 
       <View className="mx-5 mt-5">
@@ -68,12 +75,24 @@ export function Mabc2RecordsListScreen({
           emptyMessage={t("analysis.mabcList.empty")}
           onRefresh={onRefresh}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <Mabc2RecordCard
-              record={item}
-              onPress={() => onPressRecord?.(item)}
-            />
-          )}
+          renderItem={({ item, index }) => {
+            const cardNode = (
+              <Mabc2RecordCard
+                record={item}
+                onPress={() => {
+                  if (isTutorial && sim.currentKey === "openMabcRecord") {
+                    sim.complete("openMabcRecord");
+                  }
+                  onPressRecord?.(item);
+                }}
+              />
+            );
+            return isTutorial && index === 0 ? (
+              <SpotlightTarget targetKey="openMabcRecord">{cardNode}</SpotlightTarget>
+            ) : (
+              cardNode
+            );
+          }}
         />
       )}
 
@@ -91,7 +110,7 @@ export function Mabc2RecordsListScreen({
         <TutorialPracticeNotice
           visible={noticeOpen}
           onClose={() => setNoticeOpen(false)}
-          onExit={() => { setNoticeOpen(false); onPressBack?.(); }}
+          onExit={() => setNoticeOpen(false)}
         />
       )}
 

@@ -6,6 +6,11 @@ import { PageHeader } from "@/components/page-header";
 import { SelectableChip } from "@/components/selectable-chip";
 import { SessionCompletion } from "@/features/exercises/components/session-completion";
 import { useExercises } from "@/features/exercises/hooks/use-exercises";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
+import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
 import { useRouter } from "expo-router";
 import { ClipboardList, X } from "lucide-react-native";
 import React, { useState } from "react";
@@ -41,6 +46,12 @@ interface SessionCompletedScreenProps {
  * Post-session screen showing completion progress and continuation options:
  * retry unrealized exercises, repeat selected ones, or run another team
  * exercise — all within the same session.
+ *
+ * @remarks
+ * During the session tutorial it is reached twice: once when the first session
+ * ends naturally, where "back to start" returns to the circuit selection and the
+ * simulation continues, and once after the second session is finished early,
+ * where the same button ends the simulation.
  */
 export function SessionCompletedScreen({
   type,
@@ -53,6 +64,11 @@ export function SessionCompletedScreen({
   realized,
 }: SessionCompletedScreenProps) {
   const router = useRouter();
+  const { t } = useI18n();
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "session";
+  const sim = useTutorialSimulation();
+  const [noticeOpen, setNoticeOpen] = useState(false);
 
   const filaDePendentes = queue ? JSON.parse(queue) : [];
   const circuitoCompleto = fullCircuit ? JSON.parse(fullCircuit) : [];
@@ -61,9 +77,31 @@ export function SessionCompletedScreen({
   const [selectedRepeatIds, setSelectedRepeatIds] = useState<string[]>([]);
 
   const { exercises: teamExercises, isLoading: isExercisesLoading } =
-    useExercises();
+    useExercises({ mock: isTutorial });
   const [isOtherModalOpen, setIsOtherModalOpen] = useState(false);
   const [selectedOtherIds, setSelectedOtherIds] = useState<string[]>([]);
+
+  /**
+   * Leaves the completed screen. Outside the tutorial that is the students hub;
+   * during it, the first (intermediate) session pops back to the circuit
+   * selection, and the last one only advances the simulation, which navigates to
+   * the tutorial module itself.
+   */
+  const handleBackToStart = () => {
+    if (isTutorial) {
+      if (sim.currentKey === "finishSession") {
+        sim.complete("finishSession");
+        return;
+      }
+      sim.complete("backToSelection");
+      router.dismissTo({
+        pathname: "/circuit-selection",
+        params: { studentId: studentId ?? "", studentName },
+      } as never);
+      return;
+    }
+    router.replace("/students");
+  };
 
   const handleToggleOther = (id: string) => {
     setSelectedOtherIds((prev) =>
@@ -89,7 +127,7 @@ export function SessionCompletedScreen({
         studentName,
         studentId: studentId ?? "",
         sessionId: sessionId ?? "",
-        circuitName: "Outro exercício",
+        circuitName: t("session.otherExerciseName"),
         queue: JSON.stringify(chosen),
       },
     });
@@ -148,12 +186,13 @@ export function SessionCompletedScreen({
           <View>
             <Header
               variant="back"
-              onPressBack={() => router.replace("/students")}
+              onPressBack={handleBackToStart}
+              onPressTutorial={isTutorial ? () => setNoticeOpen(true) : undefined}
             />
 
             <View className="mx-8 mt-5">
               <PageHeader
-                title={`Sessão de ${studentName}`}
+                title={t("sessions.circuitSelection.title").replace("{name}", studentName ?? "")}
                 subtitle={subtitleLabel}
               />
             </View>
@@ -166,9 +205,10 @@ export function SessionCompletedScreen({
                 hasWarnings={temWarnings}
                 unrealizedCount={filaDePendentes.length}
                 progress={progressLabel}
-                onBackToStart={() => {
-                  router.replace("/students");
-                }}
+                onBackToStart={handleBackToStart}
+                backToStartSpotlightKeys={
+                  isTutorial ? ["backToSelection", "finishSession"] : undefined
+                }
                 onSelectContinuation={(id) => {
                   if (id === "try_unrealized") {
                     router.push({
@@ -198,7 +238,7 @@ export function SessionCompletedScreen({
             <View className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[600px] overflow-hidden">
               <View className="flex-row justify-between items-center p-5 border-b border-outline/30">
                 <Text className="text-content text-header-2">
-                  Repetir exercícios
+                  {t("session.repeatExercises")}
                 </Text>
                 <Pressable
                   onPress={() => setIsRepeatModalOpen(false)}
@@ -210,7 +250,7 @@ export function SessionCompletedScreen({
 
               <ScrollView className="max-h-[400px] px-5 py-4">
                 <Text className="text-muted text-default-2 mb-4">
-                  Selecione quais exercícios deste circuito você deseja repetir:
+                  {t("session.repeatPrompt")}
                 </Text>
                 <View className="gap-2.5">
                   {circuitoCompleto.map((ex: any) => (
@@ -228,8 +268,8 @@ export function SessionCompletedScreen({
                 <ActionButtons
                   onCancel={() => setIsRepeatModalOpen(false)}
                   onSave={handleConfirmRepeat}
-                  cancelLabel="Cancelar"
-                  saveLabel="Iniciar"
+                  cancelLabel={t("common.cancel")}
+                  saveLabel={t("session.start")}
                   disabled={selectedRepeatIds.length === 0}
                 />
               </View>
@@ -242,7 +282,7 @@ export function SessionCompletedScreen({
             <View className="bg-level2 border border-outline rounded-xl w-[90%] max-w-[600px] overflow-hidden">
               <View className="flex-row justify-between items-center p-5 border-b border-outline/30">
                 <Text className="text-content text-header-2">
-                  Realizar outro exercício
+                  {t("session.doOtherExercise")}
                 </Text>
                 <Pressable
                   onPress={() => setIsOtherModalOpen(false)}
@@ -254,8 +294,7 @@ export function SessionCompletedScreen({
 
               <ScrollView className="max-h-[400px] px-5 py-4">
                 <Text className="text-muted text-default-2 mb-4">
-                  Selecione qualquer exercício da equipe para realizar nesta
-                  sessão:
+                  {t("session.otherExercisePrompt")}
                 </Text>
 
                 {isExercisesLoading ? (
@@ -264,7 +303,7 @@ export function SessionCompletedScreen({
                   </View>
                 ) : teamExercises.length === 0 ? (
                   <Text className="text-muted text-default-2 py-6 text-center">
-                    Nenhum exercício cadastrado na equipe.
+                    {t("session.noTeamExercises")}
                   </Text>
                 ) : (
                   <View className="gap-2.5">
@@ -284,14 +323,24 @@ export function SessionCompletedScreen({
                 <ActionButtons
                   onCancel={() => setIsOtherModalOpen(false)}
                   onSave={handleConfirmOther}
-                  cancelLabel="Cancelar"
-                  saveLabel="Iniciar"
+                  cancelLabel={t("common.cancel")}
+                  saveLabel={t("session.start")}
                   disabled={selectedOtherIds.length === 0}
                 />
               </View>
             </View>
           </View>
         </AppModal>
+
+        {isTutorial && (
+          <TutorialPracticeNotice
+            visible={noticeOpen}
+            onClose={() => setNoticeOpen(false)}
+            onExit={() => setNoticeOpen(false)}
+          />
+        )}
+
+        {isTutorial && <TutorialSpotlight />}
       </View>
     </>
   );

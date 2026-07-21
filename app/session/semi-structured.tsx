@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { useLocalSearchParams } from "expo-router";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { SessionRunningSemiStructuredScreen } from "../../features/sessions/screens/session-running-semi-structured-screen";
 import type { SessionExercise } from "../../features/sessions/screens/session-running-screen";
 
@@ -9,6 +10,7 @@ import type { SessionExercise } from "../../features/sessions/screens/session-ru
  * and normalizes both into the session exercise list.
  */
 export default function SessionSemiStructuredRoute() {
+  const { t } = useI18n();
   const {
     exercises,
     queue,
@@ -44,11 +46,11 @@ export default function SessionSemiStructuredRoute() {
   return (
     <SessionRunningSemiStructuredScreen
       exercises={sessionExercises}
-      studentName={studentName || "Aluno"}
+      studentName={studentName || t("common.student")}
       studentId={studentId || ""}
       sessionId={sessionId || ""}
       circuitId={circuitId || ""}
-      circuitName={circuitName || "Circuito"}
+      circuitName={circuitName || t("common.circuit")}
     />
   );
 }
