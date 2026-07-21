@@ -37,7 +37,9 @@ export type StartActivityProps = {
  * @remarks
  * The preview toggle only exists when the exercise has media, so it is not a
  * usable tutorial target; only the reorder action and the start button take
- * spotlight keys.
+ * spotlight keys. Both refuse presses outside their own sub-step: starting an
+ * activity early cannot be undone and derails the rest of the guided session, so
+ * it is guarded here on top of the overlay panels rather than by geometry alone.
  */
 export function StartActivity({
   title,
@@ -81,6 +83,21 @@ export function StartActivity({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sim, infoDep, startDep]);
 
+  /**
+   * Whether a control is off-limits: a simulation is running and this is not the
+   * sub-step it belongs to. Starting an activity out of turn desynchronizes the
+   * session from the guided script and breaks the rest of the run, so the
+   * handlers refuse it here as well as behind the tap guard's blocking panels.
+   */
+  const isBlocked = (keys?: string | string[]) => {
+    if (!sim.active || !keys?.length) return false;
+    const list = Array.isArray(keys) ? keys : [keys];
+    return !list.includes(sim.currentKey ?? "");
+  };
+
+  const startBlocked = isBlocked(startSpotlightKeys);
+  const infoBlocked = isBlocked(infoSpotlightKeys);
+
   return (
     <View
       className={`w-full rounded-2xl border border-outline bg-level2 p-4 ${className ?? ""}`}
@@ -100,7 +117,7 @@ export function StartActivity({
             <Pressable
               ref={infoRef}
               collapsable={false}
-              onPress={onPressInfo}
+              onPress={infoBlocked ? undefined : onPressInfo}
               hitSlop={8}
               className="active:opacity-70"
             >
@@ -138,7 +155,7 @@ export function StartActivity({
       <View ref={startRef} collapsable={false} className="mt-4 flex-row gap-2.5">
         <DefaultButton
           label={t("exercises.startActivity")}
-          onPress={onStart}
+          onPress={startBlocked ? () => {} : onStart}
           bgColorClass="bg-primary"
           shadowClass="shadow-primaryShadow"
           sizeClass="flex-1 h-11"
