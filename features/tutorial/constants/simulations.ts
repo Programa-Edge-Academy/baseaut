@@ -106,6 +106,12 @@ export const SESSOES_SIMULATION: SimulationSubStep[] = [
   { key: "goBack", hintKey: "tutorial.hint.sessoes.goBack" },
   { key: "reopenCircuit", hintKey: "tutorial.hint.sessoes.reopenCircuit" },
   { key: "concurrentContinue", hintKey: "tutorial.hint.sessoes.concurrentContinue" },
+  // Resuming remounts the screen with no exercise running, so the session opens
+  // back on the start card: run one exercise again before finishing early, which
+  // is what makes the header's Finish button appear.
+  { key: "startResumed", hintKey: "tutorial.hint.sessoes.startResumed" },
+  { key: "stopResumed", hintKey: "tutorial.hint.sessoes.stopResumed" },
+  { key: "deferResumed", hintKey: "tutorial.hint.sessoes.deferResumed" },
   { key: "finish", hintKey: "tutorial.hint.sessoes.finish" },
   { key: "finishReason", hintKey: "tutorial.hint.sessoes.finishReason" },
   { key: "finishSession", hintKey: "tutorial.hint.sessoes.finishSession" },

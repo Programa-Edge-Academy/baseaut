@@ -50,12 +50,17 @@ const FUGA_SIM_KEYS = ["fuga", "fuga2"];
 const PAUSE_SIM_KEYS = ["pauseResume", "pauseResume2"];
 const TOGGLE_FORM_SIM_KEYS = ["toggleForm", "toggleForm2"];
 // The start button spotlights each exercise the tutorial actually runs: session
-// 1 ex1 ("startExercise"), session 1 ex2 ("startSecond") and session 2 ex1
-// ("startAgain").
-const START_SIM_KEYS = ["startExercise", "startSecond", "startAgain"];
-// The stop button spotlights three exercises: session 1 ex1 ("stop"), session 1
-// ex2 ("stopSecond") and session 2 ex1 ("stopNotDone").
-const STOP_SIM_KEYS = ["stop", "stopSecond", "stopNotDone"];
+// 1 ex1 ("startExercise"), session 1 ex2 ("startSecond"), session 2 ex1
+// ("startAgain") and session 2 once resumed from the concurrent-session warning
+// ("startResumed").
+const START_SIM_KEYS = [
+  "startExercise",
+  "startSecond",
+  "startAgain",
+  "startResumed",
+];
+// The stop button spotlights the same four exercises.
+const STOP_SIM_KEYS = ["stop", "stopSecond", "stopNotDone", "stopResumed"];
 
 /** An exercise within a running session. */
 export type SessionExercise = {

@@ -231,11 +231,14 @@ export function ActivityResultModal({
               {t("activityResult.title")}
             </Text>
 
-            <SpotlightTarget targetKey={["deferResult", "deferAgain"]}>
+            <SpotlightTarget
+              targetKey={["deferResult", "deferAgain", "deferResumed"]}
+            >
               <RipplePressable
                 onPress={() => {
                   advanceSim("deferResult");
                   advanceSim("deferAgain");
+                  advanceSim("deferResumed");
                   onDefer?.();
                 }}
                 style={{

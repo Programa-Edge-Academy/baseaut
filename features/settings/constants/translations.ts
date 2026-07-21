@@ -229,6 +229,9 @@ export type TranslationKey =
   | "tutorial.hint.sessoes.goBack"
   | "tutorial.hint.sessoes.reopenCircuit"
   | "tutorial.hint.sessoes.concurrentContinue"
+  | "tutorial.hint.sessoes.startResumed"
+  | "tutorial.hint.sessoes.stopResumed"
+  | "tutorial.hint.sessoes.deferResumed"
   | "tutorial.hint.sessoes.finish"
   | "tutorial.hint.sessoes.finishReason"
   | "tutorial.hint.sessoes.finishSession"
@@ -1332,6 +1335,9 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.sessoes.goBack": "Toque em \"Voltar\" para sair sem finalizar — a sessão continua em andamento.",
     "tutorial.hint.sessoes.reopenCircuit": "Toque num circuito novamente para ver o aviso de sessão em andamento.",
     "tutorial.hint.sessoes.concurrentContinue": "Toque em \"Continuar sessão em andamento\" para retomar. Esse aviso também aparece quando há um Registro de Controle pendente ou um formulário do mesmo tipo pendente para o aluno.",
+    "tutorial.hint.sessoes.startResumed": "A sessão foi retomada do início do circuito. Toque em \"Iniciar atividade\" para executar um exercício.",
+    "tutorial.hint.sessoes.stopResumed": "Toque em \"Parar\" para encerrar o exercício e abrir o resultado.",
+    "tutorial.hint.sessoes.deferResumed": "Toque em \"Adiar resposta\". Com um exercício já registrado, o botão \"Finalizar\" aparece no cabeçalho.",
     "tutorial.hint.sessoes.finish": "Pare a atividade e marque o resultado. Com pelo menos um exercício concluído, o botão \"Finalizar\" aparece no cabeçalho: toque nele para encerrar a sessão antes do fim.",
     "tutorial.hint.sessoes.finishReason": "Escolha um motivo para o encerramento e confirme. Os exercícios que sobraram são registrados como não realizados.",
     "tutorial.hint.sessoes.finishSession": "Esta é a tela de sessão concluída. Toque em \"Voltar ao início\" para encerrar a simulação.",
@@ -2444,6 +2450,9 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "tutorial.hint.sessoes.goBack": "Tap \"Back\" to leave without finishing — the session stays in progress.",
     "tutorial.hint.sessoes.reopenCircuit": "Tap a circuit again to see the in-progress session warning.",
     "tutorial.hint.sessoes.concurrentContinue": "Tap \"Continue session in progress\" to resume. This warning also appears when there is a pending Control Record or a pending form of the same type for the student.",
+    "tutorial.hint.sessoes.startResumed": "The session resumed at the start of the circuit. Tap \"Start activity\" to run an exercise.",
+    "tutorial.hint.sessoes.stopResumed": "Tap \"Parar\" to end the exercise and open its result.",
+    "tutorial.hint.sessoes.deferResumed": "Tap \"Defer answer\". With one exercise already recorded, the \"Finish\" button appears in the header.",
     "tutorial.hint.sessoes.finish": "Stop the activity and mark its result. With at least one exercise done, the \"Finish\" button appears in the header: tap it to end the session early.",
     "tutorial.hint.sessoes.finishReason": "Pick a reason for ending the session and confirm. The remaining exercises are recorded as not performed.",
     "tutorial.hint.sessoes.finishSession": "This is the session completed screen. Tap \"Back to start\" to end the simulation.",
