@@ -13,7 +13,10 @@ import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-sim
 import { Check } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Animated, ScrollView, Text, View } from "react-native";
-import { ActivityResultModal } from "../../exercises/components/activity-result-modal";
+import {
+  ActivityResultModal,
+  type ActivityNotCompletedData,
+} from "../../exercises/components/activity-result-modal";
 import { MabcResultModal } from "../../exercises/components/mabc-result-modal";
 import { StartActivity } from "../../exercises/components/start-activity";
 import { Stopwatch } from "../../exercises/components/stopwatch";
@@ -37,10 +40,17 @@ const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
   "Recusa do aluno": "recusa_aluno",
   "Comportamento disruptivo": "comportamento_disruptivo",
   "Fadiga ou cansaço": "fadiga_cansaco",
+  // Kept so records saved before these two options were retired still map.
   "Tempo insuficiente": "tempo_insuficiente",
   "Dificuldade física": "dificuldade_fisica",
   Outro: "outro",
 };
+
+/** Maps the picked reason labels to their enum values, defaulting to "outro". */
+function toMotivoEnums(motivos: string[]): MotivoNaoRealizacao[] {
+  const mapped = motivos.map((m) => MOTIVO_NAO_REALIZACAO_MAP[m] ?? "outro");
+  return mapped.length > 0 ? mapped : ["outro"];
+}
 
 // Each stopwatch control the sessions tutorial spotlights twice (press, then
 // press again) uses a stable key pair so the highlight persists across both
@@ -413,13 +423,17 @@ export function SessionRunningScreen({
     });
   };
 
-  const handleActivityNotCompleted = (motivo: string, descricao?: string) => {
+  const handleActivityNotCompleted = (data: ActivityNotCompletedData) => {
     setIsResultModalOpen(false);
     triggerToast();
+    // What was observed during the attempt is kept alongside the reasons.
     advanceSession("nao_realizada", {
       statusRealizacao: "nao_realizada",
-      motivoNaoRealizacao: MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro",
-      descricaoAdicional: descricao ?? null,
+      motivoNaoRealizacao: toMotivoEnums(data.motivos),
+      descricaoAdicional: data.descricao ?? null,
+      nivelDesenvolvimento: data.nivelDesenvolvimento,
+      registroAjuda: data.registroAjuda,
+      complementosAjuda: data.subCategorias.length > 0 ? data.subCategorias : null,
       duracaoRealSegundos: lastElapsedSecondsRef.current,
     });
   };
@@ -456,14 +470,14 @@ export function SessionRunningScreen({
     triggerToast();
     advanceSession("nao_realizada", {
       statusRealizacao: "nao_realizada",
-      motivoNaoRealizacao: MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro",
+      motivoNaoRealizacao: toMotivoEnums([motivo]),
       descricaoAdicional: descricao ?? null,
       duracaoRealSegundos: lastElapsedSecondsRef.current,
     });
   };
 
   const persistAndFinish = async (
-    motivoFinalizacao: MotivoNaoRealizacao | null = null,
+    motivoFinalizacao: MotivoNaoRealizacao[] | null = null,
     descricaoMotivo: string | null = null,
   ) => {
     let sid = effectiveSessionIdRef.current;
@@ -486,7 +500,7 @@ export function SessionRunningScreen({
         exercicioId: ex.id,
         ordemExecucao: baseOrdem + i + 1,
         statusRealizacao: "nao_realizada",
-        motivoNaoRealizacao: motivoFinalizacao ?? "outro",
+        motivoNaoRealizacao: motivoFinalizacao ?? ["outro"],
         descricaoAdicional: descricaoMotivo,
       }));
       executionsRef.current = [...executionsRef.current, ...records];
@@ -656,7 +670,7 @@ export function SessionRunningScreen({
     setIsResultModalOpen(true);
   };
 
-  const handleConfirmFinish = (motivo: string, descricao?: string) => {
+  const handleConfirmFinish = (motivos: string[], descricao?: string) => {
     finalizeActiveCrise();
     finalizeActiveFuga();
 
@@ -672,10 +686,10 @@ export function SessionRunningScreen({
     const temPendencias = pendentes.length > 0;
 
     void persistAndFinish(
-      MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro",
-      descricao ?? motivo,
+      toMotivoEnums(motivos),
+      descricao ?? motivos.join(", "),
     );
-    onFinishSession?.(motivo);
+    onFinishSession?.(motivos.join(", "));
     onCompleteSession?.(
       temPendencias,
       pendentes,

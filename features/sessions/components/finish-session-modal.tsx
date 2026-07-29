@@ -3,6 +3,7 @@ import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
 import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { SpotlightBinding } from "@/features/tutorial/components/spotlight-binding";
@@ -26,8 +27,6 @@ export const DEFAULT_FINISH_MOTIVOS = [
   "Recusa do aluno",
   "Comportamento disruptivo",
   "Fadiga ou cansaço",
-  "Tempo insuficiente",
-  "Dificuldade física",
   "Outro",
 ];
 
@@ -45,7 +44,8 @@ const MOTIVO_LABEL_KEYS: Record<string, TranslationKey> = {
 export type FinishSessionModalProps = {
   visible: boolean;
   onClose: () => void;
-  onConfirm: (motivo: string, descricao?: string) => void;
+  /** Receives every selected reason, and the description when "Outro" is among them. */
+  onConfirm: (motivos: string[], descricao?: string) => void;
   motivos?: string[];
   title?: string;
   message?: string;
@@ -86,41 +86,46 @@ export function FinishSessionModal({
 }: FinishSessionModalProps) {
   const { t } = useI18n();
   const sim = useTutorialSimulation();
+  const keyboardPadding = useKeyboardPadding();
   const reasonsRef = useRef<View>(null);
   const resolvedTitle = title ?? t("session.finishTitle");
   const resolvedMessage = message ?? t("session.finishMessage");
   const resolvedCancelLabel = cancelLabel ?? t("common.cancel");
   const resolvedConfirmLabel = confirmLabel ?? t("common.finish");
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
   const [outroDescricao, setOutroDescricao] = useState<string>("");
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     if (visible) {
-      setSelected(null);
+      setSelected([]);
       setOutroDescricao("");
       setSubmitted(false);
     }
   }, [visible]);
 
-  const isOutro = selected === "Outro";
+  const isOutro = selected.includes("Outro");
   const outroError = submitted && isOutro && outroDescricao.trim() === "";
 
   const handleConfirm = () => {
     setSubmitted(true);
-    if (!selected) return;
+    if (selected.length === 0) return;
     if (isOutro && outroDescricao.trim() === "") return;
     if (confirmSpotlightKey) sim.complete(confirmSpotlightKey);
     onConfirm(selected, isOutro ? outroDescricao.trim() : undefined);
   };
 
   const renderMotivo = (motivo: string) => {
-    const isActive = selected === motivo;
+    const isActive = selected.includes(motivo);
     return (
       <Pressable
         key={motivo}
         onPress={() => {
-          setSelected(motivo);
+          setSelected((prev) =>
+            prev.includes(motivo)
+              ? prev.filter((m) => m !== motivo)
+              : [...prev, motivo],
+          );
           setSubmitted(false);
           if (reasonSpotlightKey) sim.complete(reasonSpotlightKey);
         }}
@@ -148,6 +153,9 @@ export function FinishSessionModal({
       <SpotlightBinding targetKey={reasonSpotlightKey} viewRef={reasonsRef} />
       <Pressable
         className="flex-1 items-center justify-center bg-black/50"
+        // Keeps the card above the software keyboard while the "Outro"
+        // description is being typed.
+        style={{ paddingBottom: keyboardPadding }}
         onPress={onClose}
       >
         <Pressable

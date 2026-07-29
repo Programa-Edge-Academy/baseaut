@@ -128,14 +128,19 @@ export function GlobalSessionWidget() {
     }
   })();
 
-  const handleConfirmFinish = (motivo: string, descricao?: string) => {
+  const handleConfirmFinish = (motivos: string[], descricao?: string) => {
     setIsFinishOpen(false);
     const sid = sessionData.sessionId;
     const total = sessionData.totalElapsed ?? 0;
     const fugas = sessionData.fugaIntervals ?? [];
-    const motivoEnum = MOTIVO_NAO_REALIZACAO_MAP[motivo] ?? "outro";
+    const mapped = motivos.map((m) => MOTIVO_NAO_REALIZACAO_MAP[m] ?? "outro");
+    const motivoEnums = mapped.length > 0 ? mapped : ["outro" as const];
     void (async () => {
-      await finishSessionAndSaveUnexecuted(sid, motivoEnum, descricao ?? motivo);
+      await finishSessionAndSaveUnexecuted(
+        sid,
+        motivoEnums,
+        descricao ?? motivos.join(", "),
+      );
       await finalizeSessionAutoFill(sid, total, fugas);
     })();
     closeSession(sid);

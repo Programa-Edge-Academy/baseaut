@@ -5,6 +5,7 @@ import { Stopwatch } from "@/features/exercises/components/stopwatch";
 import {
   ActivityResultModal,
   ActivityResultData,
+  type ActivityNotCompletedData,
 } from "@/features/exercises/components/activity-result-modal";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { resolveEngagementExerciseId } from "@/lib/resolve-engagement-exercise";
@@ -26,10 +27,17 @@ const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
   "Recusa do aluno": "recusa_aluno",
   "Comportamento disruptivo": "comportamento_disruptivo",
   "Fadiga ou cansaço": "fadiga_cansaco",
+  // Kept so records saved before these two options were retired still map.
   "Tempo insuficiente": "tempo_insuficiente",
   "Dificuldade física": "dificuldade_fisica",
   Outro: "outro",
 };
+
+/** Maps the picked reason labels to their enum values, defaulting to "outro". */
+function toMotivoEnums(motivos: string[]): MotivoNaoRealizacao[] {
+  const mapped = motivos.map((m) => MOTIVO_NAO_REALIZACAO_MAP[m] ?? "outro");
+  return mapped.length > 0 ? mapped : ["outro"];
+}
 
 /**
  * Runs an engagement activity within a semi-structured session. It records each
@@ -158,7 +166,12 @@ export function EngagementActivityScreen() {
 
   const handleResult = async (
     status: "concluido" | "nao_realizada" | "adiado",
-    options?: { motivo?: string; descricao?: string; result?: ActivityResultData },
+    options?: {
+      motivos?: string[];
+      descricao?: string;
+      result?: ActivityResultData;
+      notCompleted?: ActivityNotCompletedData;
+    },
   ) => {
     const duracao = lastElapsedSecondsRef.current;
 
@@ -179,11 +192,17 @@ export function EngagementActivityScreen() {
         });
       }
     } else if (status === "nao_realizada") {
+      // Whatever was observed during the attempt is recorded with the reasons.
       void persistEngagement({
         statusRealizacao: "nao_realizada",
-        motivoNaoRealizacao:
-          MOTIVO_NAO_REALIZACAO_MAP[options?.motivo ?? ""] ?? "outro",
+        motivoNaoRealizacao: toMotivoEnums(options?.motivos ?? []),
         descricaoAdicional: options?.descricao ?? null,
+        nivelDesenvolvimento: options?.notCompleted?.nivelDesenvolvimento ?? null,
+        registroAjuda: options?.notCompleted?.registroAjuda ?? null,
+        complementosAjuda:
+          options?.notCompleted?.subCategorias?.length
+            ? options.notCompleted.subCategorias
+            : null,
         duracaoRealSegundos: duracao,
       });
     } else {
@@ -276,8 +295,12 @@ export function EngagementActivityScreen() {
         elapsedTime={elapsedTimeStr}
         onClose={() => setIsResultModalOpen(false)}
         onDefer={() => handleResult("adiado")}
-        onNotCompleted={(motivo, desc) =>
-          handleResult("nao_realizada", { motivo, descricao: desc })
+        onNotCompleted={(data) =>
+          handleResult("nao_realizada", {
+            motivos: data.motivos,
+            descricao: data.descricao,
+            notCompleted: data,
+          })
         }
         onConfirm={(result) => handleResult("concluido", { result })}
       />

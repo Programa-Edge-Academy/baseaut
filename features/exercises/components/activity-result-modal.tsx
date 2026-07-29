@@ -2,6 +2,7 @@ import { AppModal } from "@/components/app-modal";
 import { colors as staticColors } from "@/assets/colors";
 import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
 import { RipplePressable } from "@/components/ripple-pressable";
 import { SelectableChip } from "@/components/selectable-chip";
@@ -26,6 +27,19 @@ export type ActivityResultData = {
   subCategorias: SubCategoria[];
 };
 
+/**
+ * What was observed during an activity that was not completed. The level and
+ * help are optional here: the attempt is still recorded, but the monitor may
+ * have had nothing to assess.
+ */
+export type ActivityNotCompletedData = {
+  motivos: string[];
+  descricao?: string;
+  nivelDesenvolvimento: NivelDesenvolvimento | null;
+  registroAjuda: RegistroAjuda | null;
+  subCategorias: SubCategoria[];
+};
+
 /** Props for {@link ActivityResultModal}. */
 export type ActivityResultModalProps = {
   visible: boolean;
@@ -34,8 +48,8 @@ export type ActivityResultModalProps = {
   onClose: () => void;
   /** Called to defer the result and answer it later. */
   onDefer?: () => void;
-  /** Called when the activity was not completed, with the reason and optional description. */
-  onNotCompleted?: (motivo: string, descricao?: string) => void;
+  /** Called when the activity was not completed, with everything observed. */
+  onNotCompleted?: (data: ActivityNotCompletedData) => void;
   onConfirm: (result: ActivityResultData) => void;
 };
 
@@ -71,20 +85,29 @@ const NIVEIS: {
 /**
  * Reasons for a non-completed activity. `value` is the canonical (Portuguese)
  * string persisted to the backend; `key` provides the localized display label.
+ *
+ * @remarks
+ * "Tempo insuficiente" and "Dificuldade física" were dropped from the options.
+ * Their enum values still exist in the database so past records keep reading
+ * correctly — they are only gone from what can be picked from now on.
  */
 const MOTIVOS: { value: string; key: TranslationKey }[] = [
   { value: "Recusa do aluno", key: "activityResult.motive.refusal" },
   { value: "Comportamento disruptivo", key: "activityResult.motive.disruptive" },
   { value: "Fadiga ou cansaço", key: "activityResult.motive.fatigue" },
-  { value: "Tempo insuficiente", key: "activityResult.motive.insufficientTime" },
-  { value: "Dificuldade física", key: "activityResult.motive.physicalDifficulty" },
   { value: "Outro", key: "activityResult.motive.other" },
 ];
 
 /**
  * Modal that records the outcome of an in-session activity: motor development
- * level and help registration when completed, or a reason (with optional
- * description) when not completed. Supports deferring the answer for later.
+ * level and help registration when completed, or one or more reasons (with an
+ * optional description) when not completed. Supports deferring for later.
+ *
+ * @remarks
+ * The not-completed path also captures the level and the help registration, so
+ * an attempt that failed still records what was observed. Both stay optional
+ * there — unlike the completed path, where they are required — because an
+ * activity that never started may have nothing to assess.
  */
 export function ActivityResultModal({
   visible,
@@ -97,6 +120,7 @@ export function ActivityResultModal({
 }: ActivityResultModalProps) {
   const colors = useThemeColors();
   const { t } = useI18n();
+  const keyboardPadding = useKeyboardPadding();
   const sim = useTutorialSimulation();
   /** Advances the guided simulation only when `key` is the awaited sub-step. */
   const advanceSim = (key: string) => {
@@ -106,7 +130,7 @@ export function ActivityResultModal({
   const [nivel, setNivel] = useState<NivelDesenvolvimento | null>(null);
   const [ajuda, setAjuda] = useState<RegistroAjuda | null>(null);
   const [subCategorias, setSubCategorias] = useState<SubCategoria[]>([]);
-  const [selectedMotivo, setSelectedMotivo] = useState<string | null>(null);
+  const [selectedMotivos, setSelectedMotivos] = useState<string[]>([]);
   const [outroDescricao, setOutroDescricao] = useState<string>("");
 
   const [submittedResult, setSubmittedResult] = useState(false);
@@ -120,7 +144,7 @@ export function ActivityResultModal({
       setSubmittedResult(false);
       setSubmittedReasons(false);
       setViewMode("result");
-      setSelectedMotivo(null);
+      setSelectedMotivos([]);
       setOutroDescricao("");
     }
   }, [visible]);
@@ -154,18 +178,29 @@ export function ActivityResultModal({
     }
   };
 
+  const toggleMotivo = (value: string) => {
+    setSelectedMotivos((prev) =>
+      prev.includes(value) ? prev.filter((m) => m !== value) : [...prev, value],
+    );
+  };
+
   const handleConfirmNotCompleted = () => {
     setSubmittedReasons(true);
 
-    const isMotivoOk = selectedMotivo !== null;
-    const isOutroOk = selectedMotivo === "Outro" ? outroDescricao.trim() !== "" : true;
+    const isMotivoOk = selectedMotivos.length > 0;
+    const hasOutro = selectedMotivos.includes("Outro");
+    const isOutroOk = hasOutro ? outroDescricao.trim() !== "" : true;
 
     if (isMotivoOk && isOutroOk && onNotCompleted) {
       advanceSim("registerNotCompleted");
-      onNotCompleted(
-        selectedMotivo!,
-        selectedMotivo === "Outro" ? outroDescricao.trim() : undefined
-      );
+      onNotCompleted({
+        motivos: selectedMotivos,
+        descricao: hasOutro ? outroDescricao.trim() : undefined,
+        // Recorded when the monitor had something to assess; never required.
+        nivelDesenvolvimento: nivel,
+        registroAjuda: ajuda,
+        subCategorias: ajuda === "autonomo" ? subCategorias : [],
+      });
     }
   };
 
@@ -173,10 +208,14 @@ export function ActivityResultModal({
   const ajudaError = submittedResult && ajuda === null;
   const subError   = submittedResult && ajuda === "autonomo" && subCategorias.length === 0;
 
-  const motivoError = submittedReasons && selectedMotivo === null;
-  const outroError = submittedReasons && selectedMotivo === "Outro" && outroDescricao.trim() === "";
+  const hasOutroSelected = selectedMotivos.includes("Outro");
+  const motivoError = submittedReasons && selectedMotivos.length === 0;
+  const outroError =
+    submittedReasons && hasOutroSelected && outroDescricao.trim() === "";
 
-  const isRegistrarApparentDisabled = selectedMotivo === null || (selectedMotivo === "Outro" && outroDescricao.trim() === "");
+  const isRegistrarApparentDisabled =
+    selectedMotivos.length === 0 ||
+    (hasOutroSelected && outroDescricao.trim() === "");
 
   return (
     <AppModal
@@ -191,6 +230,9 @@ export function ActivityResultModal({
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: "rgba(0,0,0,0.6)",
+          // Keeps the card above the software keyboard while the "Outro"
+          // description is being typed.
+          paddingBottom: keyboardPadding,
         }}
         onPress={onClose}
       >
@@ -514,10 +556,10 @@ export function ActivityResultModal({
                       key={motivo.value}
                       label={t(motivo.key)}
                       type="motivos"
-                      isSelected={selectedMotivo === motivo.value}
+                      isSelected={selectedMotivos.includes(motivo.value)}
                       onToggle={() => {
                         advanceSim("selectMotive");
-                        setSelectedMotivo(motivo.value);
+                        toggleMotivo(motivo.value);
                         setSubmittedReasons(false);
                       }}
                     />
@@ -530,7 +572,7 @@ export function ActivityResultModal({
                   </Text>
                 )}
 
-                {selectedMotivo === "Outro" && (
+                {hasOutroSelected && (
                   <View style={{ gap: 5, marginTop: 5 }}>
                     <Text
                       style={{
@@ -573,11 +615,96 @@ export function ActivityResultModal({
                 )}
               </View>
 
+              {/* What was observed during the attempt, even without finishing. */}
+              <View style={{ gap: 8, marginTop: 15 }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter-Medium",
+                    fontSize: 14,
+                    color: colors.muted,
+                  }}
+                >
+                  {t("activityResult.observedOptional")}
+                </Text>
+
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  {NIVEIS.map((item) => {
+                    const isSelected = nivel === item.id;
+                    return (
+                      <RipplePressable
+                        key={item.id}
+                        onPress={() => setNivel(isSelected ? null : item.id)}
+                        style={{
+                          flex: 1,
+                          alignItems: "center",
+                          paddingVertical: 12,
+                          paddingHorizontal: 8,
+                          gap: 5,
+                          borderRadius: 15,
+                          borderWidth: isSelected ? 2 : 1,
+                          borderColor: isSelected ? colors.primary : colors.outline,
+                          backgroundColor: colors.level1,
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 20,
+                            backgroundColor: item.bgColor,
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <SvgXml xml={item.svgXml} width={18} height={18} />
+                        </View>
+                        <Text
+                          style={{
+                            fontFamily: "Inter-Medium",
+                            fontSize: 11,
+                            color: colors.content,
+                            textAlign: "center",
+                          }}
+                        >
+                          {t(item.labelKey)}
+                        </Text>
+                      </RipplePressable>
+                    );
+                  })}
+                </View>
+
+                <View style={{ gap: 5 }}>
+                  <SelectableChip
+                    label={t("analysis.help.autonomous")}
+                    type="nivelAjuda"
+                    isSelected={ajuda === "autonomo"}
+                    onToggle={() => {
+                      if (ajuda === "autonomo") {
+                        setAjuda(null);
+                        setSubCategorias([]);
+                      } else {
+                        setAjuda("autonomo");
+                      }
+                    }}
+                    selectedSubOptions={subCategorias}
+                    onSelectSubOption={toggleSubCategoria}
+                  />
+                  <SelectableChip
+                    label={t("analysis.help.intrusive")}
+                    isSelected={ajuda === "ajuda_intrusiva"}
+                    onToggle={() => {
+                      setAjuda(ajuda === "ajuda_intrusiva" ? null : "ajuda_intrusiva");
+                      setSubCategorias([]);
+                    }}
+                  />
+                </View>
+              </View>
+
               <View style={{ flexDirection: "row", gap: 10, marginTop: 15 }}>
                 <RipplePressable
                   onPress={() => {
                     setViewMode("result");
-                    setSelectedMotivo(null);
+                    setSelectedMotivos([]);
                     setOutroDescricao("");
                     setSubmittedReasons(false);
                   }}
