@@ -1,0 +1,92 @@
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import React from "react";
+import { Text, View } from "react-native";
+
+/** Props for {@link BehaviorDetailCard}. */
+export type BehaviorDetailCardProps = {
+  behaviorName: string;
+  color: string;
+  occurrences: number;
+  sessions: string[];
+  exercises: string[];
+  lastOccurrence: string;
+};
+
+/** Props for {@link DetailRow}. */
+type DetailRowProps = {
+  label: string;
+  value: string | number;
+  color: string;
+};
+
+/**
+ * A labeled value row inside the behavior detail card. Renders nothing when the
+ * value is empty, so behaviors without associated data (e.g. preferred
+ * activities, which are not tied to specific exercises) omit the line entirely.
+ */
+function DetailRow({ label, value, color }: DetailRowProps) {
+  if (value === "" || value == null) return null;
+  return (
+    <View className="rounded-lg border border-outline bg-level1 p-3">
+      <Text className="text-sm font-semibold text-muted">
+        {label}:{" "}
+        <Text style={{ color }} className="font-bold">
+          {value}
+        </Text>
+      </Text>
+    </View>
+  );
+}
+
+/**
+ * Detail card for a single observed behavior, listing its occurrences, sessions,
+ * associated exercises, and last occurrence.
+ */
+export function BehaviorDetailCard({
+  behaviorName,
+  color,
+  occurrences,
+  sessions,
+  exercises,
+  lastOccurrence,
+}: BehaviorDetailCardProps) {
+  const { t } = useI18n();
+  return (
+    <View
+      className="w-full max-w-[430px] self-center rounded-lg border bg-level2 p-4"
+      style={{ borderColor: color }}
+    >
+      <View className="gap-3">
+        <DetailRow
+          label={t("analysis.behavior.behavior")}
+          value={behaviorName}
+          color={color}
+        />
+
+        <DetailRow
+          label={t("analysis.behavior.occurrences")}
+          value={occurrences}
+          color={color}
+        />
+
+        <DetailRow
+          label={t("analysis.behavior.sessions")}
+          value={sessions.join(", ")}
+          color={color}
+        />
+
+        <DetailRow
+          label={t("analysis.behavior.associatedExercises")}
+          value={exercises.join(", ")}
+          color={color}
+        />
+
+        <DetailRow
+          label={t("analysis.behavior.lastOccurrence")}
+          value={lastOccurrence}
+          color={color}
+        />
+      </View>
+    </View>
+  );
+}

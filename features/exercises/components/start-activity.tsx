@@ -1,0 +1,167 @@
+import { colors } from "@/assets/colors";
+import { DefaultButton } from "@/components/default-button";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
+import { Image as ImageIcon, ReplaceAll } from "lucide-react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Image, Pressable, Text, View } from "react-native";
+
+/** Props for {@link StartActivity}. */
+export type StartActivityProps = {
+  title: string;
+  subtitle: string;
+  onStart: () => void;
+  onStartAndRecord?: (() => void) | null;
+  onPressInfo?: () => void;
+  /**
+   * Media URL (image) shown inside the preview area. When absent, the preview
+   * toggle and area are omitted.
+   */
+  iconUrl?: string | null;
+  /** Initial state of the preview toggle. Defaults to `false` (collapsed). */
+  defaultPreviewVisible?: boolean;
+  className?: string;
+  /**
+   * Tutorial spotlight key(s) for the reorder action, which is what
+   * {@link StartActivityProps.onPressInfo} opens on a running session.
+   */
+  infoSpotlightKeys?: string | string[];
+  /** Tutorial spotlight key(s) for the start button. */
+  startSpotlightKeys?: string | string[];
+};
+
+/**
+ * Card used to launch an activity. The eye toggle reveals/hides a media
+ * carousel between the header and the action buttons.
+ *
+ * @remarks
+ * The preview toggle only exists when the exercise has media, so it is not a
+ * usable tutorial target; only the reorder action and the start button take
+ * spotlight keys. Both refuse presses outside their own sub-step: starting an
+ * activity early cannot be undone and derails the rest of the guided session, so
+ * it is guarded here on top of the overlay panels rather than by geometry alone.
+ */
+export function StartActivity({
+  title,
+  subtitle,
+  onStart,
+  onStartAndRecord,
+  onPressInfo,
+  iconUrl,
+  defaultPreviewVisible = false,
+  className,
+  infoSpotlightKeys,
+  startSpotlightKeys,
+}: StartActivityProps) {
+  const { t } = useI18n();
+  const sim = useTutorialSimulation();
+  const [isPreviewVisible, setIsPreviewVisible] = useState(defaultPreviewVisible);
+  const hasMedia = !!iconUrl;
+
+  const infoRef = useRef<View>(null);
+  const startRef = useRef<View>(null);
+
+  const infoDep = Array.isArray(infoSpotlightKeys)
+    ? infoSpotlightKeys.join(",")
+    : infoSpotlightKeys;
+  const startDep = Array.isArray(startSpotlightKeys)
+    ? startSpotlightKeys.join(",")
+    : startSpotlightKeys;
+
+  useEffect(() => {
+    const registered: (string | string[])[] = [];
+    if (infoSpotlightKeys?.length) {
+      sim.registerTarget(infoSpotlightKeys, infoRef, { rounded: true });
+      registered.push(infoSpotlightKeys);
+    }
+    if (startSpotlightKeys?.length) {
+      sim.registerTarget(startSpotlightKeys, startRef, { rounded: true });
+      registered.push(startSpotlightKeys);
+    }
+    if (registered.length === 0) return;
+    return () => registered.forEach((keys) => sim.unregisterTarget(keys));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sim, infoDep, startDep]);
+
+  /**
+   * Whether a control is off-limits: a simulation is running and this is not the
+   * sub-step it belongs to. Starting an activity out of turn desynchronizes the
+   * session from the guided script and breaks the rest of the run, so the
+   * handlers refuse it here as well as behind the tap guard's blocking panels.
+   */
+  const isBlocked = (keys?: string | string[]) => {
+    if (!sim.active || !keys?.length) return false;
+    const list = Array.isArray(keys) ? keys : [keys];
+    return !list.includes(sim.currentKey ?? "");
+  };
+
+  const startBlocked = isBlocked(startSpotlightKeys);
+  const infoBlocked = isBlocked(infoSpotlightKeys);
+
+  return (
+    <View
+      className={`w-full rounded-2xl border border-outline bg-level2 p-4 ${className ?? ""}`}
+    >
+      <View className="flex-row items-start justify-between">
+        <View className="flex-1 pr-3">
+          <Text className="text-header-3 text-content" numberOfLines={1}>
+            {title}
+          </Text>
+          <Text className="mt-1 text-default-2 text-muted" numberOfLines={2}>
+            {subtitle}
+          </Text>
+        </View>
+
+        <View className="flex-row items-center gap-3">
+          {onPressInfo && (
+            <Pressable
+              ref={infoRef}
+              collapsable={false}
+              onPress={infoBlocked ? undefined : onPressInfo}
+              hitSlop={8}
+              className="active:opacity-70"
+            >
+              <ReplaceAll size={20} color={colors.muted} />
+            </Pressable>
+          )}
+          {hasMedia && (
+            <Pressable
+              onPress={() => setIsPreviewVisible((current) => !current)}
+              hitSlop={8}
+              className="active:opacity-70"
+            >
+              <ImageIcon 
+                size={20} 
+                color={isPreviewVisible ? colors.primary : colors.muted} 
+              />
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      {isPreviewVisible && hasMedia && (
+        <View
+          className="mt-4 w-full overflow-hidden rounded-2xl bg-level1"
+          style={{ aspectRatio: 4 / 3 }}
+        >
+          <Image
+            source={{ uri: iconUrl as string }}
+            className="h-full w-full"
+            resizeMode="cover"
+          />
+        </View>
+      )}
+
+      <View ref={startRef} collapsable={false} className="mt-4 flex-row gap-2.5">
+        <DefaultButton
+          label={t("exercises.startActivity")}
+          onPress={startBlocked ? () => {} : onStart}
+          bgColorClass="bg-primary"
+          shadowClass="shadow-primaryShadow"
+          sizeClass="flex-1 h-11"
+          textClassName="text-content"
+        />
+      </View>
+    </View>
+  );
+}

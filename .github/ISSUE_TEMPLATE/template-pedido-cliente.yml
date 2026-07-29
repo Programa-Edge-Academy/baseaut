@@ -1,0 +1,97 @@
+name: Pedido do Cliente
+description: Registrar um pedido, feedback ou retorno de cliente sobre o projeto já entregue
+title: "[Pedido] "
+labels: ["a classificar"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Preencha os campos abaixo com o máximo de detalhe possível.
+
+        **Guia rápido de classificação (label "tipo"):**
+        - `bug` → algo que não funciona como deveria desde o início
+        - `melhoria` → mudança de comportamento pedida pelo cliente (mesmo que pequena, como remover uma opção de uma lista)
+        - `duvida` → pergunta ou pedido de suporte, sem necessidade de alterar o sistema
+        - `dados` → correção ou ajuste de dados/conteúdo/textos
+
+  - type: textarea
+    id: descricao
+    attributes:
+      label: Descrição do pedido
+      description: O que o cliente pediu, de preferência com as palavras dele
+      placeholder: "Ex: o cliente pediu para remover as opções X e Y da lista de status"
+    validations:
+      required: true
+
+  - type: input
+    id: solicitante
+    attributes:
+      label: Quem pediu
+      placeholder: "Nome do cliente / contato responsável"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: origem
+    attributes:
+      label: Como foi solicitado
+      options:
+        - E-mail
+        - Reunião
+        - WhatsApp
+        - Outro
+    validations:
+      required: true
+
+  - type: input
+    id: data_pedido
+    attributes:
+      label: Data do pedido
+      placeholder: "dd/mm/aaaa"
+    validations:
+      required: false
+
+  - type: textarea
+    id: criterio_aceite
+    attributes:
+      label: Critério de aceite
+      description: O que precisa acontecer para considerar essa issue resolvida
+      placeholder: "Ex: as opções X e Y não aparecem mais na lista de status em nenhuma tela"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prioridade
+    attributes:
+      label: Prioridade sugerida
+      options:
+        - Alta
+        - Média
+        - Baixa
+    validations:
+      required: true
+
+  - type: textarea
+    id: observacoes
+    attributes:
+      label: Observações técnicas
+      description: Preenchido pelo time durante a análise (pode deixar em branco ao abrir a issue)
+      placeholder: "Impacto técnico, dependências, riscos, etc."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: etapas
+    attributes:
+      label: Andamento
+      description: |
+        Vá marcando conforme o pedido avança. Use comentários na issue para registrar
+        estimativa, retorno do teste com o cliente etc. — o corpo da issue continua
+        sendo a descrição original do pedido.
+      options:
+        - label: Análise/estimativa feita pelos devs
+        - label: Desenho de telas anexado (se necessário)
+        - label: Codificação em branch (linkar o PR nos comentários)
+        - label: Teste interno realizado
+        - label: Teste com cliente aprovado
+        - label: Liberado para publicação

@@ -1,0 +1,168 @@
+import type {
+  Mabc2Draft,
+} from "@/features/analysis/hooks/use-mabc2-records";
+import type { Locale, TranslationKey } from "@/features/settings/constants/translations";
+import { deliverFiles, type DeliveryMode, type ExportableFile } from "@/lib/export-delivery";
+import { pdfDocument, pdfRunningHeaderReport } from "@/lib/pdf-layout";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Print from "expo-print";
+import { Platform } from "react-native";
+
+/** A translator function bound to the active locale. */
+type Translate = (key: TranslationKey) => string;
+
+const TH = `border:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:11px;background:#f1f5f9;font-weight:bold;`;
+const TD = `border:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:11px;`;
+
+/** Stringifies a value for export, using an en dash for null/undefined. */
+function str(value: string | number | null | undefined): string {
+  return value != null ? String(value) : "–";
+}
+
+/**
+ * Exports a MABC-2 draft as PDF and/or CSV and delivers the files via share or
+ * direct download. On web it prints/downloads directly.
+ *
+ * @param draft - The MABC-2 record to export.
+ * @param formats - Which file formats to generate (at least one required).
+ * @param studentName - Student name shown in the export header.
+ * @param mode - Delivery mode for native platforms. Defaults to "share".
+ */
+export async function exportMabc(
+  draft: Mabc2Draft,
+  formats: { pdf: boolean; csv: boolean },
+  studentName: string,
+  mode: DeliveryMode = "share",
+  t: Translate = (key) => key,
+  locale: Locale = "pt",
+): Promise<void> {
+  if (!formats.pdf && !formats.csv) {
+    throw new Error(t("export.selectAtLeastOne"));
+  }
+
+  const emissao = new Date().toLocaleDateString(locale === "en" ? "en-US" : "pt-BR");
+  const safeName = studentName.replace(/[^a-zA-Z0-9]/g, "_");
+
+  const buildPdfHtml = () => {
+    const sectionRows = draft.sections
+      .map((section) => {
+        const exerciseRows = section.exercises
+          .map(
+            (ex) => `
+          <tr>
+            <td style="${TD}"></td>
+            <td style="${TD}">${ex.name}</td>
+            <td style="${TD}">${str(ex.score)}</td>
+            <td style="${TD}">${str(ex.attemptCount)}</td>
+            <td style="${TD}">${ex.unit ?? "–"}</td>
+          </tr>`,
+          )
+          .join("");
+
+        return `
+        <tr style="background:#f8fafc">
+          <td style="${TH}" colspan="2">${section.title}</td>
+          <td style="${TH}">${t("export.scoreLabel")}: ${str(section.categoryScore)}</td>
+          <td style="${TH}">${t("analysis.mabc.percentile")}: ${str(section.categoryPercentile)}</td>
+          <td style="${TH}"></td>
+        </tr>
+        ${exerciseRows}`;
+      })
+      .join("");
+
+    // Instrument + student identification and totals repeat as the running
+    // header on every page.
+    const runningHeader = `
+      <h1>MABC-2</h1>
+      <h2>${studentName}</h2>
+      <p class="meta">${t("export.issuedOn")}: ${emissao}</p>
+      <p style="font-size:13px;color:#1e293b;margin:6px 0 0;font-weight:bold">
+        ${t("export.totalScore")}: ${str(draft.totalScore)} &nbsp;|&nbsp;
+        ${t("export.totalPercentile")}: ${str(draft.totalPercentile)}
+      </p>`;
+    const scoresSection = `
+  <table style="border-collapse:collapse;width:100%">
+    <thead>
+      <tr>
+        <th style="${TH}">${t("export.category")}</th>
+        <th style="${TH}">${t("analysis.compare.exercise")}</th>
+        <th style="${TH}">${t("analysis.mabc.score")}</th>
+        <th style="${TH}">${t("export.attempts")}</th>
+        <th style="${TH}">${t("export.unit")}</th>
+      </tr>
+    </thead>
+    <tbody>${sectionRows}</tbody>
+  </table>`;
+    return pdfDocument(pdfRunningHeaderReport(runningHeader, [scoresSection]));
+  };
+
+  const buildCsv = () => {
+    const rows: string[][] = [
+      ["MABC-2", t("common.student"), t("export.issue")],
+      ["", studentName, emissao],
+      [],
+      [t("export.totalScore"), str(draft.totalScore), t("export.totalPercentile"), str(draft.totalPercentile)],
+      [],
+      [t("export.category"), t("export.categoryScore"), t("export.categoryPercentile"), t("analysis.compare.exercise"), t("analysis.mabc.score"), t("export.attempts"), t("export.unit")],
+    ];
+
+    for (const section of draft.sections) {
+      for (const ex of section.exercises) {
+        rows.push([
+          section.title,
+          str(section.categoryScore),
+          str(section.categoryPercentile),
+          ex.name,
+          str(ex.score),
+          str(ex.attemptCount),
+          ex.unit ?? "–",
+        ]);
+      }
+    }
+
+    return rows
+      .map((row) =>
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
+      )
+      .join("\n");
+  };
+
+  if (Platform.OS === "web") {
+    if (formats.pdf) {
+      await Print.printAsync({ html: buildPdfHtml() });
+    }
+    if (formats.csv) {
+      const blob = new Blob(["﻿" + buildCsv()], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `mabc2_${safeName}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    return;
+  }
+
+  const files: ExportableFile[] = [];
+
+  if (formats.pdf) {
+    const result = await Print.printToFileAsync({ html: buildPdfHtml() });
+    if (result?.uri) {
+      const name = `mabc2_${safeName}.pdf`;
+      const dest = `${FileSystem.cacheDirectory}${name}`;
+      await FileSystem.moveAsync({ from: result.uri, to: dest });
+      files.push({ uri: dest, name, mimeType: "application/pdf" });
+    }
+  }
+
+  if (formats.csv) {
+    const name = `mabc2_${safeName}.csv`;
+    const path = `${FileSystem.cacheDirectory}${name}`;
+    await FileSystem.writeAsStringAsync(path, "﻿" + buildCsv(), {
+      encoding: FileSystem.EncodingType.UTF8,
+    });
+    files.push({ uri: path, name, mimeType: "text/csv" });
+  }
+
+  await deliverFiles(files, mode, t("export.exportMabcTitle"));
+}

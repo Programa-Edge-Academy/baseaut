@@ -8,6 +8,12 @@ Antes de começar a implementar novas telas, componentes ou fluxos, leia o guia 
 
 Este repositório ainda segue a estrutura inicial gerada pelo `create-expo-app`, então o guia acima serve como base para manter o código consistente desde o início.
 
+## Documentação da API
+
+A documentação de referência do Frontend (`app/`, `components/`, `features/`) é gerada com [TypeDoc](https://typedoc.org/) a partir dos comentários do código.
+
+- **Gerar localmente:** `npm run docs` (saída em `docs/api/`, abra `docs/api/index.html`)
+
 ## Get started
 
 1. Install dependencies
@@ -21,6 +27,14 @@ Este repositório ainda segue a estrutura inicial gerada pelo `create-expo-app`,
    ```bash
    npx expo start
    ```
+
+3. Configure environment variables
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   The app reads the Supabase connection through `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
 
 In the output, you'll find options to open the app in a
 

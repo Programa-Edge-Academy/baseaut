@@ -1,0 +1,594 @@
+import { colors } from "@/assets/colors";
+import { AppModal } from "@/components/app-modal";
+import { ConfirmationModal } from "@/components/confirmation-modal";
+import { DefaultButton } from "@/components/default-button";
+import { type ToastMode } from "@/components/toast";
+import type { Mabc2SectionProps } from "@/features/analysis/components/mabc2-section";
+import {
+  buildMockMabc2Draft,
+  deleteMabc2Record,
+  getMabc2Record,
+  saveMabc2Record,
+  startMabc2Record,
+  type Mabc2Draft,
+} from "@/features/analysis/hooks/use-mabc2-records";
+import { Mabc2RecordFormScreen } from "@/features/analysis/screens/mabc2-record-form-screen";
+import { exportMabc } from "@/features/analysis/utils/export-mabc";
+import type { TranslationKey } from "@/features/settings/constants/translations";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
+import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Platform, Pressable, Text, View } from "react-native";
+
+type ScreenMode = "create" | "view" | "edit";
+
+/** Maps a MABC-2 section id to its translation key for localized titles. */
+const SECTION_TITLE_KEYS: Record<string, TranslationKey> = {
+  destreza_manual: "analysis.mabcSection.manualDexterity",
+  pontaria: "analysis.mabcSection.aimingCatching",
+  equilibrio: "analysis.mabcSection.balance",
+};
+
+/** Parses a user-entered string into a finite number, accepting commas as decimal separators. Returns null when empty or invalid. */
+function parseNumber(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed.replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/**
+ * Route for creating, viewing, and editing a MABC-2 assessment record. Guards
+ * access to coordinators and monitors, manages the editable draft, validates
+ * required fields before saving, prompts to discard unsaved changes on exit, and
+ * supports deleting and exporting (PDF/CSV) the record.
+ */
+export default function Mabc2RecordFormRoute() {
+  const { mode, studentId, studentName, recordId } = useLocalSearchParams<{
+    mode?: ScreenMode;
+    studentId: string;
+    studentName: string;
+    recordId?: string;
+  }>();
+
+  const { t, locale } = useI18n();
+  const sessionSim = useSessionSimController();
+  const isTutorial = sessionSim.active && sessionSim.kind === "analysis";
+  const sim = useTutorialSimulation();
+  const currentMode = mode ?? "create";
+  const currentStudentId = studentId ?? "";
+  const currentStudentName = studentName ?? t("common.student");
+  const currentRecordId = recordId ?? "";
+
+  const navigation = useNavigation();
+  const isAbortedRef = useRef(false);
+  const createdIdRef = useRef<string | null>(null);
+  const shouldBypassExit = useRef(false);
+
+  const [draft, setDraft] = useState<Mabc2Draft | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [exitAction, setExitAction] = useState<any>(null);
+  const [isExitModalVisible, setIsExitModalVisible] = useState(false);
+  const [isFormatPickerOpen, setIsFormatPickerOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const [toastConfig, setToastConfig] = useState<{
+    visible: boolean;
+    mode: ToastMode;
+    title: string;
+    description?: string;
+  }>({
+    visible: false,
+    mode: "error",
+    title: "",
+  });
+  const hasLoaded = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      isAbortedRef.current = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (hasLoaded.current) return;
+    hasLoaded.current = true;
+
+    async function load() {
+      setIsLoading(true);
+      setLoadFailed(false);
+
+      try {
+        // Tutorial mock: seeded record ids never hit the database.
+        if (currentRecordId.startsWith("mock")) {
+          setDraft(buildMockMabc2Draft());
+          setIsLoading(false);
+          return;
+        }
+        if (currentMode === "create") {
+          const created = await startMabc2Record(currentStudentId, t);
+          if (isAbortedRef.current) {
+            deleteMabc2Record(created.formularioId).catch(() => {});
+            return;
+          }
+          createdIdRef.current = created.formularioId;
+          setDraft(created);
+        } else if (currentRecordId) {
+          const existing = await getMabc2Record(currentRecordId);
+          if (isAbortedRef.current) return;
+          setDraft(existing);
+        } else {
+          throw new Error(t("mabcForm.recordNotProvided"));
+        }
+      } catch {
+        if (isAbortedRef.current) return;
+        setLoadFailed(true);
+        setToastConfig({
+          visible: true,
+          mode: "error",
+          title: t("mabcForm.loadError"),
+          description: t("common.retry"),
+        });
+      } finally {
+        if (!isAbortedRef.current) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    load();
+  }, [currentMode, currentStudentId, currentRecordId]);
+
+  const handleDiscardAndLeave = async (action?: any) => {
+    if (currentMode === "create" && createdIdRef.current) {
+      try {
+        await deleteMabc2Record(createdIdRef.current);
+      } catch {}
+    }
+    
+    shouldBypassExit.current = true;
+    if (action) {
+      navigation.dispatch(action);
+    } else {
+      router.back();
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+      if (currentMode === "view" || shouldBypassExit.current) {
+        return;
+      }
+
+      e.preventDefault();
+
+      if (isDirty) {
+        setExitAction(e.data.action);
+        setIsExitModalVisible(true);
+      } else {
+        handleDiscardAndLeave(e.data.action);
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, isDirty, currentMode]);
+
+  const sections: Mabc2SectionProps[] = useMemo(() => {
+    if (!draft) return [];
+
+    return draft.sections.map((section, sectionIndex) => ({
+      ...section,
+      title: section.id && SECTION_TITLE_KEYS[section.id]
+        ? t(SECTION_TITLE_KEYS[section.id])
+        : section.title,
+      onChangeCategoryScore: (value) => {
+        setIsDirty(true);
+        setDraft((current) =>
+          current
+            ? {
+                ...current,
+                sections: current.sections.map((item, index) =>
+                  index === sectionIndex
+                    ? { ...item, categoryScore: parseNumber(value) }
+                    : item
+                ),
+              }
+            : current
+        );
+      },
+      onChangeCategoryPercentile: (value) => {
+        setIsDirty(true);
+        setDraft((current) =>
+          current
+            ? {
+                ...current,
+                sections: current.sections.map((item, index) =>
+                  index === sectionIndex
+                    ? { ...item, categoryPercentile: value.trim() || null }
+                    : item
+                ),
+              }
+            : current
+        );
+      },
+      exercises: section.exercises.map((exercise, exerciseIndex) => ({
+        ...exercise,
+        onChangeAttemptCount: (value) => {
+          setIsDirty(true);
+          setDraft((current) =>
+            current
+              ? {
+                  ...current,
+                  sections: current.sections.map((item, index) =>
+                    index === sectionIndex
+                      ? {
+                          ...item,
+                          exercises: item.exercises.map(
+                            (currentExercise, currentExerciseIndex) =>
+                              currentExerciseIndex === exerciseIndex
+                                ? {
+                                    ...currentExercise,
+                                    attemptCount: parseNumber(value),
+                                  }
+                                : currentExercise
+                          ),
+                        }
+                      : item
+                  ),
+                }
+              : current
+          );
+        },
+        onChangeScore: (value) => {
+          setIsDirty(true);
+          setDraft((current) =>
+            current
+              ? {
+                  ...current,
+                  sections: current.sections.map((item, index) =>
+                    index === sectionIndex
+                      ? {
+                          ...item,
+                          exercises: item.exercises.map(
+                            (currentExercise, currentExerciseIndex) =>
+                              currentExerciseIndex === exerciseIndex
+                                ? {
+                                    ...currentExercise,
+                                    score: parseNumber(value),
+                                  }
+                                : currentExercise
+                          ),
+                        }
+                      : item
+                  ),
+                }
+              : current
+          );
+        },
+      })),
+    }));
+  }, [draft, t]);
+
+  const recordCount = draft?.sections.length ?? 0;
+
+  /** Returns whether every required score and percentile in the draft is filled in. */
+  function validateDraft(draftData: Mabc2Draft) {
+    if (draftData.totalScore === null || draftData.totalScore as any === "") return false;
+    if (draftData.totalPercentile === null || draftData.totalPercentile.trim() === "") return false;
+
+    for (const section of draftData.sections) {
+      if (section.categoryScore === null || section.categoryScore as any === "") return false;
+      if (section.categoryPercentile === null || section.categoryPercentile.trim() === "") return false;
+
+      for (const exercise of section.exercises) {
+        if (exercise.score === null || exercise.score as any === "") return false;
+        if (exercise.attemptCount === null || exercise.attemptCount as any === "") return false;
+      }
+    }
+    return true;
+  }
+
+  async function handleSave() {
+    if (!draft || isSubmitting) return;
+
+    if (!validateDraft(draft)) {
+      setShowErrors(true);
+      setToastConfig({
+        visible: true,
+        mode: "error",
+        title: currentMode === "edit" ? t("mabcForm.fillRequiredSave") : t("mabcForm.fillRequiredCreate"),
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await saveMabc2Record(draft);
+      shouldBypassExit.current = true;
+      router.replace({
+        pathname: "/mabc2-records",
+        params: {
+          studentId: currentStudentId,
+          studentName: currentStudentName,
+          toastSuccess:
+            currentMode === "edit"
+              ? t("mabcForm.editedSuccess")
+              : t("mabcForm.savedSuccess"),
+        },
+      } as any);
+    } catch {
+      setIsSubmitting(false);
+      setToastConfig({
+        visible: true,
+        mode: "error",
+        title:
+          currentMode === "edit"
+            ? t("mabcForm.editError")
+            : t("mabcForm.saveError"),
+        description: t("common.retry"),
+      });
+    }
+  }
+
+  async function handleExport(
+    formats: { pdf: boolean; csv: boolean },
+    deliveryMode: "share" | "download" = "share",
+  ) {
+    if (!draft) return;
+    setIsFormatPickerOpen(false);
+    setIsExporting(true);
+    try {
+      await exportMabc(draft, formats, currentStudentName, deliveryMode, t, locale);
+      setToastConfig({ visible: true, mode: "success", title: t("common.exportedSuccess") });
+    } catch (err: any) {
+      setToastConfig({
+        visible: true,
+        mode: "error",
+        title: t("common.exportError"),
+        description: err?.message,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function handleDelete() {
+    const targetRecordId = currentRecordId || draft?.formularioId;
+    if (!targetRecordId || isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      await deleteMabc2Record(targetRecordId);
+      shouldBypassExit.current = true;
+      router.back();
+    } catch {
+      setIsSubmitting(false);
+      setToastConfig({
+        visible: true,
+        mode: "error",
+        title: t("mabcForm.deleteError"),
+        description: t("common.retry"),
+      });
+    }
+  }
+
+  /** Back handler that advances the analysis tutorial before leaving. */
+  const handleTutorialBack = () => {
+    if (isTutorial && sim.currentKey === "backMabcRecord") sim.complete("backMabcRecord");
+    router.back();
+  };
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-level1">
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (loadFailed || !draft) {
+    return (
+      <View className="flex-1 bg-level1">
+        <Mabc2RecordFormScreen
+          studentName={currentStudentName}
+          recordCount={0}
+          totalScore={null}
+          totalPercentile={null}
+          sections={[]}
+          readOnly
+          toastConfig={toastConfig}
+          onHideToast={() => {
+            setToastConfig((prev) => ({ ...prev, visible: false }));
+            shouldBypassExit.current = true;
+            router.back();
+          }}
+          onPressBack={() => router.back()}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <>
+      <Mabc2RecordFormScreen
+        studentName={currentStudentName}
+        recordCount={recordCount}
+        totalScore={draft.totalScore}
+        totalPercentile={draft.totalPercentile}
+        sections={sections}
+        readOnly={currentMode === "view"}
+        showErrors={showErrors}
+        submitLabel={currentMode === "edit" ? t("common.save") : t("common.register")}
+        toastConfig={toastConfig}
+        onHideToast={() => setToastConfig((prev) => ({ ...prev, visible: false }))}
+        onChangeTotalScore={(value) => {
+          setIsDirty(true);
+          setDraft((current) =>
+            current ? { ...current, totalScore: parseNumber(value) } : current
+          );
+        }}
+        onChangeTotalPercentile={(value) => {
+          setIsDirty(true);
+          setDraft((current) =>
+            current
+              ? { ...current, totalPercentile: value.trim() || null }
+              : current
+          );
+        }}
+        onPressBack={handleTutorialBack}
+        backSpotlightKey={isTutorial ? "backMabcRecord" : undefined}
+        onRegister={handleSave}
+        onShare={currentMode === "view" ? () => setIsFormatPickerOpen(true) : undefined}
+        onEdit={() => {
+          shouldBypassExit.current = true;
+          router.replace({
+            pathname: "/mabc2-record-form",
+            params: {
+              mode: "edit",
+              studentId: currentStudentId,
+              studentName: currentStudentName,
+              recordId: currentRecordId || draft.formularioId,
+            },
+          } as any);
+        }}
+        onDelete={handleDelete}
+      />
+
+      <ConfirmationModal
+        visible={isExitModalVisible}
+        onClose={() => setIsExitModalVisible(false)}
+        onConfirm={() => {
+          setIsExitModalVisible(false);
+          handleDiscardAndLeave(exitAction);
+        }}
+        title={t("mabcForm.exitTitle")}
+        message={t("mabcForm.exitMessage")}
+        confirmLabel={t("common.exit")}
+        cancelLabel={t("common.cancel")}
+        iconType="alert"
+      />
+
+      <AppModal
+        visible={isFormatPickerOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsFormatPickerOpen(false)}
+      >
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", paddingHorizontal: 24 }}
+          onPress={() => setIsFormatPickerOpen(false)}
+        >
+          <MabcFormatPicker
+            onExport={handleExport}
+            onClose={() => setIsFormatPickerOpen(false)}
+          />
+        </Pressable>
+      </AppModal>
+    </>
+  );
+}
+
+/**
+ * Modal content for choosing MABC-2 export formats (PDF/CSV) and, on Android,
+ * the delivery mode (share or direct download).
+ */
+function MabcFormatPicker({
+  onExport,
+  onClose,
+}: {
+  onExport: (f: { pdf: boolean; csv: boolean }, mode: "share" | "download") => void;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  const [pdf, setPdf] = useState(true);
+  const [csv, setCsv] = useState(false);
+
+  return (
+    <Pressable
+      style={{
+        backgroundColor: colors.level2,
+        borderWidth: 1,
+        borderColor: colors.outline,
+        borderRadius: 16,
+        padding: 24,
+        width: "100%",
+        gap: 20,
+      }}
+      onPress={(e) => e.stopPropagation()}
+    >
+      <Text style={{ color: "#fff", fontSize: 18, fontFamily: "Inter-Bold" }}>
+        {t("mabcForm.selectFormat")}
+      </Text>
+
+      <View style={{ gap: 12 }}>
+        <Pressable onPress={() => setPdf((v) => !v)} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <View
+            style={{
+              width: 20, height: 20, borderRadius: 4, borderWidth: 1,
+              alignItems: "center", justifyContent: "center",
+              backgroundColor: pdf ? colors.primary : "transparent",
+              borderColor: pdf ? colors.primary : colors.outline,
+            }}
+          >
+            {pdf && <Text style={{ color: "#fff", fontSize: 12, fontWeight: "bold" }}>✓</Text>}
+          </View>
+          <Text style={{ color: "#fff", fontSize: 15, fontFamily: "Inter-Medium" }}>PDF</Text>
+        </Pressable>
+
+        <Pressable onPress={() => setCsv((v) => !v)} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <View
+            style={{
+              width: 20, height: 20, borderRadius: 4, borderWidth: 1,
+              alignItems: "center", justifyContent: "center",
+              backgroundColor: csv ? colors.primary : "transparent",
+              borderColor: csv ? colors.primary : colors.outline,
+            }}
+          >
+            {csv && <Text style={{ color: "#fff", fontSize: 12, fontWeight: "bold" }}>✓</Text>}
+          </View>
+          <Text style={{ color: "#fff", fontSize: 15, fontFamily: "Inter-Medium" }}>{t("mabcForm.csvTabular")}</Text>
+        </Pressable>
+      </View>
+
+      <View style={{ gap: 12 }}>
+        <View style={{ flexDirection: "row", gap: 12 }}>
+          <DefaultButton
+            label={t("common.cancel")}
+            onPress={onClose}
+            bgColorClass="bg-level1"
+            shadowClass=""
+            sizeClass="flex-1 h-11"
+            className="border border-outline"
+            textClassName="text-muted"
+          />
+          <DefaultButton
+            label={t("common.export")}
+            onPress={() => onExport({ pdf, csv }, "share")}
+            sizeClass="flex-1 h-11"
+            bgColorClass="bg-primary"
+            hasShadow
+          />
+        </View>
+
+        {Platform.OS === "android" && (
+          <DefaultButton
+            label={t("common.download")}
+            onPress={() => onExport({ pdf, csv }, "download")}
+            sizeClass="w-full h-11"
+            bgColorClass="bg-secondary"
+            hasShadow={false}
+            className="border border-secondary"
+            textClassName="text-content"
+          />
+        )}
+      </View>
+    </Pressable>
+  );
+}

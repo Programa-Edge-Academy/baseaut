@@ -1,0 +1,17 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["app", "components", "features"],
+  "entryPointStrategy": "expand",
+  "tsconfig": "./tsconfig.json",
+  "out": "docs/api",
+  "name": "BaseAut — Frontend API",
+  "readme": "README.md",
+  "excludePrivate": true,
+  "excludeExternals": true,
+  "hideGenerator": true,
+  "validation": {
+    "notExported": false,
+    "invalidLink": false,
+    "notDocumented": false
+  }
+}

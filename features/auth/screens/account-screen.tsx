@@ -1,0 +1,495 @@
+import { withOpacity } from "@/components/color-opacity";
+import { ConfirmationModal } from "@/components/confirmation-modal";
+import { DefaultButton } from "@/components/default-button";
+import { DefaultTextInput } from "@/components/default-text-input";
+import { Header } from "@/components/header";
+import { PageHeader } from "@/components/page-header";
+import { Toast } from "@/components/toast";
+import { PasswordInput } from "@/features/auth/components/password-input";
+import { passwordChecker } from "@/features/auth/hooks/password-checker";
+import { useAccount } from "@/features/auth/hooks/use-account";
+import { translateAuthError } from "@/features/auth/utils/translate-auth-error";
+import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { useThemeColors } from "@/features/settings/contexts/theme-context";
+import { supabase } from "@/lib/supabase";
+import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
+import { useRouter } from "expo-router";
+import { Camera, Link2, LogOut, Trash2, Unlink2, User } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+
+/** Section container with a title, following the app's card style. */
+function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View className="w-full rounded-2xl border border-outline bg-level2 p-5 gap-4">
+      <Text className="text-header-3 text-content">{title}</Text>
+      {children}
+    </View>
+  );
+}
+
+/**
+ * Account screen: profile photo (tap the avatar or the button to change it),
+ * personal data (name, e-mail), password change, Google link/unlink and logout.
+ * Editable fields are validated inline following the same rules used by the
+ * registration and password-reset screens. Which fields are editable depends on
+ * how the account was registered — Google-only accounts cannot change e-mail or
+ * password.
+ */
+export function AccountScreen() {
+  const router = useRouter();
+  const colors = useThemeColors();
+  const { t } = useI18n();
+  const INVALID_PASSWORD_MSG = t("auth.passwordRule");
+  const {
+    profile,
+    isLoading,
+    updateName,
+    updateEmail,
+    updatePassword,
+    updateAvatar,
+    linkGoogle,
+    unlinkGoogle,
+  } = useAccount();
+  const keyboardPadding = useKeyboardPadding();
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+  const [toast, setToast] = useState<{
+    visible: boolean;
+    mode: "success" | "error";
+    title: string;
+    description?: string;
+  }>({ visible: false, mode: "success", title: "" });
+
+  useEffect(() => {
+    if (profile) {
+      setName(profile.nomeCompleto);
+      setEmail(profile.email ?? "");
+    }
+  }, [profile]);
+
+  const clearError = (key: string) =>
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+
+  const showToast = (mode: "success" | "error", title: string, description?: string) =>
+    setToast({ visible: true, mode, title, description });
+
+  const showResult = (
+    result: { success: boolean; error?: string; needsConfirmation?: boolean },
+    successTitle: string,
+    confirmationDescription?: string,
+  ) => {
+    if (result.success) {
+      showToast(
+        "success",
+        successTitle,
+        result.needsConfirmation ? confirmationDescription : undefined,
+      );
+    } else {
+      showToast("error", t("account.saveError"), translateAuthError(result.error, t) ?? undefined);
+    }
+    return result.success;
+  };
+
+  const handlePhotoPress = async () => {
+    const ImagePicker = require("expo-image-picker");
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      setSaving("avatar");
+      const res = await updateAvatar(result.assets[0].uri);
+      setSaving(null);
+      showResult(res, t("account.photoUpdated"));
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    setSaving("avatar");
+    const res = await updateAvatar(null);
+    setSaving(null);
+    showResult(res, t("account.photoRemoved"));
+  };
+
+  const handleSaveName = async () => {
+    const cleanName = name.trim().replace(/\s+/g, " ");
+    if (!cleanName) {
+      setErrors((p) => ({ ...p, name: t("auth.nameRequired") }));
+      return;
+    }
+    if (cleanName.length < 3) {
+      setErrors((p) => ({ ...p, name: t("auth.nameMin") }));
+      return;
+    }
+    if (!cleanName.includes(" ")) {
+      setErrors((p) => ({ ...p, name: t("auth.nameFull") }));
+      return;
+    }
+    setSaving("name");
+    const res = await updateName(cleanName);
+    setSaving(null);
+    showResult(res, t("account.nameUpdated"));
+  };
+
+  const handleSaveEmail = async () => {
+    if (!email.trim()) {
+      setErrors((p) => ({ ...p, email: t("auth.emailRequired") }));
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setErrors((p) => ({ ...p, email: t("auth.invalidEmail") }));
+      return;
+    }
+    setSaving("email");
+    const res = await updateEmail(email);
+    setSaving(null);
+    showResult(
+      res,
+      t("account.confirmationSent"),
+      t("account.confirmationSentDesc"),
+    );
+  };
+
+  const handleSavePassword = async () => {
+    const newErrors: Record<string, string> = {};
+    if (!currentPassword.trim()) {
+      newErrors.currentPassword = t("account.currentPasswordRequired");
+    }
+    if (!password.trim()) {
+      newErrors.password = t("auth.passwordRequired");
+    } else if (!passwordChecker(password)) {
+      newErrors.password = INVALID_PASSWORD_MSG;
+    }
+    if (!confirmPassword.trim()) {
+      newErrors.confirmPassword = t("auth.confirmRequired");
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = t("auth.passwordsMismatch");
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors((p) => ({ ...p, ...newErrors }));
+      return;
+    }
+    setSaving("password");
+    const res = await updatePassword(currentPassword, password);
+    setSaving(null);
+    if (res.error === "current_password_incorrect") {
+      setErrors((p) => ({ ...p, currentPassword: t("account.currentPasswordIncorrect") }));
+      return;
+    }
+    if (showResult(res, t("account.passwordChanged"))) {
+      setCurrentPassword("");
+      setPassword("");
+      setConfirmPassword("");
+    }
+  };
+
+  const handleGoogle = async () => {
+    setSaving("google");
+    const res = profile?.hasGoogle ? await unlinkGoogle() : await linkGoogle();
+    setSaving(null);
+    showResult(res, profile?.hasGoogle ? t("account.googleUnlinked") : t("account.googleLinkedToast"));
+  };
+
+  const handleLogout = async () => {
+    setIsLogoutModalVisible(false);
+    await supabase.auth.signOut();
+    router.replace("/");
+  };
+
+  if (isLoading || !profile) {
+    return (
+      <View className="flex-1 bg-level1">
+        <Header variant="back" onPressBack={() => router.back()} />
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </View>
+    );
+  }
+
+  const emailEditable = !profile.googleOnly;
+
+  return (
+    <View className="flex-1 bg-level1">
+      <Header variant="back" onPressBack={() => router.back()} />
+
+      <ScrollView
+        className="flex-1 px-8"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 + keyboardPadding }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View className="mt-5 w-full">
+          <PageHeader
+            title={t("account.title")}
+            subtitle={t("account.subtitle")}
+          />
+        </View>
+
+        <View className="mt-6 gap-5">
+          <SectionCard title={t("account.photo")}>
+            <View className="flex-row items-center gap-4">
+              <Pressable
+                onPress={handlePhotoPress}
+                disabled={saving === "avatar"}
+                className="h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-outline bg-level1 active:opacity-70"
+              >
+                {profile.avatarUrl ? (
+                  <Image
+                    source={{ uri: profile.avatarUrl }}
+                    style={{ width: "100%", height: "100%" }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <User size={32} color={colors.muted} />
+                )}
+                <View
+                  className="absolute bottom-0 right-0 h-6 w-6 items-center justify-center rounded-tl-lg"
+                  style={{ backgroundColor: colors.primary }}
+                >
+                  <Camera size={13} color="#FFFFFF" />
+                </View>
+              </Pressable>
+
+              <View className="flex-1 gap-2">
+                <Pressable
+                  onPress={handlePhotoPress}
+                  disabled={saving === "avatar"}
+                  className="flex-row items-center justify-center gap-2 rounded-xl border border-outline bg-level1 py-2.5 active:opacity-70"
+                >
+                  <Camera size={16} color={colors.muted} />
+                  <Text className="text-default-2 text-content">
+                    {saving === "avatar" ? `${t("common.save")}...` : t("account.changePhoto")}
+                  </Text>
+                </Pressable>
+                {profile.avatarUrl && (
+                  <Pressable
+                    onPress={handleRemovePhoto}
+                    disabled={saving === "avatar"}
+                    className="flex-row items-center justify-center gap-2 rounded-xl border py-2.5 active:opacity-70"
+                    style={{
+                      borderColor: colors.error,
+                      backgroundColor: withOpacity(colors.error, 0.1),
+                    }}
+                  >
+                    <Trash2 size={16} color={colors.error} />
+                    <Text className="text-default-2 text-error">{t("account.removePhoto")}</Text>
+                  </Pressable>
+                )}
+              </View>
+            </View>
+          </SectionCard>
+
+          <SectionCard title={t("account.personalData")}>
+            <View className="gap-1">
+              <Text className="text-default-2 text-muted">{t("account.name")}</Text>
+              <DefaultTextInput
+                value={name}
+                maxLength={100}
+                onChangeText={(text) => {
+                  setName(text);
+                  clearError("name");
+                }}
+                className="h-11 w-full rounded-[15px]"
+                outLineBorderClass={errors.name ? "border-error" : "border-outline"}
+              />
+              {errors.name && (
+                <Text className="text-default-3 text-error">{errors.name}</Text>
+              )}
+              {name.trim() !== profile.nomeCompleto && (
+                <DefaultButton
+                  label={saving === "name" ? `${t("common.save")}...` : t("account.saveName")}
+                  onPress={handleSaveName}
+                  sizeClass="w-full h-10"
+                  disabled={saving === "name"}
+                />
+              )}
+            </View>
+
+            <View className="gap-1">
+              <Text className="text-default-2 text-muted">{t("account.email")}</Text>
+              <DefaultTextInput
+                value={email}
+                maxLength={254}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  clearError("email");
+                }}
+                editable={emailEditable}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                className={`h-11 w-full rounded-[15px] ${emailEditable ? "" : "opacity-60"}`}
+                outLineBorderClass={errors.email ? "border-error" : "border-outline"}
+              />
+              {errors.email && (
+                <Text className="text-default-3 text-error">{errors.email}</Text>
+              )}
+              {!emailEditable && (
+                <Text className="text-default-3 text-muted">
+                  {t("account.emailManagedByGoogle")}
+                </Text>
+              )}
+              {emailEditable && email.trim().toLowerCase() !== (profile.email ?? "") && (
+                <DefaultButton
+                  label={saving === "email" ? `${t("common.save")}...` : t("account.saveEmail")}
+                  onPress={handleSaveEmail}
+                  sizeClass="w-full h-10"
+                  disabled={saving === "email"}
+                />
+              )}
+            </View>
+          </SectionCard>
+
+          {profile.hasPassword && (
+            <SectionCard title={t("account.changePassword")}>
+              <View className="gap-1">
+                <Text className="text-default-2 text-muted">{t("account.currentPassword")}</Text>
+                <PasswordInput
+                  value={currentPassword}
+                  maxLength={20}
+                  onChangeText={(text) => {
+                    setCurrentPassword(text);
+                    clearError("currentPassword");
+                  }}
+                  placeholder={t("account.currentPassword")}
+                  className="h-11 w-full rounded-[15px]"
+                  outLineBorderClass={errors.currentPassword ? "border-error" : "border-outline"}
+                />
+                {errors.currentPassword && (
+                  <Text className="text-default-3 text-error">{errors.currentPassword}</Text>
+                )}
+              </View>
+              <View className="gap-1">
+                <Text className="text-default-2 text-muted">{t("account.newPassword")}</Text>
+                <PasswordInput
+                  value={password}
+                  maxLength={20}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    clearError("password");
+                  }}
+                  placeholder={t("account.newPassword")}
+                  className="h-11 w-full rounded-[15px]"
+                  outLineBorderClass={errors.password ? "border-error" : "border-outline"}
+                />
+                {errors.password && (
+                  <Text className="text-default-3 text-error">{errors.password}</Text>
+                )}
+              </View>
+              <View className="gap-1">
+                <Text className="text-default-2 text-muted">{t("account.confirmNewPassword")}</Text>
+                <PasswordInput
+                  value={confirmPassword}
+                  maxLength={20}
+                  onChangeText={(text) => {
+                    setConfirmPassword(text);
+                    clearError("confirmPassword");
+                  }}
+                  placeholder={t("account.confirmNewPasswordPlaceholder")}
+                  className="h-11 w-full rounded-[15px]"
+                  outLineBorderClass={errors.confirmPassword ? "border-error" : "border-outline"}
+                />
+                {errors.confirmPassword && (
+                  <Text className="text-default-3 text-error">{errors.confirmPassword}</Text>
+                )}
+              </View>
+              <DefaultButton
+                label={saving === "password" ? `${t("common.save")}...` : t("account.changePassword")}
+                onPress={handleSavePassword}
+                sizeClass="w-full h-10"
+                disabled={saving === "password" || !currentPassword || !password || !confirmPassword}
+              />
+            </SectionCard>
+          )}
+
+          <SectionCard title={t("account.google")}>
+            <Text className="text-default-2 text-muted">
+              {profile.hasGoogle
+                ? t("account.googleLinked")
+                : t("account.googleUnlinkedHint")}
+            </Text>
+            {profile.googleOnly ? (
+              <Text className="text-default-3 text-muted">
+                {t("account.googleOnly")}
+              </Text>
+            ) : (
+              <Pressable
+                onPress={handleGoogle}
+                disabled={saving === "google"}
+                className="flex-row items-center justify-center gap-2 rounded-xl border border-outline bg-level1 py-2.5 active:opacity-70"
+              >
+                {profile.hasGoogle ? (
+                  <Unlink2 size={16} color={colors.muted} />
+                ) : (
+                  <Link2 size={16} color={colors.muted} />
+                )}
+                <Text className="text-default-2 text-content">
+                  {saving === "google"
+                    ? `${t("common.loading")}`
+                    : profile.hasGoogle
+                      ? t("account.unlinkGoogle")
+                      : t("account.linkGoogle")}
+                </Text>
+              </Pressable>
+            )}
+          </SectionCard>
+
+          <Pressable
+            onPress={() => setIsLogoutModalVisible(true)}
+            style={{ borderColor: colors.error }}
+            className="w-full h-20 flex-row items-center rounded-2xl border bg-level2 p-4 active:opacity-80"
+          >
+            <View
+              style={{ backgroundColor: withOpacity(colors.error, 0.1) }}
+              className="mr-4 h-11 w-11 items-center justify-center rounded-2xl"
+            >
+              <LogOut size={20} color={colors.error} />
+            </View>
+            <View className="flex-1 flex-col justify-center">
+              <Text className="text-default-1 text-error">{t("account.logout")}</Text>
+            </View>
+          </Pressable>
+        </View>
+      </ScrollView>
+
+      <ConfirmationModal
+        visible={isLogoutModalVisible}
+        onClose={() => setIsLogoutModalVisible(false)}
+        onConfirm={handleLogout}
+        mode="logout"
+      />
+
+      <Toast
+        visible={toast.visible}
+        mode={toast.mode}
+        title={toast.title}
+        description={toast.description}
+        onHide={() => setToast((t) => ({ ...t, visible: false }))}
+      />
+    </View>
+  );
+}
