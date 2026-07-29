@@ -3,6 +3,7 @@ import { AppModal } from "@/components/app-modal";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { DefaultButton } from "@/components/default-button";
 import { Header } from "@/components/header";
+import { KeyboardAwareScrollView } from "@/components/keyboard-aware-scroll-view";
 import { PageHeader } from "@/components/page-header";
 import { Toast } from "@/components/toast";
 import {
@@ -23,7 +24,6 @@ import {
   ActivityIndicator,
   Platform,
   Pressable,
-  ScrollView,
   Text,
   View,
 } from "react-native";
@@ -213,10 +213,9 @@ export default function SessionDetailScreen() {
           </Text>
         </View>
       ) : (
-        <ScrollView
+        <KeyboardAwareScrollView
           className="mt-5 px-8"
           contentContainerStyle={{ paddingBottom: 32 }}
-          showsVerticalScrollIndicator={false}
         >
           {(data?.executions ?? []).length === 0 ? (
             <Text className="mt-10 text-center text-muted">
@@ -242,7 +241,7 @@ export default function SessionDetailScreen() {
               />
             ))
           )}
-        </ScrollView>
+        </KeyboardAwareScrollView>
       )}
 
       <AppModal

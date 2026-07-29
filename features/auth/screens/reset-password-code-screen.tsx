@@ -6,6 +6,7 @@ import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "@/components/keyboard-aware-scroll-view";
 import { SvgXml } from "react-native-svg";
 
 /** Which recovery action is currently in flight, for per-button feedback. */
@@ -74,90 +75,95 @@ export function ResetPasswordCodeScreen() {
   };
 
   return (
-    <View className="flex-1 items-center bg-level1 px-4 pt-10">
-      <View className="w-full mt-12 pt-12 items-center">
-        <SvgXml xml={baseautLogoXml} width={196} height={70} />
-      </View>
+    <KeyboardAwareScrollView
+      className="flex-1 bg-level1"
+      contentContainerStyle={{ flexGrow: 1 }}
+    >
+      <View className="flex-1 items-center bg-level1 px-4 pt-10">
+        <View className="w-full mt-12 pt-12 items-center">
+          <SvgXml xml={baseautLogoXml} width={196} height={70} />
+        </View>
 
-      <View className="mt-10 w-full items-center">
-        <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-6 shadow-panelShadow border border-outline">
-          <Text className="text-header-3 text-content mb-5">{t("auth.resetTitle")}</Text>
+        <View className="mt-10 w-full items-center">
+          <View className="w-full max-w-[384px] items-center rounded-[15px] bg-level2 px-6 py-6 shadow-panelShadow border border-outline">
+            <Text className="text-header-3 text-content mb-5">{t("auth.resetTitle")}</Text>
 
-          <View className="w-full max-w-[342px] gap-4">
-            <View className="w-full gap-1">
-              <Text className="text-default-2 text-muted">{t("auth.email")}</Text>
-              <DefaultTextInput
-                placeholder={t("auth.emailPlaceholder")}
-                value={email}
-                maxLength={254}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  if (errors.email) setErrors((prev) => ({ ...prev, email: "" }));
-                  if (error) setError(null);
-                }}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                className="h-11 w-full rounded-[15px]"
-                outLineBorderClass={errors.email ? "border-error" : "border-outline"}
+            <View className="w-full max-w-[342px] gap-4">
+              <View className="w-full gap-1">
+                <Text className="text-default-2 text-muted">{t("auth.email")}</Text>
+                <DefaultTextInput
+                  placeholder={t("auth.emailPlaceholder")}
+                  value={email}
+                  maxLength={254}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (errors.email) setErrors((prev) => ({ ...prev, email: "" }));
+                    if (error) setError(null);
+                  }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  className="h-11 w-full rounded-[15px]"
+                  outLineBorderClass={errors.email ? "border-error" : "border-outline"}
+                />
+                {errors.email ? (
+                  <Text className="text-default-3 text-error">{errors.email}</Text>
+                ) : null}
+              </View>
+
+              <DefaultButton
+                label={action === "send" ? t("auth.sending") : t("auth.sendCode")}
+                onPress={handleSend}
+                sizeClass="w-full h-11"
+                className="rounded-[15px]"
+                disabled={loading}
               />
-              {errors.email ? (
-                <Text className="text-default-3 text-error">{errors.email}</Text>
-              ) : null}
+
+              <View className="w-full gap-1">
+                <Text className="text-default-2 text-muted">{t("auth.code")}</Text>
+                <DefaultTextInput
+                  placeholder={t("auth.codeDigitsPlaceholder")}
+                  value={code}
+                  maxLength={8}
+                  onChangeText={(text) => {
+                    setCode(text.replace(/\D/g, ""));
+                    if (errors.code) setErrors((prev) => ({ ...prev, code: "" }));
+                    if (error) setError(null);
+                  }}
+                  keyboardType="number-pad"
+                  className="h-11 w-full rounded-[15px]"
+                  outLineBorderClass={errors.code ? "border-error" : "border-outline"}
+                />
+                {errors.code ? (
+                  <Text className="text-default-3 text-error">{errors.code}</Text>
+                ) : null}
+              </View>
+
+              <DefaultButton
+                label={action === "verify" ? t("auth.verifying") : t("auth.confirmCode")}
+                onPress={handleConfirmCode}
+                sizeClass="w-full h-11"
+                className="rounded-[15px]"
+                bgColorClass="bg-secondary"
+                shadowClass="shadow-secondaryShadow"
+                disabled={loading}
+              />
             </View>
 
-            <DefaultButton
-              label={action === "send" ? t("auth.sending") : t("auth.sendCode")}
-              onPress={handleSend}
-              sizeClass="w-full h-11"
-              className="rounded-[15px]"
-              disabled={loading}
-            />
+            {sent ? (
+              <Text className="mt-6 text-default-3 text-secondary text-center">
+                {t("auth.codeSentHint")}
+              </Text>
+            ) : null}
+            {error ? (
+              <Text className="mt-4 text-default-3 text-error text-center">{error}</Text>
+            ) : null}
 
-            <View className="w-full gap-1">
-              <Text className="text-default-2 text-muted">{t("auth.code")}</Text>
-              <DefaultTextInput
-                placeholder={t("auth.codeDigitsPlaceholder")}
-                value={code}
-                maxLength={8}
-                onChangeText={(text) => {
-                  setCode(text.replace(/\D/g, ""));
-                  if (errors.code) setErrors((prev) => ({ ...prev, code: "" }));
-                  if (error) setError(null);
-                }}
-                keyboardType="number-pad"
-                className="h-11 w-full rounded-[15px]"
-                outLineBorderClass={errors.code ? "border-error" : "border-outline"}
-              />
-              {errors.code ? (
-                <Text className="text-default-3 text-error">{errors.code}</Text>
-              ) : null}
-            </View>
-
-            <DefaultButton
-              label={action === "verify" ? t("auth.verifying") : t("auth.confirmCode")}
-              onPress={handleConfirmCode}
-              sizeClass="w-full h-11"
-              className="rounded-[15px]"
-              bgColorClass="bg-secondary"
-              shadowClass="shadow-secondaryShadow"
-              disabled={loading}
-            />
+            <Pressable onPress={() => router.replace("/")} className="mt-6">
+              <Text className="text-header-3 text-primary">{t("auth.backToLogin")}</Text>
+            </Pressable>
           </View>
-
-          {sent ? (
-            <Text className="mt-6 text-default-3 text-secondary text-center">
-              {t("auth.codeSentHint")}
-            </Text>
-          ) : null}
-          {error ? (
-            <Text className="mt-4 text-default-3 text-error text-center">{error}</Text>
-          ) : null}
-
-          <Pressable onPress={() => router.replace("/")} className="mt-6">
-            <Text className="text-header-3 text-primary">{t("auth.backToLogin")}</Text>
-          </Pressable>
         </View>
       </View>
-    </View>
+    </KeyboardAwareScrollView>
   );
 }

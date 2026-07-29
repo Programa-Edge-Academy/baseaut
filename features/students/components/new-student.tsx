@@ -7,8 +7,9 @@ import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-sim
 import { Calendar, ChevronDown, ImageUp, Pencil, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { AppModal } from "@/components/app-modal";
+import { KeyboardAwareScrollView } from "@/components/keyboard-aware-scroll-view";
 import RangeCalendar from "@/components/range-calendar";
-import { Image, Keyboard, Pressable, ScrollView, Text, View } from "react-native";
+import { Image, Keyboard, Pressable, Text, View } from "react-native";
 import { ActionButtons } from "../../../components/action-buttons";
 import { ConfirmationModal } from "../../../components/confirmation-modal";
 import { DefaultTextInput } from "../../../components/default-text-input";
@@ -397,10 +398,8 @@ export function NewStudent({
             className="mx-7 border bg-level2 border-outline rounded-[15px] overflow-hidden"
             style={{ maxHeight: "90%" }}
           >
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
+            <KeyboardAwareScrollView
               keyboardDismissMode="on-drag"
-              showsVerticalScrollIndicator={false}
               contentContainerStyle={{ padding: 25, gap: 20 }}
             >
               <View className="flex-row items-center justify-between">
@@ -707,7 +706,7 @@ export function NewStudent({
                 disabled={isSaving}
                 saveButtonRef={saveFieldRef}
               />
-            </ScrollView>
+            </KeyboardAwareScrollView>
           </View>
 
           <TutorialSpotlight />
