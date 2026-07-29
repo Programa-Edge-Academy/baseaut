@@ -1,4 +1,5 @@
 import { AppModal } from "@/components/app-modal";
+import { KeyboardAwareScrollView } from "@/components/keyboard-aware-scroll-view";
 import React, { useEffect, useRef, useState } from "react";
 import { Keyboard, Text, View, Pressable, useWindowDimensions, ScrollView } from "react-native";
 import { X, CheckCircle2, Tags } from "lucide-react-native";
@@ -160,16 +161,21 @@ export function NewCircuit({
   const availableTags = ["Coordenação", "Força", "Equilíbrio"];
   const availableSubtags = ["locomotor", "manipulativo", "estabilizador"];
 
+  // An exercise matches when ANY of its main tags is selected — it can carry up
+  // to three, so filtering by the first one alone would hide it from the others.
   const filteredExercises = exercises.filter((ex) => {
     if (selectedTags.length === 0) return true;
 
-    if (!ex.tag || !selectedTags.includes(ex.tag)) return false;
+    const exerciseTags = Object.keys(ex.tags ?? {});
+    return exerciseTags.some((tag) => {
+      if (!selectedTags.includes(tag)) return false;
 
-    const subsForTag = selectedSubtags[ex.tag] || [];
-    if (subsForTag.length === 0) return true;
+      const subsForTag = selectedSubtags[tag] || [];
+      if (subsForTag.length === 0) return true;
 
-    if (!ex.subtags || ex.subtags.length === 0) return false;
-    return ex.subtags.some((sub) => subsForTag.includes(sub));
+      const exerciseSubs = ex.tags?.[tag] ?? [];
+      return exerciseSubs.some((sub) => subsForTag.includes(sub));
+    });
   });
 
 
@@ -253,10 +259,8 @@ export function NewCircuit({
             </Pressable>
           </View>
 
-          <ScrollView
+          <KeyboardAwareScrollView
             className="flex-shrink"
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
             scrollEnabled={!isDragging}
             contentContainerStyle={{ padding: 20 }}
           >
@@ -372,7 +376,7 @@ export function NewCircuit({
                 />
               </View>
             )}
-          </ScrollView>
+          </KeyboardAwareScrollView>
 
 
           <View className="flex-row justify-between gap-3 p-5">

@@ -8,17 +8,59 @@ import { Alert } from "react-native";
 import { NewExerciseData } from "../components/new-exercise";
 
 /**
+ * Main tags of an exercise, each mapped to its own subtags. An exercise has
+ * one to three main tags, and each of them one to three subtags.
+ */
+export type ExerciseTags = Record<string, string[]>;
+
+/**
  * Exercise domain model used by the UI.
  */
 export type Exercise = {
   id: string;
   name: string;
   description: string;
-  durationSeconds?: number;
+  /** How many times the exercise is performed in a session. Informational. */
+  repetitions?: number | null;
+  /** Every main tag with its subtags. */
+  tags: ExerciseTags;
+  /**
+   * First main tag. Kept in sync with the first key of {@link Exercise.tags}
+   * for the consumers that still reason about a single tag.
+   */
   tag: string;
+  /** Subtags of the first main tag. */
   subtags?: string[];
   iconUrl?: string | null;
 };
+
+/** Returns the first main tag of a tag map, or null when it is empty. */
+export function primaryTag(tags: ExerciseTags | null | undefined): string | null {
+  const keys = Object.keys(tags ?? {});
+  return keys.length > 0 ? keys[0] : null;
+}
+
+/**
+ * Normalizes whatever the database returns into a tag map, falling back to the
+ * legacy single `tag` + flat `subtags` columns for rows not yet backfilled.
+ */
+function toTagMap(
+  raw: unknown,
+  legacyTag: string | null,
+  legacySubtags: string[] | null,
+): ExerciseTags {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const entries = Object.entries(raw as Record<string, unknown>).filter(
+      ([, subs]) => Array.isArray(subs),
+    );
+    if (entries.length > 0) {
+      return Object.fromEntries(
+        entries.map(([tag, subs]) => [tag, (subs as unknown[]).map(String)]),
+      );
+    }
+  }
+  return legacyTag ? { [legacyTag]: legacySubtags ?? [] } : {};
+}
 
 /**
  * Seed exercises for the tutorial's mock mode (kept entirely in memory). The
@@ -30,7 +72,8 @@ const buildMockExercises = (t: (key: TranslationKey) => string): Exercise[] => [
     id: "mock-linha",
     name: t("mock.exWalkLine"),
     description: t("mock.exWalkLineDesc"),
-    durationSeconds: 60,
+    repetitions: 3,
+    tags: { "Equilíbrio": ["estabilizador"] },
     tag: "Equilíbrio",
     subtags: ["estabilizador"],
     iconUrl: null,
@@ -39,7 +82,8 @@ const buildMockExercises = (t: (key: TranslationKey) => string): Exercise[] => [
     id: "mock-bambole",
     name: t("mock.exHoop"),
     description: t("mock.exHoopDesc"),
-    durationSeconds: 90,
+    repetitions: 5,
+    tags: { "Coordenação": ["manipulativo"], "Força": ["locomotor"] },
     tag: "Coordenação",
     subtags: ["manipulativo"],
     iconUrl: null,
@@ -86,7 +130,7 @@ export function useExercises(options?: UseExercisesOptions) {
 
       const { data, error: fetchError } = await supabase
         .from("exercicios")
-        .select("id, titulo, descricao, duracao_segundos, tag, subtags, icone_url")
+        .select("id, titulo, descricao, repeticoes, tags, tag, subtags, icone_url")
         .eq("equipe_id", teamId)
         .eq("ativo", true)
         .order("created_at", { ascending: false });
@@ -95,15 +139,20 @@ export function useExercises(options?: UseExercisesOptions) {
 
       if (data) {
         setExercises(
-          data.map((row) => ({
-            id: row.id,
-            name: row.titulo,
-            description: row.descricao || "",
-            durationSeconds: row.duracao_segundos,
-            tag: row.tag || "Coordenação",
-            subtags: row.subtags || ["estabilizador"],
-            iconUrl: row.icone_url,
-          })),
+          data.map((row) => {
+            const tags = toTagMap(row.tags, row.tag, row.subtags);
+            const first = primaryTag(tags);
+            return {
+              id: row.id,
+              name: row.titulo,
+              description: row.descricao || "",
+              repetitions: row.repeticoes ?? null,
+              tags,
+              tag: first ?? "Coordenação",
+              subtags: first ? tags[first] : ["estabilizador"],
+              iconUrl: row.icone_url,
+            };
+          }),
         );
       }
     } catch (caught: any) {
@@ -124,15 +173,18 @@ export function useExercises(options?: UseExercisesOptions) {
     data: NewExerciseData,
     photoUri?: string | null,
   ) => {
+    const first = primaryTag(data.tags);
+
     if (isMock) {
       mockIdRef.current += 1;
       const created: Exercise = {
         id: `mock-new-${mockIdRef.current}`,
         name: data.name,
         description: data.description,
-        durationSeconds: data.durationSeconds,
-        tag: data.tag || "Coordenação",
-        subtags: data.subtags,
+        repetitions: data.repetitions,
+        tags: data.tags,
+        tag: first ?? "Coordenação",
+        subtags: first ? data.tags[first] : [],
         iconUrl: photoUri ?? null,
       };
       setExercises((prev) => [created, ...prev]);
@@ -151,9 +203,11 @@ export function useExercises(options?: UseExercisesOptions) {
         descricao: data.description || null,
         equipe_id: equipeId,
         ativo: true,
-        duracao_segundos: data.durationSeconds || null,
-        tag: data.tag || null,
-        subtags: data.subtags,
+        repeticoes: data.repetitions ?? null,
+        tags: data.tags,
+        // `tag`/`subtags` espelham a primeira tag para os consumidores antigos.
+        tag: first,
+        subtags: first ? data.tags[first] : [],
         icone_url: finalIconUrl,
       };
 
@@ -179,6 +233,8 @@ export function useExercises(options?: UseExercisesOptions) {
     data: NewExerciseData,
     photoUri?: string | null,
   ) => {
+    const first = primaryTag(data.tags);
+
     if (isMock) {
       setExercises((prev) =>
         prev.map((e) =>
@@ -187,9 +243,10 @@ export function useExercises(options?: UseExercisesOptions) {
                 ...e,
                 name: data.name,
                 description: data.description,
-                durationSeconds: data.durationSeconds,
-                tag: data.tag || e.tag,
-                subtags: data.subtags,
+                repetitions: data.repetitions,
+                tags: data.tags,
+                tag: first ?? e.tag,
+                subtags: first ? data.tags[first] : [],
                 iconUrl: photoUri === null ? null : photoUri ?? e.iconUrl,
               }
             : e,
@@ -202,9 +259,10 @@ export function useExercises(options?: UseExercisesOptions) {
       const payload: any = {
         titulo: data.name,
         descricao: data.description || null,
-        duracao_segundos: data.durationSeconds || null,
-        tag: data.tag || null,
-        subtags: data.subtags,
+        repeticoes: data.repetitions ?? null,
+        tags: data.tags,
+        tag: first,
+        subtags: first ? data.tags[first] : [],
       };
 
       if (photoUri && !photoUri.startsWith("http")) {
@@ -272,14 +330,16 @@ export function useExercises(options?: UseExercisesOptions) {
     try {
       if (!equipeId) throw new Error(t("common.err.teamNotIdentified"));
 
+      const first = primaryTag(exercise.tags);
       const payload = {
         titulo: `${exercise.name} (Cópia)`,
         descricao: exercise.description || null,
         equipe_id: equipeId,
         ativo: true,
-        duracao_segundos: exercise.durationSeconds || null,
-        tag: exercise.tag || null,
-        subtags: exercise.subtags || ["estabilizador"],
+        repeticoes: exercise.repetitions ?? null,
+        tags: exercise.tags,
+        tag: first,
+        subtags: first ? exercise.tags[first] : [],
         icone_url: exercise.iconUrl || null,
       };
 

@@ -133,15 +133,17 @@ export type TranslationKey =
   | "exercises.form.namePlaceholder"
   | "exercises.form.description"
   | "exercises.form.descriptionPlaceholder"
-  | "exercises.form.duration"
-  | "exercises.form.durationPlaceholder"
+  | "exercises.form.repetitions"
+  | "exercises.form.repetitionsPlaceholder"
+  | "exercises.form.tagsHint"
+  | "exercises.repetitionsSuffix"
   | "exercises.form.tags"
   | "exercises.form.removeIconTitle"
   | "exercises.form.err.required"
   | "exercises.form.err.nameMax"
   | "exercises.form.err.tagRequired"
   | "exercises.form.err.subtagRequired"
-  | "exercises.form.err.duration"
+  | "exercises.form.err.repetitions"
   | "tutorial.hint.exercicios.new"
   | "tutorial.hint.exercicios.title"
   | "tutorial.hint.exercicios.tag"
@@ -391,6 +393,7 @@ export type TranslationKey =
   | "activityResult.subRequired"
   | "activityResult.notCompleted"
   | "activityResult.reason"
+  | "activityResult.observedOptional"
   | "activityResult.motiveRequired"
   | "activityResult.motiveDescription"
   | "activityResult.describeMotive"
@@ -1239,15 +1242,17 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "exercises.form.namePlaceholder": "Ex: Girar bambolê",
     "exercises.form.description": "Descrição",
     "exercises.form.descriptionPlaceholder": "Descrição do exercício (opcional)",
-    "exercises.form.duration": "Duração máxima (segundos)",
-    "exercises.form.durationPlaceholder": "Ex: 120",
+    "exercises.form.repetitions": "Repetições (opcional)",
+    "exercises.form.repetitionsPlaceholder": "Ex: 3",
+    "exercises.form.tagsHint": "Até 3 tags principais, com até 3 subtags cada.",
+    "exercises.repetitionsSuffix": "x",
     "exercises.form.tags": "Tags",
     "exercises.form.removeIconTitle": "Remover ícone?",
     "exercises.form.err.required": "Este campo é obrigatório",
     "exercises.form.err.nameMax": "O nome deve ter no máximo 100 caracteres",
     "exercises.form.err.tagRequired": "É obrigatória a seleção de uma tag",
     "exercises.form.err.subtagRequired": "É obrigatória a seleção de pelo menos uma subtag",
-    "exercises.form.err.duration": "A duração deve ser menor que 300 segundos",
+    "exercises.form.err.repetitions": "Informe um número de repetições entre 1 e 999",
     "tutorial.hint.exercicios.new": "Toque em \"+ Novo\" para criar um exercício.",
     "tutorial.hint.exercicios.title": "Preencha o nome do exercício.",
     "tutorial.hint.exercicios.tag": "Selecione uma tag e ao menos uma subtag.",
@@ -1496,7 +1501,8 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "activityResult.helpRequired": "É obrigatório selecionar um registro de ajuda.",
     "activityResult.subRequired": "Selecione pelo menos um complemento: Verbal ou Modelo.",
     "activityResult.notCompleted": "Não realizada",
-    "activityResult.reason": "Motivo:",
+    "activityResult.reason": "Motivos (pode marcar mais de um):",
+    "activityResult.observedOptional": "O que foi observado (opcional):",
     "activityResult.motiveRequired": "Selecione o motivo da não realização.",
     "activityResult.motiveDescription": "Descrição do motivo:",
     "activityResult.describeMotive": "Descreva o motivo...",
@@ -2354,15 +2360,17 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "exercises.form.namePlaceholder": "e.g. Spin the hoop",
     "exercises.form.description": "Description",
     "exercises.form.descriptionPlaceholder": "Exercise description (optional)",
-    "exercises.form.duration": "Maximum duration (seconds)",
-    "exercises.form.durationPlaceholder": "e.g. 120",
+    "exercises.form.repetitions": "Repetitions (optional)",
+    "exercises.form.repetitionsPlaceholder": "e.g. 3",
+    "exercises.form.tagsHint": "Up to 3 main tags, each with up to 3 subtags.",
+    "exercises.repetitionsSuffix": "x",
     "exercises.form.tags": "Tags",
     "exercises.form.removeIconTitle": "Remove icon?",
     "exercises.form.err.required": "This field is required",
     "exercises.form.err.nameMax": "Name must be at most 100 characters",
     "exercises.form.err.tagRequired": "A tag selection is required",
     "exercises.form.err.subtagRequired": "At least one subtag is required",
-    "exercises.form.err.duration": "Duration must be less than 300 seconds",
+    "exercises.form.err.repetitions": "Enter a repetition count between 1 and 999",
     "tutorial.hint.exercicios.new": "Tap \"+ New\" to create an exercise.",
     "tutorial.hint.exercicios.title": "Fill in the exercise name.",
     "tutorial.hint.exercicios.tag": "Select a tag and at least one subtag.",
@@ -2611,7 +2619,8 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "activityResult.helpRequired": "You must select a help record.",
     "activityResult.subRequired": "Select at least one complement: Verbal or Model.",
     "activityResult.notCompleted": "Not completed",
-    "activityResult.reason": "Reason:",
+    "activityResult.reason": "Reasons (you can pick more than one):",
+    "activityResult.observedOptional": "What was observed (optional):",
     "activityResult.motiveRequired": "Select the reason for not completing.",
     "activityResult.motiveDescription": "Reason description:",
     "activityResult.describeMotive": "Describe the reason...",
