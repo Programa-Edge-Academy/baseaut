@@ -1,5 +1,6 @@
 import { ActionButtons } from "@/components/action-buttons";
 import { AppModal } from "@/components/app-modal";
+import { KeyboardAwareScrollView } from "@/components/keyboard-aware-scroll-view";
 import { colors } from "@/assets/colors";
 import { DefaultButton } from "@/components/default-button";
 import { DefaultTextInput } from "@/components/default-text-input";
@@ -15,7 +16,6 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Keyboard,
   Pressable,
-  ScrollView,
   Text,
   View,
   useWindowDimensions,
@@ -148,11 +148,9 @@ export function NewReport({
               maxHeight: height * 0.75,
             }}
           >
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
+            <KeyboardAwareScrollView
               keyboardDismissMode="on-drag"
               contentContainerStyle={{ padding: 24, gap: 18 }}
-              showsVerticalScrollIndicator={false}
             >
               <View className="flex-row items-center justify-between">
                 <Text className="text-header-2 text-content">
@@ -199,7 +197,7 @@ export function NewReport({
                 disabled={saving}
                 saveButtonRef={saveRef}
               />
-            </ScrollView>
+            </KeyboardAwareScrollView>
 
             <TutorialSpotlight />
           </View>

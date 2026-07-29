@@ -13,6 +13,7 @@ import { NewReport } from "@/features/reports/components/new-report";
 import { Report, ReportFormData, useStudentReports } from "@/features/reports/hooks/use-student-reports";
 import { exportReports } from "@/features/reports/utils/export-report";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
 import { TutorialPracticeNotice } from "@/features/tutorial/components/tutorial-practice-notice";
 import { TutorialSpotlight } from "@/features/tutorial/components/tutorial-spotlight";
 import { useSessionSimController } from "@/features/tutorial/contexts/session-simulation-controller";
@@ -130,6 +131,7 @@ function RenameModal({
   onSave: (name: string) => void;
 }) {
   const { t } = useI18n();
+  const keyboardPadding = useKeyboardPadding();
   const [name, setName] = useState(currentName);
   React.useEffect(() => {
     if (visible) setName(currentName);
@@ -139,6 +141,8 @@ function RenameModal({
     <AppModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable
         className="flex-1 bg-black/60 justify-center items-center px-6"
+        // Keeps the card above the software keyboard while renaming.
+        style={{ paddingBottom: keyboardPadding }}
         onPress={onClose}
       >
         <Pressable

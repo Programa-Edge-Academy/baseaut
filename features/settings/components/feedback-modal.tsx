@@ -9,6 +9,7 @@ import {
 import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
+import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
 import { withOpacity } from "@/components/color-opacity";
 import React, { useEffect, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
@@ -36,6 +37,7 @@ const MAX_LENGTH = 1000;
 export function FeedbackModal({ visible, onClose }: FeedbackModalProps) {
   const colors = useThemeColors();
   const { t } = useI18n();
+  const keyboardPadding = useKeyboardPadding();
   const { showToast } = useGlobalToast();
   const { sendFeedback, loading, error, setError } = useFeedback();
 
@@ -84,6 +86,8 @@ export function FeedbackModal({ visible, onClose }: FeedbackModalProps) {
           justifyContent: "center",
           backgroundColor: "rgba(0,0,0,0.6)",
           padding: 16,
+          // Keeps the card above the software keyboard while typing.
+          paddingBottom: 16 + keyboardPadding,
         }}
         onPress={onClose}
       >
