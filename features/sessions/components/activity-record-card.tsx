@@ -41,7 +41,7 @@ export type ActivityRecordItem = {
   nivelDesenvolvimento: NivelDesenvolvimento | null;
   registroAjuda: RegistroAjuda | null;
   complementosAjuda: string[] | null;
-  motivoNaoRealizacao: MotivoNaoRealizacao | null;
+  motivoNaoRealizacao: MotivoNaoRealizacao[] | null;
   descricaoAdicional?: string | null;
 };
 
@@ -52,7 +52,7 @@ export type ActivityRecordUpdate = {
   nivelDesenvolvimento: NivelDesenvolvimento | null;
   registroAjuda: RegistroAjuda | null;
   complementosAjuda: string[] | null;
-  motivoNaoRealizacao: MotivoNaoRealizacao | null;
+  motivoNaoRealizacao: MotivoNaoRealizacao[] | null;
   descricaoAdicional: string | null;
 };
 
@@ -103,6 +103,10 @@ const NIVEIS: {
   { id: "maduro",        labelKey: "analysis.level.maduro",        svgXml: SMILE_FACE_XML,   bgColor: staticColors.secondary },
 ];
 
+/**
+ * Every reason the app can display, including the two retired ones, so records
+ * saved before they were dropped still read correctly.
+ */
 const MOTIVOS: { id: MotivoNaoRealizacao; labelKey: TranslationKey }[] = [
   { id: "recusa_aluno",             labelKey: "activityResult.motive.refusal" },
   { id: "comportamento_disruptivo", labelKey: "activityResult.motive.disruptive" },
@@ -110,6 +114,12 @@ const MOTIVOS: { id: MotivoNaoRealizacao; labelKey: TranslationKey }[] = [
   { id: "tempo_insuficiente",       labelKey: "activityResult.motive.insufficientTime" },
   { id: "dificuldade_fisica",       labelKey: "activityResult.motive.physicalDifficulty" },
   { id: "outro",                    labelKey: "activityResult.motive.other" },
+];
+
+/** Reasons still offered when editing. Retired ones stay readable, not pickable. */
+const RETIRED_MOTIVOS: MotivoNaoRealizacao[] = [
+  "tempo_insuficiente",
+  "dificuldade_fisica",
 ];
 
 const INFO_LABEL_STYLE = {
@@ -129,9 +139,9 @@ const INFO_VALUE_STYLE = {
  */
 export function hasActivityRecordPendency(record: ActivityRecordItem) {
   if (record.statusRealizacao === "nao_realizada") {
-    if (!record.motivoNaoRealizacao) return true;
+    if (!record.motivoNaoRealizacao?.length) return true;
     if (
-      record.motivoNaoRealizacao === "outro" &&
+      record.motivoNaoRealizacao.includes("outro") &&
       !(record.descricaoAdicional && record.descricaoAdicional.trim())
     ) {
       return true;
@@ -157,6 +167,12 @@ function formatDuration(seconds: number | null | undefined, t: Translate) {
   return `${String(minutes).padStart(2, "0")}:${String(remaining).padStart(2, "0")}`;
 }
 
+/** Returns the display label for a development level. */
+function getNivelLabel(value: NivelDesenvolvimento | null, t: Translate) {
+  const found = NIVEIS.find((n) => n.id === value);
+  return found ? t(found.labelKey) : t("common.notSelected");
+}
+
 /** Returns the display label for a help registration value. */
 function getHelpLabel(value: RegistroAjuda | null, t: Translate) {
   if (value === "autonomo") return t("analysis.help.autonomous");
@@ -165,10 +181,15 @@ function getHelpLabel(value: RegistroAjuda | null, t: Translate) {
   return t("common.notSelected");
 }
 
-/** Returns the display label for a non-completion reason. */
-function getMotivoLabel(value: MotivoNaoRealizacao | null, t: Translate) {
-  const found = MOTIVOS.find((m) => m.id === value);
-  return found ? t(found.labelKey) : t("common.notSelected");
+/** Returns the display labels of every non-completion reason, comma-separated. */
+function getMotivoLabel(value: MotivoNaoRealizacao[] | null, t: Translate) {
+  if (!value?.length) return t("common.notSelected");
+  return value
+    .map((id) => {
+      const found = MOTIVOS.find((m) => m.id === id);
+      return found ? t(found.labelKey) : id;
+    })
+    .join(", ");
 }
 
 /**
@@ -225,8 +246,9 @@ export function ActivityRecordCard({
   const [selectedComplementos, setSelectedComplementos] = useState<string[]>(
     record.complementosAjuda ?? []
   );
-  const [selectedMotivo, setSelectedMotivo] =
-    useState<MotivoNaoRealizacao | null>(record.motivoNaoRealizacao);
+  const [selectedMotivos, setSelectedMotivos] = useState<MotivoNaoRealizacao[]>(
+    record.motivoNaoRealizacao ?? [],
+  );
   const [durationInput, setDurationInput] = useState<string>("");
   const [descricaoInput, setDescricaoInput] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
@@ -238,7 +260,7 @@ export function ActivityRecordCard({
     setSelectedDevelopment(record.nivelDesenvolvimento);
     setSelectedHelp(record.registroAjuda);
     setSelectedComplementos(record.complementosAjuda ?? []);
-    setSelectedMotivo(record.motivoNaoRealizacao);
+    setSelectedMotivos(record.motivoNaoRealizacao ?? []);
     setDescricaoInput(record.descricaoAdicional ?? "");
     if (record.durationSeconds === null || record.durationSeconds === undefined) {
       setDurationInput("");
@@ -272,8 +294,9 @@ export function ActivityRecordCard({
   const isPending = useMemo(() => {
     if (!isEditing) return hasActivityRecordPendency(record);
     if (selectedStatus === "nao_realizada") {
-      if (!selectedMotivo) return true;
-      if (selectedMotivo === "outro" && descricaoInput.trim() === "") return true;
+      if (selectedMotivos.length === 0) return true;
+      if (selectedMotivos.includes("outro") && descricaoInput.trim() === "")
+        return true;
       return false;
     }
     return (
@@ -285,7 +308,7 @@ export function ActivityRecordCard({
     isEditing,
     record,
     selectedStatus,
-    selectedMotivo,
+    selectedMotivos,
     descricaoInput,
     editedDurationSeconds,
     selectedDevelopment,
@@ -306,9 +329,11 @@ export function ActivityRecordCard({
           !isNao && selectedHelp === "autonomo" && selectedComplementos.length > 0
             ? selectedComplementos
             : null,
-        motivoNaoRealizacao: isNao ? selectedMotivo : null,
+        motivoNaoRealizacao: isNao ? selectedMotivos : null,
         descricaoAdicional:
-          isNao && selectedMotivo === "outro" ? descricaoInput.trim() : null,
+          isNao && selectedMotivos.includes("outro")
+            ? descricaoInput.trim()
+            : null,
       });
       setIsEditing(false);
     } finally {
@@ -418,11 +443,48 @@ export function ActivityRecordCard({
                 {t("activityRecord.reasonLabel")}:{" "}
                 <Text style={[INFO_VALUE_STYLE, { color: colors.content }]}>
                   {getMotivoLabel(record.motivoNaoRealizacao, t)}
-                  {record.motivoNaoRealizacao === "outro" && record.descricaoAdicional
+                  {record.motivoNaoRealizacao?.includes("outro") &&
+                  record.descricaoAdicional
                     ? ` — ${record.descricaoAdicional}`
                     : ""}
                 </Text>
               </Text>
+
+              {/* The attempt still has a stopwatch reading and, when the monitor
+                  had something to assess, a level and a help registration. */}
+              <Text style={[INFO_LABEL_STYLE, { color: colors.muted }]}>
+                {t("activityRecord.duration")}:{" "}
+                <Text style={[INFO_VALUE_STYLE, { color: colors.content }]}>
+                  {formatDuration(record.durationSeconds, t)}
+                </Text>
+              </Text>
+
+              {record.nivelDesenvolvimento && (
+                <Text style={[INFO_LABEL_STYLE, { color: colors.muted }]}>
+                  {t("activityResult.developmentLevel")}:{" "}
+                  <Text
+                    style={[
+                      INFO_VALUE_STYLE,
+                      {
+                        color:
+                          NIVEIS.find((n) => n.id === record.nivelDesenvolvimento)
+                            ?.bgColor ?? colors.content,
+                      },
+                    ]}
+                  >
+                    {getNivelLabel(record.nivelDesenvolvimento, t)}
+                  </Text>
+                </Text>
+              )}
+
+              {record.registroAjuda && (
+                <Text style={[INFO_LABEL_STYLE, { color: colors.muted }]}>
+                  {t("activityRecord.helpLevel")}:{" "}
+                  <Text style={[INFO_VALUE_STYLE, { color: colors.content }]}>
+                    {getHelpLabel(record.registroAjuda, t)}
+                  </Text>
+                </Text>
+              )}
             </>
           ) : (
             <>
@@ -497,26 +559,34 @@ export function ActivityRecordCard({
             </View>
           </View>
 
-          {selectedStatus === "nao_realizada" ? (
+          {selectedStatus === "nao_realizada" && (
             <View style={{ gap: 8, marginTop: 16 }}>
               <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: colors.muted }}>
                 {t("activityRecord.reasonLabel")}
               </Text>
               <View style={{ gap: 5 }}>
-                {MOTIVOS.map((m) => (
+                {MOTIVOS.filter(
+                  (m) =>
+                    !RETIRED_MOTIVOS.includes(m.id) ||
+                    selectedMotivos.includes(m.id),
+                ).map((m) => (
                   <SelectableChip
                     key={m.id}
                     label={t(m.labelKey)}
                     type="motivos"
-                    isSelected={selectedMotivo === m.id}
+                    isSelected={selectedMotivos.includes(m.id)}
                     onToggle={() =>
-                      setSelectedMotivo((prev) => (prev === m.id ? null : m.id))
+                      setSelectedMotivos((prev) =>
+                        prev.includes(m.id)
+                          ? prev.filter((x) => x !== m.id)
+                          : [...prev, m.id],
+                      )
                     }
                   />
                 ))}
               </View>
 
-              {selectedMotivo === "outro" && (
+              {selectedMotivos.includes("outro") && (
                 <TextInput
                   value={descricaoInput}
                   onChangeText={setDescricaoInput}
@@ -540,8 +610,12 @@ export function ActivityRecordCard({
                 />
               )}
             </View>
-          ) : (
-            <>
+          )}
+
+          {/* Duration, level and help are recorded either way: an attempt that
+              was not completed still has a stopwatch reading and may have
+              something to assess. */}
+          <>
               <View style={{ gap: 8, marginTop: 16 }}>
                 <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: colors.muted }}>
                   {t("activityRecord.durationSeconds")}
@@ -659,7 +733,6 @@ export function ActivityRecordCard({
                 </View>
               </View>
             </>
-          )}
 
           {isPending && (
             <Text

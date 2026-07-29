@@ -34,7 +34,8 @@ export type ExecutionRecord = {
   nivelDesenvolvimento?: NivelDesenvolvimento | null;
   registroAjuda?: RegistroAjuda | null;
   complementosAjuda?: string[] | null;
-  motivoNaoRealizacao?: MotivoNaoRealizacao | null;
+  /** One or more reasons the exercise was not performed. */
+  motivoNaoRealizacao?: MotivoNaoRealizacao[] | null;
   descricaoAdicional?: string | null;
   duracaoRealSegundos?: number | null;
 };
@@ -66,7 +67,8 @@ type CreateSessionInput = {
 type FinishSessionInput = {
   status?: "concluida" | "cancelada";
   /** Stored in `sessoes.motivo_finalizacao`, which uses `motivo_nao_realizacao_enum`. */
-  motivoFinalizacao?: MotivoNaoRealizacao | null;
+  /** One or more reasons the session was ended early. */
+  motivoFinalizacao?: MotivoNaoRealizacao[] | null;
   descricaoMotivo?: string | null;
 };
 
@@ -275,11 +277,11 @@ export function useSessionFlow(options?: UseSessionFlowOptions) {
   const finishSessionAndSaveUnexecuted = useCallback(
     async (
       sessaoId: string,
-      motivo: MotivoNaoRealizacao = "outro",
+      motivo: MotivoNaoRealizacao[] = ["outro"],
       descricao: string = "Sessão encerrada para iniciar uma nova.",
     ): Promise<void> => {
       if (isMock) return;
-      const MOTIVO: MotivoNaoRealizacao = motivo;
+      const MOTIVO: MotivoNaoRealizacao[] = motivo;
       const DESCRICAO = descricao;
 
       const { data: sessao } = await supabase
