@@ -127,6 +127,12 @@ export const FormComponent = forwardRef(function FormComponent(
   const [questions, setQuestions] = useState<any[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  /**
+   * Whether this instance is an ATA. Its multiple-choice answers persist the
+   * ticked options in `valores_selecionados`; the 0/1/2 score in
+   * `valor_preenchido` is derived by the database from how many were ticked.
+   */
+  const [isAta, setIsAta] = useState(false);
   const [, setSaving] = useState(false);
   const keyboardPadding = useKeyboardPadding();
   const keyboardAwareScroll = useKeyboardAwareScroll();
@@ -159,6 +165,7 @@ export const FormComponent = forwardRef(function FormComponent(
 
       const questionSourceId = formulario?.template_origem_id ?? formularioId;
       const isMabc = formulario?.tipo === "mabc2";
+      setIsAta(formulario?.tipo === "ata");
 
       const { data, error } = await supabase
         .from("perguntas")
@@ -250,7 +257,7 @@ export const FormComponent = forwardRef(function FormComponent(
       if (sessaoId || alunoId) {
         let answersQuery = supabase
           .from("respostas_formulario")
-          .select("pergunta_id, valor_preenchido")
+          .select("pergunta_id, valor_preenchido, valores_selecionados")
           .eq("formulario_id", formularioId);
 
         if (sessaoId) {
@@ -268,6 +275,12 @@ export const FormComponent = forwardRef(function FormComponent(
           );
 
           for (const r of respostas) {
+            // An ATA answer lives in its own column: the ticked options are the
+            // answer, and `valor_preenchido` only carries the derived score.
+            if (Array.isArray(r.valores_selecionados)) {
+              loadedAnswers[r.pergunta_id] = r.valores_selecionados;
+              continue;
+            }
             if (r.valor_preenchido == null) continue;
             const qType = typeById.get(r.pergunta_id);
             if (qType && objectTypes.has(qType)) {
@@ -353,6 +366,23 @@ export const FormComponent = forwardRef(function FormComponent(
         let stringValue = null;
         if (isFilled) {
           stringValue = typeof rawValue === "object" ? JSON.stringify(rawValue) : String(rawValue);
+        }
+
+        // An ATA domain stores the ticked indicators; the database derives the
+        // 0/1/2 score from how many there are, so no score is sent from here.
+        // An empty list is a real answer ("no indicator observed" = 0), which is
+        // why it is sent even though `isFilled` is false for it.
+        const isAtaChoice = isAta && q.type === "choice_list";
+        if (isAtaChoice) {
+          const selected = Array.isArray(rawValue) ? rawValue : [];
+          return {
+            formulario_id: formularioId,
+            sessao_id: sessaoId || null,
+            aluno_id: alunoId || null,
+            pergunta_id: q.id,
+            valores_selecionados: selected,
+            status_item: "respondido",
+          };
         }
 
         return {

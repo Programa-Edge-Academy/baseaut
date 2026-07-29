@@ -516,7 +516,17 @@ async function fetchBehaviorDetails(
 
 /** Structured answer detail for one protocol record. */
 type ProtocolAnswerDetail = {
-  ata?: { sections: { title: string; valueLabel: string }[]; total: number | null; hasResponses: boolean };
+  ata?: {
+    sections: {
+      title: string;
+      valueLabel: string;
+      selectedOptions: string[];
+      totalOptions: number;
+      observation: string | null;
+    }[];
+    total: number | null;
+    hasResponses: boolean;
+  };
   cars?: {
     domains: { title: string; scoreLabel: string; observation: string | null }[];
     total: number | null;
@@ -538,16 +548,22 @@ type ProtocolAnswerDetail = {
 async function fetchAtaCarsAnswers(formularioId: string) {
   const { data: perguntas } = await supabase
     .from("perguntas")
-    .select("id, texto_pergunta, tipo_resposta, ordem")
+    .select("id, texto_pergunta, tipo_resposta, opcoes, ordem")
     .eq("formulario_id", formularioId)
     .order("ordem", { ascending: true });
   const { data: respostas } = await supabase
     .from("respostas_formulario")
-    .select("pergunta_id, valor_preenchido")
+    .select("pergunta_id, valor_preenchido, valores_selecionados")
     .eq("formulario_id", formularioId);
   const answers = new Map<string, string | null>();
-  (respostas ?? []).forEach((r: any) => answers.set(r.pergunta_id, r.valor_preenchido));
-  return { perguntas: perguntas ?? [], answers };
+  const selections = new Map<string, string[]>();
+  (respostas ?? []).forEach((r: any) => {
+    answers.set(r.pergunta_id, r.valor_preenchido);
+    if (Array.isArray(r.valores_selecionados)) {
+      selections.set(r.pergunta_id, r.valores_selecionados.map(String));
+    }
+  });
+  return { perguntas: perguntas ?? [], answers, selections };
 }
 
 /**
@@ -562,20 +578,48 @@ async function fetchProtocolAnswerDetail(
 ): Promise<ProtocolAnswerDetail> {
   try {
     if (tipo === "ata") {
-      const { perguntas, answers } = await fetchAtaCarsAnswers(recordId);
+      const { perguntas, answers, selections } = await fetchAtaCarsAnswers(recordId);
       let total = 0;
       let hasAny = false;
-      const sections = perguntas.map((q: any) => {
+      const sections: {
+        title: string;
+        valueLabel: string;
+        selectedOptions: string[];
+        totalOptions: number;
+        observation: string | null;
+      }[] = [];
+
+      for (const q of perguntas as any[]) {
+        // Each domain is followed by its own optional observation.
+        if (q.tipo_resposta === "texto_opcional") {
+          const observation = answers.get(q.id);
+          if (sections.length > 0) {
+            sections[sections.length - 1].observation =
+              observation && observation !== "" ? observation : null;
+          }
+          continue;
+        }
+
         const value = parseNum(answers.get(q.id));
         if (value != null) {
           total += value;
           hasAny = true;
         }
-        return {
+
+        const available = Array.isArray(q.opcoes?.valores)
+          ? (q.opcoes.valores as unknown[]).map(String)
+          : [];
+
+        sections.push({
           title: firstLine(localizeFormText(q.texto_pergunta, asLoc(locale))),
           valueLabel: value != null ? String(value) : "—",
-        };
-      });
+          selectedOptions: (selections.get(q.id) ?? []).map((option) =>
+            localizeFormText(option, asLoc(locale)),
+          ),
+          totalOptions: available.length,
+          observation: null,
+        });
+      }
       return { ata: { sections, total: hasAny ? total : null, hasResponses: hasAny } };
     }
     if (tipo === "cars") {
@@ -669,7 +713,18 @@ function protocolRecordCard(
   if (detail.ata) {
     const body = detail.ata.hasResponses
       ? `<table style="border-collapse:collapse;width:100%">
-          ${detail.ata.sections.map((s) => tableRow([esc(s.title), esc(s.valueLabel)])).join("")}
+          ${detail.ata.sections
+            .map((s) =>
+              tableRow([
+                esc(
+                  [s.title, ...s.selectedOptions.map((o) => `• ${o}`), s.observation ?? ""]
+                    .filter(Boolean)
+                    .join("\n"),
+                ),
+                esc(`${s.valueLabel} · ${s.selectedOptions.length}/${s.totalOptions}`),
+              ]),
+            )
+            .join("")}
         </table>`
       : `<p style="color:#888;font-size:11px">${t("reports.protocol.noAnswers")}</p>`;
     return `<div style="${CARD}">${head(detail.ata.total != null ? String(detail.ata.total) : null)}${body}</div>`;
@@ -1218,7 +1273,15 @@ export async function exportReports(
           const detail = await fetchProtocolAnswerDetail(tipo, rec.id, locale);
           if (detail.ata) {
             rows.push([`ATA — ${fmtDate(rec.data, locale)}`, detail.ata.total != null ? `${t("reports.protocol.total")}: ${detail.ata.total}` : ""]);
-            detail.ata.sections.forEach((s) => rows.push([s.title, s.valueLabel]));
+            detail.ata.sections.forEach((s) =>
+              rows.push([
+                s.title,
+                s.valueLabel,
+                `${s.selectedOptions.length}/${s.totalOptions}`,
+                s.selectedOptions.join(" | "),
+                s.observation ?? "",
+              ]),
+            );
             rows.push([]);
           } else if (detail.cars) {
             rows.push([`CARS — ${fmtDate(rec.data, locale)}`, detail.cars.total != null ? `${t("reports.protocol.total")}: ${detail.cars.total}` : ""]);

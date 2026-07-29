@@ -105,6 +105,222 @@ const FORM_CONTENT_EN: Record<string, string> = {
     "XIV — Level and consistency of intellectual response",
   "XV — Impressão global": "XV — General impressions",
 
+  // ── ATA — indicators offered by each domain (I–VIII) ─────────────────────
+  "Não sorri": "Does not smile",
+  "Ausência de aproximações espontâneas": "No spontaneous approaches",
+  "Não busca companhia": "Does not seek company",
+  "Busca constantemente seu cantinho (esconderijo)":
+    "Constantly seeks their own corner (hiding place)",
+  "Evita pessoas": "Avoids people",
+  "É incapaz de manter um intercâmbio social":
+    "Is unable to sustain a social exchange",
+  "Isolamento intenso": "Intense isolation",
+  "Não responde às solicitações": "Does not respond to requests",
+  "Mudança repentina de humor": "Sudden mood change",
+  "Mantém-se indiferente, sem expressão": "Stays indifferent, expressionless",
+  "Risos compulsivos": "Compulsive laughter",
+  "Birra e raiva passageira": "Tantrums and passing anger",
+  "Excitação motora ou verbal (ir de um lugar a outro, falar sem parar)":
+    "Motor or verbal excitement (moving from place to place, talking non-stop)",
+  "Utiliza-se do adulto como um objeto, levando-o até aquilo que deseja":
+    "Uses the adult as an object, leading them to what they want",
+  "O adulto lhe serve como apoio para conseguir o que deseja":
+    "The adult serves as support to get what they want",
+  "O adulto é o meio para suprir uma necessidade que não é capaz de realizar só":
+    "The adult is the means to meet a need they cannot meet alone",
+  "Se o adulto não responde às suas demandas, atua interferindo na conduta desse adulto":
+    "If the adult does not meet their demands, they act to interfere with that adult's behaviour",
+  "Insistente em manter a rotina": "Insists on keeping the routine",
+  "Grande dificuldade em aceitar fatos que alteram sua rotina, tais como mudanças de lugar, de vestuário e na alimentação":
+    "Great difficulty accepting anything that changes their routine, such as changes of place, clothing or food",
+  "Apresenta resistência a mudanças, persistindo na mesma resposta ou atividade":
+    "Resists change, persisting in the same response or activity",
+  "Ordenação dos objetos de acordo com critérios próprios e pré-estabelecidos":
+    "Arranges objects by their own pre-established criteria",
+  "Prende-se a uma ordenação espacial (cada coisa sempre em seu lugar)":
+    "Holds to a spatial order (everything always in its place)",
+  "Prende-se a uma sequência temporal (cada coisa em seu tempo)":
+    "Holds to a temporal sequence (everything in its time)",
+  "Prende-se a uma correspondência pessoa-lugar (cada pessoa sempre no lugar determinado)":
+    "Holds to a person-place match (each person always in the assigned place)",
+  "Desvia os olhares diretos, não olhando nos olhos":
+    "Avoids direct looks, not making eye contact",
+  "Volta a cabeça ou o olhar quando é chamado (olhar para fora)":
+    "Turns their head or gaze away when called (looking outward)",
+  "Expressão do olhar vazio e sem vida": "Empty, lifeless gaze",
+  "Quando segue os estímulos com os olhos, somente o faz de maneira intermitente":
+    "When following stimuli with the eyes, only does so intermittently",
+  "Fixa os objetos com um olhar periférico, não central":
+    "Fixes on objects with peripheral, not central, vision",
+  "Dá a sensação de que não olha": "Gives the impression of not looking",
+  "Se fala, não utiliza a expressão facial, gestual ou vocal com a frequência esperada":
+    "If they speak, they do not use facial, gestural or vocal expression as often as expected",
+  "Não mostra uma reação antecipatória": "Shows no anticipatory reaction",
+  "Não expressa através da mímica ou olhar aquilo que quer ou o que sente":
+    "Does not express what they want or feel through mimicry or gaze",
+  "Imobilidade facial": "Facial immobility",
+  "Não quer ir dormir": "Does not want to go to sleep",
+  "Levanta-se muito cedo": "Wakes up very early",
+  "Sono irregular (em intervalos)": "Irregular sleep (in intervals)",
+  "Troca o dia pela noite": "Swaps day for night",
+  "Dorme poucas horas": "Sleeps few hours",
+
+  // ── ATA — indicators offered by each domain (IX–XVI) ─────────────────────
+  "Seletividade alimentar rígida (ex.: come o mesmo tipo de alimento sempre)":
+    "Rigid food selectivity (e.g. always eats the same kind of food)",
+  "Come outras coisas além de alimentos (papel, insetos)":
+    "Eats things other than food (paper, insects)",
+  "Quando pequeno não mastigava": "Did not chew when younger",
+  "Apresenta uma atividade ruminante": "Shows rumination",
+  "Vômitos": "Vomiting",
+  "Come grosseiramente, esparrama a comida ou a atira":
+    "Eats roughly, spreads the food around or throws it",
+  "Rituais (esfarela alimentos antes da ingestão)":
+    "Rituals (crumbles food before eating it)",
+  "Ausência de paladar (falta de sensibilidade gustativa)":
+    "No sense of taste (lack of gustatory sensitivity)",
+  "Medo de sentar-se no vaso sanitário": "Fear of sitting on the toilet",
+  "Utiliza os esfíncteres para manipular o adulto":
+    "Uses the sphincters to manipulate the adult",
+  "Utiliza os esfíncteres como estimulação corporal, para obtenção de prazer":
+    "Uses the sphincters as bodily stimulation, for pleasure",
+  "Tem controle diurno, porém o noturno é tardio ou ausente":
+    "Has daytime control, but night-time control is late or absent",
+  "Morde e engole objetos não alimentares":
+    "Bites and swallows non-food objects",
+  "Chupa e coloca as coisas na boca": "Sucks and puts things in the mouth",
+  "Cheira tudo": "Smells everything",
+  "Apalpa tudo. Examina as superfícies com os dedos de uma maneira minuciosa":
+    "Touches everything. Examines surfaces with the fingers in minute detail",
+  "Ignora os objetos ou mostra um interesse momentâneo":
+    "Ignores objects or shows momentary interest",
+  "Pega, golpeia ou simplesmente os atira no chão":
+    "Grabs, strikes or simply throws them on the floor",
+  "Conduta atípica com os objetos (segura indiferentemente nas mãos ou gira)":
+    "Atypical conduct with objects (holds them indifferently or spins them)",
+  "Carrega insistentemente consigo determinado objeto":
+    "Insistently carries a particular object around",
+  "Se interessa somente por uma parte do objeto ou do brinquedo":
+    "Is interested only in one part of the object or toy",
+  "Coleciona objetos estranhos": "Collects odd objects",
+  "Utiliza os objetos de forma particular e inadequada":
+    "Uses objects in a peculiar and inappropriate way",
+  "Quando realiza uma atividade, fixa a atenção por curto espaço de tempo ou é incapaz de fixá-la":
+    "When doing an activity, holds attention only briefly or is unable to hold it",
+  "Age como se fosse surdo": "Acts as if deaf",
+  "Tempo de latência de resposta aumentado. Entende as instruções com dificuldade":
+    "Increased response latency. Understands instructions with difficulty",
+  "Resposta retardada": "Delayed response",
+  "Muitas vezes dá a sensação de ausência":
+    "Often gives the impression of being absent",
+  "Não quer aprender": "Does not want to learn",
+  "Cansa-se muito depressa, ainda que de atividade que goste":
+    "Tires very quickly, even at an activity they enjoy",
+  "Esquece rapidamente": "Forgets quickly",
+  "Insiste em ser ajudado, ainda que saiba fazer":
+    "Insists on being helped, even when able to do it",
+  "Insiste constantemente em mudar de atividade":
+    "Constantly insists on changing activity",
+  "É incapaz de ter iniciativa própria": "Is unable to take their own initiative",
+  "Busca a comodidade": "Seeks comfort",
+  "Passividade, falta de interesse": "Passivity, lack of interest",
+  "Lentidão": "Slowness",
+  "Prefere que outro faça o trabalho para ele":
+    "Prefers someone else to do the work for them",
+  "Mutismo": "Mutism",
+  "Estereotipias vocais": "Vocal stereotypies",
+  "Entonação incorreta": "Incorrect intonation",
+  "Ecolalia imediata e/ou retardada": "Immediate and/or delayed echolalia",
+  "Repetição de palavras ou frases que podem (ou não) ter valor comunicativo":
+    "Repetition of words or phrases that may (or may not) be communicative",
+  "Emite sons estereotipados quando está agitado e em outras ocasiões, sem nenhuma razão aparente":
+    "Makes stereotyped sounds when agitated and at other times, for no apparent reason",
+  "Não se comunica por gestos": "Does not communicate through gestures",
+  "As interações com adulto não são nunca um diálogo":
+    "Interactions with adults are never a dialogue",
+
+  // ── ATA — indicators offered by each domain (XVII–XXIII) ─────────────────
+  "Ainda que saiba fazer uma coisa, não a realiza, se não quiser":
+    "Even knowing how to do something, does not do it unless they want to",
+  "Não demonstra o que sabe, até ter uma necessidade primária ou um interesse eminentemente específico":
+    "Does not show what they know until there is a basic need or a highly specific interest",
+  "Aprende coisas, porém somente a demonstra em determinados lugares e com determinadas pessoas":
+    "Learns things but only shows them in certain places and with certain people",
+  "Às vezes, surpreende por suas habilidades inesperadas":
+    "Sometimes surprises with unexpected skills",
+  "Reações de desagrado caso seja esquecida alguma coisa":
+    "Displeasure when something is forgotten",
+  "Reações de desagrado caso seja interrompida alguma atividade que goste":
+    "Displeasure when an activity they enjoy is interrupted",
+  "Desgostoso quando os desejos e as expectativas não se cumprem":
+    "Upset when wishes and expectations are not met",
+  "Reações de birra": "Tantrum reactions",
+  "Não assume nenhuma responsabilidade, por menor que seja":
+    "Takes on no responsibility, however small",
+  "Para chegar a fazer alguma coisa, há que se repetir muitas vezes ou elevar o tom de voz":
+    "Getting them to do something requires repeating it many times or raising your voice",
+  "A criança está constantemente em movimento":
+    "The child is constantly moving",
+  "Mesmo estimulada, não se move": "Does not move even when stimulated",
+  "Barulhento. Dá a sensação de que é obrigado a fazer ruído/barulho":
+    "Noisy. Gives the impression of being compelled to make noise",
+  "Vai de um lugar a outro, sem parar":
+    "Goes from one place to another, non-stop",
+  "Fica pulando (saltando) no mesmo lugar": "Keeps jumping on the spot",
+  "Não se move nunca do lugar onde está sentado":
+    "Never moves from where they are sitting",
+  "Balanceia-se": "Rocks back and forth",
+  // "Olha e brinca com as mãos e os dedos" and "Roda objetos ou sobre si mesmo"
+  // are shared with the Control Record and already translated further up.
+  "Tapa os olhos e as orelhas": "Covers the eyes and ears",
+  "Dá pontapés": "Kicks",
+  "Faz caretas e movimentos estranhos com a face":
+    "Makes faces and odd movements with the face",
+  "Caminha na ponta dos pés ou saltando, arrasta os pés, anda fazendo movimentos estranhos":
+    "Walks on tiptoe or hopping, drags the feet, walks with odd movements",
+  "Torce o corpo, mantém uma postura desequilibrada, pernas dobradas, cabeça recolhida aos pés, extensões violentas do corpo":
+    "Twists the body, holds an unbalanced posture, bent legs, head tucked to the feet, violent body extensions",
+  "Não se dá conta do perigo": "Is unaware of danger",
+  "Sobe em todos os lugares": "Climbs everywhere",
+  "Parece insensível à dor": "Seems insensitive to pain",
+  "Linguagem": "Language",
+  "Estereotipias": "Stereotypies",
+  "Contato visual": "Eye contact",
+
+  // ── ATA — domain titles (the questions became multiple choice) ───────────
+  "I — Dificuldade na interação social": "I — Difficulty in social interaction",
+  "II — Manipulação do ambiente": "II — Manipulation of the environment",
+  "III — Utilização das pessoas a seu redor": "III — Using the people around them",
+  "IV — Resistência a mudanças": "IV — Resistance to change",
+  "V — Busca de uma ordem rígida": "V — Seeking a rigid order",
+  "VI — Falta de contato visual. Olhar indefinido":
+    "VI — Lack of eye contact. Undefined gaze",
+  "VII — Mímica inexpressiva": "VII — Expressionless mimicry",
+  "VIII — Distúrbios de sono": "VIII — Sleep disturbances",
+  "IX — Alteração na alimentação": "IX — Altered eating",
+  "X — Dificuldade no controle dos esfíncteres":
+    "X — Difficulty controlling the sphincters",
+  "XI — Exploração dos objetos (apalpar, chupar)":
+    "XI — Exploring objects (touching, sucking)",
+  "XII — Uso inapropriado dos objetos": "XII — Inappropriate use of objects",
+  "XIII — Falta de atenção": "XIII — Lack of attention",
+  "XIV — Ausência de interesse pela aprendizagem":
+    "XIV — No interest in learning",
+  "XV — Falta de iniciativa": "XV — Lack of initiative",
+  "XVI — Alteração de linguagem e comunicação":
+    "XVI — Altered language and communication",
+  "XVII — Não manifesta habilidades e conhecimentos":
+    "XVII — Does not show skills and knowledge",
+  "XVIII — Reações inapropriadas ante a frustração":
+    "XVIII — Inappropriate reactions to frustration",
+  "XIX — Não assume responsabilidades": "XIX — Takes on no responsibility",
+  "XX — Hiperatividade / Hipoatividade": "XX — Hyperactivity / Hypoactivity",
+  "XXI — Movimentos estereotipados e repetitivos":
+    "XXI — Stereotyped and repetitive movements",
+  "XXII — Ignora o perigo": "XXII — Ignores danger",
+  "XXIII — Aparecimento dos sintomas antes dos 36 meses (DSM-IV)":
+    "XXIII — Symptoms appearing before 36 months (DSM-IV)",
+
   // ── CARS / observations (shared "N — Observações" items) ─────────────────
   "I — Observações": "I — Notes",
   "II — Observações": "II — Notes",
@@ -121,6 +337,15 @@ const FORM_CONTENT_EN: Record<string, string> = {
   "XIII — Observações": "XIII — Notes",
   "XIV — Observações": "XIV — Notes",
   "XV — Observações": "XV — Notes",
+  // The ATA reaches XXIII, so its later domains need their own notes entries.
+  "XVI — Observações": "XVI — Notes",
+  "XVII — Observações": "XVII — Notes",
+  "XVIII — Observações": "XVIII — Notes",
+  "XIX — Observações": "XIX — Notes",
+  "XX — Observações": "XX — Notes",
+  "XXI — Observações": "XXI — Notes",
+  "XXII — Observações": "XXII — Notes",
+  "XXIII — Observações": "XXIII — Notes",
 
   // ── CARS — scoring guideline descriptions ────────────────────────────────
   "### Diretrizes de Pontuação\n\n* **1.0 (Normal):** Sem evidência de anomalia ou dificuldade na relação com as pessoas.\n* **2.0 (Ligeiramente anormal):** Alguma timidez, agitação ou aborrecimento pode ser observada, mas não superior ao esperado para a idade.\n* **3.0 (Moderadamente anormal):** A criança mostra-se distante ignorando os adultos e parecendo ausente por momentos. Esforços são necessários para prender sua atenção.\n* **4.0 (Severamente anormal):** Distante e desinteressada do que o adulto está a fazer. Quase nunca inicia ou responde ao contacto.":
