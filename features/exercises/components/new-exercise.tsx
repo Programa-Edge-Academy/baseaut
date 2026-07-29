@@ -1,4 +1,5 @@
 import { AppModal } from "@/components/app-modal";
+import { KeyboardAwareScrollView } from "@/components/keyboard-aware-scroll-view";
 import { colors } from "@/assets/colors";
 import { ActionButtons } from "@/components/action-buttons";
 import { ConfirmationModal } from "@/components/confirmation-modal";
@@ -13,7 +14,6 @@ import {
   Image,
   Keyboard,
   Pressable,
-  ScrollView,
   Text,
   useWindowDimensions,
   View,
@@ -28,10 +28,17 @@ import { TagGroup } from "./tag-group";
 export type NewExerciseData = {
   name: string;
   description: string;
-  durationSeconds: number;
-  tag: string | null;
-  subtags: string[];
+  /** How many times the exercise is performed in a session. Optional. */
+  repetitions: number | null;
+  /** Every main tag with its subtags: one to three of each. */
+  tags: Record<string, string[]>;
 };
+
+/** Largest number of main tags an exercise may carry. */
+const MAX_TAGS = 3;
+
+/** Largest number of subtags each main tag may carry. */
+const MAX_SUBTAGS = 3;
 
 /**
  * Props for the new/edit exercise modal.
@@ -67,14 +74,14 @@ export function NewExercise({
   const saveFieldRef = useRef<View>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [durationInput, setDurationInput] = useState("");
+  const [repetitionsInput, setRepetitionsInput] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedSubtags, setSelectedSubtags] = useState<Record<string, string[]>>({});
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [deletePhotoModalVisible, setDeletePhotoModalVisible] = useState(false);
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [errors, setErrors] = useState({ name: "", tag: "", duration: "" });
+  const [errors, setErrors] = useState({ name: "", tag: "", repetitions: "" });
 
   const availableSubtags = ["locomotor", "manipulativo", "estabilizador"];
 
@@ -83,14 +90,14 @@ export function NewExercise({
     setDeletePhotoModalVisible(false);
     setIsPreviewVisible(false);
     setIsSaving(false);
-    setErrors({ name: "", tag: "", duration: "" });
+    setErrors({ name: "", tag: "", repetitions: "" });
     setName(initialData?.name ?? "");
     setDescription(initialData?.description ?? "");
-    setDurationInput(
-      initialData?.durationSeconds ? String(initialData.durationSeconds) : "",
+    setRepetitionsInput(
+      initialData?.repetitions ? String(initialData.repetitions) : "",
     );
-    setSelectedTags(initialData?.tag ? [initialData.tag] : []);
-    setSelectedSubtags(initialData?.tag ? { [initialData.tag]: initialData.subtags ?? [] } : {});
+    setSelectedTags(Object.keys(initialData?.tags ?? {}));
+    setSelectedSubtags(initialData?.tags ?? {});
     setPhotoUri(initialData?.iconUrl ?? null);
     // Sync only when the modal opens. `initialData` is rebuilt on every parent
     // render, so depending on it would re-seed the form mid-edit whenever the
@@ -136,23 +143,27 @@ export function NewExercise({
    */
   const handleSave = () => {
     let isValid = true;
-    const newErrors = { name: "", tag: "", duration: "" };
+    const newErrors = { name: "", tag: "", repetitions: "" };
 
-    const parsed = parseInt(durationInput, 10);
-    const seconds = Number.isNaN(parsed) ? 0 : parsed;
+    const parsed = parseInt(repetitionsInput, 10);
+    const hasRepetitions = repetitionsInput.trim().length > 0;
 
     if (!name.trim()) {
       newErrors.name = t("exercises.form.err.required");
       isValid = false;
     }
 
-    const tag = selectedTags.length > 0 ? selectedTags[0] : null;
-    const subtags = tag ? (selectedSubtags[tag] || []) : [];
+    // Only the selected tags count, and each one needs at least one subtag.
+    const tags: Record<string, string[]> = {};
+    for (const tag of selectedTags.slice(0, MAX_TAGS)) {
+      tags[tag] = (selectedSubtags[tag] ?? []).slice(0, MAX_SUBTAGS);
+    }
+    const tagList = Object.keys(tags);
 
-    if (!tag) {
+    if (tagList.length === 0) {
       newErrors.tag = t("exercises.form.err.tagRequired");
       isValid = false;
-    } else if (subtags.length === 0) {
+    } else if (tagList.some((tag) => tags[tag].length === 0)) {
       newErrors.tag = t("exercises.form.err.subtagRequired");
       isValid = false;
     }
@@ -162,11 +173,9 @@ export function NewExercise({
       isValid = false;
     }
 
-    if (durationInput.trim()) {
-      if (Number.isNaN(parsed) || seconds < 0 || seconds > 300) {
-        newErrors.duration = t("exercises.form.err.duration");
-        isValid = false;
-      }
+    if (hasRepetitions && (Number.isNaN(parsed) || parsed < 1 || parsed > 999)) {
+      newErrors.repetitions = t("exercises.form.err.repetitions");
+      isValid = false;
     }
 
     setErrors(newErrors);
@@ -178,9 +187,8 @@ export function NewExercise({
       {
         name: name.trim(),
         description: description.trim(),
-        durationSeconds: seconds,
-        tag: selectedTags.length > 0 ? selectedTags[0] : null,
-        subtags: selectedTags.length > 0 ? (selectedSubtags[selectedTags[0]] || []) : [],
+        repetitions: hasRepetitions ? parsed : null,
+        tags,
       },
       photoUri,
     );
@@ -215,10 +223,8 @@ export function NewExercise({
             className="mx-7 border bg-level2 border-outline rounded-[15px] overflow-hidden"
             style={{ maxHeight: "90%" }}
           >
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
+            <KeyboardAwareScrollView
               keyboardDismissMode="on-drag"
-              showsVerticalScrollIndicator={false}
               contentContainerStyle={{ padding: 25, gap: 25 }}
             >
               <View className="flex-row items-center justify-between">
@@ -313,29 +319,34 @@ export function NewExercise({
 
                 <View className="gap-2">
                   <Text className="text-muted text-default-1">
-                    {t("exercises.form.duration")}
+                    {t("exercises.form.repetitions")}
                   </Text>
                   <DefaultTextInput
-                    value={durationInput}
-                    onChangeText={setDurationInput}
+                    value={repetitionsInput}
+                    onChangeText={setRepetitionsInput}
                     keyboardType="numeric"
-                    placeholder={t("exercises.form.durationPlaceholder")}
+                    placeholder={t("exercises.form.repetitionsPlaceholder")}
                     className="h-[44px]"
                     maxLength={3}
                   />
-                  {errors.duration ? (
+                  {errors.repetitions ? (
                     <Text className="text-error text-default-3 mt-1 ml-1">
-                      {errors.duration}
+                      {errors.repetitions}
                     </Text>
                   ) : null}
                 </View>
 
                 <View ref={tagFieldRef} collapsable={false} className="gap-2">
                   <Text className="text-muted text-default-1">{t("exercises.form.tags")}*</Text>
+                  <Text className="text-muted text-default-3">
+                    {t("exercises.form.tagsHint")}
+                  </Text>
                   <TagGroup
                     availableTags={availableTags}
                     availableSubtags={availableSubtags}
-                    mode="single"
+                    mode="multiple"
+                    maxTags={MAX_TAGS}
+                    maxSubtagsPerTag={MAX_SUBTAGS}
                     selectedTags={selectedTags}
                     selectedSubtags={selectedSubtags}
                     onChangeTags={handleChangeTags}
@@ -359,7 +370,7 @@ export function NewExercise({
                   />
                 </View>
               </View>
-            </ScrollView>
+            </KeyboardAwareScrollView>
           </View>
 
           <TutorialSpotlight />

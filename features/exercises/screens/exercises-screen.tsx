@@ -34,13 +34,13 @@ const TAG_DEFS: { id: string; value: string | null; labelKey: TranslationKey }[]
 /**
  * Formats a duration in seconds into a human-readable label.
  */
-function formatDuration(seconds?: number | null): string {
-  if (!seconds) return "";
-  const minutes = Math.floor(seconds / 60);
-  const remainder = seconds % 60;
-  if (minutes && remainder) return `${minutes}min ${remainder}s`;
-  if (minutes) return `${minutes}min`;
-  return `${remainder}s`;
+/** Formats the repetition count as an extra line of the exercise description. */
+function formatRepetitions(
+  repetitions: number | null | undefined,
+  t: (key: TranslationKey) => string,
+): string {
+  if (!repetitions) return "";
+  return `${repetitions}${t("exercises.repetitionsSuffix")}`;
 }
 
 /**
@@ -50,9 +50,8 @@ function exerciseToFormData(exercise: Exercise): NewExerciseData {
   return {
     name: exercise.name,
     description: exercise.description,
-    durationSeconds: exercise.durationSeconds || 0,
-    tag: exercise.tag,
-    subtags: exercise.subtags || [],
+    repetitions: exercise.repetitions ?? null,
+    tags: exercise.tags,
   };
 }
 
@@ -242,8 +241,10 @@ export function ExercisesScreen({ tutorial = false }: ExercisesScreenProps) {
             const isCreated = tutorial && item.id.startsWith("mock-new-");
             const subtitleParts = [
               item.description,
-              formatDuration(item.durationSeconds),
-              item.tag ? translateTag(item.tag, t) : "",
+              formatRepetitions(item.repetitions, t),
+              Object.keys(item.tags ?? {})
+                .map((tag) => translateTag(tag, t))
+                .join(", "),
             ]
               .filter(Boolean)
               .join(" · ");

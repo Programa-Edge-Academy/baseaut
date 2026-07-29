@@ -188,8 +188,8 @@ async function seedMabcCircuits(teamId: string): Promise<void> {
 
 /** Seed exercises available for selection inside the tutorial's mock circuit modal. */
 const buildMockCircuitExercises = (t: (key: TranslationKey) => string): Exercise[] => [
-  { id: "mock-linha", name: t("mock.exWalkLine"), description: "", tag: "Equilíbrio", subtags: ["estabilizador"], iconUrl: null },
-  { id: "mock-bambole", name: t("mock.exHoop"), description: "", tag: "Coordenação", subtags: ["manipulativo"], iconUrl: null },
+  { id: "mock-linha", name: t("mock.exWalkLine"), description: "", tags: { "Equilíbrio": ["estabilizador"] }, tag: "Equilíbrio", subtags: ["estabilizador"], iconUrl: null },
+  { id: "mock-bambole", name: t("mock.exHoop"), description: "", tags: { "Coordenação": ["manipulativo"] }, tag: "Coordenação", subtags: ["manipulativo"], iconUrl: null },
 ];
 
 /** Seed circuits for the tutorial's mock mode (kept entirely in memory). */
@@ -263,8 +263,10 @@ export function useCircuits(options?: UseCircuitsOptions) {
               id,
               titulo,
               descricao,
-              duracao_segundos,
+              repeticoes,
+              tags,
               tag,
+              subtags,
               icone_url
             )
           )
@@ -286,14 +288,25 @@ export function useCircuits(options?: UseCircuitsOptions) {
               .join(", ");
 
             const mappedExercises: Exercise[] = sortedItems
-              .map((item: any) => ({
-                id: item.exercicios?.id,
-                name: item.exercicios?.titulo,
-                description: item.exercicios?.descricao || "",
-                durationSeconds: item.exercicios?.duracao_segundos ?? undefined,
-                tag: item.exercicios?.tag || "Locomotor",
-                iconUrl: item.exercicios?.icone_url ?? null,
-              }))
+              .map((item: any) => {
+                const tags: Record<string, string[]> =
+                  item.exercicios?.tags && typeof item.exercicios.tags === "object"
+                    ? item.exercicios.tags
+                    : item.exercicios?.tag
+                      ? { [item.exercicios.tag]: item.exercicios.subtags ?? [] }
+                      : {};
+                const first = Object.keys(tags)[0] ?? null;
+                return {
+                  id: item.exercicios?.id,
+                  name: item.exercicios?.titulo,
+                  description: item.exercicios?.descricao || "",
+                  repetitions: item.exercicios?.repeticoes ?? null,
+                  tags,
+                  tag: first ?? "Coordenação",
+                  subtags: first ? tags[first] : [],
+                  iconUrl: item.exercicios?.icone_url ?? null,
+                };
+              })
               .filter((ex: any) => ex.id);
 
             return {

@@ -15,11 +15,19 @@ export type TagGroupProps = {
   selectedSubtags: Record<string, string[]>;
   onChangeTags: (tags: string[]) => void;
   onChangeSubtags: (subtags: Record<string, string[]>) => void;
+  /** Most tags selectable at once in `multiple` mode. Unlimited when omitted. */
+  maxTags?: number;
+  /** Most subtags selectable per tag. Unlimited when omitted. */
+  maxSubtagsPerTag?: number;
 };
 
 /**
  * Grouped tag/subtag selector. Each tag is a card; selecting a subtag also
  * selects its parent tag. Supports single- or multiple-tag selection.
+ *
+ * @remarks
+ * Deselecting a tag also drops the subtags picked under it, so the emitted map
+ * never carries subtags for a tag that is no longer selected.
  */
 export function TagGroup({
   availableTags,
@@ -29,33 +37,62 @@ export function TagGroup({
   selectedSubtags,
   onChangeTags,
   onChangeSubtags,
+  maxTags,
+  maxSubtagsPerTag,
 }: TagGroupProps) {
   const { t } = useI18n();
+
+  const dropSubtagsOf = (label: string) => {
+    const { [label]: _removed, ...rest } = selectedSubtags;
+    onChangeSubtags(rest);
+  };
+
   const toggleTag = (label: string) => {
+    const isSelected = selectedTags.includes(label);
+
     if (mode === "single") {
-      onChangeTags(selectedTags.includes(label) ? [] : [label]);
-    } else {
-      onChangeTags(
-        selectedTags.includes(label)
-          ? selectedTags.filter((t) => t !== label)
-          : [...selectedTags, label]
-      );
+      onChangeTags(isSelected ? [] : [label]);
+      if (isSelected) dropSubtagsOf(label);
+      else onChangeSubtags({ [label]: selectedSubtags[label] ?? [] });
+      return;
     }
+
+    if (isSelected) {
+      onChangeTags(selectedTags.filter((tag) => tag !== label));
+      dropSubtagsOf(label);
+      return;
+    }
+    if (maxTags !== undefined && selectedTags.length >= maxTags) return;
+    onChangeTags([...selectedTags, label]);
   };
 
   const toggleSubtag = (subLabel: string, parentTag: string) => {
-    if (!selectedTags.includes(parentTag)) {
+    const parentSelected = selectedTags.includes(parentTag);
+
+    if (!parentSelected) {
       if (mode === "single") {
         onChangeTags([parentTag]);
-      } else {
-        onChangeTags([...selectedTags, parentTag]);
+        onChangeSubtags({ [parentTag]: [subLabel] });
+        return;
       }
+      // Selecting a subtag pulls its parent in, but not past the tag limit.
+      if (maxTags !== undefined && selectedTags.length >= maxTags) return;
+      onChangeTags([...selectedTags, parentTag]);
     }
 
     const parentSubs = selectedSubtags[parentTag] || [];
+    const isActive = parentSubs.includes(subLabel);
+    if (
+      !isActive &&
+      maxSubtagsPerTag !== undefined &&
+      parentSubs.length >= maxSubtagsPerTag
+    ) {
+      return;
+    }
+
     onChangeSubtags({
       ...selectedSubtags,
-      [parentTag]: parentSubs.includes(subLabel)
+      [parentTag]: isActive
         ? parentSubs.filter((s) => s !== subLabel)
         : [...parentSubs, subLabel],
     });
