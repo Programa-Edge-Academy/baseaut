@@ -82,11 +82,12 @@ function formatTime(seconds: number): string {
  * flight action pills, a self-ticking timer and a corner action that either
  * minimizes the card or opens a form.
  *
- * The timer icon and clock share a single translucent, bordered pressable that
- * toggles play/pause. Below it, full-width "Redefinir" (restart, left) and
- * "Parar" (stop, right) buttons fill the row. While a crisis or flight episode
- * is being timed, the corresponding pill label is replaced by a live elapsed
- * counter for that episode.
+ * The six controls sit in three equal rows below the title: the timer (which
+ * doubles as play/pause) beside "Parar", then "Crise" beside "Fuga", then
+ * "Redefinir" beside the corner action. They all share the same height and width
+ * so every control is an equally large touch target. While a crisis or flight
+ * episode is being timed, that button's label is replaced by a live elapsed
+ * counter for the episode.
  *
  * @remarks
  * Each of the six controls can be registered as a tutorial spotlight target via
@@ -232,7 +233,7 @@ export function Stopwatch({
       className={`w-full rounded-2xl border border-outline bg-level2 p-4 ${className ?? ""}`}
     >
       <View className="flex-row items-start justify-between">
-        <View className="flex-1 pr-3 flex-row items-center gap-3">
+        <View className="flex-1 flex-row items-center gap-3">
           {imageUrl ? (
             <Image
               source={{ uri: imageUrl }}
@@ -248,48 +249,6 @@ export function Stopwatch({
               {subtitle}
             </Text>
           </View>
-        </View>
-
-        <View className="items-end gap-1.5">
-          <Pressable
-            ref={criseRef}
-            collapsable={false}
-            onPress={onPressCrise}
-            hitSlop={6}
-            className={`w-[88px] flex-row items-center justify-center gap-1.5 rounded-full border px-3 py-1 active:opacity-70 ${
-              isCriseActive
-                ? "border-error bg-error"
-                : "border-extra bg-extra/10"
-            }`}
-          >
-            <Siren size={14} color={isCriseActive ? "#fff" : colors.extra} />
-            <Text
-              className={`text-default-2 ${isCriseActive ? "text-content" : "text-extra"}`}
-              style={{ fontVariant: ["tabular-nums"] }}
-            >
-              {criseLabel}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            ref={fugaRef}
-            collapsable={false}
-            onPress={onPressFuga}
-            hitSlop={6}
-            className={`w-[88px] flex-row items-center justify-center gap-1.5 rounded-full border px-3 py-1 active:opacity-70 ${
-              isFugaActive
-                ? "border-error bg-error"
-                : "border-extra bg-extra/10"
-            }`}
-          >
-            <Footprints size={14} color={isFugaActive ? "#fff" : colors.extra} />
-            <Text
-              className={`text-default-2 ${isFugaActive ? "text-content" : "text-extra"}`}
-              style={{ fontVariant: ["tabular-nums"] }}
-            >
-              {fugaLabel}
-            </Text>
-          </Pressable>
         </View>
       </View>
 
@@ -323,6 +282,64 @@ export function Stopwatch({
         </Pressable>
 
         <Pressable
+          ref={stopRef}
+          collapsable={false}
+          onPress={handleStop}
+          className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-error bg-error/10 active:opacity-70"
+        >
+          <View className="h-4 w-4 rounded-[3px] bg-error" />
+          <Text className="text-default-1 text-error">Parar</Text>
+        </Pressable>
+      </View>
+
+      <View className="mt-3 flex-row gap-3">
+        <Pressable
+          ref={criseRef}
+          collapsable={false}
+          onPress={onPressCrise}
+          className={`h-12 flex-1 flex-row items-center justify-center gap-2 rounded-2xl border active:opacity-70 ${
+            isCriseActive ? "border-error bg-error" : "border-extra bg-extra/10"
+          }`}
+        >
+          <Siren size={18} color={isCriseActive ? "#fff" : colors.extra} />
+          <Text
+            className={`text-default-1 ${isCriseActive ? "text-white" : "text-extra"}`}
+            style={{ fontVariant: ["tabular-nums"] }}
+          >
+            {criseLabel}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          ref={fugaRef}
+          collapsable={false}
+          onPress={onPressFuga}
+          className={`h-12 flex-1 flex-row items-center justify-center gap-2 rounded-2xl border active:opacity-70 ${
+            isFugaActive ? "border-error bg-error" : "border-extra bg-extra/10"
+          }`}
+        >
+          <Footprints size={18} color={isFugaActive ? "#fff" : colors.extra} />
+          <Text
+            className={`text-default-1 ${isFugaActive ? "text-white" : "text-extra"}`}
+            style={{ fontVariant: ["tabular-nums"] }}
+          >
+            {fugaLabel}
+          </Text>
+        </Pressable>
+      </View>
+
+      <View className="mt-3 flex-row gap-3">
+        <Pressable
+          ref={restartRef}
+          collapsable={false}
+          onPress={handleRestart}
+          className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-outline bg-level1 active:opacity-70"
+        >
+          <RotateCcw size={18} color={colors.muted} />
+          <Text className="text-default-1 text-muted">Redefinir</Text>
+        </Pressable>
+
+        <Pressable
           ref={cornerRef}
           collapsable={false}
           onPress={onPressCorner}
@@ -342,28 +359,6 @@ export function Stopwatch({
           ) : (
             <Minimize2 size={18} color={colors.muted} />
           )}
-        </Pressable>
-      </View>
-
-      <View className="mt-3 flex-row gap-3">
-        <Pressable
-          ref={restartRef}
-          collapsable={false}
-          onPress={handleRestart}
-          className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-outline bg-level1 active:opacity-70"
-        >
-          <RotateCcw size={18} color={colors.muted} />
-          <Text className="text-default-1 text-muted">Redefinir</Text>
-        </Pressable>
-
-        <Pressable
-          ref={stopRef}
-          collapsable={false}
-          onPress={handleStop}
-          className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-error bg-error/10 active:opacity-70"
-        >
-          <View className="h-4 w-4 rounded-[3px] bg-error" />
-          <Text className="text-default-1 text-error">Parar</Text>
         </Pressable>
       </View>
     </View>
