@@ -1,5 +1,8 @@
 import { colors } from "@/assets/colors";
-import { useProtocolRecordDetail } from "@/features/analysis/hooks/use-protocol-record-detail";
+import {
+  useProtocolRecordDetail,
+  type AtaSection,
+} from "@/features/analysis/hooks/use-protocol-record-detail";
 import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import React from "react";
@@ -32,6 +35,46 @@ function SectionRow({ label, value }: { label: string; value: string }) {
     <View className="flex-row items-center justify-between py-2.5 border-b border-outline">
       <Text className="text-xs text-content flex-1 mr-3" numberOfLines={2}>{label}</Text>
       <ScoreBadge label={value} />
+    </View>
+  );
+}
+
+/**
+ * One ATA domain: its score, how many of its indicators were ticked, the ticked
+ * indicators themselves and any observation.
+ *
+ * @remarks
+ * The badge reads `score · ticked/available` because the number of indicators
+ * differs from domain to domain, so the score alone does not say how much of
+ * the domain was covered.
+ */
+function AtaSectionRow({ section }: { section: AtaSection }) {
+  return (
+    <View className="py-2.5 border-b border-outline">
+      <View className="flex-row items-center justify-between">
+        <Text className="text-xs text-content flex-1 mr-3" numberOfLines={2}>
+          {section.title}
+        </Text>
+        <ScoreBadge
+          label={`${section.valueLabel} · ${section.selectedOptions.length}/${section.totalOptions}`}
+        />
+      </View>
+
+      {section.selectedOptions.length > 0 && (
+        <View className="mt-1.5">
+          {section.selectedOptions.map((option) => (
+            <Text key={option} className="text-[11px] text-muted" numberOfLines={3}>
+              • {option}
+            </Text>
+          ))}
+        </View>
+      )}
+
+      {section.observation && (
+        <Text className="text-[11px] text-muted mt-1.5 italic">
+          {section.observation}
+        </Text>
+      )}
     </View>
   );
 }
@@ -95,7 +138,7 @@ export function ProtocolRecordView({
         {responsavel && <Text className="text-xs text-muted mb-2">{t("reports.protocol.responsible")}: {responsavel}</Text>}
         {hasResponses ? (
           detail.ata.sections.map((section) => (
-            <SectionRow key={section.id} label={section.title} value={section.valueLabel} />
+            <AtaSectionRow key={section.id} section={section} />
           ))
         ) : (
           <EmptyProtocol />

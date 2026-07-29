@@ -35,23 +35,49 @@ async function fetchFormRows(formularioId: string, locale: Locale): Promise<Form
   const [{ data: perguntas }, { data: respostas }] = await Promise.all([
     supabase
       .from("perguntas")
-      .select("id, texto_pergunta, ordem")
+      .select("id, texto_pergunta, opcoes, ordem")
       .eq("formulario_id", sourceId)
       .order("ordem", { ascending: true }),
     supabase
       .from("respostas_formulario")
-      .select("pergunta_id, valor_preenchido")
+      .select("pergunta_id, valor_preenchido, valores_selecionados")
       .eq("formulario_id", formularioId),
   ]);
 
   const respByQ = new Map(
     (respostas ?? []).map((r) => [r.pergunta_id, r.valor_preenchido]),
   );
+  const selectedByQ = new Map<string, string[]>();
+  (respostas ?? []).forEach((r: any) => {
+    if (Array.isArray(r.valores_selecionados)) {
+      selectedByQ.set(r.pergunta_id, r.valores_selecionados.map(String));
+    }
+  });
 
-  return (perguntas ?? []).map((q) => {
+  return (perguntas ?? []).map((q: any) => {
     const titulo = localizeFormText(q.texto_pergunta || "", locale)
       .split(/\n(?=\(0=)/)[0]
       .trim();
+
+    // A multiple-choice answer (the ATA) is the ticked indicators themselves.
+    // The stored score comes with them, plus how many of the domain's
+    // indicators were ticked — that total differs from domain to domain.
+    const selected = selectedByQ.get(q.id);
+    if (selected) {
+      const available = Array.isArray(q.opcoes?.valores)
+        ? (q.opcoes.valores as unknown[]).length
+        : 0;
+      const score = respByQ.get(q.id);
+      const marks = selected
+        .map((option) => localizeFormText(option, locale))
+        .join("; ");
+      const counts = `${score ?? "0"} (${selected.length}/${available})`;
+      return {
+        pergunta: titulo,
+        resposta: marks ? `${counts} — ${marks}` : counts,
+      };
+    }
+
     return { pergunta: titulo, resposta: formatAnswer(respByQ.get(q.id), locale) };
   });
 }

@@ -15,6 +15,12 @@ export type AtaSection = {
   title: string;
   value: number | null;
   valueLabel: string;
+  /** Indicators ticked in this domain. */
+  selectedOptions: string[];
+  /** How many indicators the domain offers, which varies per domain. */
+  totalOptions: number;
+  /** Free-text observation recorded for this domain, when any. */
+  observation: string | null;
 };
 
 /** Full ATA record detail: its sections and total score. */
@@ -96,26 +102,36 @@ export function useProtocolRecordDetail(tipo?: ProtocolTipo, recordId?: string) 
   const [error, setError] = useState<Error | null>(null);
 
   const fetchAtaCars = useCallback(
-    async (formularioId: string): Promise<{ perguntas: any[]; answers: Map<string, string | null> }> => {
+    async (
+      formularioId: string,
+    ): Promise<{
+      perguntas: any[];
+      answers: Map<string, string | null>;
+      selections: Map<string, string[]>;
+    }> => {
       const { data: perguntas, error: perguntasError } = await supabase
         .from("perguntas")
-        .select("id, texto_pergunta, tipo_resposta, ordem")
+        .select("id, texto_pergunta, tipo_resposta, opcoes, ordem")
         .eq("formulario_id", formularioId)
         .order("ordem", { ascending: true });
       if (perguntasError) throw perguntasError;
 
       const { data: respostas, error: respostasError } = await supabase
         .from("respostas_formulario")
-        .select("pergunta_id, valor_preenchido")
+        .select("pergunta_id, valor_preenchido, valores_selecionados")
         .eq("formulario_id", formularioId);
       if (respostasError) throw respostasError;
 
       const answers = new Map<string, string | null>();
-      (respostas ?? []).forEach((r: any) =>
-        answers.set(r.pergunta_id, r.valor_preenchido),
-      );
+      const selections = new Map<string, string[]>();
+      (respostas ?? []).forEach((r: any) => {
+        answers.set(r.pergunta_id, r.valor_preenchido);
+        if (Array.isArray(r.valores_selecionados)) {
+          selections.set(r.pergunta_id, r.valores_selecionados.map(String));
+        }
+      });
 
-      return { perguntas: perguntas ?? [], answers };
+      return { perguntas: perguntas ?? [], answers, selections };
     },
     [],
   );
@@ -138,22 +154,45 @@ export function useProtocolRecordDetail(tipo?: ProtocolTipo, recordId?: string) 
 
     try {
       if (tipo === "ata") {
-        const { perguntas, answers } = await fetchAtaCars(recordId);
+        const { perguntas, answers, selections } = await fetchAtaCars(recordId);
         let total = 0;
         let hasAny = false;
-        const sections: AtaSection[] = perguntas.map((q: any) => {
+        const sections: AtaSection[] = [];
+
+        for (const q of perguntas as any[]) {
+          // Each domain is followed by its own optional observation.
+          if (q.tipo_resposta === "texto_opcional") {
+            const observation = answers.get(q.id);
+            if (sections.length > 0) {
+              sections[sections.length - 1].observation =
+                observation && observation !== "" ? observation : null;
+            }
+            continue;
+          }
+
           const value = parseNumber(answers.get(q.id));
           if (value != null) {
             total += value;
             hasAny = true;
           }
-          return {
+
+          const available = Array.isArray(q.opcoes?.valores)
+            ? (q.opcoes.valores as unknown[]).map(String)
+            : [];
+          const selected = (selections.get(q.id) ?? []).map((option) =>
+            localizeFormText(option, locale),
+          );
+
+          sections.push({
             id: q.id,
             title: questionTitle(localizeFormText(q.texto_pergunta, locale)),
             value,
             valueLabel: value != null ? String(value) : "—",
-          };
-        });
+            selectedOptions: selected,
+            totalOptions: available.length,
+            observation: null,
+          });
+        }
         setDetail({ ata: { sections, total: hasAny ? total : null } });
       } else if (tipo === "cars") {
         const { perguntas, answers } = await fetchAtaCars(recordId);
