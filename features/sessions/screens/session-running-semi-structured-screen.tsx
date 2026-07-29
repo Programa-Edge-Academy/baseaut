@@ -63,6 +63,13 @@ export type SessionRunningSemiStructuredProps = {
  * from a list (or launches an engagement activity). Each resolved exercise is
  * saved as its own execution, with crisis/flight timing and an inline Control
  * Record; finishing routes to the completion screen.
+ *
+ * @remarks
+ * An exercise that already has a result can be picked again, no matter how it
+ * ended, and each run is recorded as its own execution. The list only locks
+ * while another exercise is actually running. The session still ends on its own
+ * once every exercise has been resolved at least once, so repeats happen while
+ * something is still pending.
  */
 export function SessionRunningSemiStructuredScreen({
   studentName,
@@ -650,26 +657,29 @@ export function SessionRunningSemiStructuredScreen({
               const status = historicoExercicios[exercise.id];
               const isConcluido = status === "concluido" || status === "adiado";
               const isNaoRealizada = status === "nao_realizada";
-              const isResolved = isConcluido || isNaoRealizada;
 
               const hasActiveExercise = !!currentSessionData?.activeExerciseId;
               const isRunningThis = exercise.id === currentSessionData?.activeExerciseId;
               const isBlocked = hasActiveExercise && !isRunningThis;
 
-              const disabled = isResolved || isBlocked;
+              // An exercise that already has a result stays selectable: picking
+              // it again runs it once more and records a separate execution,
+              // whether it was completed, deferred or not performed. Only
+              // another exercise being run right now blocks the list.
+              const disabled = isBlocked;
 
               return (
                 <Pressable
                   key={exercise.id}
                   disabled={disabled}
                   className={`flex-row items-center justify-between rounded-2xl border px-5 py-4 ${
-                    isConcluido
-                      ? "bg-[#34C759]/10 border-[#34C759] opacity-70"
-                      : isNaoRealizada
-                        ? "bg-error/10 border-error opacity-70"
-                        : isBlocked
-                          ? "bg-level2 border-outline opacity-40"
-                          : "bg-level2 border-outline"
+                    isBlocked
+                      ? "bg-level2 border-outline opacity-40"
+                      : isConcluido
+                        ? "bg-[#34C759]/10 border-[#34C759] active:opacity-70"
+                        : isNaoRealizada
+                          ? "bg-error/10 border-error active:opacity-70"
+                          : "bg-level2 border-outline active:opacity-70"
                   }`}
                   onPress={() => handleSelectExercise(exercise)}
                 >
@@ -701,13 +711,14 @@ export function SessionRunningSemiStructuredScreen({
                     )}
                   </View>
 
-                  {isConcluido ? (
-                    <CheckCircle2 color="#34C759" size={24} />
-                  ) : isNaoRealizada ? (
-                    <XCircle color={colors.error} size={24} />
-                  ) : (
-                    <ChevronRight color={colors.muted} size={24} />
-                  )}
+                  {/* A resolved exercise keeps its result icon and also gets the
+                      chevron, so it still reads as something that can be run
+                      again. */}
+                  <View className="flex-row items-center gap-1.5">
+                    {isConcluido && <CheckCircle2 color="#34C759" size={24} />}
+                    {isNaoRealizada && <XCircle color={colors.error} size={24} />}
+                    {!isBlocked && <ChevronRight color={colors.muted} size={24} />}
+                  </View>
                 </Pressable>
               );
             })}
