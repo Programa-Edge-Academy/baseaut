@@ -24,9 +24,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
  * mock highlights are illustrative, and its "Simular" action opens an
  * interactive practice sandbox (see the tutorial-practice route). Completing
  * the last step marks the module done; finishing the final remaining module
- * shows a congratulations modal. Once every module is done the header shortcut
- * disappears on its own ({@link useTutorial} `allCompleted`), leaving Settings
- * as the only entry point.
+ * shows a congratulations modal.
  */
 export function TutorialModuleScreen() {
   const router = useRouter();

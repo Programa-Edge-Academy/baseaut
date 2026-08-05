@@ -3,10 +3,9 @@ import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
 import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { TUTORIAL_EXIT_SPOTLIGHT_KEY } from "@/features/tutorial/components/tutorial-tap-guard";
-import { useTutorial } from "@/features/tutorial/contexts/tutorial-context";
 import { useUserRole } from "@/lib/use-user-role";
 import { usePathname, useRouter } from "expo-router";
-import { ArrowLeft, GraduationCap, HelpCircle, Save, Settings, User, Users, X } from "lucide-react-native";
+import { ArrowLeft, GraduationCap, Save, Settings, User, Users, X } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -45,10 +44,10 @@ function withSpotlight(node: React.ReactNode, targetKey?: string) {
 }
 
 /**
- * App top bar with the logo and variant-driven actions: default (team, account,
- * tutorial and settings shortcuts), back, session/engagement finish, and form
- * save. The "Em tutorial" practice button sits beside the logo (icon-only) so it
- * never competes with the centered actions. Logging out lives on the account page.
+ * App top bar with the logo and variant-driven actions: default (team, account
+ * and settings shortcuts), back, session/engagement finish, and form save. The
+ * "Em tutorial" practice button sits beside the logo (icon-only) so it never
+ * competes with the centered actions. Logging out lives on the account page.
  */
 export function Header({
   variant = "default",
@@ -65,7 +64,6 @@ export function Header({
   const role = useUserRole();
   const colors = useThemeColors();
   const { t } = useI18n();
-  const { allCompleted: tutorialAllCompleted } = useTutorial();
 
   const showBack = ["back", "finish", "finishEngagement", "form", "tutorial"].includes(variant);
   const showDefaultActions = variant === "default";
@@ -147,12 +145,6 @@ export function Header({
                 {role === "coordenador" && (
                   <Pressable onPress={() => router.push("/team")} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
                     <Users color={colors.muted} size={24} />
-                  </Pressable>
-                )}
-
-                {!tutorialAllCompleted && (
-                  <Pressable onPress={() => router.push("/tutorial" as never)} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
-                    <HelpCircle color={colors.muted} size={24} />
                   </Pressable>
                 )}
 

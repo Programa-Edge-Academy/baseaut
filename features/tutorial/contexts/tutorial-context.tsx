@@ -1,4 +1,3 @@
-import { TUTORIAL_MODULE_IDS } from "@/features/tutorial/constants/modules";
 import { supabase } from "@/lib/supabase";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
@@ -21,8 +20,6 @@ type TutorialContextValue = {
   completed: string[];
   /** Whether a module has been completed. */
   isCompleted: (moduleId: string) => boolean;
-  /** Whether every module has been completed. */
-  allCompleted: boolean;
   /** Marks a module as completed and persists it. */
   markCompleted: (moduleId: string) => void;
   /**
@@ -46,9 +43,9 @@ const TutorialContext = createContext<TutorialContextValue | undefined>(undefine
  *
  * @remarks
  * Only completion is persisted. The mock data shown while playing a module is
- * ephemeral and always restarts from the beginning. The header shortcut is
- * shown until every module is completed ({@link allCompleted}); afterwards the
- * tutorial is reachable only from Settings.
+ * ephemeral and always restarts from the beginning. The tutorial has no entry
+ * point in the UI: the header and Settings shortcuts were removed, so its
+ * screens are only reachable if a shortcut is reintroduced.
  */
 export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const [completed, setCompleted] = useState<string[]>([]);
@@ -117,28 +114,16 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
 
   const clearPendingStep = useCallback(() => setPendingStep(null), []);
 
-  const allCompleted =
-    TUTORIAL_MODULE_IDS.length > 0 &&
-    TUTORIAL_MODULE_IDS.every((id) => completed.includes(id));
-
   const value = useMemo<TutorialContextValue>(
     () => ({
       completed,
       isCompleted: (moduleId: string) => completed.includes(moduleId),
-      allCompleted,
       markCompleted,
       pendingStep,
       requestStep,
       clearPendingStep,
     }),
-    [
-      completed,
-      allCompleted,
-      markCompleted,
-      pendingStep,
-      requestStep,
-      clearPendingStep,
-    ],
+    [completed, markCompleted, pendingStep, requestStep, clearPendingStep],
   );
 
   return (

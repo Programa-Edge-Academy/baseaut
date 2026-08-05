@@ -1,11 +1,10 @@
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
-import { LOCALE_OPTIONS } from "@/features/settings/constants/translations";
 import { FeedbackModal } from "@/features/settings/components/feedback-modal";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { ThemeMode, useTheme, useThemeColors } from "@/features/settings/contexts/theme-context";
 import { useRouter } from "expo-router";
-import { Check, GraduationCap, Languages, MessageSquareText, Monitor, Moon, Sun } from "lucide-react-native";
+import { Check, MessageSquareText, Monitor, Moon, Sun } from "lucide-react-native";
 import React, { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
@@ -48,7 +47,7 @@ export default function SettingsRoute() {
   const router = useRouter();
   const colors = useThemeColors();
   const { mode, setMode } = useTheme();
-  const { t, preference, setPreference } = useI18n();
+  const { t } = useI18n();
   const [feedbackVisible, setFeedbackVisible] = useState(false);
 
   const themeOptions: { value: ThemeMode; label: string; icon: React.ReactNode }[] = [
@@ -95,38 +94,6 @@ export default function SettingsRoute() {
             <View className="flex-1">
               <Text className="text-default-1 text-content">{t("settings.feedback.button")}</Text>
               <Text className="text-default-3 text-muted">{t("settings.feedback.buttonHint")}</Text>
-            </View>
-          </Pressable>
-        </View>
-
-        <View className="mt-8 gap-4">
-          <Text className="text-header-3 text-content">{t("settings.language")}</Text>
-          <Text className="text-default-2 text-muted">
-            {t("settings.language.description")}
-          </Text>
-          <View className="gap-2.5">
-            {LOCALE_OPTIONS.map((opt) => (
-              <OptionRow
-                key={opt.value}
-                label={opt.label}
-                icon={<Languages size={18} color={colors.muted} />}
-                selected={preference === opt.value}
-                onPress={() => setPreference(opt.value)}
-              />
-            ))}
-          </View>
-        </View>
-
-        <View className="mt-8 gap-4">
-          <Text className="text-header-3 text-content">{t("settings.tutorial")}</Text>
-
-          <Pressable
-            onPress={() => router.push("/tutorial" as never)}
-            className="flex-row items-center justify-between rounded-2xl border border-outline bg-level1 p-4 active:opacity-70"
-          >
-            <View className="flex-row items-center gap-3">
-              <GraduationCap size={18} color={colors.muted} />
-              <Text className="text-default-1 text-content">{t("settings.openTutorial")}</Text>
             </View>
           </Pressable>
         </View>

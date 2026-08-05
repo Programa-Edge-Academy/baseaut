@@ -1,92 +1,43 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import { NativeModules, Platform } from "react-native";
+import React, { createContext, useCallback, useContext, useMemo } from "react";
 import {
   Locale,
   TranslationKey,
   translations,
 } from "../constants/translations";
 
-/** User-selectable language preference. "system" follows the device language. */
-export type LocalePreference = "system" | Locale;
-
-const STORAGE_KEY = "@baseaut/locale";
+/** The single locale the app currently ships in. */
+const APP_LOCALE: Locale = "pt";
 
 /** Value exposed by {@link I18nProvider}. */
 type I18nContextValue = {
-  /** The stored preference ("system" | "pt" | "en" | "es"). */
-  preference: LocalePreference;
-  /** The locale actually applied after resolving "system". */
+  /** The locale applied to the whole app. */
   locale: Locale;
   /** Translates a key for the active locale, falling back to pt then the key. */
   t: (key: TranslationKey) => string;
-  /** Persists and applies a new language preference. */
-  setPreference: (preference: LocalePreference) => void;
 };
 
 const I18nContext = createContext<I18nContextValue | undefined>(undefined);
 
-/** Reads the device language (e.g. "pt", "en", "es") across platforms. */
-function getDeviceLocale(): Locale {
-  let tag = "pt";
-  try {
-    if (Platform.OS === "ios") {
-      tag =
-        NativeModules.SettingsManager?.settings?.AppleLocale ??
-        NativeModules.SettingsManager?.settings?.AppleLanguages?.[0] ??
-        "pt";
-    } else if (Platform.OS === "android") {
-      tag = NativeModules.I18nManager?.localeIdentifier ?? "pt";
-    } else if (typeof navigator !== "undefined") {
-      tag = navigator.language ?? "pt";
-    }
-  } catch {
-    tag = "pt";
-  }
-  const lang = tag.slice(0, 2).toLowerCase();
-  if (lang === "en") return "en";
-  return "pt";
-}
-
 /**
- * Provides the app language with persistence and a `t()` translator. Defaults
- * to the device language on first launch, resolving "system" against
- * {@link getDeviceLocale}.
+ * Provides the app language and a `t()` translator.
+ *
+ * @remarks
+ * The app is pinned to Portuguese ({@link APP_LOCALE}): the language selector
+ * was removed from Settings, so neither the device language nor a previously
+ * stored preference is consulted anymore — a user who had picked English is
+ * brought back to Portuguese. The catalog keeps its pt **and** en entries, so
+ * restoring the selector only takes reintroducing the preference state here.
  */
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [preference, setPreferenceState] = useState<LocalePreference>("system");
-
-  useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((stored) => {
-      if (stored === "system" || stored === "pt" || stored === "en") {
-        setPreferenceState(stored);
-      }
-    });
-  }, []);
-
-  const setPreference = useCallback((next: LocalePreference) => {
-    setPreferenceState(next);
-    AsyncStorage.setItem(STORAGE_KEY, next);
-  }, []);
-
-  const locale: Locale = preference === "system" ? getDeviceLocale() : preference;
-
   const t = useCallback(
     (key: TranslationKey) =>
-      translations[locale]?.[key] ?? translations.pt[key] ?? key,
-    [locale],
+      translations[APP_LOCALE]?.[key] ?? translations.pt[key] ?? key,
+    [],
   );
 
   const value = useMemo<I18nContextValue>(
-    () => ({ preference, locale, t, setPreference }),
-    [preference, locale, t, setPreference],
+    () => ({ locale: APP_LOCALE, t }),
+    [t],
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
@@ -97,10 +48,8 @@ export function useI18n(): I18nContextValue {
   const ctx = useContext(I18nContext);
   if (!ctx) {
     return {
-      preference: "system",
       locale: "pt",
       t: (key) => translations.pt[key] ?? key,
-      setPreference: () => {},
     };
   }
   return ctx;

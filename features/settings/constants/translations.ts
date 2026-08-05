@@ -9,14 +9,11 @@
  * screens are migrated incrementally; until then they render in pt-BR.
  */
 
-/** Supported UI languages. */
+/**
+ * Supported UI languages. The app is pinned to pt (see {@link I18nProvider});
+ * en is kept so the language selector can be brought back.
+ */
 export type Locale = "pt" | "en";
-
-/** Ordered locale options for the settings selector. */
-export const LOCALE_OPTIONS: { value: Locale; label: string }[] = [
-  { value: "pt", label: "Português (BR)" },
-  { value: "en", label: "English" },
-];
 
 /** All translatable message keys. */
 export type TranslationKey =
@@ -33,12 +30,6 @@ export type TranslationKey =
   | "settings.theme.system"
   | "settings.theme.light"
   | "settings.theme.dark"
-  | "settings.language"
-  | "settings.language.description"
-  | "settings.tutorial"
-  | "settings.openTutorial"
-  | "settings.showTutorialButton"
-  | "settings.showTutorialButtonHint"
   | "settings.feedback"
   | "settings.feedback.button"
   | "settings.feedback.buttonHint"
@@ -1138,12 +1129,6 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "settings.theme.system": "Sistema",
     "settings.theme.light": "Claro",
     "settings.theme.dark": "Escuro",
-    "settings.language": "Idioma",
-    "settings.language.description": "Escolha o idioma do aplicativo",
-    "settings.tutorial": "Tutorial",
-    "settings.openTutorial": "Abrir tutorial",
-    "settings.showTutorialButton": "Mostrar tutorial no cabeçalho",
-    "settings.showTutorialButtonHint": "Exibe o atalho de ajuda no topo das telas principais",
     "settings.feedback": "Feedback",
     "settings.feedback.button": "Enviar feedback",
     "settings.feedback.buttonHint": "Encontrou um problema ou tem uma sugestão? Fale direto com a equipe de desenvolvimento.",
@@ -2257,12 +2242,6 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "settings.theme.system": "System",
     "settings.theme.light": "Light",
     "settings.theme.dark": "Dark",
-    "settings.language": "Language",
-    "settings.language.description": "Choose the app language",
-    "settings.tutorial": "Tutorial",
-    "settings.openTutorial": "Open tutorial",
-    "settings.showTutorialButton": "Show tutorial in the header",
-    "settings.showTutorialButtonHint": "Displays the help shortcut at the top of the main screens",
     "settings.feedback": "Feedback",
     "settings.feedback.button": "Send feedback",
     "settings.feedback.buttonHint": "Found a problem or have a suggestion? Talk directly to the development team.",
