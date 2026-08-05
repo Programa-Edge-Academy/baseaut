@@ -24,6 +24,23 @@ function getDefaultAnswer(question: { type: string; min?: number }): any {
 }
 
 /**
+ * Extracts the ticked options of a choice list answer.
+ *
+ * @param rawValue - The current answer, in either shape described below.
+ * @returns The ticked options, or an empty list when none is ticked.
+ *
+ * @remarks
+ * The choice list UI keeps its answer as `{ selected, other }`, while an answer
+ * read straight from `valores_selecionados` is a plain array. Both shapes reach
+ * the save path, so both are normalized to the array the column stores.
+ */
+function getSelectedOptions(rawValue: any): string[] {
+  if (Array.isArray(rawValue)) return rawValue.map(String);
+  if (Array.isArray(rawValue?.selected)) return rawValue.selected.map(String);
+  return [];
+}
+
+/**
  * Control Record questions auto-filled by the session and hidden during
  * execution: the app fills them when the session ends, and they remain editable
  * later from the history.
@@ -277,8 +294,14 @@ export const FormComponent = forwardRef(function FormComponent(
           for (const r of respostas) {
             // An ATA answer lives in its own column: the ticked options are the
             // answer, and `valor_preenchido` only carries the derived score.
+            // The choice list UI reads `{ selected, other }`, so the stored
+            // array is wrapped back into that shape — otherwise reopening the
+            // form would show every indicator unticked.
             if (Array.isArray(r.valores_selecionados)) {
-              loadedAnswers[r.pergunta_id] = r.valores_selecionados;
+              loadedAnswers[r.pergunta_id] = {
+                selected: r.valores_selecionados.map(String),
+                other: "",
+              };
               continue;
             }
             if (r.valor_preenchido == null) continue;
@@ -374,13 +397,12 @@ export const FormComponent = forwardRef(function FormComponent(
         // why it is sent even though `isFilled` is false for it.
         const isAtaChoice = isAta && q.type === "choice_list";
         if (isAtaChoice) {
-          const selected = Array.isArray(rawValue) ? rawValue : [];
           return {
             formulario_id: formularioId,
             sessao_id: sessaoId || null,
             aluno_id: alunoId || null,
             pergunta_id: q.id,
-            valores_selecionados: selected,
+            valores_selecionados: getSelectedOptions(rawValue),
             status_item: "respondido",
           };
         }
