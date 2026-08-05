@@ -62,6 +62,7 @@ function fmtSupportLevel(raw: string | null, t: T): string {
   if (raw === "nivel_1") return t("reports.supportLevel1");
   if (raw === "nivel_2") return t("reports.supportLevel2");
   if (raw === "nivel_3") return t("reports.supportLevel3");
+  if (raw === "indefinido") return t("reports.supportLevelUndefined");
   return raw;
 }
 

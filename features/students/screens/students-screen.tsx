@@ -65,7 +65,7 @@ export function StudentsScreen({ tutorial = false }: StudentsScreenProps) {
     if (level.includes("1")) return t("students.support.n1");
     if (level.includes("2")) return t("students.support.n2");
     if (level.includes("3")) return t("students.support.n3");
-    return level;
+    return t("students.support.undefined");
   };
 
   const content = (

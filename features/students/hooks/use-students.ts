@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { calculateAge } from "@/lib/date-utils";
+import { toSupportLevelCode } from "@/features/students/utils/support-level";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { uploadImage } from "@/lib/upload-image";
@@ -125,11 +126,13 @@ const loadStudents = useCallback(async (showLoader = true) => {
               weight: Number(aluno.peso) || 0,
               height: Number(aluno.altura) || 0,
               waist: Number(aluno.cintura) || 0,
-              supportLevel: 
+              supportLevel:
               aluno.nivel_suporte === "nivel_1" ? "Nível 1"
                 : aluno.nivel_suporte === "nivel_2"
                   ? "Nível 2"
-                  : "Nível 3",
+                  : aluno.nivel_suporte === "nivel_3"
+                    ? "Nível 3"
+                    : "Indefinido",
               healthConditions: aluno.diagnostico_detalhado || "",
               observations: aluno.observacoes_clinicas || "",
               avatarUrl: aluno.avatar_url,
@@ -188,10 +191,7 @@ const loadStudents = useCallback(async (showLoader = true) => {
           : (await uploadImage("avatares", photoUri, "alunos")) ?? null;
       }
 
-      let nivelSuporteDb = "nivel_1";
-      const supportLower = data.supportLevel.toLowerCase();
-      if (supportLower.includes("2")) nivelSuporteDb = "nivel_2";
-      if (supportLower.includes("3")) nivelSuporteDb = "nivel_3";
+      const nivelSuporteDb = toSupportLevelCode(data.supportLevel);
 
       let formattedDate = data.birthDate;
       if (formattedDate.includes("/")) {
@@ -271,11 +271,7 @@ const loadStudents = useCallback(async (showLoader = true) => {
       }
 
       if (data.supportLevel !== undefined) {
-        let nivelSuporteDb = "nivel_1";
-        const supportLower = data.supportLevel.toLowerCase();
-        if (supportLower.includes("2")) nivelSuporteDb = "nivel_2";
-        if (supportLower.includes("3")) nivelSuporteDb = "nivel_3";
-        payload.nivel_suporte = nivelSuporteDb;
+        payload.nivel_suporte = toSupportLevelCode(data.supportLevel);
       }
 
       if (data.birthDate !== undefined) {

@@ -19,6 +19,7 @@ function formatSupportLevel(level: string | null): string | null {
   if (level === "nivel_1") return "Nível 1";
   if (level === "nivel_2") return "Nível 2";
   if (level === "nivel_3") return "Nível 3";
+  if (level === "indefinido") return "Indefinido";
   return level;
 }
 

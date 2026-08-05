@@ -2,6 +2,7 @@ import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { supabase } from "@/lib/supabase";
 import { calculateAge } from "@/lib/date-utils";
 import { uploadImage } from "@/lib/upload-image";
+import { toSupportLevelCode } from "@/features/students/utils/support-level";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
@@ -224,28 +225,7 @@ export function useTeamData() {
         formattedDate = `${year}-${month}-${day}`;
       }
 
-      let nivelSuporteDb = "nivel_1";
-      const suporteText = data.supportLevel?.toLowerCase() || "";
-
-      if (
-        suporteText.includes("nível 1") ||
-        suporteText.includes("nivel 1") ||
-        suporteText === "nivel_1"
-      ) {
-        nivelSuporteDb = "nivel_1";
-      } else if (
-        suporteText.includes("nível 2") ||
-        suporteText.includes("nivel 2") ||
-        suporteText === "nivel_2"
-      ) {
-        nivelSuporteDb = "nivel_2";
-      } else if (
-        suporteText.includes("nível 3") ||
-        suporteText.includes("nivel 3") ||
-        suporteText === "nivel_3"
-      ) {
-        nivelSuporteDb = "nivel_3";
-      }
+      const nivelSuporteDb = toSupportLevelCode(data.supportLevel);
 
       const basePayload = {
         nome_completo: data.name,

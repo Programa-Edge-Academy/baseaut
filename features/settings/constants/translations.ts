@@ -596,6 +596,7 @@ export type TranslationKey =
   | "students.support.n1"
   | "students.support.n2"
   | "students.support.n3"
+  | "students.support.undefined"
   | "students.deleteTitle"
   | "students.form.createTitle"
   | "students.form.editTitle"
@@ -615,6 +616,7 @@ export type TranslationKey =
   | "students.form.supportOption1"
   | "students.form.supportOption2"
   | "students.form.supportOption3"
+  | "students.form.supportOptionUndefined"
   | "students.form.healthConditions"
   | "students.form.healthConditionsPlaceholder"
   | "students.form.observations"
@@ -801,6 +803,7 @@ export type TranslationKey =
   | "reports.supportLevel1"
   | "reports.supportLevel2"
   | "reports.supportLevel3"
+  | "reports.supportLevelUndefined"
   | "export.selectFormat"
   | "export.pdfWithCharts"
   | "export.csvTabular"
@@ -1700,6 +1703,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "students.support.n1": "TEA nível 1",
     "students.support.n2": "TEA nível 2",
     "students.support.n3": "TEA nível 3",
+    "students.support.undefined": "TEA nível indefinido",
     "students.deleteTitle": "Excluir aluno?",
     "students.form.createTitle": "Novo aluno",
     "students.form.editTitle": "Editar aluno",
@@ -1719,6 +1723,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "students.form.supportOption1": "Transtorno do Espectro Autista Nível 1",
     "students.form.supportOption2": "Transtorno do Espectro Autista Nível 2",
     "students.form.supportOption3": "Transtorno do Espectro Autista Nível 3",
+    "students.form.supportOptionUndefined": "Indefinido",
     "students.form.healthConditions": "Outras condições de saúde",
     "students.form.healthConditionsPlaceholder": "Outras condições de saúde (opcional)",
     "students.form.observations": "Observações",
@@ -1916,6 +1921,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "reports.supportLevel1": "Nível 1",
     "reports.supportLevel2": "Nível 2",
     "reports.supportLevel3": "Nível 3",
+    "reports.supportLevelUndefined": "Indefinido",
     "export.selectFormat": "Selecionar formato",
     "export.pdfWithCharts": "PDF (com gráficos)",
     "export.csvTabular": "CSV (dados tabulares)",
@@ -2812,6 +2818,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "students.support.n1": "ASD level 1",
     "students.support.n2": "ASD level 2",
     "students.support.n3": "ASD level 3",
+    "students.support.undefined": "ASD level undefined",
     "students.deleteTitle": "Delete student?",
     "students.form.createTitle": "New student",
     "students.form.editTitle": "Edit student",
@@ -2831,6 +2838,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "students.form.supportOption1": "Autism Spectrum Disorder Level 1",
     "students.form.supportOption2": "Autism Spectrum Disorder Level 2",
     "students.form.supportOption3": "Autism Spectrum Disorder Level 3",
+    "students.form.supportOptionUndefined": "Undefined",
     "students.form.healthConditions": "Other health conditions",
     "students.form.healthConditionsPlaceholder": "Other health conditions (optional)",
     "students.form.observations": "Notes",
@@ -3027,6 +3035,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "reports.supportLevel1": "Level 1",
     "reports.supportLevel2": "Level 2",
     "reports.supportLevel3": "Level 3",
+    "reports.supportLevelUndefined": "Undefined",
     "export.selectFormat": "Select format",
     "export.pdfWithCharts": "PDF (with charts)",
     "export.csvTabular": "CSV (tabular data)",
