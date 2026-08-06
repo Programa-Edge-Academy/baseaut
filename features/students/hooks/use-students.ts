@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { calculateAge } from "@/lib/date-utils";
+import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { uploadImage } from "@/lib/upload-image";
@@ -23,6 +24,45 @@ export type Student = {
   avatarUrl: string | null;
   pendencyAlert: boolean;
 };
+
+/** Support level values stored in the `nivel_suporte_tea` enum. */
+type NivelSuporteDb = "nivel_1" | "nivel_2" | "nivel_3" | "indefinido";
+
+/**
+ * Converts the stored support level into the label shown in the UI.
+ *
+ * @remarks
+ * "indefinido" exists for children whose level is not known yet (report still
+ * pending), so the form no longer has to record a level nobody confirmed.
+ */
+function supportLevelFromDb(
+  raw: string | null | undefined,
+  t: (key: TranslationKey) => string,
+): string {
+  if (raw === "nivel_1") return "Nível 1";
+  if (raw === "nivel_2") return "Nível 2";
+  if (raw === "nivel_3") return "Nível 3";
+  return t("students.form.supportOptionUndefined");
+}
+
+/**
+ * Converts the label picked in the form back into the stored enum value.
+ *
+ * @remarks
+ * The undefined option is matched against its own translated label, so it works
+ * in every language; the numbered levels are matched by their digit, which the
+ * label carries in every language.
+ */
+function supportLevelToDb(
+  label: string,
+  t: (key: TranslationKey) => string,
+): NivelSuporteDb {
+  if (label === t("students.form.supportOptionUndefined")) return "indefinido";
+  if (label.includes("2")) return "nivel_2";
+  if (label.includes("3")) return "nivel_3";
+  if (label.includes("1")) return "nivel_1";
+  return "indefinido";
+}
 
 /** Seed students for the tutorial's mock mode (kept entirely in memory). */
 const MOCK_STUDENTS: Student[] = [
@@ -125,11 +165,7 @@ const loadStudents = useCallback(async (showLoader = true) => {
               weight: Number(aluno.peso) || 0,
               height: Number(aluno.altura) || 0,
               waist: Number(aluno.cintura) || 0,
-              supportLevel: 
-              aluno.nivel_suporte === "nivel_1" ? "Nível 1"
-                : aluno.nivel_suporte === "nivel_2"
-                  ? "Nível 2"
-                  : "Nível 3",
+              supportLevel: supportLevelFromDb(aluno.nivel_suporte, t),
               healthConditions: aluno.diagnostico_detalhado || "",
               observations: aluno.observacoes_clinicas || "",
               avatarUrl: aluno.avatar_url,
@@ -188,10 +224,7 @@ const loadStudents = useCallback(async (showLoader = true) => {
           : (await uploadImage("avatares", photoUri, "alunos")) ?? null;
       }
 
-      let nivelSuporteDb = "nivel_1";
-      const supportLower = data.supportLevel.toLowerCase();
-      if (supportLower.includes("2")) nivelSuporteDb = "nivel_2";
-      if (supportLower.includes("3")) nivelSuporteDb = "nivel_3";
+      const nivelSuporteDb = supportLevelToDb(data.supportLevel, t);
 
       let formattedDate = data.birthDate;
       if (formattedDate.includes("/")) {
@@ -271,11 +304,7 @@ const loadStudents = useCallback(async (showLoader = true) => {
       }
 
       if (data.supportLevel !== undefined) {
-        let nivelSuporteDb = "nivel_1";
-        const supportLower = data.supportLevel.toLowerCase();
-        if (supportLower.includes("2")) nivelSuporteDb = "nivel_2";
-        if (supportLower.includes("3")) nivelSuporteDb = "nivel_3";
-        payload.nivel_suporte = nivelSuporteDb;
+        payload.nivel_suporte = supportLevelToDb(data.supportLevel, t);
       }
 
       if (data.birthDate !== undefined) {

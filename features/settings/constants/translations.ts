@@ -624,6 +624,7 @@ export type TranslationKey =
   | "students.form.supportOption1"
   | "students.form.supportOption2"
   | "students.form.supportOption3"
+  | "students.form.supportOptionUndefined"
   | "students.form.healthConditions"
   | "students.form.healthConditionsPlaceholder"
   | "students.form.observations"
@@ -1734,6 +1735,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "students.form.supportOption1": "Transtorno do Espectro Autista Nível 1",
     "students.form.supportOption2": "Transtorno do Espectro Autista Nível 2",
     "students.form.supportOption3": "Transtorno do Espectro Autista Nível 3",
+    "students.form.supportOptionUndefined": "Indefinido",
     "students.form.healthConditions": "Outras condições de saúde",
     "students.form.healthConditionsPlaceholder": "Outras condições de saúde (opcional)",
     "students.form.observations": "Observações",
@@ -2852,6 +2854,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "students.form.supportOption1": "Autism Spectrum Disorder Level 1",
     "students.form.supportOption2": "Autism Spectrum Disorder Level 2",
     "students.form.supportOption3": "Autism Spectrum Disorder Level 3",
+    "students.form.supportOptionUndefined": "Undefined",
     "students.form.healthConditions": "Other health conditions",
     "students.form.healthConditionsPlaceholder": "Other health conditions (optional)",
     "students.form.observations": "Notes",

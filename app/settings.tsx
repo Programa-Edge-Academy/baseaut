@@ -1,11 +1,13 @@
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
-import { LOCALE_OPTIONS } from "@/features/settings/constants/translations";
+// IDIOMA DESATIVADO — para reativar, descomente esta linha.
+// import { LOCALE_OPTIONS } from "@/features/settings/constants/translations";
 import { FeedbackModal } from "@/features/settings/components/feedback-modal";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { ThemeMode, useTheme, useThemeColors } from "@/features/settings/contexts/theme-context";
 import { useRouter } from "expo-router";
-import { Check, GraduationCap, Languages, MessageSquareText, Monitor, Moon, Sun } from "lucide-react-native";
+// TUTORIAL/IDIOMA DESATIVADOS — ao reativar, volte a importar GraduationCap e Languages.
+import { Check, MessageSquareText, Monitor, Moon, Sun } from "lucide-react-native";
 import React, { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
@@ -48,7 +50,8 @@ export default function SettingsRoute() {
   const router = useRouter();
   const colors = useThemeColors();
   const { mode, setMode } = useTheme();
-  const { t, preference, setPreference } = useI18n();
+  // IDIOMA DESATIVADO — ao reativar, volte a extrair preference e setPreference.
+  const { t } = useI18n();
   const [feedbackVisible, setFeedbackVisible] = useState(false);
 
   const themeOptions: { value: ThemeMode; label: string; icon: React.ReactNode }[] = [
@@ -99,6 +102,8 @@ export default function SettingsRoute() {
           </Pressable>
         </View>
 
+        {/* IDIOMA DESATIVADO — o app fica só em português por ora.
+            Para reativar, descomente este bloco.
         <View className="mt-8 gap-4">
           <Text className="text-header-3 text-content">{t("settings.language")}</Text>
           <Text className="text-default-2 text-muted">
@@ -116,7 +121,9 @@ export default function SettingsRoute() {
             ))}
           </View>
         </View>
+        */}
 
+        {/* TUTORIAL DESATIVADO — para reativar, descomente este bloco.
         <View className="mt-8 gap-4">
           <Text className="text-header-3 text-content">{t("settings.tutorial")}</Text>
 
@@ -130,6 +137,7 @@ export default function SettingsRoute() {
             </View>
           </Pressable>
         </View>
+        */}
       </ScrollView>
 
       <FeedbackModal
