@@ -76,7 +76,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(STORAGE_KEY, next);
   }, []);
 
-  const locale: Locale = preference === "system" ? getDeviceLocale() : preference;
+  // IDIOMA TRAVADO EM PORTUGUÊS — a escolha de idioma saiu de Configurações, e
+  // sem esta trava um aparelho com outro idioma cairia no inglês pela
+  // preferência "system". Para reativar, troque pela linha comentada abaixo.
+  const locale: Locale = "pt";
+  // const locale: Locale = preference === "system" ? getDeviceLocale() : preference;
 
   const t = useCallback(
     (key: TranslationKey) =>

@@ -75,6 +75,7 @@ export function NewStudent({
     t("students.form.supportOption1"),
     t("students.form.supportOption2"),
     t("students.form.supportOption3"),
+    t("students.form.supportOptionUndefined"),
   ];
 
   useEffect(() => {
