@@ -3,10 +3,12 @@ import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
 import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { TUTORIAL_EXIT_SPOTLIGHT_KEY } from "@/features/tutorial/components/tutorial-tap-guard";
-import { useTutorial } from "@/features/tutorial/contexts/tutorial-context";
+// TUTORIAL DESATIVADO — para reativar, descomente esta linha.
+// import { useTutorial } from "@/features/tutorial/contexts/tutorial-context";
 import { useUserRole } from "@/lib/use-user-role";
 import { usePathname, useRouter } from "expo-router";
-import { ArrowLeft, GraduationCap, HelpCircle, Save, Settings, User, Users, X } from "lucide-react-native";
+// TUTORIAL DESATIVADO — ao reativar, volte a importar HelpCircle.
+import { ArrowLeft, GraduationCap, Save, Settings, User, Users, X } from "lucide-react-native";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -65,7 +67,8 @@ export function Header({
   const role = useUserRole();
   const colors = useThemeColors();
   const { t } = useI18n();
-  const { allCompleted: tutorialAllCompleted } = useTutorial();
+  // TUTORIAL DESATIVADO — para reativar, descomente esta linha.
+  // const { allCompleted: tutorialAllCompleted } = useTutorial();
 
   const showBack = ["back", "finish", "finishEngagement", "form", "tutorial"].includes(variant);
   const showDefaultActions = variant === "default";
@@ -150,11 +153,13 @@ export function Header({
                   </Pressable>
                 )}
 
+                {/* TUTORIAL DESATIVADO — para reativar, descomente este bloco.
                 {!tutorialAllCompleted && (
                   <Pressable onPress={() => router.push("/tutorial" as never)} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
                     <HelpCircle color={colors.muted} size={24} />
                   </Pressable>
                 )}
+                */}
 
                 <Pressable onPress={() => router.push("/account")} className="p-1 active:opacity-70" style={{ marginLeft: 20 }}>
                   <User color={colors.muted} size={24} />
