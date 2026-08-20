@@ -17,6 +17,7 @@ import {
 import { SessionGlobalProvider } from "@/features/sessions/contexts/session-global-context";
 import { GlobalToastProvider } from "@/components/global-toast";
 import { GlobalSessionWidget } from "@/features/sessions/components/global-session-widget";
+import { AppVersionGate } from "@/features/settings/components/app-version-gate";
 import { ThemeProvider } from "@/features/settings/contexts/theme-context";
 import { I18nProvider } from "@/features/settings/contexts/i18n-context";
 import { TutorialProvider } from "@/features/tutorial/contexts/tutorial-context";
@@ -44,6 +45,9 @@ SplashScreen.preventAutoHideAsync();
  * UI (stale measurements survive until a full restart), so the key forces a
  * clean remount when the user returns. Providers sit above the key, so global
  * session state survives the remount.
+ *
+ * {@link AppVersionGate} is mounted alongside the stack so the update block and
+ * the release notes cover every route, the login screen included.
  */
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -86,12 +90,14 @@ export default function RootLayout() {
             <View key={`metrics-${fontScale}-${scale}`} style={{ flex: 1 }}>
               <TutorialTapGuard>{stack}</TutorialTapGuard>
               <GlobalSessionWidget />
+              <AppVersionGate />
             </View>
           </GestureHandlerRootView>
         ) : (
           <View key={`metrics-${fontScale}-${scale}`} style={{ flex: 1 }}>
             {stack}
             <GlobalSessionWidget />
+            <AppVersionGate />
           </View>
         )}
       </SessionSimulationProvider>
