@@ -1121,7 +1121,18 @@ export type TranslationKey =
   | "mock.protocol"
   | "mock.helpAutonomyText"
   | "session.mabcAssessment"
-  | "analysis.compareLoadError";
+  | "analysis.compareLoadError"
+  | "update.required.title"
+  | "update.required.message"
+  | "update.required.installed"
+  | "update.required.latest"
+  | "update.required.changes"
+  | "update.required.action"
+  | "update.required.noLink"
+  | "update.required.linkError"
+  | "update.notes.title"
+  | "update.notes.subtitle"
+  | "update.notes.action";
 
 /** Translation tables keyed by locale then message key. */
 export const translations: Record<Locale, Record<TranslationKey, string>> = {
@@ -2244,6 +2255,19 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "mock.helpAutonomyText": "A autonomia do aluno aumentou ao longo das sessões.",
     "session.mabcAssessment": "Avaliação MABC-2",
     "analysis.compareLoadError": "Erro ao carregar comparação de desempenho.",
+    "update.required.title": "Atualize o BaseAut",
+    "update.required.message":
+      "Esta versão ficou para trás. Baixe a versão mais recente para voltar a usar o app.",
+    "update.required.installed": "Sua versão",
+    "update.required.latest": "Versão disponível",
+    "update.required.changes": "O que muda",
+    "update.required.action": "Baixar atualização",
+    "update.required.noLink":
+      "A pasta de download ainda não foi publicada. Peça o link à equipe.",
+    "update.required.linkError": "Não foi possível abrir a pasta de download.",
+    "update.notes.title": "Novidades da versão",
+    "update.notes.subtitle": "Veja o que mudou nesta atualização.",
+    "update.notes.action": "Entendi",
   },
   en: {
     "common.save": "Save",
@@ -3362,5 +3386,18 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "mock.helpAutonomyText": "The student's autonomy increased across the sessions.",
     "session.mabcAssessment": "MABC-2 Assessment",
     "analysis.compareLoadError": "Failed to load performance comparison.",
+    "update.required.title": "Update BaseAut",
+    "update.required.message":
+      "This version is out of date. Download the latest one to keep using the app.",
+    "update.required.installed": "Your version",
+    "update.required.latest": "Available version",
+    "update.required.changes": "What changes",
+    "update.required.action": "Download update",
+    "update.required.noLink":
+      "The download folder has not been published yet. Ask the team for the link.",
+    "update.required.linkError": "Could not open the download folder.",
+    "update.notes.title": "What's new",
+    "update.notes.subtitle": "Here is what changed in this update.",
+    "update.notes.action": "Got it",
   },
 };
