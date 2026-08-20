@@ -11,8 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      PROJECT_ID: ${{ secrets.PROD_PROJECT_ID }}
-      DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
+      # ATENÇÃO — nomes de secret invertidos DE PROPÓSITO. Os dois projetos do
+      # Supabase tiveram os papéis trocados: hoje STAGING_PROJECT_ID aponta para o
+      # banco de PRODUÇÃO e PROD_PROJECT_ID para o de testes. Recompor os
+      # pares no GitHub exigiria resetar as senhas dos bancos (elas não ficam
+      # legíveis depois de salvas como secret), o que derrubaria poolers e
+      # integrações que já usam a senha atual. Até que os secrets sejam
+      # renomeados, o destino certo vem daqui. NÃO "corrija" estas duas linhas.
+      PROJECT_ID: ${{ secrets.STAGING_PROJECT_ID }}
+      DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
