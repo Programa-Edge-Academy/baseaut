@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { AppState } from "react-native";
 
 /** Execution mode of an active session. */
 export type SessionType = "semi-structured" | "structured";
@@ -30,6 +31,18 @@ export interface ActiveSessionInfo {
   /** Flight intervals (start/end on the total stopwatch) used by the Control Record. */
   fugaIntervals?: { start: number; end: number }[];
   /**
+   * Wall-clock instant (ms) the running stretch of the exercise stopwatch
+   * started at, or `null` while it is paused. Owned by
+   * {@link SessionGlobalProvider}; callers never set it.
+   */
+  timerStartedAtMs?: number | null;
+  /** Exercise seconds accumulated before {@link ActiveSessionInfo.timerStartedAtMs}. */
+  timerBaseSeconds?: number;
+  /** Wall-clock instant (ms) the total stopwatch counts from. */
+  totalStartedAtMs?: number;
+  /** Total seconds accumulated before {@link ActiveSessionInfo.totalStartedAtMs}. */
+  totalBaseSeconds?: number;
+  /**
    * True when the session was started inside a tutorial simulation (mock data).
    * The global session widget never surfaces these, and concurrent-session
    * detection ignores them outside a tutorial, so a practice session left
@@ -50,6 +63,35 @@ export function formatSessionClock(totalSeconds: number): string {
   const mm = String(m).padStart(2, "0");
   const ss = String(s).padStart(2, "0");
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+/**
+ * Recomputes both stopwatches of a session from their wall-clock anchors.
+ *
+ * @param session - Session entry to refresh.
+ * @param nowMs - Reference instant, normally `Date.now()`.
+ * @returns The session with updated `timeElapsed`/`totalElapsed`, or the same
+ *   reference when neither value changed.
+ */
+function tickSession(session: ActiveSessionInfo, nowMs: number): ActiveSessionInfo {
+  const secondsSince = (startedAtMs: number) =>
+    Math.max(0, Math.floor((nowMs - startedAtMs) / 1000));
+
+  const timeElapsed =
+    (session.timerBaseSeconds ?? 0) +
+    (session.isRunning && session.timerStartedAtMs != null
+      ? secondsSince(session.timerStartedAtMs)
+      : 0);
+  const totalElapsed = Math.min(
+    SESSION_TOTAL_CAP_SECONDS,
+    (session.totalBaseSeconds ?? 0) +
+      (session.totalStartedAtMs != null ? secondsSince(session.totalStartedAtMs) : 0),
+  );
+
+  if (timeElapsed === session.timeElapsed && totalElapsed === session.totalElapsed) {
+    return session;
+  }
+  return { ...session, timeElapsed, totalElapsed };
 }
 
 /** Value exposed by the global session context. */
@@ -82,58 +124,74 @@ const SessionGlobalContext = createContext<SessionGlobalContextData>({} as Sessi
 
 /**
  * Provides the global registry of active sessions and a 1-second ticker that
- * advances each session's exercise and total stopwatches (the total runs
+ * refreshes each session's exercise and total stopwatches (the total runs
  * continuously up to {@link SESSION_TOTAL_CAP_SECONDS}).
+ *
+ * @remarks
+ * Neither stopwatch is incremented by the ticker: both are derived from the
+ * wall-clock anchors kept on the session entry ({@link tickSession}). Android
+ * suspends JavaScript timers while the screen is off, so a counter advanced one
+ * second per tick silently lost every second the device slept — the reason the
+ * stopwatch appeared to stop when the user locked the phone mid-session. With
+ * the anchors the ticker only refreshes what is displayed, and the elapsed time
+ * is already correct the moment the screen comes back. The same recomputation
+ * runs on the `AppState` transition to `active` so the UI catches up without
+ * waiting for the next tick.
  */
 export function SessionGlobalProvider({ children }: { children: ReactNode }) {
   const [activeSessions, setActiveSessions] = useState<Record<string, ActiveSessionInfo>>({});
 
   useEffect(() => {
-    const id = setInterval(() => {
+    const refresh = () => {
+      const nowMs = Date.now();
       setActiveSessions((prev) => {
         let hasChanges = false;
         const next = { ...prev };
         for (const key in next) {
-          let entry = next[key];
-          let changed = false;
-
-          if (entry.isRunning) {
-            entry = { ...entry, timeElapsed: entry.timeElapsed + 1 };
-            changed = true;
-          }
-
-          const total = entry.totalElapsed ?? 0;
-          if (total < SESSION_TOTAL_CAP_SECONDS) {
-            entry = { ...entry, totalElapsed: total + 1 };
-            changed = true;
-          }
-
-          if (changed) {
-            next[key] = entry;
+          const ticked = tickSession(next[key], nowMs);
+          if (ticked !== next[key]) {
+            next[key] = ticked;
             hasChanges = true;
           }
         }
         return hasChanges ? next : prev;
       });
-    }, 1000);
-    return () => clearInterval(id);
+    };
+
+    const id = setInterval(refresh, 1000);
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") refresh();
+    });
+    return () => {
+      clearInterval(id);
+      subscription.remove();
+    };
   }, []);
 
   const registerSession = (session: ActiveSessionInfo) => {
-    setActiveSessions((prev) => ({
-      ...prev,
-      [session.sessionId]: {
-        ...session,
-        timeElapsed: prev[session.sessionId]?.timeElapsed ?? session.timeElapsed ?? 0,
-        isRunning: prev[session.sessionId]?.isRunning ?? session.isRunning ?? true,
-        historico: prev[session.sessionId]?.historico ?? session.historico,
-        activeExerciseId: prev[session.sessionId]?.activeExerciseId ?? session.activeExerciseId,
-        isEngagementRunning: prev[session.sessionId]?.isEngagementRunning ?? session.isEngagementRunning ?? false,
-        isFormVisible: prev[session.sessionId]?.isFormVisible ?? session.isFormVisible ?? true,
-        totalElapsed: prev[session.sessionId]?.totalElapsed ?? session.totalElapsed ?? 0,
-        fugaIntervals: prev[session.sessionId]?.fugaIntervals ?? session.fugaIntervals ?? [],
-      },
-    }));
+    const nowMs = Date.now();
+    setActiveSessions((prev) => {
+      const existing = prev[session.sessionId];
+      const isRunning = existing?.isRunning ?? session.isRunning ?? true;
+      return {
+        ...prev,
+        [session.sessionId]: {
+          ...session,
+          timeElapsed: existing?.timeElapsed ?? session.timeElapsed ?? 0,
+          isRunning,
+          historico: existing?.historico ?? session.historico,
+          activeExerciseId: existing?.activeExerciseId ?? session.activeExerciseId,
+          isEngagementRunning: existing?.isEngagementRunning ?? session.isEngagementRunning ?? false,
+          isFormVisible: existing?.isFormVisible ?? session.isFormVisible ?? true,
+          totalElapsed: existing?.totalElapsed ?? session.totalElapsed ?? 0,
+          fugaIntervals: existing?.fugaIntervals ?? session.fugaIntervals ?? [],
+          timerBaseSeconds: existing?.timerBaseSeconds ?? session.timeElapsed ?? 0,
+          timerStartedAtMs: existing?.timerStartedAtMs ?? (isRunning ? nowMs : null),
+          totalBaseSeconds: existing?.totalBaseSeconds ?? session.totalElapsed ?? 0,
+          totalStartedAtMs: existing?.totalStartedAtMs ?? nowMs,
+        },
+      };
+    });
   };
 
   const updateSessionProgress = (sessionId: string, progress: string) => {
@@ -166,12 +224,22 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
   };
 
   const toggleTimer = (sessionId: string, forceIsRunning?: boolean) => {
+    const nowMs = Date.now();
     setActiveSessions((prev) => {
       if (!prev[sessionId]) return prev;
-      const nextIsRunning = forceIsRunning !== undefined ? forceIsRunning : !prev[sessionId].isRunning;
+      const current = tickSession(prev[sessionId], nowMs);
+      const nextIsRunning = forceIsRunning !== undefined ? forceIsRunning : !current.isRunning;
+      if (nextIsRunning === current.isRunning) {
+        return current === prev[sessionId] ? prev : { ...prev, [sessionId]: current };
+      }
       return {
         ...prev,
-        [sessionId]: { ...prev[sessionId], isRunning: nextIsRunning },
+        [sessionId]: {
+          ...current,
+          isRunning: nextIsRunning,
+          timerBaseSeconds: current.timeElapsed,
+          timerStartedAtMs: nextIsRunning ? nowMs : null,
+        },
       };
     });
   };
@@ -213,11 +281,18 @@ export function SessionGlobalProvider({ children }: { children: ReactNode }) {
   };
 
   const updateTimeElapsed = (sessionId: string, seconds: number) => {
+    const nowMs = Date.now();
     setActiveSessions((prev) => {
-      if (!prev[sessionId]) return prev;
+      const current = prev[sessionId];
+      if (!current) return prev;
       return {
         ...prev,
-        [sessionId]: { ...prev[sessionId], timeElapsed: seconds },
+        [sessionId]: {
+          ...current,
+          timeElapsed: seconds,
+          timerBaseSeconds: seconds,
+          timerStartedAtMs: current.isRunning ? nowMs : null,
+        },
       };
     });
   };
