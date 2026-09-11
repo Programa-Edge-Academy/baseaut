@@ -184,6 +184,8 @@ export default function CircuitSelectionRoute() {
           }
         : null,
       pendingByType,
+      // A simulação só deixa o ATA pendente, nunca um Registro de Controle.
+      pendingRcSessionId: null,
     };
   }, [activeSessions, studentId, pendingMockForms]);
 
@@ -290,7 +292,7 @@ export default function CircuitSelectionRoute() {
   );
 
   const navigateToExistingForm = useCallback(
-    (formularioId: string, tipo: string) => {
+    (formularioId: string, tipo: string, sessionId?: string | null) => {
       const nameMap: Record<string, string> = {
         ata: "ATA",
         cars: "CARS",
@@ -305,6 +307,10 @@ export default function CircuitSelectionRoute() {
           studentId: studentId ?? "",
           circuitType: tipo,
           circuitName: nameMap[tipo] ?? tipo,
+          // O Registro de Controle pertence a uma sessão: sem esses dois a tela
+          // abre vazia e o salvamento vira um insert com sessao_id nulo, que a
+          // RLS recusa. ATA/CARS/MABC-2 são do aluno e não recebem sessão.
+          ...(sessionId ? { sessionId, mode: "editar" } : {}),
         },
       });
     },
@@ -373,7 +379,9 @@ export default function CircuitSelectionRoute() {
             sim.currentKey === "selectAgain" ? "selectAgain" : "selectStructured",
           );
         }
-        if (guard.pendingByType.registro_controle) {
+        // Sem a sessão dona do RC não há como abri-lo de forma utilizável, então
+        // o aviso é omitido e a nova sessão segue normalmente.
+        if (guard.pendingByType.registro_controle && guard.pendingRcSessionId) {
           pendingCircuitRef.current = circuit;
           setGuardData(guard);
           setGuardModal("rc-pending");
@@ -429,7 +437,7 @@ export default function CircuitSelectionRoute() {
       resumeInProgressSession(guardData);
     } else if (guardModal === "rc-pending") {
       const rcId = guardData.pendingByType.registro_controle;
-      navigateToExistingForm(rcId, "registro_controle");
+      navigateToExistingForm(rcId, "registro_controle", guardData.pendingRcSessionId);
     } else if (guardModal === "form-conflict") {
       if (isFormsTutorial) sim.complete("continueAta");
       const tipo = pendingCircuitRef.current?.type ?? "";
