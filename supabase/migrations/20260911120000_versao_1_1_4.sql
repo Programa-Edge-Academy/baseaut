@@ -24,7 +24,7 @@ INSERT INTO public.versoes_app (versao, notas, url_download) VALUES (
   ARRAY[
     'Cronômetro em segundo plano: o tempo da sessão e do exercício continua sendo contado quando o aplicativo fica em segundo plano ou a tela do aparelho é bloqueada.',
     'Feedback por e-mail: o botão de enviar feedback agora abre o seu aplicativo de e-mail, com a mensagem já endereçada à equipe de suporte.',
-    'Correção no Registro de Controle pendente: ao abri-lo pelo aviso que aparece ao iniciar uma sessão, o formulário volta a mostrar o tempo da sessão e o que já havia sido preenchido, e o salvamento deixa de falhar.'
+    'Correção no Registro de Controle pendente.'
   ],
   'https://drive.google.com/drive/folders/1_iXQFKsQVPTibTUu17NtZRLb12Ul8vrn?usp=drive_link'
 )
