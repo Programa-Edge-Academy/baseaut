@@ -2,11 +2,11 @@
 # Uso: clique direito > "Executar com PowerShell", ou: powershell -ExecutionPolicy Bypass -File build-apk.ps1
 $ErrorActionPreference = "Stop"
 
-$env:JAVA_HOME       = "C:\Program Files (x86)\Android\openjdk\jdk-17.0.14"
+$env:JAVA_HOME = "C:\Users\josew\.jdks\ms-17.0.20"
 # SDK gravavel (o de Program Files e read-only e nao tem o NDK 27 exigido pelo RN 0.81)
 $env:ANDROID_HOME    = "C:\Android\sdk"
 $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
-$env:Path = "$env:JAVA_HOME\bin;$env:ANDROID_HOME\platform-tools;$env:Path"
+$env:ANDROID_HOME = "C:\Users\josew\AppData\Local\Android\Sdk"
 
 # IMPORTANTE: a pasta TEMP padrao do usuario quebra os sockets AF_UNIX que o
 # JDK 17+ usa para o self-pipe do Selector NIO -> Gradle falha com
