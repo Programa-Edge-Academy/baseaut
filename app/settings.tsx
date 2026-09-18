@@ -2,13 +2,13 @@ import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
 // IDIOMA DESATIVADO — para reativar, descomente esta linha.
 // import { LOCALE_OPTIONS } from "@/features/settings/constants/translations";
-import { FeedbackModal } from "@/features/settings/components/feedback-modal";
+import { useFeedbackEmail } from "@/features/settings/hooks/use-feedback-email";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { ThemeMode, useTheme, useThemeColors } from "@/features/settings/contexts/theme-context";
 import { useRouter } from "expo-router";
 // TUTORIAL/IDIOMA DESATIVADOS — ao reativar, volte a importar GraduationCap e Languages.
-import { Check, MessageSquareText, Monitor, Moon, Sun } from "lucide-react-native";
-import React, { useState } from "react";
+import { Check, Mail, Monitor, Moon, Sun } from "lucide-react-native";
+import React from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 /** A single selectable option row with a leading icon and a trailing check. */
@@ -42,9 +42,10 @@ function OptionRow({
 
 /**
  * Settings screen exposing the app appearance (theme: system/light/dark) and a
- * feedback channel to the development team (via {@link FeedbackModal}). The
- * theme defaults to the device setting and is persisted; logout lives on the
- * account page.
+ * feedback channel to the development team: the button hands the message over
+ * to the device's default mail app, already addressed to support (see
+ * {@link useFeedbackEmail}). The theme defaults to the device setting and is
+ * persisted; logout lives on the account page.
  */
 export default function SettingsRoute() {
   const router = useRouter();
@@ -52,7 +53,7 @@ export default function SettingsRoute() {
   const { mode, setMode } = useTheme();
   // IDIOMA DESATIVADO — ao reativar, volte a extrair preference e setPreference.
   const { t } = useI18n();
-  const [feedbackVisible, setFeedbackVisible] = useState(false);
+  const { openFeedbackEmail } = useFeedbackEmail();
 
   const themeOptions: { value: ThemeMode; label: string; icon: React.ReactNode }[] = [
     { value: "system", label: t("settings.theme.system"), icon: <Monitor size={18} color={colors.muted} /> },
@@ -91,10 +92,10 @@ export default function SettingsRoute() {
         <View className="mt-8 gap-4">
           <Text className="text-header-3 text-content">{t("settings.feedback")}</Text>
           <Pressable
-            onPress={() => setFeedbackVisible(true)}
+            onPress={openFeedbackEmail}
             className="flex-row items-center gap-3 rounded-2xl border border-outline bg-level1 p-4 active:opacity-70"
           >
-            <MessageSquareText size={18} color={colors.muted} />
+            <Mail size={18} color={colors.muted} />
             <View className="flex-1">
               <Text className="text-default-1 text-content">{t("settings.feedback.button")}</Text>
               <Text className="text-default-3 text-muted">{t("settings.feedback.buttonHint")}</Text>
@@ -139,11 +140,6 @@ export default function SettingsRoute() {
         </View>
         */}
       </ScrollView>
-
-      <FeedbackModal
-        visible={feedbackVisible}
-        onClose={() => setFeedbackVisible(false)}
-      />
     </View>
   );
 }

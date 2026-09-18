@@ -42,21 +42,10 @@ export type TranslationKey =
   | "settings.feedback"
   | "settings.feedback.button"
   | "settings.feedback.buttonHint"
-  | "feedback.title"
-  | "feedback.subtitle"
-  | "feedback.category"
-  | "feedback.category.problema"
-  | "feedback.category.sugestao"
-  | "feedback.category.outro"
-  | "feedback.messageLabel"
-  | "feedback.messagePlaceholder"
-  | "feedback.categoryRequired"
-  | "feedback.messageRequired"
-  | "feedback.send"
-  | "feedback.sending"
-  | "feedback.cancel"
-  | "feedback.successTitle"
-  | "feedback.successMessage"
+  | "feedback.email.subject"
+  | "feedback.email.body"
+  | "feedback.email.errorTitle"
+  | "feedback.email.errorMessage"
   | "account.title"
   | "account.subtitle"
   | "account.photo"
@@ -1039,8 +1028,6 @@ export type TranslationKey =
   | "common.dateUndefined"
   | "common.statusUndefined"
   | "common.noItems"
-  | "feedback.sendError"
-  | "feedback.sessionExpired"
   | "circuits.ataNewDesc"
   | "circuits.carsNewDesc"
   | "mabc.required"
@@ -1158,22 +1145,11 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "settings.showTutorialButtonHint": "Exibe o atalho de ajuda no topo das telas principais",
     "settings.feedback": "Feedback",
     "settings.feedback.button": "Enviar feedback",
-    "settings.feedback.buttonHint": "Encontrou um problema ou tem uma sugestão? Fale direto com a equipe de desenvolvimento.",
-    "feedback.title": "Enviar feedback",
-    "feedback.subtitle": "Conte o que aconteceu ou o que podemos melhorar. Vai direto para a equipe de desenvolvimento.",
-    "feedback.category": "Categoria",
-    "feedback.category.problema": "Problema",
-    "feedback.category.sugestao": "Sugestão",
-    "feedback.category.outro": "Outro",
-    "feedback.messageLabel": "Mensagem",
-    "feedback.messagePlaceholder": "Descreva o problema ou a sugestão…",
-    "feedback.categoryRequired": "Selecione uma categoria",
-    "feedback.messageRequired": "Escreva sua mensagem",
-    "feedback.send": "Enviar",
-    "feedback.sending": "Enviando...",
-    "feedback.cancel": "Cancelar",
-    "feedback.successTitle": "Feedback enviado!",
-    "feedback.successMessage": "Obrigado por ajudar a melhorar o aplicativo.",
+    "settings.feedback.buttonHint": "Encontrou um problema ou tem uma sugestão? Abrimos seu aplicativo de e-mail com a mensagem já endereçada à equipe.",
+    "feedback.email.subject": "Feedback do BaseAut",
+    "feedback.email.body": "Descreva aqui o problema ou a sugestão:\n\n\n\n— — —\nInformações do aplicativo (não apague, ajudam a equipe a entender seu relato):\nVersão: {version}\nPlataforma: {platform}\n",
+    "feedback.email.errorTitle": "Nenhum aplicativo de e-mail encontrado",
+    "feedback.email.errorMessage": "Escreva para {email} pelo e-mail de sua preferência.",
     "account.title": "Minha conta",
     "account.subtitle": "Personalize seus dados e foto de perfil",
     "account.photo": "Foto de perfil",
@@ -2172,8 +2148,6 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "common.dateUndefined": "Data não definida",
     "common.statusUndefined": "Status não definido",
     "common.noItems": "Nenhum item encontrado.",
-    "feedback.sendError": "Não foi possível enviar seu feedback. Tente novamente.",
-    "feedback.sessionExpired": "Sessão expirada. Entre novamente para enviar seu feedback.",
     "circuits.ataNewDesc": "Iniciar um novo registro ATA",
     "circuits.carsNewDesc": "Iniciar um novo registro CARS",
     "mabc.required": "Requerido",
@@ -2291,22 +2265,11 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "settings.showTutorialButtonHint": "Displays the help shortcut at the top of the main screens",
     "settings.feedback": "Feedback",
     "settings.feedback.button": "Send feedback",
-    "settings.feedback.buttonHint": "Found a problem or have a suggestion? Talk directly to the development team.",
-    "feedback.title": "Send feedback",
-    "feedback.subtitle": "Tell us what happened or what we could improve. It goes straight to the development team.",
-    "feedback.category": "Category",
-    "feedback.category.problema": "Problem",
-    "feedback.category.sugestao": "Suggestion",
-    "feedback.category.outro": "Other",
-    "feedback.messageLabel": "Message",
-    "feedback.messagePlaceholder": "Describe the problem or suggestion…",
-    "feedback.categoryRequired": "Select a category",
-    "feedback.messageRequired": "Write your message",
-    "feedback.send": "Send",
-    "feedback.sending": "Sending...",
-    "feedback.cancel": "Cancel",
-    "feedback.successTitle": "Feedback sent!",
-    "feedback.successMessage": "Thanks for helping improve the app.",
+    "settings.feedback.buttonHint": "Found a problem or have a suggestion? We open your mail app with the message already addressed to the team.",
+    "feedback.email.subject": "BaseAut feedback",
+    "feedback.email.body": "Describe the problem or suggestion here:\n\n\n\n— — —\nApp information (please keep, it helps the team understand your report):\nVersion: {version}\nPlatform: {platform}\n",
+    "feedback.email.errorTitle": "No mail app found",
+    "feedback.email.errorMessage": "Please write to {email} from the mail client of your choice.",
     "account.title": "My account",
     "account.subtitle": "Customize your data and profile photo",
     "account.photo": "Profile photo",
@@ -3303,8 +3266,6 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "common.dateUndefined": "Date not set",
     "common.statusUndefined": "Status not set",
     "common.noItems": "No items found.",
-    "feedback.sendError": "Could not send your feedback. Please try again.",
-    "feedback.sessionExpired": "Session expired. Sign in again to send your feedback.",
     "circuits.ataNewDesc": "Start a new ATA record",
     "circuits.carsNewDesc": "Start a new CARS record",
     "mabc.required": "Required",

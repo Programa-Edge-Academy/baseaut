@@ -11,7 +11,7 @@ import {
   Timer,
 } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { AppState, Image, Pressable, Text, View } from "react-native";
 
 export type StopwatchVariant = "minimize" | "form";
 
@@ -68,6 +68,20 @@ export type StopwatchProps = {
   stopSpotlightKey?: string | string[];
 };
 
+/** Wall-clock anchor backing the stopwatch's own (uncontrolled) timer. */
+type StopwatchAnchor = {
+  /** Seconds accumulated before the current running stretch. */
+  baseSeconds: number;
+  /** When the current running stretch started, or `null` while paused. */
+  startedAtMs: number | null;
+};
+
+/** Elapsed seconds of `anchor` measured at `nowMs`. */
+function anchorSeconds(anchor: StopwatchAnchor, nowMs: number): number {
+  if (anchor.startedAtMs === null) return anchor.baseSeconds;
+  return anchor.baseSeconds + Math.max(0, Math.floor((nowMs - anchor.startedAtMs) / 1000));
+}
+
 function formatTime(seconds: number): string {
   const safe = Math.max(0, Math.floor(seconds));
   const minutes = Math.floor(safe / 60);
@@ -90,6 +104,13 @@ function formatTime(seconds: number): string {
  * counter for the episode.
  *
  * @remarks
+ * Every elapsed time on the card — the timer in uncontrolled mode and the live
+ * crisis/flight counters — is derived from a wall-clock anchor rather than from
+ * a counter advanced once per tick. Android suspends JavaScript timers while
+ * the screen is off, so a counter would lose every second the device slept; the
+ * interval here only refreshes what is displayed, and an `AppState` listener
+ * makes it catch up the instant the app comes back to the foreground.
+ *
  * Each of the six controls can be registered as a tutorial spotlight target via
  * its own `*SpotlightKey` prop. The targets are the control pressables
  * themselves rather than a wrapper around the card, so the highlight ring hugs
@@ -125,7 +146,10 @@ export function Stopwatch({
   const colors = useThemeColors();
   const sim = useTutorialSimulation();
   const [internalIsRunning, setInternalIsRunning] = useState(autoStart);
-  const [internalSeconds, setInternalSeconds] = useState(initialSeconds);
+  const [internalTimer, setInternalTimer] = useState<StopwatchAnchor>(() => ({
+    baseSeconds: initialSeconds,
+    startedAtMs: autoStart ? Date.now() : null,
+  }));
   const [nowMs, setNowMs] = useState(() => Date.now());
   const criseStartedAtRef = useRef<number | null>(null);
   const fugaStartedAtRef = useRef<number | null>(null);
@@ -175,11 +199,33 @@ export function Stopwatch({
     fugaStartedAtRef.current = null;
   }
 
+  const isRunning = controlledIsRunning !== undefined ? controlledIsRunning : internalIsRunning;
+  const isInternalTimerRunning = controlledSeconds === undefined && isRunning;
+
   useEffect(() => {
-    if (!isCriseActive && !isFugaActive) return;
-    const id = setInterval(() => setNowMs(Date.now()), 500);
-    return () => clearInterval(id);
-  }, [isCriseActive, isFugaActive]);
+    if (controlledSeconds !== undefined) return;
+    setInternalTimer((prev) => {
+      if (isRunning === (prev.startedAtMs !== null)) return prev;
+      const nowMs = Date.now();
+      return isRunning
+        ? { baseSeconds: prev.baseSeconds, startedAtMs: nowMs }
+        : { baseSeconds: anchorSeconds(prev, nowMs), startedAtMs: null };
+    });
+  }, [isRunning, controlledSeconds]);
+
+  useEffect(() => {
+    if (!isCriseActive && !isFugaActive && !isInternalTimerRunning) return;
+    const tick = () => setNowMs(Date.now());
+    tick();
+    const id = setInterval(tick, 500);
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") tick();
+    });
+    return () => {
+      clearInterval(id);
+      subscription.remove();
+    };
+  }, [isCriseActive, isFugaActive, isInternalTimerRunning]);
 
   const criseLabel =
     isCriseActive && criseStartedAtRef.current != null
@@ -190,17 +236,8 @@ export function Stopwatch({
       ? formatTime((nowMs - fugaStartedAtRef.current) / 1000)
       : "Fuga";
 
-  const isRunning = controlledIsRunning !== undefined ? controlledIsRunning : internalIsRunning;
-  const seconds = controlledSeconds !== undefined ? controlledSeconds : internalSeconds;
-
-  useEffect(() => {
-    if (controlledSeconds !== undefined) return;
-    if (!isRunning) return;
-    const id = setInterval(() => {
-      setInternalSeconds((current) => current + 1);
-    }, 1000);
-    return () => clearInterval(id);
-  }, [isRunning, controlledSeconds]);
+  const seconds =
+    controlledSeconds !== undefined ? controlledSeconds : anchorSeconds(internalTimer, nowMs);
 
   const handleToggle = () => {
     const next = !isRunning;
@@ -219,7 +256,7 @@ export function Stopwatch({
 
   const handleRestart = () => {
     if (controlledSeconds === undefined) {
-      setInternalSeconds(0);
+      setInternalTimer({ baseSeconds: 0, startedAtMs: Date.now() });
     }
     if (controlledIsRunning === undefined) {
       setInternalIsRunning(true);
