@@ -1,3 +1,6 @@
+import { cachedRead, readCache } from "@/lib/offline/cache";
+import { isNetworkError } from "@/lib/offline/errors";
+import { listOutbox } from "@/lib/offline/outbox";
 import { supabase } from "@/lib/supabase";
 
 /**
@@ -26,20 +29,52 @@ export type StartGuardState = {
 
 type FormRow = { id: string; tipo: string; pendente: boolean };
 
+/** With a saved copy, how long a tap on a circuit waits for the server answer. */
+const GUARD_MAX_WAIT_MS = 1500;
+
+/**
+ * Reads what blocks a new session or form for a student: a session in
+ * progress and the pending forms of each type.
+ *
+ * @remarks
+ * The server answer is kept on the device (`start-guard:<alunoId>`), so offline
+ * the warnings still appear without waiting for the network, and sessions
+ * started or finished on this device but not sent yet are taken into account
+ * from the outbox. Offline, a session started on another device after the last
+ * online read is not seen.
+ */
 export async function getStartGuard(
   alunoId: string,
 ): Promise<StartGuardState> {
-  const [{ data: sessao }, { data: formularios }] = await Promise.all([
-    supabase
-      .from("sessoes")
-      .select("id, circuito_id(id, modo_execucao)")
-      .eq("aluno_id", alunoId)
-      .eq("status", "em_andamento")
-      .order("data_inicio", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase.rpc("listar_formularios_aluno", { p_aluno_id: alunoId }),
-  ]);
+  const empty: StartGuardState = {
+    inProgressSession: null,
+    pendingByType: {},
+    pendingRcSessionId: null,
+  };
+  const fromServer = await cachedRead(
+    `start-guard:${alunoId}`,
+    () => fetchStartGuard(alunoId),
+    { maxWaitMs: GUARD_MAX_WAIT_MS },
+  ).catch(() => empty);
+  return withQueuedSessions(alunoId, fromServer);
+}
+
+/** Reads the guard from Supabase; throws on a network failure so the saved copy is used. */
+async function fetchStartGuard(alunoId: string): Promise<StartGuardState> {
+  const [{ data: sessao, error: sessaoError }, { data: formularios, error: formsError }] =
+    await Promise.all([
+      supabase
+        .from("sessoes")
+        .select("id, circuito_id(id, modo_execucao)")
+        .eq("aluno_id", alunoId)
+        .eq("status", "em_andamento")
+        .order("data_inicio", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase.rpc("listar_formularios_aluno", { p_aluno_id: alunoId }),
+    ]);
+  if (isNetworkError(sessaoError)) throw sessaoError;
+  if (isNetworkError(formsError)) throw formsError;
 
   const pendingByType: Record<string, string> = {};
   for (const row of (formularios ?? []) as FormRow[]) {
@@ -52,12 +87,13 @@ export async function getStartGuard(
   let pendingRcSessionId: string | null = null;
   const rcFormularioId = pendingByType.registro_controle;
   if (rcFormularioId) {
-    const { data: rcSessao } = await supabase
+    const { data: rcSessao, error: rcError } = await supabase
       .from("sessoes")
       .select("id")
       .eq("formulario_id", rcFormularioId)
       .limit(1)
       .maybeSingle();
+    if (isNetworkError(rcError)) throw rcError;
     pendingRcSessionId = rcSessao?.id ?? null;
   }
 
@@ -73,4 +109,49 @@ export async function getStartGuard(
     pendingByType,
     pendingRcSessionId,
   };
+}
+
+/**
+ * Overlays the sessions still waiting in the outbox on the guard: a session
+ * started on this device that has not reached Supabase yet still counts as in
+ * progress, and one finished here no longer does.
+ */
+async function withQueuedSessions(
+  alunoId: string,
+  guard: StartGuardState,
+): Promise<StartGuardState> {
+  const items = await listOutbox().catch(() => []);
+  const finished = new Set<string>();
+  let started: { id: string; circuitoId: string | null; equipeId: string | null } | null = null;
+
+  for (const { op } of items) {
+    if (op.kind === "update" && op.table === "sessoes" && op.payload.status && op.payload.status !== "em_andamento") {
+      finished.add(String(op.match.id));
+    }
+    if (op.kind === "insert" && op.table === "sessoes" && !Array.isArray(op.payload)) {
+      const row = op.payload;
+      if (row.aluno_id === alunoId && row.status === "em_andamento") {
+        started = {
+          id: String(row.id),
+          circuitoId: (row.circuito_id as string | null) ?? null,
+          equipeId: (row.equipe_id as string | null) ?? null,
+        };
+      }
+    }
+  }
+
+  let inProgressSession = guard.inProgressSession;
+  if (inProgressSession && finished.has(inProgressSession.id)) inProgressSession = null;
+  if (started && !finished.has(started.id)) {
+    const circuits = started.equipeId
+      ? await readCache<any[]>(`circuitos:${started.equipeId}`).catch(() => undefined)
+      : undefined;
+    const circuit = circuits?.find((c) => c.id === started!.circuitoId);
+    inProgressSession = {
+      id: started.id,
+      circuitoId: started.circuitoId,
+      modoExecucao: circuit?.modo_execucao ?? null,
+    };
+  }
+  return { ...guard, inProgressSession };
 }

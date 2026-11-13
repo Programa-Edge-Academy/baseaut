@@ -26,6 +26,10 @@ export type TranslationKey =
   | "common.confirm"
   | "common.remove"
   | "common.loading"
+  | "offline.noConnection"
+  | "offline.pending"
+  | "offline.failed"
+  | "offline.onlineOnly"
   | "settings.title"
   | "settings.subtitle"
   | "settings.appearance"
@@ -976,6 +980,7 @@ export type TranslationKey =
   | "teams.saveErrorTitle"
   | "teams.saveError"
   | "session.exerciseProgress"
+  | "session.saveError"
   | "session.defaultCircuit"
   | "session.subtitleSemiCircuit"
   | "session.subtitleSemiExercise"
@@ -1117,6 +1122,10 @@ export type TranslationKey =
   | "update.required.action"
   | "update.required.noLink"
   | "update.required.linkError"
+  | "update.required.pending"
+  | "update.required.sendNow"
+  | "update.required.keepData"
+  | "account.logoutPending"
   | "update.notes.title"
   | "update.notes.subtitle"
   | "update.notes.action";
@@ -1130,6 +1139,10 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "common.confirm": "Confirmar",
     "common.remove": "Remover",
     "common.loading": "Carregando...",
+    "offline.noConnection": "Sem internet: os registros serão enviados quando a conexão voltar.",
+    "offline.pending": "{count} sessão(ões) aguardando envio.",
+    "offline.failed": "{count} registro(s) não puderam ser enviados. Avise a coordenação.",
+    "offline.onlineOnly": "Disponível só com internet. Conecte-se e tente de novo.",
     "settings.title": "Configurações",
     "settings.subtitle": "Gerencie suas preferências e conta",
     "settings.appearance": "Aparência",
@@ -2096,6 +2109,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "teams.saveErrorTitle": "Erro ao Salvar",
     "teams.saveError": "Não foi possível salvar o aluno. Detalhes: {msg}",
     "session.exerciseProgress": "Exercício {n}/{total}",
+    "session.saveError": "Não foi possível salvar este registro no aparelho. Tente de novo.",
     "session.defaultCircuit": "Circuito",
     "session.subtitleSemiCircuit": "Circuito Semi-estruturado - {clock}",
     "session.subtitleSemiExercise": "Exercício Semi-estruturado - {clock}",
@@ -2239,6 +2253,10 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "update.required.noLink":
       "A pasta de download ainda não foi publicada. Peça o link à equipe.",
     "update.required.linkError": "Não foi possível abrir a pasta de download.",
+    "update.required.pending": "{count} sessão(ões) feitas sem internet ainda não foram enviadas. Conecte-se e toque em Enviar agora antes de atualizar.",
+    "update.required.sendNow": "Enviar agora",
+    "update.required.keepData": "Instale a nova versão por cima da atual. Não desinstale o app, ou os registros ainda não enviados serão perdidos.",
+    "account.logoutPending": "{count} sessão(ões) feitas sem internet ainda não foram enviadas. Elas ficam guardadas neste aparelho e serão enviadas quando você entrar de novo com esta conta. Sair mesmo assim?",
     "update.notes.title": "Novidades da versão",
     "update.notes.subtitle": "Veja o que mudou nesta atualização.",
     "update.notes.action": "Entendi",
@@ -2250,6 +2268,10 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "common.confirm": "Confirm",
     "common.remove": "Remove",
     "common.loading": "Loading...",
+    "offline.noConnection": "Offline: records will be sent when the connection is back.",
+    "offline.pending": "{count} session(s) waiting to be sent.",
+    "offline.failed": "{count} record(s) could not be sent. Let your coordinator know.",
+    "offline.onlineOnly": "Only available online. Connect and try again.",
     "settings.title": "Settings",
     "settings.subtitle": "Manage your preferences and account",
     "settings.appearance": "Appearance",
@@ -3214,6 +3236,7 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "teams.saveErrorTitle": "Save error",
     "teams.saveError": "Could not save the student. Details: {msg}",
     "session.exerciseProgress": "Exercise {n}/{total}",
+    "session.saveError": "This record could not be saved on the device. Please try again.",
     "session.defaultCircuit": "Circuit",
     "session.subtitleSemiCircuit": "Semi-structured circuit - {clock}",
     "session.subtitleSemiExercise": "Semi-structured exercise - {clock}",
@@ -3357,6 +3380,10 @@ export const translations: Record<Locale, Record<TranslationKey, string>> = {
     "update.required.noLink":
       "The download folder has not been published yet. Ask the team for the link.",
     "update.required.linkError": "Could not open the download folder.",
+    "update.required.pending": "{count} session(s) made offline have not been sent yet. Connect and tap Send now before updating.",
+    "update.required.sendNow": "Send now",
+    "update.required.keepData": "Install the new version over the current one. Do not uninstall the app, or records not sent yet will be lost.",
+    "account.logoutPending": "{count} session(s) made offline have not been sent yet. They stay on this device and will be sent the next time you sign in with this account. Sign out anyway?",
     "update.notes.title": "What's new",
     "update.notes.subtitle": "Here is what changed in this update.",
     "update.notes.action": "Got it",
