@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { getCurrentUser } from "@/lib/offline/auth";
+import { cachedRead } from "@/lib/offline/cache";
 import { supabase } from "@/lib/supabase";
 
 /**
@@ -13,19 +15,20 @@ let inFlight: Promise<string | null> | null = null;
 
 async function fetchUserRole(): Promise<string | null> {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // The saved login + cache keep the role (and the coordinator shortcuts) offline.
+    const user = await getCurrentUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    return await cachedRead(`role:${user.id}`, async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
 
-    if (error || !data) return null;
-    return data.role ?? null;
+      if (error) throw error;
+      return (data?.role as string | undefined) ?? null;
+    }, { cacheFirst: true });
   } catch (err) {
     console.error("Erro ao buscar role do usuário:", err);
     return null;

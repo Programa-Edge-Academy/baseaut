@@ -1,7 +1,10 @@
+import { assertOnline } from "@/lib/offline/require-online";
 import { supabase } from "@/lib/supabase";
 import { calculateAge } from "@/lib/date-utils";
 import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { cachedRead } from "@/lib/offline/cache";
+import { isNetworkError } from "@/lib/offline/errors";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { uploadImage } from "@/lib/upload-image";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -123,7 +126,7 @@ export function useStudents(options?: UseStudentsOptions) {
   /**
    * Loads students for the active team.
    */
-const loadStudents = useCallback(async (showLoader = true) => {
+const loadStudents = useCallback(async (showLoader = true, cacheFirst = false) => {
     if (isMock) {
       setIsLoading(false);
       return;
@@ -137,20 +140,10 @@ const loadStudents = useCallback(async (showLoader = true) => {
       }
       setEquipeId(teamId);
 
-      const { data: alunos, error: fetchError } = await supabase
-        .from("alunos")
-        .select("id, nome_completo, data_nascimento, peso, altura, cintura, nivel_suporte, diagnostico_detalhado, observacoes_clinicas, avatar_url")
-        .eq("equipe_id", teamId)
-        .eq("ativo", true)
-        .order("nome_completo", { ascending: true });
-
-      if (fetchError) throw fetchError;
-
-      const { data: pendencias } = await supabase
-        .from("vw_alunos_pendencias")
-        .select("aluno_id, tem_pendencia");
-
-      if (alunos) {
+      // Cached so the list still opens offline to start a session.
+      type StudentRows = { alunos: any[] | null; pendencias: any[] | null };
+      const apply = ({ alunos, pendencias }: StudentRows) => {
+        if (!alunos) return;
         setStudents(
           alunos.map((aluno) => {
             const temPendencia = pendencias?.some(
@@ -169,11 +162,31 @@ const loadStudents = useCallback(async (showLoader = true) => {
               healthConditions: aluno.diagnostico_detalhado || "",
               observations: aluno.observacoes_clinicas || "",
               avatarUrl: aluno.avatar_url,
-              pendencyAlert: temPendencia, 
+              pendencyAlert: temPendencia,
             };
           }),
         );
-      }
+      };
+
+      const rows = await cachedRead<StudentRows>(`alunos:${teamId}`, async () => {
+        const { data: alunos, error: fetchError } = await supabase
+          .from("alunos")
+          .select("id, nome_completo, data_nascimento, peso, altura, cintura, nivel_suporte, diagnostico_detalhado, observacoes_clinicas, avatar_url")
+          .eq("equipe_id", teamId)
+          .eq("ativo", true)
+          .order("nome_completo", { ascending: true });
+
+        if (fetchError) throw fetchError;
+
+        const { data: pendencias, error: pendenciasError } = await supabase
+          .from("vw_alunos_pendencias")
+          .select("aluno_id, tem_pendencia");
+        if (pendenciasError && isNetworkError(pendenciasError)) throw pendenciasError;
+
+        return { alunos, pendencias };
+      }, { cacheFirst, onUpdate: apply });
+
+      apply(rows);
     } catch (caught: any) {
       setError(caught);
     } finally {
@@ -182,7 +195,7 @@ const loadStudents = useCallback(async (showLoader = true) => {
   }, [isMock]);
 
   useEffect(() => {
-    loadStudents(true);
+    loadStudents(true, true);
   }, [loadStudents]);
 
   /**
@@ -215,6 +228,7 @@ const loadStudents = useCallback(async (showLoader = true) => {
     }
 
     try {
+      await assertOnline(t("offline.onlineOnly"));
       if (!equipeId) throw new Error(t("common.err.teamNotIdentified"));
 
       let finalAvatarUrl: string | null = null;
@@ -285,6 +299,7 @@ const loadStudents = useCallback(async (showLoader = true) => {
     }
 
     try {
+      await assertOnline(t("offline.onlineOnly"));
       const payload: any = {};
       if (data.name !== undefined) payload.nome_completo = data.name;
       if (data.weight !== undefined) payload.peso = data.weight;
@@ -341,6 +356,7 @@ const loadStudents = useCallback(async (showLoader = true) => {
     }
 
     try {
+      await assertOnline(t("offline.onlineOnly"));
       const { error: deleteError } = await supabase
         .from("alunos")
         .update({ ativo: false })

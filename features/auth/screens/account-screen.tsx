@@ -11,6 +11,8 @@ import { useAccount } from "@/features/auth/hooks/use-account";
 import { translateAuthError } from "@/features/auth/utils/translate-auth-error";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
+import { flushOutbox } from "@/lib/offline/sync";
+import { useOutboxStatus } from "@/lib/offline/use-outbox-status";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
 import { useRouter } from "expo-router";
@@ -47,6 +49,7 @@ export function AccountScreen() {
   const router = useRouter();
   const colors = useThemeColors();
   const { t } = useI18n();
+  const { pending } = useOutboxStatus();
   const INVALID_PASSWORD_MSG = t("auth.passwordRule");
   const {
     profile,
@@ -216,6 +219,10 @@ export function AccountScreen() {
 
   const handleLogout = async () => {
     setIsLogoutModalVisible(false);
+    // Last chance to send while still logged in: the outbox only sends a
+    // user's records under that user's login (RLS). Anything left stays on
+    // the device and goes out the next time this user logs in here.
+    await flushOutbox();
     await supabase.auth.signOut();
     router.replace("/");
   };
@@ -481,6 +488,11 @@ export function AccountScreen() {
         onClose={() => setIsLogoutModalVisible(false)}
         onConfirm={handleLogout}
         mode="logout"
+        message={
+          pending > 0
+            ? t("account.logoutPending").replace("{count}", String(pending))
+            : undefined
+        }
       />
 
       <Toast

@@ -1,4 +1,6 @@
 import { colors } from "@/assets/colors";
+import { resolveSessionFormId } from "@/lib/offline/session-form";
+import { useOutboxStatus } from "@/lib/offline/use-outbox-status";
 import { supabase } from "@/lib/supabase";
 import { Header } from "@/components/header";
 import { PageHeader } from "@/components/page-header";
@@ -135,6 +137,16 @@ export function SessionRunningScreen({
   );
   const effectiveSessionIdRef = useRef<string>(sessionId || "");
   const [rcFormId, setRcFormId] = useState<string>("");
+  // The Control Record instance is created by a trigger when the session row
+  // reaches Supabase, so it is looked up again once the outbox has synced.
+  const { pending, online } = useOutboxStatus();
+  const outboxSynced = online && pending === 0;
+
+  /** Shows why a session write could not be saved on the device. */
+  const alertSaveError = (err: unknown) => {
+    const detail = err instanceof Error ? err.message : String(err);
+    Alert.alert(t("common.error"), `${t("session.saveError")}\n${detail}`);
+  };
   const createSessionPromiseRef = useRef<Promise<string> | null>(null);
 
   const { registerSession, updateSessionProgress, updateSessionState, toggleTimer, closeSession, activeSessions, updateTimeElapsed, setTimerVisible, setFormVisible, addFugaInterval } = useSessionGlobalContext();
@@ -260,7 +272,8 @@ export function SessionRunningScreen({
     }
     try {
       return await createSessionPromiseRef.current;
-    } catch {
+    } catch (err) {
+      alertSaveError(err);
       return null;
     }
   };
@@ -270,20 +283,16 @@ export function SessionRunningScreen({
       setRcFormId("mock-rc");
       return;
     }
-    if (!effectiveSessionId) return;
+    if (!effectiveSessionId || rcFormId) return;
     let active = true;
-    supabase
-      .from("sessoes")
-      .select("formulario_id")
-      .eq("id", effectiveSessionId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (active && data?.formulario_id) setRcFormId(data.formulario_id);
-      });
+    // effectiveCircuitId is declared further down; read here at run time.
+    void resolveSessionFormId(effectiveSessionId, effectiveCircuitId || null).then((id) => {
+      if (active && id) setRcFormId(id);
+    });
     return () => {
       active = false;
     };
-  }, [effectiveSessionId, isTutorial]);
+  }, [effectiveSessionId, isTutorial, outboxSynced, rcFormId]);
 
   const { data: resumeData } = useResumeSession(sessionId || null);
 
@@ -506,7 +515,10 @@ export function SessionRunningScreen({
       executionsRef.current = [...executionsRef.current, ...records];
       try {
         await persistExecutions(sid, records);
-      } catch {}
+      } catch (err) {
+        alertSaveError(err);
+        return;
+      }
     }
 
     try {
@@ -521,7 +533,9 @@ export function SessionRunningScreen({
         fugaIntervalsRef.current,
       );
       closeSession(sid);
-    } catch {}
+    } catch (err) {
+      alertSaveError(err);
+    }
   };
 
   const trySaveForm = () => {
@@ -555,7 +569,7 @@ export function SessionRunningScreen({
       executionsRef.current = [...executionsRef.current, newRecord];
 
       const sid = effectiveSessionIdRef.current;
-      if (sid) void persistExecutions(sid, [newRecord]);
+      if (sid) persistExecutions(sid, [newRecord]).catch(alertSaveError);
     }
     lastElapsedSecondsRef.current = null;
 

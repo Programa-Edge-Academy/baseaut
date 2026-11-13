@@ -2,6 +2,10 @@ import { useCallback, useRef, useState } from "react";
 
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { getCurrentUser } from "@/lib/offline/auth";
+import { newId } from "@/lib/offline/ids";
+import { readFormMeta, readFormQuestions, resolveSessionFormId } from "@/lib/offline/session-form";
+import { queueWrite } from "@/lib/offline/sync";
 import { supabase } from "@/lib/supabase";
 
 /** Execution status. "adiado" requires the matching value in the backend `status_realizacao_enum`. */
@@ -28,6 +32,11 @@ export type MotivoFinalizacao =
 
 /** One persisted exercise execution (mirrors `execucoes_exercicio`). */
 export type ExecutionRecord = {
+  /**
+   * Row id, generated on the device the first time the record is persisted and
+   * kept on the record so a resend reuses it instead of creating a duplicate.
+   */
+  id?: string;
   exercicioId: string;
   ordemExecucao: number;
   statusRealizacao: StatusRealizacao;
@@ -72,6 +81,14 @@ type FinishSessionInput = {
   descricaoMotivo?: string | null;
 };
 
+/**
+ * Ids known on this device for sessions started in this run, so finishing a
+ * session does not need to read back rows that may still be in the outbox.
+ */
+const formularioIdBySession = new Map<string, string>();
+const circuitIdBySession = new Map<string, string>();
+const executionIdsBySession = new Map<string, Map<string, string>>();
+
 /** Options for {@link useSessionFlow}. */
 export type UseSessionFlowOptions = {
   /** When true, all writes are no-ops on in-memory ids (tutorial only). */
@@ -81,7 +98,14 @@ export type UseSessionFlowOptions = {
 /**
  * Database side-effects for an ongoing session: creating the `sessoes` row,
  * persisting executed exercises into `execucoes_exercicio`, and closing the
- * session. All writes go through the authenticated client (RLS applies).
+ * session.
+ *
+ * @remarks
+ * Writes go through the offline outbox ({@link queueWrite}): they are saved on
+ * the device first and sent to Supabase in order, right away when online or
+ * once the connection returns. Ids are generated on the device so a session can
+ * start and finish without a round trip. RLS still applies when each write is
+ * sent.
  *
  * @param options - Pass `{ mock: true }` (tutorial only) so every write is a
  * no-op against an in-memory session id instead of Supabase.
@@ -105,17 +129,19 @@ export function useSessionFlow(options?: UseSessionFlowOptions) {
         mockIdRef.current += 1;
         return `mock-session-${mockIdRef.current}`;
       }
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // The login saved on the device; works offline even with an expired token.
+      const user = await getCurrentUser();
       if (!user) throw new Error(t("common.err.notAuthenticated"));
 
       const equipeId = await resolveEquipeId();
       if (!equipeId) throw new Error(t("common.err.activeTeamNotFound"));
 
-      const { data, error: insertError } = await supabase
-        .from("sessoes")
-        .insert({
+      const id = newId();
+      await queueWrite({
+        kind: "insert",
+        table: "sessoes",
+        payload: {
+          id,
           aluno_id: alunoId,
           equipe_id: equipeId,
           monitor_id: user.id,
@@ -123,12 +149,13 @@ export function useSessionFlow(options?: UseSessionFlowOptions) {
           formulario_id: formularioId,
           status: "em_andamento",
           data_inicio: new Date().toISOString(),
-        })
-        .select("id")
-        .single();
-
-      if (insertError) throw insertError;
-      return data.id as string;
+        },
+      });
+      // Without an explicit form, the Control Record is created by a trigger
+      // when the row is inserted, so its id is read back later instead.
+      if (formularioId) formularioIdBySession.set(id, formularioId);
+      if (circuitoId) circuitIdBySession.set(id, circuitoId);
+      return id;
     },
     [isMock],
   );
@@ -148,6 +175,7 @@ export function useSessionFlow(options?: UseSessionFlowOptions) {
       if (!records.length) return [];
 
       const payload = records.map((record) => ({
+        id: (record.id ??= newId()),
         sessao_id: sessaoId,
         exercicio_id: record.exercicioId,
         ordem_execucao: record.ordemExecucao,
@@ -160,13 +188,19 @@ export function useSessionFlow(options?: UseSessionFlowOptions) {
         duracao_real_segundos: record.duracaoRealSegundos ?? null,
       }));
 
-      const { data, error: insertError } = await supabase
-        .from("execucoes_exercicio")
-        .insert(payload)
-        .select("id, exercicio_id");
+      await queueWrite({
+        kind: "upsert",
+        table: "execucoes_exercicio",
+        payload,
+        onConflict: "id",
+        ignoreDuplicates: true,
+      });
 
-      if (insertError) throw insertError;
-      return (data ?? []) as InsertedExecution[];
+      const inserted = payload.map((row) => ({ id: row.id, exercicio_id: row.exercicio_id }));
+      const known = executionIdsBySession.get(sessaoId) ?? new Map<string, string>();
+      for (const row of inserted) known.set(row.exercicio_id, row.id);
+      executionIdsBySession.set(sessaoId, known);
+      return inserted;
     },
     [isMock],
   );
@@ -185,17 +219,14 @@ export function useSessionFlow(options?: UseSessionFlowOptions) {
       if (!crises.length) return;
 
       const payload = crises.map((crise) => ({
+        id: newId(),
         sessao_id: sessaoId,
         execucao_id: execucaoIdByExercicio.get(crise.exercicioId) ?? null,
         tipo: crise.tipo ?? "crise",
         duracao_segundos: Math.round(crise.durationSeconds),
       }));
 
-      const { error: insertError } = await supabase
-        .from("comportamentos_sessao")
-        .insert(payload);
-
-      if (insertError) throw insertError;
+      await queueWrite({ kind: "insert", table: "comportamentos_sessao", payload });
     },
     [isMock],
   );
@@ -211,17 +242,17 @@ export function useSessionFlow(options?: UseSessionFlowOptions) {
       }: FinishSessionInput = {},
     ): Promise<void> => {
       if (isMock) return;
-      const { error: updateError } = await supabase
-        .from("sessoes")
-        .update({
+      await queueWrite({
+        kind: "update",
+        table: "sessoes",
+        payload: {
           status,
           data_fim: new Date().toISOString(),
           motivo_finalizacao: motivoFinalizacao,
           descricao_motivo: descricaoMotivo,
-        })
-        .eq("id", sessaoId);
-
-      if (updateError) throw updateError;
+        },
+        match: { id: sessaoId },
+      });
     },
     [isMock],
   );
@@ -234,7 +265,7 @@ export function useSessionFlow(options?: UseSessionFlowOptions) {
   const saveSession = useCallback(
     async (
       sessaoId: string,
-      _records: ExecutionRecord[],
+      records: ExecutionRecord[],
       crises: CrisisRecord[] = [],
       finishInput: FinishSessionInput = {},
     ): Promise<void> => {
@@ -244,14 +275,22 @@ export function useSessionFlow(options?: UseSessionFlowOptions) {
       setIsSaving(true);
       setError(null);
       try {
-        let execucaoIdByExercicio = new Map<string, string>();
-        if (crises.length) {
+        // Ids generated on this device come first; only executions saved in an
+        // earlier run (a resumed session) need to be read back, and offline that
+        // read just finds nothing and the crisis stays unlinked.
+        const execucaoIdByExercicio = new Map(executionIdsBySession.get(sessaoId));
+        for (const record of records) {
+          if (record.id) execucaoIdByExercicio.set(record.exercicioId, record.id);
+        }
+        if (crises.some((crise) => !execucaoIdByExercicio.has(crise.exercicioId))) {
           const { data } = await supabase
             .from("execucoes_exercicio")
             .select("id, exercicio_id")
             .eq("sessao_id", sessaoId);
           for (const row of data ?? []) {
-            execucaoIdByExercicio.set(row.exercicio_id, row.id);
+            if (!execucaoIdByExercicio.has(row.exercicio_id)) {
+              execucaoIdByExercicio.set(row.exercicio_id, row.id);
+            }
           }
         }
         await persistCrises(sessaoId, crises, execucaoIdByExercicio);
@@ -320,6 +359,7 @@ export function useSessionFlow(options?: UseSessionFlowOptions) {
 
           if (unexecuted.length > 0) {
             const payload = unexecuted.map((it, i) => ({
+              id: newId(),
               sessao_id: sessaoId,
               exercicio_id: it.exercicio_id,
               ordem_execucao: baseOrdem + i + 1,
@@ -327,10 +367,7 @@ export function useSessionFlow(options?: UseSessionFlowOptions) {
               motivo_nao_realizacao: MOTIVO,
               descricao_adicional: DESCRICAO,
             }));
-            const { error: insertError } = await supabase
-              .from("execucoes_exercicio")
-              .insert(payload);
-            if (insertError) throw insertError;
+            await queueWrite({ kind: "insert", table: "execucoes_exercicio", payload });
           }
         }
       }
@@ -362,32 +399,26 @@ export function useSessionFlow(options?: UseSessionFlowOptions) {
       if (isMock) return;
       if (!sessaoId) return;
 
-      await supabase
-        .from("sessoes")
-        .update({ tempo_total: totalSeconds })
-        .eq("id", sessaoId);
+      await queueWrite({
+        kind: "update",
+        table: "sessoes",
+        payload: { tempo_total: totalSeconds },
+        match: { id: sessaoId },
+      });
 
-      const { data: sessao } = await supabase
-        .from("sessoes")
-        .select("formulario_id")
-        .eq("id", sessaoId)
-        .maybeSingle();
-      const formId = sessao?.formulario_id;
+      // Offline the form may be the circuit's template; the questions are the
+      // same, and the outbox attaches the answers to the real instance.
+      const formId =
+        formularioIdBySession.get(sessaoId) ??
+        (await resolveSessionFormId(sessaoId, circuitIdBySession.get(sessaoId) ?? null));
       if (!formId) return;
 
-      const { data: form } = await supabase
-        .from("formularios")
-        .select("template_origem_id")
-        .eq("id", formId)
-        .maybeSingle();
+      const form = await readFormMeta(formId).catch(() => null);
       const sourceId = form?.template_origem_id ?? formId;
 
-      const { data: perguntas } = await supabase
-        .from("perguntas")
-        .select("id, texto_pergunta")
-        .eq("formulario_id", sourceId);
+      const perguntas = await readFormQuestions(sourceId).catch(() => [] as any[]);
 
-      if (!perguntas?.length) return;
+      if (!perguntas.length) return;
 
       const normalize = (s: string) =>
         s
@@ -436,9 +467,7 @@ export function useSessionFlow(options?: UseSessionFlowOptions) {
       }
 
       if (payload.length) {
-        await supabase
-          .from("respostas_formulario")
-          .upsert(payload, { onConflict: "sessao_id, pergunta_id" });
+        await queueWrite({ kind: "sessionFormAnswers", sessaoId, rows: payload });
       }
     },
     [isMock],

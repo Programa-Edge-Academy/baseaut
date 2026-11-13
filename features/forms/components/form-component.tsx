@@ -5,6 +5,9 @@ import type { TranslationKey } from "@/features/settings/constants/translations"
 import { localizeFormText } from "@/features/forms/utils/form-content-i18n";
 import { SpotlightTarget } from "@/features/tutorial/components/spotlight-target";
 import { useTutorialSimulation } from "@/features/tutorial/contexts/tutorial-simulation-context";
+import { primeCache, readCache, cachedRead } from "@/lib/offline/cache";
+import { rcDraftKey, readFormMeta, readFormQuestions } from "@/lib/offline/session-form";
+import { queueWrite } from "@/lib/offline/sync";
 import { supabase } from "@/lib/supabase";
 import { useKeyboardAwareScroll } from "@/lib/use-keyboard-aware-scroll";
 import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
@@ -174,21 +177,20 @@ export const FormComponent = forwardRef(function FormComponent(
         return;
       }
 
-      const { data: formulario } = await supabase
-        .from("formularios")
-        .select("template_origem_id, tipo")
-        .eq("id", formularioId)
-        .maybeSingle();
+      // Both reads are cached so a session's Control Record opens offline.
+      const formulario = await readFormMeta(formularioId).catch(() => null);
 
       const questionSourceId = formulario?.template_origem_id ?? formularioId;
       const isMabc = formulario?.tipo === "mabc2";
       setIsAta(formulario?.tipo === "ata");
 
-      const { data, error } = await supabase
-        .from("perguntas")
-        .select("id, texto_pergunta, tipo_resposta, opcoes, descricao, obrigatoria, ordem")
-        .eq("formulario_id", questionSourceId)
-        .order("ordem", { ascending: true });
+      let data: any[] = [];
+      let error: unknown = null;
+      try {
+        data = await readFormQuestions(questionSourceId);
+      } catch (caught) {
+        error = caught;
+      }
 
       if (error) {
         Alert.alert(t("common.error"), t("form.loadQuestionsError"));
@@ -272,18 +274,38 @@ export const FormComponent = forwardRef(function FormComponent(
 
       let loadedAnswers: Record<string, any> = {};
       if (sessaoId || alunoId) {
+        // A session has one answer per question (unique on sessao_id +
+        // pergunta_id), so its answers are read by session alone: offline the
+        // form shown may be the circuit's template rather than the instance.
         let answersQuery = supabase
           .from("respostas_formulario")
-          .select("pergunta_id, valor_preenchido, valores_selecionados")
-          .eq("formulario_id", formularioId);
+          .select("pergunta_id, valor_preenchido, valores_selecionados");
 
         if (sessaoId) {
           answersQuery = answersQuery.eq("sessao_id", sessaoId);
-        } else if (alunoId) {
-          answersQuery = answersQuery.eq("aluno_id", alunoId);
+        } else {
+          answersQuery = answersQuery
+            .eq("formulario_id", formularioId)
+            .eq("aluno_id", alunoId);
         }
 
-        const { data: respostas } = await answersQuery;
+        const answersKey = sessaoId
+          ? `respostas:sessao:${sessaoId}`
+          : `respostas:${formularioId}:${alunoId}`;
+        let respostas: any[] = await cachedRead(answersKey, async () => {
+          const { data: rows, error: answersError } = await answersQuery;
+          if (answersError) throw answersError;
+          return rows ?? [];
+        }).catch(() => []);
+
+        // Answers saved on this device but not sent yet win over the copy above.
+        if (sessaoId) {
+          const draft = await readCache<any[]>(rcDraftKey(sessaoId));
+          if (draft?.length) {
+            const draftIds = new Set(draft.map((row) => row.pergunta_id));
+            respostas = [...respostas.filter((row) => !draftIds.has(row.pergunta_id)), ...draft];
+          }
+        }
 
         if (respostas && respostas.length > 0) {
           const objectTypes = new Set(["dropdown", "choice_list", "matrix"]);
@@ -418,16 +440,10 @@ export const FormComponent = forwardRef(function FormComponent(
       });
 
       if (sessaoId) {
-        const { error } = await supabase
-          .from("respostas_formulario")
-          .upsert(payloadRespostas, { onConflict: "sessao_id, pergunta_id" });
-
-        if (error) throw error;
-
-        await supabase.rpc(
-          "sincronizar_comportamentos_rc",
-          { p_sessao_id: sessaoId },
-        );
+        // Saved on the device and sent by the outbox, which attaches the
+        // answers to the session's real form instance (see sync.ts).
+        await primeCache(rcDraftKey(sessaoId), payloadRespostas);
+        await queueWrite({ kind: "sessionFormAnswers", sessaoId, rows: payloadRespostas });
       } else {
         const { error: deleteError } = await supabase
           .from("respostas_formulario")

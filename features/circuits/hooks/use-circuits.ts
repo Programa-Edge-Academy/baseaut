@@ -1,6 +1,9 @@
+import { assertOnline } from "@/lib/offline/require-online";
 import { supabase } from "@/lib/supabase";
 import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { cachedRead, primeCache } from "@/lib/offline/cache";
+import { readFormMeta, readFormQuestions } from "@/lib/offline/session-form";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
@@ -231,7 +234,7 @@ export function useCircuits(options?: UseCircuitsOptions) {
   /**
    * Fetches the list of active circuits using real database columns 'tipo' and 'modo_execucao'.
    */
-  const loadCircuits = useCallback(async (showLoader = true) => {
+  const loadCircuits = useCallback(async (showLoader = true, cacheFirst = false) => {
     if (isMock) {
       setIsLoading(false);
       return;
@@ -246,83 +249,105 @@ export function useCircuits(options?: UseCircuitsOptions) {
       }
       setEquipeId(teamId);
 
-      await seedMabcCircuits(teamId);
+      // Seeding is a no-op once the MABC circuits exist; it must not hold the
+      // list back when the saved copy is shown first or the network is slow.
+      const seeding = seedMabcCircuits(teamId).catch(() => {});
+      if (!cacheFirst) await seeding;
 
-      const { data, error: fetchError } = await supabase
-        .from("circuitos")
-        .select(`
-          id, 
-          titulo, 
-          descricao, 
-          formulario_id,
-          tipo,
-          modo_execucao,
-          itens_circuito (
-            ordem,
-            exercicios (
-              id,
-              titulo,
-              descricao,
-              repeticoes,
-              tags,
-              tag,
-              subtags,
-              icone_url
+      const apply = (data: any[] | null) => {
+        // Lets a session find its Control Record template, and its questions,
+        // offline. Circuits share a handful of templates, so this is a few reads.
+        const templateIds = new Set<string>();
+        for (const row of data ?? []) {
+          void primeCache(`circuito-form:${row.id}`, row.formulario_id ?? null);
+          if (row.formulario_id) templateIds.add(row.formulario_id);
+        }
+        for (const templateId of templateIds) {
+          void readFormMeta(templateId).catch(() => null);
+          void readFormQuestions(templateId).catch(() => null);
+        }
+
+        if (data) {
+          setCircuits(
+            data.map((row: any) => {
+              const sortedItems = (row.itens_circuito || []).sort((a: any, b: any) => a.ordem - b.ordem);
+
+              const summary = sortedItems
+                .map((item: any) => item.exercicios?.titulo)
+                .filter(Boolean)
+                .join(", ");
+
+              const mappedExercises: Exercise[] = sortedItems
+                .map((item: any) => {
+                  const tags: Record<string, string[]> =
+                    item.exercicios?.tags && typeof item.exercicios.tags === "object"
+                      ? item.exercicios.tags
+                      : item.exercicios?.tag
+                        ? { [item.exercicios.tag]: item.exercicios.subtags ?? [] }
+                        : {};
+                  const first = Object.keys(tags)[0] ?? null;
+                  return {
+                    id: item.exercicios?.id,
+                    name: item.exercicios?.titulo,
+                    description: item.exercicios?.descricao || "",
+                    repetitions: item.exercicios?.repeticoes ?? null,
+                    tags,
+                    tag: first ?? "Coordenação",
+                    subtags: first ? tags[first] : [],
+                    iconUrl: item.exercicios?.icone_url ?? null,
+                  };
+                })
+                .filter((ex: any) => ex.id);
+
+              return {
+                id: row.id,
+                name: row.titulo,
+                description: row.descricao,
+                formId: row.formulario_id,
+                type: row.tipo || "padrao",
+                executionMode: row.modo_execucao || "estruturado",
+                exercisesCount: sortedItems.length,
+                exercisesSummary: summary || t("circuits.noExercises"),
+                exercises: mappedExercises,
+              };
+            })
+          );
+        }
+      };
+
+      const data = await cachedRead<any[] | null>(`circuitos:${teamId}`, async () => {
+        const { data, error: fetchError } = await supabase
+          .from("circuitos")
+          .select(`
+            id, 
+            titulo, 
+            descricao, 
+            formulario_id,
+            tipo,
+            modo_execucao,
+            itens_circuito (
+              ordem,
+              exercicios (
+                id,
+                titulo,
+                descricao,
+                repeticoes,
+                tags,
+                tag,
+                subtags,
+                icone_url
+              )
             )
-          )
-        `)
-        .eq("equipe_id", teamId)
-        .eq("ativo", true)
-        .order("created_at", { ascending: false });
+          `)
+          .eq("equipe_id", teamId)
+          .eq("ativo", true)
+          .order("created_at", { ascending: false });
 
-      if (fetchError) throw fetchError;
+        if (fetchError) throw fetchError;
+        return data;
+      }, { cacheFirst, onUpdate: apply });
 
-      if (data) {
-        setCircuits(
-          data.map((row: any) => {
-            const sortedItems = (row.itens_circuito || []).sort((a: any, b: any) => a.ordem - b.ordem);
-
-            const summary = sortedItems
-              .map((item: any) => item.exercicios?.titulo)
-              .filter(Boolean)
-              .join(", ");
-
-            const mappedExercises: Exercise[] = sortedItems
-              .map((item: any) => {
-                const tags: Record<string, string[]> =
-                  item.exercicios?.tags && typeof item.exercicios.tags === "object"
-                    ? item.exercicios.tags
-                    : item.exercicios?.tag
-                      ? { [item.exercicios.tag]: item.exercicios.subtags ?? [] }
-                      : {};
-                const first = Object.keys(tags)[0] ?? null;
-                return {
-                  id: item.exercicios?.id,
-                  name: item.exercicios?.titulo,
-                  description: item.exercicios?.descricao || "",
-                  repetitions: item.exercicios?.repeticoes ?? null,
-                  tags,
-                  tag: first ?? "Coordenação",
-                  subtags: first ? tags[first] : [],
-                  iconUrl: item.exercicios?.icone_url ?? null,
-                };
-              })
-              .filter((ex: any) => ex.id);
-
-            return {
-              id: row.id,
-              name: row.titulo,
-              description: row.descricao,
-              formId: row.formulario_id,
-              type: row.tipo || "padrao",
-              executionMode: row.modo_execucao || "estruturado",
-              exercisesCount: sortedItems.length,
-              exercisesSummary: summary || t("circuits.noExercises"),
-              exercises: mappedExercises,
-            };
-          })
-        );
-      }
+      apply(data);
     } catch (caught: any) {
       setError(caught);
     } finally {
@@ -331,7 +356,7 @@ export function useCircuits(options?: UseCircuitsOptions) {
   }, [isMock, t]);
 
   useEffect(() => {
-    loadCircuits(true);
+    loadCircuits(true, true);
   }, [loadCircuits]);
 
   /**
@@ -363,6 +388,7 @@ export function useCircuits(options?: UseCircuitsOptions) {
     }
 
     try {
+      await assertOnline(t("offline.onlineOnly"));
       if (!equipeId) throw new Error("Team ID not identified.");
 
       const formId =
@@ -440,6 +466,7 @@ export function useCircuits(options?: UseCircuitsOptions) {
     }
 
     try {
+      await assertOnline(t("offline.onlineOnly"));
       const formId =
         data.form ??
         (data.type === "padrao" ? await resolveRcTemplateId() : null);
@@ -487,6 +514,7 @@ export function useCircuits(options?: UseCircuitsOptions) {
     }
 
     try {
+      await assertOnline(t("offline.onlineOnly"));
       const { error: deleteError } = await supabase
         .from("circuitos")
         .update({ ativo: false })
@@ -515,6 +543,7 @@ export function useCircuits(options?: UseCircuitsOptions) {
     }
 
     try {
+      await assertOnline(t("offline.onlineOnly"));
       if (!equipeId) throw new Error("Team ID not identified.");
 
       const payload = {
