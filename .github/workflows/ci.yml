@@ -17,7 +17,7 @@ jobs:
       - name: Instalar Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.122.1
 
       - name: Ligar Banco Local e Validar
         run: |
