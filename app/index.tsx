@@ -1,5 +1,7 @@
 import { colors } from "@/assets/colors";
 import { LoginScreen } from "@/features/auth/screens/login-screen";
+import { getCurrentUser } from "@/lib/offline/auth";
+import { isOnline } from "@/lib/offline/require-online";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -16,14 +18,18 @@ export default function Index() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("status_conta, role")
-          .eq("id", session.user.id)
-          .single();
+      // Offline the saved login is enough to get in; the approval check below
+      // needs the network and runs on the next online start.
+      const user = await getCurrentUser();
+
+      if (user) {
+        const { data: profile } = (await isOnline())
+          ? await supabase
+              .from("profiles")
+              .select("status_conta, role")
+              .eq("id", user.id)
+              .single()
+          : { data: null };
 
         if (profile && profile.role !== "coordenador" && profile.status_conta === "pendente") {
           await supabase.auth.signOut();

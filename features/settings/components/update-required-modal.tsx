@@ -3,9 +3,11 @@ import { DefaultButton } from "@/components/default-button";
 import type { AppRelease } from "@/features/settings/hooks/use-app-version";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useThemeColors } from "@/features/settings/contexts/theme-context";
+import { flushOutbox } from "@/lib/offline/sync";
+import { useOutboxStatus } from "@/lib/offline/use-outbox-status";
 import * as Linking from "expo-linking";
 import { Download } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 
 /** Props for {@link UpdateRequiredModal}. */
@@ -41,6 +43,12 @@ function NoteItem({ text }: { text: string }) {
  * The download folder comes from the release row rather than a constant: a
  * blocked user is by definition running an old build, so a link compiled into
  * the app could never be corrected if the folder moved.
+ *
+ * Records saved offline live in the app's storage: installing the new APK over
+ * the old one keeps them, uninstalling erases them. So the dialog first tries to
+ * send the outbox, says how many records are still waiting, and reminds the
+ * user to install over the current app. The download stays available, so a
+ * write the server keeps refusing can never lock the clinic out for good.
  */
 export function UpdateRequiredModal({
   installedVersion,
@@ -49,6 +57,11 @@ export function UpdateRequiredModal({
   const { t } = useI18n();
   const colors = useThemeColors();
   const [linkFailed, setLinkFailed] = useState(false);
+  const { pending } = useOutboxStatus();
+
+  useEffect(() => {
+    void flushOutbox();
+  }, []);
 
   const handleDownload = async () => {
     if (!release.url_download) return;
@@ -105,6 +118,27 @@ export function UpdateRequiredModal({
               </ScrollView>
             </View>
           )}
+
+          {pending > 0 && (
+            <View className="gap-3 rounded-2xl border border-extra bg-extra/10 p-4">
+              <Text className="text-default-2 leading-5 text-extra">
+                {t("update.required.pending").replace("{count}", String(pending))}
+              </Text>
+              <DefaultButton
+                label={t("update.required.sendNow")}
+                onPress={() => void flushOutbox()}
+                bgColorClass="bg-level1"
+                shadowClass=""
+                sizeClass="w-full h-10"
+                className="rounded-[12px] border border-extra"
+                textClassName="text-extra"
+              />
+            </View>
+          )}
+
+          <Text className="text-default-3 leading-5 text-muted">
+            {t("update.required.keepData")}
+          </Text>
 
           {release.url_download ? (
             <DefaultButton

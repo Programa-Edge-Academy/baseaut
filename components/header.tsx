@@ -6,6 +6,7 @@ import { TUTORIAL_EXIT_SPOTLIGHT_KEY } from "@/features/tutorial/components/tuto
 // TUTORIAL DESATIVADO — para reativar, descomente esta linha.
 // import { useTutorial } from "@/features/tutorial/contexts/tutorial-context";
 import { useUserRole } from "@/lib/use-user-role";
+import { OfflineBanner } from "@/components/offline-banner";
 import { usePathname, useRouter } from "expo-router";
 // TUTORIAL DESATIVADO — ao reativar, volte a importar HelpCircle.
 import { ArrowLeft, GraduationCap, Save, Settings, User, Users, X } from "lucide-react-native";
@@ -185,6 +186,7 @@ export function Header({
           </View>
         </View>
       </View>
+      <OfflineBanner />
     </SafeAreaView>
   );
 }

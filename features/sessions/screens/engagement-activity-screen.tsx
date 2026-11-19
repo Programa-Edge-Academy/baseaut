@@ -9,7 +9,8 @@ import {
 } from "@/features/exercises/components/activity-result-modal";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { resolveEngagementExerciseId } from "@/lib/resolve-engagement-exercise";
-import { supabase } from "@/lib/supabase";
+import { newId } from "@/lib/offline/ids";
+import { queueWrite } from "@/lib/offline/sync";
 import {
   useSessionFlow,
   type ExecutionRecord,
@@ -20,7 +21,7 @@ import { useI18n } from "@/features/settings/contexts/i18n-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { CheckCircle2 } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, ScrollView, Text, View } from "react-native";
+import { Alert, Animated, ScrollView, Text, View } from "react-native";
 
 /** Maps the result modal's labels to the `motivo_nao_realizacao_enum` values. */
 const MOTIVO_NAO_REALIZACAO_MAP: Record<string, MotivoNaoRealizacao> = {
@@ -47,6 +48,12 @@ function toMotivoEnums(motivos: string[]): MotivoNaoRealizacao[] {
 export function EngagementActivityScreen() {
   const router = useRouter();
   const { t } = useI18n();
+
+  /** Shows why a session write could not be saved on the device. */
+  const alertSaveError = (err: unknown) => {
+    const detail = err instanceof Error ? err.message : String(err);
+    Alert.alert(t("common.error"), `${t("session.saveError")}\n${detail}`);
+  };
   const { studentName, sessionId, studentId, fromWidget } = useLocalSearchParams<{
     studentName: string;
     studentId: string;
@@ -159,7 +166,8 @@ export function EngagementActivityScreen() {
         },
       ]);
       return inserted[0]?.id ?? null;
-    } catch {
+    } catch (err) {
+      alertSaveError(err);
       return null;
     }
   };
@@ -184,12 +192,17 @@ export function EngagementActivityScreen() {
         duracaoRealSegundos: duracao,
       });
       if (sessionId && execId) {
-        await supabase.from("comportamentos_sessao").insert({
-          sessao_id: sessionId,
-          execucao_id: execId,
-          tipo: "engajamento",
-          duracao_segundos: duracao != null ? Math.round(duracao) : null,
-        });
+        await queueWrite({
+          kind: "insert",
+          table: "comportamentos_sessao",
+          payload: {
+            id: newId(),
+            sessao_id: sessionId,
+            execucao_id: execId,
+            tipo: "engajamento",
+            duracao_segundos: duracao != null ? Math.round(duracao) : null,
+          },
+        }).catch(alertSaveError);
       }
     } else if (status === "nao_realizada") {
       // Whatever was observed during the attempt is recorded with the reasons.

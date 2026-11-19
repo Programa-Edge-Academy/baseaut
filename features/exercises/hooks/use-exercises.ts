@@ -1,6 +1,8 @@
+import { assertOnline } from "@/lib/offline/require-online";
 import { supabase } from "@/lib/supabase";
 import type { TranslationKey } from "@/features/settings/constants/translations";
 import { useI18n } from "@/features/settings/contexts/i18n-context";
+import { cachedRead } from "@/lib/offline/cache";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { uploadImage } from "@/lib/upload-image";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -114,7 +116,7 @@ export function useExercises(options?: UseExercisesOptions) {
   /**
    * Loads exercises for the active team.
    */
-  const loadExercises = useCallback(async (showLoader = true) => {
+  const loadExercises = useCallback(async (showLoader = true, cacheFirst = false) => {
     if (isMock) {
       setIsLoading(false);
       return;
@@ -128,33 +130,40 @@ export function useExercises(options?: UseExercisesOptions) {
       }
       setEquipeId(teamId);
 
-      const { data, error: fetchError } = await supabase
-        .from("exercicios")
-        .select("id, titulo, descricao, repeticoes, tags, tag, subtags, icone_url")
-        .eq("equipe_id", teamId)
-        .eq("ativo", true)
-        .order("created_at", { ascending: false });
+      const apply = (data: any[] | null) => {
+        if (data) {
+          setExercises(
+            data.map((row) => {
+              const tags = toTagMap(row.tags, row.tag, row.subtags);
+              const first = primaryTag(tags);
+              return {
+                id: row.id,
+                name: row.titulo,
+                description: row.descricao || "",
+                repetitions: row.repeticoes ?? null,
+                tags,
+                tag: first ?? "Coordenação",
+                subtags: first ? tags[first] : ["estabilizador"],
+                iconUrl: row.icone_url,
+              };
+            }),
+          );
+        }
+      };
 
-      if (fetchError) throw fetchError;
+      const data = await cachedRead<any[] | null>(`exercicios:${teamId}`, async () => {
+        const { data, error: fetchError } = await supabase
+          .from("exercicios")
+          .select("id, titulo, descricao, repeticoes, tags, tag, subtags, icone_url")
+          .eq("equipe_id", teamId)
+          .eq("ativo", true)
+          .order("created_at", { ascending: false });
 
-      if (data) {
-        setExercises(
-          data.map((row) => {
-            const tags = toTagMap(row.tags, row.tag, row.subtags);
-            const first = primaryTag(tags);
-            return {
-              id: row.id,
-              name: row.titulo,
-              description: row.descricao || "",
-              repetitions: row.repeticoes ?? null,
-              tags,
-              tag: first ?? "Coordenação",
-              subtags: first ? tags[first] : ["estabilizador"],
-              iconUrl: row.icone_url,
-            };
-          }),
-        );
-      }
+        if (fetchError) throw fetchError;
+        return data;
+      }, { cacheFirst, onUpdate: apply });
+
+      apply(data);
     } catch (caught: any) {
       setError(caught);
     } finally {
@@ -163,7 +172,7 @@ export function useExercises(options?: UseExercisesOptions) {
   }, [isMock]);
 
   useEffect(() => {
-    loadExercises(true);
+    loadExercises(true, true);
   }, [loadExercises]);
 
   /**
@@ -192,6 +201,7 @@ export function useExercises(options?: UseExercisesOptions) {
     }
 
     try {
+      await assertOnline(t("offline.onlineOnly"));
       if (!equipeId) throw new Error(t("common.err.teamNotIdentified"));
       let finalIconUrl = null;
       if (photoUri && !photoUri.startsWith("http")) {
@@ -256,6 +266,7 @@ export function useExercises(options?: UseExercisesOptions) {
     }
 
     try {
+      await assertOnline(t("offline.onlineOnly"));
       const payload: any = {
         titulo: data.name,
         descricao: data.description || null,
@@ -301,6 +312,7 @@ export function useExercises(options?: UseExercisesOptions) {
     }
 
     try {
+      await assertOnline(t("offline.onlineOnly"));
       const { error: deleteError } = await supabase.rpc("excluir_exercicio", {
         p_exercicio_id: id,
       });
@@ -328,6 +340,7 @@ export function useExercises(options?: UseExercisesOptions) {
     }
 
     try {
+      await assertOnline(t("offline.onlineOnly"));
       if (!equipeId) throw new Error(t("common.err.teamNotIdentified"));
 
       const first = primaryTag(exercise.tags);

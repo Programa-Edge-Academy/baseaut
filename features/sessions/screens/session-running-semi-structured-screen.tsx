@@ -5,6 +5,9 @@ import { PageHeader } from "@/components/page-header";
 import { FormComponent } from "@/features/forms/components/form-component";
 import { useKeyboardAwareScroll } from "@/lib/use-keyboard-aware-scroll";
 import { useKeyboardPadding } from "@/lib/use-keyboard-padding";
+import { cachedRead } from "@/lib/offline/cache";
+import { resolveSessionFormId } from "@/lib/offline/session-form";
+import { useOutboxStatus } from "@/lib/offline/use-outbox-status";
 import { supabase } from "@/lib/supabase";
 import {
   ActivityResultModal,
@@ -92,6 +95,16 @@ export function SessionRunningSemiStructuredScreen({
   const effectiveSessionIdRef = useRef<string>(sessionId || "");
   const createSessionPromiseRef = useRef<Promise<string> | null>(null);
   const [rcFormId, setRcFormId] = useState<string>("");
+  // The Control Record instance is created by a trigger when the session row
+  // reaches Supabase, so it is looked up again once the outbox has synced.
+  const { pending, online } = useOutboxStatus();
+  const outboxSynced = online && pending === 0;
+
+  /** Shows why a session write could not be saved on the device. */
+  const alertSaveError = (err: unknown) => {
+    const detail = err instanceof Error ? err.message : String(err);
+    Alert.alert(t("common.error"), `${t("session.saveError")}\n${detail}`);
+  };
   const formRef = useRef<any>(null);
   const ordemRef = useRef(0);
   const lastElapsedSecondsRef = useRef<number | null>(null);
@@ -223,35 +236,36 @@ export function SessionRunningSemiStructuredScreen({
     }
     try {
       return await createSessionPromiseRef.current;
-    } catch {
+    } catch (err) {
+      alertSaveError(err);
       return null;
     }
   };
 
   useEffect(() => {
-    if (!effectiveSessionId) return;
+    if (!effectiveSessionId || rcFormId) return;
     let active = true;
-    supabase
-      .from("sessoes")
-      .select("formulario_id")
-      .eq("id", effectiveSessionId)
-      .maybeSingle()
-      .then(async ({ data }) => {
-        if (!active) return;
-        if (data?.formulario_id) {
-          setRcFormId(data.formulario_id);
-        } else {
-          const { data: tmpl } = await supabase
-            .from("formularios")
-            .select("id")
-            .eq("tipo", "registro_controle")
-            .is("aluno_id", null)
-            .maybeSingle();
-          if (active && tmpl?.id) setRcFormId(tmpl.id);
-        }
-      });
+    void (async () => {
+      const formId = await resolveSessionFormId(effectiveSessionId, circuitId || null);
+      if (!active) return;
+      if (formId) {
+        setRcFormId(formId);
+        return;
+      }
+      const templateId = await cachedRead("rc-template-global", async () => {
+        const { data: tmpl, error } = await supabase
+          .from("formularios")
+          .select("id")
+          .eq("tipo", "registro_controle")
+          .is("aluno_id", null)
+          .maybeSingle();
+        if (error) throw error;
+        return (tmpl?.id as string | undefined) ?? null;
+      }, { cacheFirst: true }).catch(() => null);
+      if (active && templateId) setRcFormId(templateId);
+    })();
     return () => { active = false; };
-  }, [effectiveSessionId]);
+  }, [effectiveSessionId, outboxSynced, rcFormId]);
 
   const persistResult = async (
     exercise: SessionExercise,
@@ -267,7 +281,9 @@ export function SessionRunningSemiStructuredScreen({
     };
     try {
       await persistExecutions(resolvedSid, [fullRecord]);
-    } catch {}
+    } catch (err) {
+      alertSaveError(err);
+    }
   };
 
   const resolvedSid = sessionId || effectiveSessionIdRef.current || "";
@@ -439,13 +455,18 @@ export function SessionRunningSemiStructuredScreen({
       trySaveForm();
       const finalSid = effectiveSessionIdRef.current;
       if (finalSid) {
-        await saveSession(finalSid, [], crisesRef.current, { status: "concluida" });
-        await finalizeSessionAutoFill(
-          finalSid,
-          currentSessionData?.totalElapsed ?? 0,
-          fugaIntervalsRef.current,
-        );
-        closeSession(finalSid);
+        try {
+          await saveSession(finalSid, [], crisesRef.current, { status: "concluida" });
+          await finalizeSessionAutoFill(
+            finalSid,
+            currentSessionData?.totalElapsed ?? 0,
+            fugaIntervalsRef.current,
+          );
+          closeSession(finalSid);
+        } catch (err) {
+          alertSaveError(err);
+          return;
+        }
       }
       const naoRealizados = exercises.filter(
         (ex) => novoHistorico[ex.id] === "nao_realizada",
@@ -497,10 +518,14 @@ export function SessionRunningSemiStructuredScreen({
       const totalAtFinish = currentSessionData?.totalElapsed ?? 0;
       const fugasAtFinish = fugaIntervalsRef.current;
       void (async () => {
-        await saveSession(finalSid, [], crisesRef.current, {
-          status: "concluida",
-        });
-        await finalizeSessionAutoFill(finalSid, totalAtFinish, fugasAtFinish);
+        try {
+          await saveSession(finalSid, [], crisesRef.current, {
+            status: "concluida",
+          });
+          await finalizeSessionAutoFill(finalSid, totalAtFinish, fugasAtFinish);
+        } catch (err) {
+          alertSaveError(err);
+        }
       })();
       closeSession(finalSid);
     }

@@ -1,3 +1,4 @@
+import { assertOnline, ensureOnline } from "@/lib/offline/require-online";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 import { supabase } from "@/lib/supabase";
 import { calculateAge } from "@/lib/date-utils";
@@ -153,6 +154,7 @@ export function useTeamData() {
   const acceptCompanion = async (id: string) => {
     const comp = companions.find((c) => c.id === id);
     if (!comp) return;
+    if (!(await ensureOnline(t("common.error"), t("offline.onlineOnly")))) return;
 
     const { error } = await supabase.rpc('aprovar_monitor', {
       p_monitor_id: comp.profileId,
@@ -172,6 +174,7 @@ export function useTeamData() {
   const rejectCompanion = async (id: string) => {
     const comp = companions.find((c) => c.id === id);
     if (!comp) return;
+    if (!(await ensureOnline(t("common.error"), t("offline.onlineOnly")))) return;
 
     const { error } = await supabase.rpc('rejeitar_monitor', {
       p_monitor_id: comp.profileId
@@ -190,6 +193,7 @@ export function useTeamData() {
   const removeCompanion = async (id: string) => {
     const comp = companions.find((c) => c.id === id);
     if (!comp) return;
+    if (!(await ensureOnline(t("common.error"), t("offline.onlineOnly")))) return;
 
     const { error } = await supabase.rpc('remover_monitor', {
       p_monitor_id: comp.profileId
@@ -211,6 +215,7 @@ export function useTeamData() {
   ) => {
     setIsLoading(true);
     try {
+      await assertOnline(t("offline.onlineOnly"));
       let finalAvatarUrl = data.avatarUrl;
 
       if (photoUri && !photoUri.startsWith("http")) {
@@ -288,6 +293,7 @@ export function useTeamData() {
    * Soft-deletes a student within the team.
    */
   const deleteStudent = async (id: string) => {
+    if (!(await ensureOnline(t("common.error"), t("offline.onlineOnly")))) return;
     await supabase.from("alunos").update({ ativo: false }).eq("id", id);
     fetchData();
   };

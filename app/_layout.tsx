@@ -18,6 +18,7 @@ import { SessionGlobalProvider } from "@/features/sessions/contexts/session-glob
 import { GlobalToastProvider } from "@/components/global-toast";
 import { GlobalSessionWidget } from "@/features/sessions/components/global-session-widget";
 import { AppVersionGate } from "@/features/settings/components/app-version-gate";
+import { startOutboxSync } from "@/lib/offline/sync";
 import { ThemeProvider } from "@/features/settings/contexts/theme-context";
 import { I18nProvider } from "@/features/settings/contexts/i18n-context";
 import { TutorialProvider } from "@/features/tutorial/contexts/tutorial-context";
@@ -62,6 +63,8 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded, error]);
+
+  useEffect(() => startOutboxSync(), []);
 
   if (!loaded && !error) {
     return null;

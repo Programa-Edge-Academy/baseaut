@@ -1,3 +1,4 @@
+import { cachedRead } from "@/lib/offline/cache";
 import { supabase } from "@/lib/supabase";
 import { resolveEquipeId } from "@/lib/resolve-equipe-id";
 
@@ -12,15 +13,21 @@ export async function resolveEngagementExerciseId(): Promise<string | null> {
   const equipeId = await resolveEquipeId();
   if (!equipeId) return null;
 
-  const { data: existing } = await supabase
-    .from("exercicios")
-    .select("id")
-    .eq("equipe_id", equipeId)
-    .eq("tag", "engajamento")
-    .limit(1)
-    .maybeSingle();
+  // Cached so engagement activities can be recorded offline; offline with
+  // nothing saved yet, it falls through and the insert below fails as before.
+  const existingId = await cachedRead(`engajamento:${equipeId}`, async () => {
+    const { data: existing, error: existingError } = await supabase
+      .from("exercicios")
+      .select("id")
+      .eq("equipe_id", equipeId)
+      .eq("tag", "engajamento")
+      .limit(1)
+      .maybeSingle();
+    if (existingError) throw existingError;
+    return (existing?.id as string | undefined) ?? null;
+  }, { cacheFirst: true }).catch(() => null);
 
-  if (existing?.id) return existing.id;
+  if (existingId) return existingId;
 
   const { data: inserted, error } = await supabase
     .from("exercicios")

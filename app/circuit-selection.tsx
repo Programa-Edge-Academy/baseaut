@@ -1,8 +1,9 @@
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { calculateAge } from "@/lib/date-utils";
 import { getStartGuard, type StartGuardState } from "@/lib/session-start-guard";
+import { cachedRead } from "@/lib/offline/cache";
 import { supabase } from "@/lib/supabase";
 import { ConcurrentSessionModal } from "@/components/concurrent-session-modal";
 import type { TranslationKey } from "@/features/settings/constants/translations";
@@ -103,6 +104,9 @@ type GuardModalType =
  * age. Detects in-progress sessions and pending records via the start guard and
  * prompts the user to resume or finish/replace before starting something new.
  */
+/** How long a start guard read on focus is trusted for a tap on a circuit. */
+const GUARD_PREFETCH_TTL_MS = 20000;
+
 export default function CircuitSelectionRoute() {
   const { studentId, studentName } = useLocalSearchParams<{
     studentId: string;
@@ -128,6 +132,30 @@ export default function CircuitSelectionRoute() {
   const pendingCircuitRef = useRef<CircuitItem | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  /**
+   * Start guard read ahead each time the screen gains focus, so a tap on a
+   * circuit usually finds the answer ready instead of waiting on the network.
+   * Older than {@link GUARD_PREFETCH_TTL_MS}, it is read again on the tap.
+   */
+  const guardPrefetchRef = useRef<{ at: number; promise: Promise<StartGuardState> } | null>(null);
+  const pressingRef = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isTutorial || !studentId) return;
+      guardPrefetchRef.current = { at: Date.now(), promise: getStartGuard(studentId) };
+    }, [isTutorial, studentId]),
+  );
+
+  const readStartGuard = useCallback((): Promise<StartGuardState> => {
+    const prefetched = guardPrefetchRef.current;
+    guardPrefetchRef.current = null;
+    if (prefetched && Date.now() - prefetched.at < GUARD_PREFETCH_TTL_MS) {
+      return prefetched.promise;
+    }
+    return getStartGuard(studentId ?? "");
+  }, [studentId]);
+
   useEffect(() => {
     async function loadStudentAge() {
       if (isTutorial) {
@@ -142,18 +170,23 @@ export default function CircuitSelectionRoute() {
       }
 
       try {
-        const { data, error } = await supabase
-          .from("alunos")
-          .select("data_nascimento")
-          .eq("id", studentId)
-          .single();
+        // Cached so the age-based circuit options still work offline.
+        const birthDate = await cachedRead(`aluno-nascimento:${studentId}`, async () => {
+          const { data, error } = await supabase
+            .from("alunos")
+            .select("data_nascimento")
+            .eq("id", studentId)
+            .single();
+          if (error) throw error;
+          return (data?.data_nascimento as string | null) ?? null;
+        }, { cacheFirst: true }).catch(() => undefined);
 
-        if (error) {
+        if (birthDate === undefined) {
           setStudentAge(null);
           return;
         }
 
-        const age = calculateAge(data?.data_nascimento ?? null);
+        const age = calculateAge(birthDate);
         setStudentAge(age);
       } finally {
         setAgeResolved(true);
@@ -360,9 +393,14 @@ export default function CircuitSelectionRoute() {
 
   const handlePressCircuit = useCallback(
     async (circuit: CircuitItem) => {
-      if (!studentId) return;
-
-      const guard = isTutorial ? buildMockGuard() : await getStartGuard(studentId);
+      if (!studentId || pressingRef.current) return;
+      pressingRef.current = true;
+      let guard: StartGuardState;
+      try {
+        guard = isTutorial ? buildMockGuard() : await readStartGuard();
+      } finally {
+        pressingRef.current = false;
+      }
       const isForm = isFormType(circuit.type);
 
       if (!isForm) {
@@ -423,6 +461,7 @@ export default function CircuitSelectionRoute() {
       isSessionTutorial,
       isFormsTutorial,
       buildMockGuard,
+      readStartGuard,
       sim,
     ]
   );
